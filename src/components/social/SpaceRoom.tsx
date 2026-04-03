@@ -163,8 +163,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [rewardsBalance, setRewardsBalance] = useState<number>(0);
   const [sendingGift, setSendingGift] = useState(false);
   const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
   const [topUpAmount, setTopUpAmount] = useState("");
+  const [convertAmount, setConvertAmount] = useState("");
   const [topUpLoading, setTopUpLoading] = useState(false);
+  const [convertLoading, setConvertLoading] = useState(false);
   const [showAudioPrompt, setShowAudioPrompt] = useState(false);
   const audioEnabledRef = useRef(false);
   const [mainBalance, setMainBalance] = useState<number>(0);
