@@ -254,7 +254,7 @@ const Privacy = () => {
         </section>
 
         <section id="international" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">11. International Data Transfers</h2>
+          <h2 className="text-base font-semibold text-foreground">15. International Data Transfers</h2>
           <p>Your data may be processed and stored in jurisdictions outside your country of residence where our servers and service providers are located. We ensure appropriate safeguards are in place for international data transfers, including standard contractual clauses and data processing agreements that comply with applicable data protection regulations.</p>
         </section>
 
