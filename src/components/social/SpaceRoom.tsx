@@ -64,6 +64,10 @@ interface ParticipantInfo {
   audioTrack: boolean;
   canPublish: boolean;
   handRaised?: boolean;
+  hasVideo?: boolean;
+  hasScreenShare?: boolean;
+  videoTrack?: any;
+  screenShareTrack?: any;
 }
 
 interface ProfileInfo {
