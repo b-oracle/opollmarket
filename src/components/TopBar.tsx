@@ -60,6 +60,7 @@ const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boo
 
 const TopBar = () => {
   const { user, isSuperAdmin, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [showMenu, setShowMenu] = useState(false);
