@@ -277,6 +277,7 @@ const ConversationList = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

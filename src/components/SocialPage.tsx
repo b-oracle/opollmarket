@@ -263,7 +263,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               <h2 className="text-lg font-bold flex-1">Social</h2>
             </div>
 
-            <div className="px-4 py-4 space-y-4">
+            <div className="flex-1 overflow-y-auto min-h-0 px-4 py-4 space-y-4" style={{ WebkitOverflowScrolling: "touch" } as React.CSSProperties}>
               {/* Mini profile card */}
               <div className="glass rounded-2xl p-4 flex items-center gap-3">
                 <div className="relative shrink-0">
