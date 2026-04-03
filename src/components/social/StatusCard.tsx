@@ -420,3 +420,4 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
 };
 
 export default StatusCard;
+
