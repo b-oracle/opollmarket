@@ -121,12 +121,14 @@ if (typeof window !== "undefined") {
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
 const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
 
-const noFooterRoutes = ["/feed", "/quick-trade"];
+const noFooterRoutes = ["/feed", "/quick-trade", "/messages"];
+
+const isFullscreenRoute = (pathname: string) => pathname.startsWith("/messages");
 
 const ConditionalFooter = () => {
   const location = useLocation();
   if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
-  if (noFooterRoutes.includes(location.pathname)) return null;
+  if (noFooterRoutes.includes(location.pathname) || isFullscreenRoute(location.pathname)) return null;
   return <DesktopFooter />;
 };
 
@@ -140,9 +142,10 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = isAdminRoute(location.pathname);
   const isEmbed = isEmbedRoute(location.pathname);
+  const isFullscreen = isFullscreenRoute(location.pathname);
   const { collapsed } = useSidebarState();
   const ml = (isAdmin || isEmbed) ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
-  return <div className={`${ml} min-h-screen flex flex-col transition-all duration-300`}>{children}</div>;
+  return <div className={`${ml} ${isFullscreen ? "h-[100dvh] overflow-hidden" : "min-h-screen"} flex flex-col transition-all duration-300`}>{children}</div>;
 };
 
 const PageFallback = () => (
