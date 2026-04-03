@@ -103,11 +103,11 @@ const Referrals = () => {
     queryKey: ["referral_reward_amount"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("commission_settings")
+        .from("public_commission_settings" as any)
         .select("referral_reward_amount")
         .limit(1)
         .single();
-      return Number(data?.referral_reward_amount ?? 5);
+      return Number((data as any)?.referral_reward_amount ?? 5);
     },
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
