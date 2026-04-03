@@ -2096,8 +2096,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           </div>
         )}
 
-        {/* Embedded YouTube Stream */}
-        {streamUrl && isYouTubeUrl(streamUrl) && !streamCollapsed && (
+        {/* Embedded Stream (YouTube / StreamYard) */}
+        {streamUrl && isStreamUrl(streamUrl) && !streamCollapsed && (
           <div className="relative border-b border-border">
             <YouTubeEmbed url={streamUrl} className="w-full aspect-video" />
             <button
