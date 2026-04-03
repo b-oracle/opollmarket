@@ -448,6 +448,8 @@ const Commissions = () => {
     });
 
     (giftsSent ?? []).forEach((g: any) => {
+      const counterpartyName = g.counterpartyId && giftProfiles?.[g.counterpartyId]?.display_name;
+      const toLabel = counterpartyName ? ` to ${counterpartyName}` : "";
       records.push({
         id: g.id,
         category: "gift_sent",
@@ -455,11 +457,13 @@ const Commissions = () => {
         date: g.created_at,
         status: "released",
         emoji: g.emoji,
-        description: `Sent ${g.emoji} gift${g.source === "dm" ? " (DM)" : ""}`,
+        description: `Sent ${g.emoji}${toLabel}${g.source === "dm" ? " (DM)" : ""}`,
       });
     });
 
     (giftsReceived ?? []).forEach((g: any) => {
+      const counterpartyName = g.counterpartyId && giftProfiles?.[g.counterpartyId]?.display_name;
+      const fromLabel = counterpartyName ? ` from ${counterpartyName}` : "";
       records.push({
         id: g.id,
         category: "gift_received",
@@ -467,7 +471,7 @@ const Commissions = () => {
         date: g.created_at,
         status: "released",
         emoji: g.emoji,
-        description: `Received ${g.emoji} gift${g.source === "dm" ? " (DM)" : ""}`,
+        description: `Received ${g.emoji}${fromLabel}${g.source === "dm" ? " (DM)" : ""}`,
       });
     });
 
