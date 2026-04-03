@@ -143,7 +143,7 @@ const ChatView = () => {
   };
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
       <SEOHead title={`Chat with ${otherName} | Pollmarket`} description="Direct message" />
       {/* Header */}
       <div className="bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
