@@ -2523,6 +2523,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               </button>
             )}
 
+            {/* Flip camera — only when camera is active */}
+            {canUseVideo && cameraOn && (
+              <button onClick={flipCamera}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-muted text-muted-foreground hover:bg-accent"
+                title={facingBack ? "Switch to front camera" : "Switch to back camera"}>
+                <SwitchCamera className="w-5 h-5" />
+              </button>
+            )}
+
             {/* Screen share toggle — verified hosts/co-hosts */}
             {canUseVideo && hasModPowers && (
               <button onClick={toggleScreenShare}
