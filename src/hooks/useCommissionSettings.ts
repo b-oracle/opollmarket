@@ -29,6 +29,7 @@ export interface CommissionSettings {
   osure_50_premium: number;
   osure_100_premium: number;
   social_ad_price: number;
+  ai_generation_cost: number;
 }
 
 export const useCommissionSettings = () => {
