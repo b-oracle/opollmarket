@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, SmilePlus } from "lucide-react";
+import { Gift } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import ChatLinkPreview from "./ChatLinkPreview";
@@ -37,8 +37,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
-  const [tapped, setTapped] = useState(false);
-  const tapTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
   const isGift = m.gift_amount != null && m.gift_amount > 0;
   const reactions: Record<string, string[]> = (m.reactions as any) || {};
@@ -64,11 +63,26 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     setShowReactions(false);
   }, [user, reactions, m.id, conversationId, queryClient]);
 
-  const handleTap = useCallback(() => {
-    setTapped(true);
-    clearTimeout(tapTimeout.current);
-    tapTimeout.current = setTimeout(() => setTapped(false), 3000);
+  // Long-press: works on both touch and mouse
+  const startPress = useCallback(() => {
+    longPressTimer.current = setTimeout(() => {
+      setShowReactions(true);
+    }, 400);
   }, []);
+
+  const cancelPress = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+  }, []);
+
+  const pressHandlers = {
+    onTouchStart: startPress,
+    onTouchEnd: cancelPress,
+    onTouchMove: cancelPress,
+    onMouseDown: startPress,
+    onMouseUp: cancelPress,
+    onMouseLeave: cancelPress,
+    onContextMenu: (e: React.MouseEvent) => { e.preventDefault(); setShowReactions(true); },
+  };
 
   const reactionEntries = Object.entries(reactions).filter(([, users]) => users.length > 0);
 
@@ -80,17 +94,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     const path = link.replace(/https?:\/\/[^/]+/, "");
     navigate(path.startsWith("/") ? path : `/${path}`);
   };
-
-  const reactionButton = (
-    <button
-      onClick={(e) => { e.stopPropagation(); setShowReactions(true); }}
-      className={`absolute ${isMine ? "-left-8" : "-right-8"} top-1/2 -translate-y-1/2 p-1 rounded-full bg-muted/80 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all ${
-        tapped ? "opacity-100 scale-100" : "opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100"
-      }`}
-    >
-      <SmilePlus className="w-4 h-4" />
-    </button>
-  );
 
   const reactionBadges = reactionEntries.length > 0 && (
     <div className="flex flex-wrap gap-1 mt-1">
@@ -112,13 +115,13 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
   if (isGift) {
     return (
-      <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
-        <div className="relative">
+      <div className={`flex ${isMine ? "justify-end" : "justify-start"} relative`}>
+        <div className="relative max-w-[75%]">
           <div
-            className={`max-w-[75%] rounded-2xl px-4 py-3 border ${
+            className={`rounded-2xl px-4 py-3 border select-none ${
               isMine ? "bg-primary/10 border-primary/20" : "bg-accent/30 border-accent/50"
             }`}
-            onClick={handleTap}
+            {...pressHandlers}
           >
             <div className="flex items-center gap-2 mb-1">
               <Gift className="w-4 h-4 text-primary" />
@@ -128,26 +131,27 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             <p className="text-[10px] text-muted-foreground mt-1">
               {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
             </p>
-            {reactionBadges}
           </div>
-          {reactionButton}
+          {reactionBadges}
+          {showReactions && (
+            <ReactionPicker onSelect={toggleReaction} onClose={() => setShowReactions(false)} isMine={isMine} />
+          )}
         </div>
-        {showReactions && <ReactionPicker onSelect={toggleReaction} onClose={() => setShowReactions(false)} isMine={isMine} />}
       </div>
     );
   }
 
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
+    <div className={`flex ${isMine ? "justify-end" : "justify-start"} relative`}>
       <div className="relative max-w-[75%]">
         <div className="space-y-1">
           <div
-            className={`rounded-2xl px-3.5 py-2 ${
+            className={`rounded-2xl px-3.5 py-2 select-none ${
               isMine
                 ? "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-muted text-foreground rounded-bl-md"
             }`}
-            onClick={handleTap}
+            {...pressHandlers}
           >
             {cleanContent && (
               <p className="text-sm whitespace-pre-wrap break-words">{cleanContent}</p>
@@ -163,9 +167,10 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
           {reactionBadges}
         </div>
-        {reactionButton}
+        {showReactions && (
+          <ReactionPicker onSelect={toggleReaction} onClose={() => setShowReactions(false)} isMine={isMine} />
+        )}
       </div>
-      {showReactions && <ReactionPicker onSelect={toggleReaction} onClose={() => setShowReactions(false)} isMine={isMine} />}
     </div>
   );
 };
@@ -173,12 +178,14 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 const ReactionPicker = ({ onSelect, onClose, isMine }: { onSelect: (e: string) => void; onClose: () => void; isMine: boolean }) => (
   <>
     <div className="fixed inset-0 z-40" onClick={onClose} />
-    <div className={`absolute ${isMine ? "right-0" : "left-0"} -top-10 z-50 flex gap-1 bg-background border border-border rounded-full px-2 py-1 shadow-lg`}>
+    <div
+      className={`absolute ${isMine ? "right-0" : "left-0"} -top-11 z-50 flex gap-1 bg-background border border-border rounded-full px-2 py-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150`}
+    >
       {REACTION_EMOJIS.map((emoji) => (
         <button
           key={emoji}
           onClick={() => onSelect(emoji)}
-          className="text-lg hover:scale-125 transition-transform active:scale-95 p-0.5"
+          className="text-xl hover:scale-125 transition-transform active:scale-95 p-1"
         >
           {emoji}
         </button>
