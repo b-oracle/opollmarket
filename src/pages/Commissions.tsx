@@ -114,7 +114,7 @@ const Commissions = () => {
     setWithdrawDest(null);
     setWithdrawAmount("");
     queryClient.invalidateQueries({ queryKey: ["balance"] });
-  
+  };
 
   // Fetch pending_commissions (creator + referral, released + pending)
   const { data: pendingCommissions, isLoading: loadingPC } = useQuery({
