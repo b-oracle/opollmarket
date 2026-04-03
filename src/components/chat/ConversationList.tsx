@@ -59,19 +59,19 @@ const ConversationList = () => {
           .eq("conversation_id", c.id)
           .order("created_at", { ascending: false })
           .limit(1)
-          .maybeSingle();
+          .maybeSingle() as any;
 
         const { count: unread } = await supabase
           .from("dm_messages" as any)
           .select("id", { count: "exact", head: true })
           .eq("conversation_id", c.id)
           .neq("sender_id", user.id)
-          .is("read_at", null);
+          .is("read_at", null) as any;
 
         results.push({
           ...c,
           other_user: profileMap.get(otherId) || { id: otherId, display_name: "User", avatar_url: null },
-          last_message: lastMsg?.gift_amount ? `🎁 Gift $${lastMsg.gift_amount}` : lastMsg?.content || "",
+          last_message: (lastMsg as any)?.gift_amount ? `🎁 Gift $${(lastMsg as any).gift_amount}` : (lastMsg as any)?.content || "",
           unread_count: unread || 0,
         });
       }
