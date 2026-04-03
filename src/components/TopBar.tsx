@@ -149,6 +149,13 @@ const TopBar = () => {
                     >
                       <User className="w-4 h-4" /> Profile
                     </button>
+                    <div className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-accent/50 transition-colors text-sm cursor-pointer" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                      <span className="flex items-center gap-2">
+                        {theme === "dark" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                        Dark Mode
+                      </span>
+                      <Switch checked={theme === "dark"} onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} className="scale-90" />
+                    </div>
                     <button
                       onClick={() => { setShowMenu(false); setSignOutOpen(true); }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 transition-colors text-sm text-destructive"
