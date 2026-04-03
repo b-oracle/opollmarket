@@ -122,16 +122,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
         }));
         await supabase.from("space_invites" as any).insert(inviteRows);
 
-        // Send notifications to invitees
-        const notifs = invitees.map((u) => ({
-          user_id: u.id,
-          title: "Space Invite 🎙️",
-          message: `You've been invited to join "${trimmed}"`,
-          type: "info",
-          actor_id: user.id,
-          market_id: spaceId,
-        }));
-        await supabase.from("notifications").insert(notifs);
+        // Notifications are now handled automatically by a database trigger on space_invites
       }
 
       if (mode === "live") {
