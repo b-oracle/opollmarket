@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Validate market is active and not expired
     const { data: marketCheck, error: marketCheckErr } = await supabase
       .from("markets")
-      .select("status, end_date, creator_wallet, market_type")
+      .select("status, end_date, creator_wallet, market_type, api_key_id")
       .eq("id", marketId)
       .single();
 
@@ -295,6 +295,49 @@ Deno.serve(async (req) => {
         releases_at: releasesAt,
       }).select("id").single();
       if (bc400Comm) insertedCommissionIds.push(bc400Comm.id);
+    }
+
+    // Partner revenue share for API-created markets
+    if (marketCheck.api_key_id) {
+      try {
+        const { data: apiKey } = await supabase
+          .from("api_keys")
+          .select("id, affiliate_commission_percent")
+          .eq("id", marketCheck.api_key_id)
+          .eq("is_active", true)
+          .maybeSingle();
+
+        if (apiKey) {
+          const partnerPercent = Number(apiKey.affiliate_commission_percent || 5) / 100;
+          const partnerAmountRaw = totalFees * partnerPercent;
+          const partnerAmount = partnerAmountRaw >= 0.01 ? Math.round(partnerAmountRaw * 100) / 100 : 0;
+
+          if (partnerAmount > 0) {
+            const { data: partnerComm } = await supabase.from("pending_commissions").insert({
+              user_id: "00000000-0000-0000-0000-000000000000",
+              market_id: marketId,
+              amount: partnerAmount,
+              type: "partner",
+              status: "pending",
+              releases_at: releasesAt,
+            }).select("id").single();
+            if (partnerComm) insertedCommissionIds.push(partnerComm.id);
+
+            // Track in affiliate_earnings
+            await supabase.from("affiliate_earnings").insert({
+              api_key_id: apiKey.id,
+              transaction_id: "00000000-0000-0000-0000-000000000000",
+              bet_amount: amount,
+              fee_amount: totalFees,
+              commission_percent: apiKey.affiliate_commission_percent || 5,
+              commission_amount: partnerAmount,
+              status: "pending",
+            });
+          }
+        }
+      } catch (partnerErr) {
+        console.warn("Partner revenue share tracking failed (non-critical):", partnerErr);
+      }
     }
 
     const poolAmount = netAmount;

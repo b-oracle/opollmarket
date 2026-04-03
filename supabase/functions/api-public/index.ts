@@ -386,6 +386,7 @@ Deno.serve(async (req) => {
           resolution_source: resolutionSource || "manual",
           creator_wallet: userId,
           creator_name: "API User",
+          api_key_id: apiKeyRecord.id,
           initial_liquidity: liquidity,
           liquidity,
           status: "active",
