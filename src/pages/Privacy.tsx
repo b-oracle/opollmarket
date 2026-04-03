@@ -275,11 +275,11 @@ const Privacy = () => {
         </section>
 
         <section id="contact" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">14. Contact Us</h2>
+          <h2 className="text-base font-semibold text-foreground">18. Contact Us</h2>
           <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us through the Platform's support channels or via the contact information provided in the application. We aim to respond to all inquiries within 30 days.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 3, 2026</p>
       </div>
       <BackToTop />
     </div>
