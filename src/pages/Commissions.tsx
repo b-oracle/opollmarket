@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending" | "gift_sent" | "gift_received" | "bonus" | "osure";
 
@@ -63,6 +64,8 @@ const Commissions = () => {
   const ITEMS_PER_PAGE = 15;
   const queryClient = useQueryClient();
   const { balance, giftBalance, bonusBalance, rewardsBalance, insuranceBalance, totalGiftBalance, isLoading: balLoading } = useUserBalance();
+  const { data: commSettings } = useCommissionSettings();
+  const giftFeePercent = commSettings?.gift_fee_percent ?? 2;
 
   const handleTopUp = async () => {
     const amt = Number(topUpAmount);
@@ -495,7 +498,9 @@ const Commissions = () => {
           {/* Amount & Date */}
           <div className="flex justify-between text-[11px]">
             <span className="text-muted-foreground">Amount</span>
-            <span className="font-semibold text-green-500">+{formatAmount(record.amount)}</span>
+            <span className={`font-semibold ${record.category === "gift_sent" ? "text-red-500" : "text-green-500"}`}>
+              {record.category === "gift_sent" ? "-" : "+"}{formatAmount(record.amount)}
+            </span>
           </div>
           <div className="flex justify-between text-[11px]">
             <span className="text-muted-foreground">Date</span>
@@ -567,6 +572,28 @@ const Commissions = () => {
                 <ExternalLink className="w-3 h-3 shrink-0" />
               </Link>
             </div>
+          )}
+
+          {/* Fee breakdown for gifts */}
+          {(record.category === "gift_sent" || record.category === "gift_received") && (
+            <>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-muted-foreground">Platform Fee</span>
+                <span className="text-foreground">{giftFeePercent}%</span>
+              </div>
+              {record.category === "gift_sent" && (
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-muted-foreground">Recipient Gets</span>
+                  <span className="text-foreground">{formatAmount(record.amount * (1 - giftFeePercent / 100))}</span>
+                </div>
+              )}
+              {record.category === "gift_received" && (
+                <div className="flex justify-between text-[11px]">
+                  <span className="text-muted-foreground">Net (after fee)</span>
+                  <span className="text-green-500 font-semibold">{formatAmount(record.amount)}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </motion.div>
