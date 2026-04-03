@@ -37,6 +37,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<InviteUser[]>([]);
   const [searching, setSearching] = useState(false);
+  const [streamUrl, setStreamUrl] = useState("");
 
   useEffect(() => {
     if (!user) return;
