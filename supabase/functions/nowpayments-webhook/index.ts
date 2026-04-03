@@ -225,6 +225,15 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
   console.log(`Credited $${creditAmount} (${finalStatus}) to user ${userId}`);
 
+  // Welcome bonus check (only on full confirmation)
+  if (!isPartial) {
+    try {
+      await processWelcomeBonus(supabase, userId, Number(creditAmount));
+    } catch (wbErr) {
+      console.error("Welcome bonus error:", wbErr);
+    }
+  }
+
   // Settle any outstanding debts from this user's balance
   try {
     const { data: debtResult } = await supabase.rpc("settle_user_debts", { _user_id: userId });
