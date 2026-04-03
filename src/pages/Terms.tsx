@@ -94,7 +94,11 @@ const Terms = () => {
             <li><strong>Copy trade</strong> by following successful traders and automatically replicating their predictions and Quick Trades.</li>
             <li><strong>Earn verification badges</strong> (Blue Tick, Gold Tick) by holding qualifying BC400 tokens and/or NFTs, unlocking benefits such as trending boosts and revenue share bonus.</li>
             <li><strong>Boost markets</strong> to increase visibility through paid promotional tiers.</li>
-            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Engage socially</strong> by commenting on markets, liking content, bookmarking markets, following users, posting status updates, sharing stories, and sharing via integrated social channels (X/Twitter, Telegram, WhatsApp).</li>
+            <li><strong>Direct message</strong> mutual follows with text and emoji gifts through a secure in-app messaging system.</li>
+            <li><strong>Host and join Spaces</strong> — live audio/video rooms for real-time discussions with gifting capabilities.</li>
+            <li><strong>Share Stories</strong> — ephemeral visual posts that expire after 24 hours.</li>
+            <li><strong>Complete KYC verification</strong> to unlock higher daily withdrawal limits.</li>
             <li><strong>Participate in a referral program</strong> to earn bonus rewards for introducing new users.</li>
             <li><strong>View real-time data</strong> including order book depth, price history charts, live trade feeds, and live sports scores.</li>
           </ul>
