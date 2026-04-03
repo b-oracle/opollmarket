@@ -122,13 +122,9 @@ Deno.serve(async (req) => {
 
       const hasGoldTokens = tokenBalance >= minGoldTokenBalance;
 
-      // NFT verification requires using NFT as avatar
-      const usingNftAvatar = !!profile.avatar_url && !profile.avatar_url.includes("/storage/v1/");
-      const isNftVerified = hasNft && usingNftAvatar;
-
       let level = "none";
-      if (isNftVerified && hasGoldTokens) level = "gold";
-      else if (isNftVerified || hasTokens) level = "blue";
+      if (hasNft && hasGoldTokens) level = "gold";
+      else if (hasNft || hasTokens) level = "blue";
 
       await adminClient
         .from("profiles")
