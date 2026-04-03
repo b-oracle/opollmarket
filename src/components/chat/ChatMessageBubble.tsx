@@ -37,8 +37,9 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
-  const [tapped, setTapped] = useState(false);
-  const tapTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
   const isGift = m.gift_amount != null && m.gift_amount > 0;
   const reactions: Record<string, string[]> = (m.reactions as any) || {};
@@ -64,10 +65,31 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     setShowReactions(false);
   }, [user, reactions, m.id, conversationId, queryClient]);
 
-  const handleTap = useCallback(() => {
-    setTapped(true);
-    clearTimeout(tapTimeout.current);
-    tapTimeout.current = setTimeout(() => setTapped(false), 3000);
+  const openPicker = useCallback(() => {
+    if (!bubbleRef.current) return;
+    const rect = bubbleRef.current.getBoundingClientRect();
+    setPickerPos({
+      top: rect.top - 44,
+      left: Math.max(8, Math.min(rect.left + rect.width / 2 - 100, window.innerWidth - 208)),
+    });
+    setShowReactions(true);
+    if (navigator.vibrate) navigator.vibrate(10);
+  }, []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Only primary button
+    if (e.button !== 0) return;
+    longPressTimer.current = setTimeout(() => {
+      openPicker();
+    }, 500);
+  }, [openPicker]);
+
+  const handlePointerUp = useCallback(() => {
+    clearTimeout(longPressTimer.current);
+  }, []);
+
+  const handlePointerCancel = useCallback(() => {
+    clearTimeout(longPressTimer.current);
   }, []);
 
   const reactionEntries = Object.entries(reactions).filter(([, users]) => users.length > 0);
@@ -81,14 +103,12 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     navigate(path.startsWith("/") ? path : `/${path}`);
   };
 
-  const reactionButton = (
+  const smileyButton = (
     <button
-      onClick={(e) => { e.stopPropagation(); setShowReactions(true); }}
-      className={`absolute ${isMine ? "-left-8" : "-right-8"} top-1/2 -translate-y-1/2 p-1 rounded-full bg-muted/80 border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all ${
-        tapped ? "opacity-100 scale-100" : "opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100"
-      }`}
+      onClick={(e) => { e.stopPropagation(); openPicker(); }}
+      className={`absolute ${isMine ? "-left-7" : "-right-7"} top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-all`}
     >
-      <SmilePlus className="w-4 h-4" />
+      <SmilePlus className="w-3.5 h-3.5" />
     </button>
   );
 
@@ -110,15 +130,42 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     </div>
   );
 
+  const pickerOverlay = showReactions && pickerPos && (
+    <>
+      <div className="fixed inset-0 z-40" onClick={() => setShowReactions(false)} />
+      <div
+        className="fixed z-50 flex gap-1 bg-background border border-border rounded-full px-2 py-1 shadow-lg"
+        style={{ top: pickerPos.top, left: pickerPos.left }}
+      >
+        {REACTION_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => toggleReaction(emoji)}
+            className="text-lg hover:scale-125 transition-transform active:scale-95 p-0.5"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  const pointerProps = {
+    onPointerDown: handlePointerDown,
+    onPointerUp: handlePointerUp,
+    onPointerCancel: handlePointerCancel,
+    onPointerLeave: handlePointerCancel,
+  };
+
   if (isGift) {
     return (
       <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
-        <div className="relative">
+        <div className="relative" ref={bubbleRef}>
           <div
-            className={`max-w-[75%] rounded-2xl px-4 py-3 border ${
+            className={`max-w-[75%] rounded-2xl px-4 py-3 border select-none touch-none ${
               isMine ? "bg-primary/10 border-primary/20" : "bg-accent/30 border-accent/50"
             }`}
-            onClick={handleTap}
+            {...pointerProps}
           >
             <div className="flex items-center gap-2 mb-1">
               <Gift className="w-4 h-4 text-primary" />
@@ -130,24 +177,24 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             </p>
             {reactionBadges}
           </div>
-          {reactionButton}
+          {smileyButton}
         </div>
-        {showReactions && <ReactionPicker onSelect={toggleReaction} onClose={() => setShowReactions(false)} isMine={isMine} />}
+        {pickerOverlay}
       </div>
     );
   }
 
   return (
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
-      <div className="relative max-w-[75%]">
+      <div className="relative max-w-[75%]" ref={bubbleRef}>
         <div className="space-y-1">
           <div
-            className={`rounded-2xl px-3.5 py-2 ${
+            className={`rounded-2xl px-3.5 py-2 select-none touch-none ${
               isMine
                 ? "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-muted text-foreground rounded-bl-md"
             }`}
-            onClick={handleTap}
+            {...pointerProps}
           >
             {cleanContent && (
               <p className="text-sm whitespace-pre-wrap break-words">{cleanContent}</p>
@@ -163,28 +210,11 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
           {reactionBadges}
         </div>
-        {reactionButton}
+        {smileyButton}
       </div>
-      {showReactions && <ReactionPicker onSelect={toggleReaction} onClose={() => setShowReactions(false)} isMine={isMine} />}
+      {pickerOverlay}
     </div>
   );
 };
-
-const ReactionPicker = ({ onSelect, onClose, isMine }: { onSelect: (e: string) => void; onClose: () => void; isMine: boolean }) => (
-  <>
-    <div className="fixed inset-0 z-40" onClick={onClose} />
-    <div className={`absolute ${isMine ? "right-0" : "left-0"} -top-10 z-50 flex gap-1 bg-background border border-border rounded-full px-2 py-1 shadow-lg`}>
-      {REACTION_EMOJIS.map((emoji) => (
-        <button
-          key={emoji}
-          onClick={() => onSelect(emoji)}
-          className="text-lg hover:scale-125 transition-transform active:scale-95 p-0.5"
-        >
-          {emoji}
-        </button>
-      ))}
-    </div>
-  </>
-);
 
 export default ChatMessageBubble;
