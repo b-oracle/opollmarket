@@ -1065,6 +1065,23 @@ const AdminSettings = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Gift Fee */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Gift Fee
+                </CardTitle>
+                <CardDescription className="text-xs">Fee charged on all emoji gift transactions (Spaces & DMs). The fee is deducted from the gift amount before crediting the recipient.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="giftFeePercent" className="text-xs">Gift Fee (%)</Label>
+                  <Input id="giftFeePercent" type="number" min={0} max={100} step={0.5} value={giftFeePercent} onChange={(e) => setGiftFeePercent(e.target.value)} disabled={!canEdit} />
+                  <p className="text-[10px] text-muted-foreground">Current: {giftFeePercentNum}% — e.g. $1.00 gift → recipient gets ${(1 - 1 * giftFeePercentNum / 100).toFixed(2)}</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
