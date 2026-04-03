@@ -1165,6 +1165,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     }
   };
 
+  const flipCamera = async () => {
+    if (!roomRef.current || !cameraOn) return;
+    try {
+      const newFacing = !facingBack;
+      await roomRef.current.localParticipant.setCameraEnabled(false);
+      await roomRef.current.localParticipant.setCameraEnabled(true, {
+        facingMode: newFacing ? "environment" : "user",
+      });
+      setFacingBack(newFacing);
+      updateParticipants(roomRef.current);
+    } catch {
+      toast.error("Failed to switch camera");
+    }
+  };
+
   const toggleScreenShare = async () => {
     if (!roomRef.current || !canUseVideo) {
       if (!isVerified) toast.error("Screen sharing is available for verified users only");
