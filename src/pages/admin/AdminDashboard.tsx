@@ -297,6 +297,10 @@ const AdminDashboard = () => {
         partialDepositsAmount,
         partialDepositCount: partialDepositCount.count ?? 0,
         providerBreakdown,
+        dmConversations: dmConvos.count ?? 0,
+        dmMessages: dmMsgs.count ?? 0,
+        dmGiftsTotal,
+        dmGiftsCount,
       });
 
       // Category breakdown
