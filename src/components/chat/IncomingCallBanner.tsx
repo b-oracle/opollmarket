@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
+import { playRingtone } from "@/lib/sounds";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
