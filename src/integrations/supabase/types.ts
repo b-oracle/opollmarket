@@ -3512,14 +3512,66 @@ export type Database = {
           },
         ]
       }
+      public_orderbook: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          id: string | null
+          limit_price: number | null
+          market_id: string | null
+          option_id: string | null
+          order_type: string | null
+          shares: number | null
+          side: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          limit_price?: number | null
+          market_id?: string | null
+          option_id?: string | null
+          order_type?: string | null
+          shares?: number | null
+          side?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          created_at?: string | null
+          id?: string | null
+          limit_price?: number | null
+          market_id?: string | null
+          option_id?: string | null
+          order_type?: string | null
+          shares?: number | null
+          side?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "limit_orders_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "limit_orders_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
-          age: number | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
           display_name: string | null
-          gender: string | null
           id: string | null
           interests: string[] | null
           is_public: boolean | null
@@ -3528,16 +3580,16 @@ export type Database = {
           social_tutorial_seen: boolean | null
           twitter_avatar_url: string | null
           twitter_username: string | null
+          unlimited_markets: boolean | null
+          updated_at: string | null
           verification_level: string | null
           wallet_address: string | null
         }
         Insert: {
-          age?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
-          gender?: string | null
           id?: string | null
           interests?: string[] | null
           is_public?: boolean | null
@@ -3546,16 +3598,16 @@ export type Database = {
           social_tutorial_seen?: boolean | null
           twitter_avatar_url?: string | null
           twitter_username?: string | null
+          unlimited_markets?: boolean | null
+          updated_at?: string | null
           verification_level?: string | null
           wallet_address?: string | null
         }
         Update: {
-          age?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
-          gender?: string | null
           id?: string | null
           interests?: string[] | null
           is_public?: boolean | null
@@ -3564,6 +3616,8 @@ export type Database = {
           social_tutorial_seen?: boolean | null
           twitter_avatar_url?: string | null
           twitter_username?: string | null
+          unlimited_markets?: boolean | null
+          updated_at?: string | null
           verification_level?: string | null
           wallet_address?: string | null
         }
