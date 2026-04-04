@@ -1,36 +1,55 @@
 
 
-## Restrict Sound Reactions and Music to Hosts/Co-Hosts
+## Reply-to-Message in Live Space Chat
 
-### Current State
-The UI already hides sound reaction buttons and music controls behind `hasModPowers` (line 2429 of `SpaceRoom.tsx`). However, the underlying functions (`sendSoundReaction`, `toggleAmbientMusic`, `handleDeviceMusicFile`) do not have permission checks, meaning a modified client or stale UI state could still trigger them.
+### Overview
+Add the ability for space chat participants to reply to specific messages, showing a quoted preview of the original message above the reply — similar to Twitter/WhatsApp reply threads.
 
-### What's Already Working
-- Sound reaction buttons (drum roll, air horn, music, applause, etc.) are only rendered for hosts and co-hosts
-- Ambient music menu is only rendered for hosts and co-hosts
-- Device music upload is only rendered for hosts and co-hosts
+### Database Change
+**Migration: Add `reply_to_id` and `reply_to_content` columns to `space_messages`**
 
-### Changes Needed
+```sql
+ALTER TABLE public.space_messages
+  ADD COLUMN reply_to_id uuid REFERENCES public.space_messages(id) ON DELETE SET NULL,
+  ADD COLUMN reply_to_content text,
+  ADD COLUMN reply_to_name text;
+```
 
-**File: `src/components/social/SpaceRoom.tsx`**
+We store denormalized `reply_to_content` and `reply_to_name` so we don't need a join or extra query to render the quoted message — keeps the chat fast.
 
-1. Add an early-return guard to `sendSoundReaction`:
-   ```
-   if (!hasModPowers) return;
-   ```
+### Code Changes
 
-2. Add an early-return guard to `toggleAmbientMusic`:
-   ```
-   if (!hasModPowers) return;
-   ```
+**1. Update `ChatMessage` interface (`SpaceRoom.tsx`)**
+- Add `replyToId?: string`, `replyToContent?: string`, `replyToName?: string` fields
 
-3. Add an early-return guard to `handleDeviceMusicFile`:
-   ```
-   if (!hasModPowers) return;
-   ```
+**2. Add reply state**
+- New state: `replyTo: { id: string; name: string; text: string } | null`
+- A "Reply" button appears on hover/tap alongside the existing reaction buttons
+- When set, a small banner appears above the chat input showing "Replying to **Name**: message preview..." with a cancel (X) button
 
-These guards use the same `hasModPowers` variable (derived from `isHost || isCoHost`) that already controls the UI visibility, ensuring consistency even if the UI re-renders with stale state.
+**3. Update `sendChat()` function**
+- Include `reply_to_id`, `reply_to_content`, `reply_to_name` in both the data-channel broadcast and the DB insert when `replyTo` is set
+- Clear `replyTo` after sending
 
-### Summary
-Three one-line additions to enforce host/co-host-only sound playback at the function level, matching the existing UI gating.
+**4. Update message loading and realtime handler**
+- Map `reply_to_id`, `reply_to_content`, `reply_to_name` from DB rows and realtime payloads into the `ChatMessage` object
+
+**5. Update message rendering**
+- When a message has `replyToContent`, render a small quoted block above the message text:
+  ```
+  ┌──────────────────────┐
+  │ ↩ Name               │  ← muted, smaller text
+  │ Original message...  │  ← truncated to ~60 chars
+  ├──────────────────────┤
+  │ Reply text           │  ← normal message
+  │                 9:42 │
+  └──────────────────────┘
+  ```
+- Tapping the quoted block scrolls to the original message (if still in view)
+
+### Files Changed
+| File | Change |
+|------|--------|
+| Migration SQL | Add `reply_to_id`, `reply_to_content`, `reply_to_name` to `space_messages` |
+| `src/components/social/SpaceRoom.tsx` | Add reply state, reply UI banner, update `sendChat`, update message rendering with quoted block, add Reply button alongside reactions |
 
