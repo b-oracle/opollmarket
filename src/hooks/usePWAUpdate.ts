@@ -219,8 +219,11 @@ export const usePWAUpdate = () => {
       waitingSW.postMessage({ type: "SKIP_WAITING" });
     }
 
-    // Also call the vite-pwa helper
+    // Call the vite-pwa helper then do a single controlled reload
     updateServiceWorker(true);
+
+    // Give the new SW a moment to activate, then reload once
+    setTimeout(() => window.location.reload(), 600);
   }, [blockedContext, waitingSW, updateServiceWorker]);
 
   const dismiss = useCallback(() => {
