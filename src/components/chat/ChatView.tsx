@@ -64,23 +64,10 @@ const ChatView = () => {
   const otherVerification = ((convo as any)?.other_user?.verification_level || "none") as VerificationLevel;
 
   // Determine if current user is the recipient of a pending request
-  const { data: firstMessage } = useQuery({
-    queryKey: ["dm-first-message", conversationId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("dm_messages" as any)
-        .select("sender_id")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true })
-        .limit(1)
-        .maybeSingle() as any;
-      return data;
-    },
-    enabled: !!conversationId && convStatus === "pending",
-  });
-
-  const isRecipientOfRequest = convStatus === "pending" && firstMessage && (firstMessage as any).sender_id !== user?.id;
-  const isSenderOfRequest = convStatus === "pending" && firstMessage && (firstMessage as any).sender_id === user?.id;
+  // user_a is always the initiator of the conversation
+  const isInitiator = convo ? (convo as any).user_a === user?.id : false;
+  const isRecipientOfRequest = convStatus === "pending" && !isInitiator && !!convo;
+  const isSenderOfRequest = convStatus === "pending" && isInitiator && !!convo;
 
   const { data: messages = [] } = useQuery({
     queryKey: ["dm-messages", conversationId],
