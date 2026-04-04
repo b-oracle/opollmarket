@@ -3601,6 +3601,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      can_send_dm: {
+        Args: { _conversation_id: string; _sender_id: string }
+        Returns: boolean
+      }
       claim_market_for_resolution: {
         Args: { _market_id: string }
         Returns: Json
