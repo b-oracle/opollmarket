@@ -28,6 +28,7 @@ interface ChatMessageBubbleProps {
 }
 
 const INTERNAL_LINK_REGEX = /(?:https?:\/\/[^\s]+)?\/(?:market|spaces)\/([a-f0-9-]+)/gi;
+const CALL_MSG_REGEX = /^\[CALL:(ended|missed|declined):(\d+)\]$/;
 
 function extractInternalLinks(content: string): string[] {
   const matches = content.match(INTERNAL_LINK_REGEX);
