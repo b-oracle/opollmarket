@@ -1,0 +1,1 @@
+ALTER TYPE space_status ADD VALUE IF NOT EXISTS 'cancelled';
