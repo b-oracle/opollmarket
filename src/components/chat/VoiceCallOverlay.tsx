@@ -321,7 +321,14 @@ const VoiceCallOverlay = ({
         )}
 
         {status === "active" && (
-          <button className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-foreground">
+          <button
+            onClick={toggleSpeaker}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+              speakerOn
+                ? "bg-primary/20 text-primary ring-2 ring-primary"
+                : "bg-muted text-foreground"
+            }`}
+          >
             <Volume2 className="w-6 h-6" />
           </button>
         )}
