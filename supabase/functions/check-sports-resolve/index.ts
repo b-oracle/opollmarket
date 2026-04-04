@@ -141,17 +141,17 @@ function determineWinningSide(
 
   const outcome = predictedOutcome.toLowerCase().trim();
 
-  if (outcome === "home_win" || outcome === "home") {
+  if (outcome === "home_win" || outcome === "home" || outcome === "fighter1_win") {
     return result.winner === "home" ? "yes" : "no";
   }
-  if (outcome === "away_win" || outcome === "away") {
+  if (outcome === "away_win" || outcome === "away" || outcome === "fighter2_win") {
     return result.winner === "away" ? "yes" : "no";
   }
   if (outcome === "draw") {
     return result.winner === "draw" ? "yes" : "no";
   }
 
-  // Team name matching
+  // Team/fighter name matching
   if (result.homeTeam.toLowerCase().includes(outcome) || outcome.includes(result.homeTeam.toLowerCase())) {
     return result.winner === "home" ? "yes" : "no";
   }
