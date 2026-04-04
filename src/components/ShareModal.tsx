@@ -375,9 +375,11 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
                   <button onClick={handleTelegram} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors">
                     <Send className="w-3.5 h-3.5" /> Telegram
                   </button>
-                  <button onClick={handleCopyEmbed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors col-span-3">
-                    <Code className="w-3.5 h-3.5" /> Copy Embed Code
-                  </button>
+                  {marketId && (
+                    <button onClick={handleCopyEmbed} className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-muted/50 border border-border/20 text-xs font-semibold hover:bg-muted transition-colors col-span-3">
+                      <Code className="w-3.5 h-3.5" /> Copy Embed Code
+                    </button>
+                  )}
                 </div>
               </div>
 
