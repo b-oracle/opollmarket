@@ -27,7 +27,7 @@ const ConversationList = () => {
   const queryClient = useQueryClient();
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"chats" | "requests">("chats");
+  const [tab, setTab] = useState<"chats" | "requests" | "calls">("chats");
 
   const { data: allConversations = [], isLoading } = useQuery({
     queryKey: ["dm-conversations", user?.id],
