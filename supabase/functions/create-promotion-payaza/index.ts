@@ -1,15 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildPayazaWebhookUrl, encodePayazaAuth } from "../_shared/payaza.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-function encodePayazaAuth(secretKey: string): string {
-  const encoded = btoa(secretKey);
-  return `Payaza ${encoded}`;
-}
 
 const DEFAULT_BOOST_TIERS: Record<string, { durationHours: number; price: number; rank: number }> = {
   flash: { durationHours: 12, price: 20, rank: 1 },
@@ -227,7 +223,11 @@ Deno.serve(async (req) => {
     const payazaBaseUrl = "https://api.payaza.africa";
     const endpoint = "/live/merchant-collection/merchant/virtual_account/generate_virtual_account/";
     const fullUrl = `${payazaBaseUrl}${endpoint}`;
-    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook`;
+    const webhookToken = Deno.env.get("PAYAZA_WEBHOOK_TOKEN");
+    const webhookUrl = buildPayazaWebhookUrl(
+      Deno.env.get("SUPABASE_URL")!,
+      webhookToken,
+    );
 
     const virtualAccountPayload = {
       account_name: firstName,

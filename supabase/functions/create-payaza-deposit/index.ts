@@ -1,16 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildPayazaWebhookUrl, encodePayazaAuth } from "../_shared/payaza.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-// Base64 encode the secret key for Payaza auth header
-function encodePayazaAuth(secretKey: string): string {
-  const encoded = btoa(secretKey);
-  return `Payaza ${encoded}`;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -156,7 +151,10 @@ Deno.serve(async (req) => {
     const fullUrl = `${payazaBaseUrl}${virtualAccountEndpoint}`;
 
     const webhookToken = Deno.env.get("PAYAZA_WEBHOOK_TOKEN");
-    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook${webhookToken ? `?token=${webhookToken}` : ""}`;
+    const webhookUrl = buildPayazaWebhookUrl(
+      Deno.env.get("SUPABASE_URL")!,
+      webhookToken,
+    );
 
     const virtualAccountPayload = {
       account_name: firstName,
