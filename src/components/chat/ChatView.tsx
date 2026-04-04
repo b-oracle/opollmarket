@@ -145,7 +145,8 @@ const ChatView = () => {
       if (!content) setText("");
       queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
-    } catch {
+    } catch (err: any) {
+      console.error("DM send error:", err?.message || err, err?.code, err?.details);
       toast.error("Failed to send message");
     } finally {
       setSending(false);
