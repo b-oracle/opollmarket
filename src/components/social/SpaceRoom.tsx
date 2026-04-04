@@ -455,6 +455,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const deviceMusicOffsetRef = useRef<number>(0);
   const deviceMusicStartTimeRef = useRef<number>(0);
   const deviceFileInputRef = useRef<HTMLInputElement>(null);
+  const [showJamendoBrowser, setShowJamendoBrowser] = useState(false);
 
   // Fetch tagged market IDs for this space + subscribe to realtime updates
   useEffect(() => {
