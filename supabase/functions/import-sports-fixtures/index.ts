@@ -335,8 +335,13 @@ Deno.serve(async (req) => {
             // MMA uses fighters structure instead of teams
             matchId = String(fixture.id || "");
             matchDate = fixture.date || "";
-            homeTeam = fixture.fighters?.first?.name || "Fighter 1";
-            awayTeam = fixture.fighters?.second?.name || "Fighter 2";
+            homeTeam = fixture.fighters?.first?.name || "";
+            awayTeam = fixture.fighters?.second?.name || "";
+            // Skip fights with TBD/missing fighter names
+            if (!homeTeam || !awayTeam) {
+              console.log(`  Skipped MMA fixture ${matchId}: missing fighter names`);
+              continue;
+            }
             homeLogo = fixture.fighters?.first?.logo || "";
             awayLogo = fixture.fighters?.second?.logo || "";
             leagueName = fixture.league?.name || preset.league_name;
