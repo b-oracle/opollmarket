@@ -26,7 +26,7 @@ const BroadcastSpaceModal = ({ open, onClose, spaceId, spaceTitle }: BroadcastSp
         .select("broadcast_price")
         .limit(1)
         .single();
-      return data;
+      return data as { broadcast_price: number } | null;
     },
     staleTime: 60_000,
   });
