@@ -875,8 +875,9 @@ const AdminCreateMarket = () => {
                   <label className="text-xs font-semibold mb-1.5 block">Sport</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {SPORT_TYPES.map((s) => (
-                      <button key={s.value} onClick={() => { setSportType(s.value); setResolutionSource(`Auto-resolved via live ${s.label} match result`); }}
-                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${sportType === s.value ? "bg-primary/15 border border-primary/40 text-primary" : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"}`}>{s.label}</button>
+                      <button key={s.value} disabled={!s.enabled} onClick={() => { if (!s.enabled) return; setSportType(s.value); setResolutionSource(`Auto-resolved via live ${s.label} match result`); }}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${!s.enabled ? "bg-muted/30 border border-border/50 text-muted-foreground/40 cursor-not-allowed" : sportType === s.value ? "bg-primary/15 border border-primary/40 text-primary" : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"}`}
+                        title={!s.enabled ? "Coming soon" : undefined}>{s.label}{!s.enabled && <span className="ml-1 text-[9px] opacity-60">Soon</span>}</button>
                     ))}
                   </div>
                 </div>
