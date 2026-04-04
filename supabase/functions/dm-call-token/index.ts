@@ -160,6 +160,7 @@ Deno.serve(async (req) => {
         message: `${callerProfile?.display_name || "Someone"} is calling you`,
         type: "call",
         actor_id: user.id,
+        market_id: conversation_id,
       });
 
       // Generate token for caller
