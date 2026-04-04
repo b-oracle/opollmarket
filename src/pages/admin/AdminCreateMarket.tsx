@@ -126,22 +126,28 @@ const AdminCreateMarket = () => {
     { value: "below", label: "Closes below" },
   ];
   const SPORT_TYPES = [
-    { value: "football", label: "Football (Soccer)" },
-    { value: "basketball", label: "Basketball" },
-    { value: "nfl", label: "American Football" },
-    { value: "baseball", label: "Baseball" },
-    { value: "hockey", label: "Hockey" },
-    { value: "mma", label: "MMA / UFC" },
-    { value: "formula1", label: "Formula 1" },
-    { value: "rugby", label: "Rugby" },
-    { value: "volleyball", label: "Volleyball" },
-    { value: "handball", label: "Handball" },
+    { value: "football", label: "Football (Soccer)", enabled: true },
+    { value: "mma", label: "MMA / UFC", enabled: true },
+    { value: "basketball", label: "Basketball", enabled: false },
+    { value: "nfl", label: "American Football", enabled: false },
+    { value: "baseball", label: "Baseball", enabled: false },
+    { value: "hockey", label: "Hockey", enabled: false },
+    { value: "formula1", label: "Formula 1", enabled: false },
+    { value: "rugby", label: "Rugby", enabled: false },
+    { value: "volleyball", label: "Volleyball", enabled: false },
+    { value: "handball", label: "Handball", enabled: false },
   ];
-  const OUTCOME_TYPES = [
-    { value: "home_win", label: "Home Win" },
-    { value: "away_win", label: "Away Win" },
-    { value: "draw", label: "Draw" },
-  ];
+  const isMmaSport = sportType === "mma";
+  const OUTCOME_TYPES = isMmaSport
+    ? [
+        { value: selectedFixtureData ? `${selectedFixtureData.homeTeam} Win` : "fighter1_win", label: selectedFixtureData?.homeTeam || "Fighter 1" },
+        { value: selectedFixtureData ? `${selectedFixtureData.awayTeam} Win` : "fighter2_win", label: selectedFixtureData?.awayTeam || "Fighter 2" },
+      ]
+    : [
+        { value: "home_win", label: "Home Win" },
+        { value: "away_win", label: "Away Win" },
+        { value: "draw", label: "Draw" },
+      ];
 
   // AI generation state
   const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
