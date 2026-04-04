@@ -34,6 +34,7 @@ const IncomingCallBanner = () => {
     isOutgoing: boolean;
   } | null>(null);
   const [answering, setAnswering] = useState(false);
+  const [callMinimized, setCallMinimized] = useState(false);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
 
   // Play ringtone when incoming call appears
