@@ -3474,6 +3474,41 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           </>
         )}
       </AnimatePresence>
+
+      {/* Jamendo Music Browser */}
+      <AnimatePresence>
+        {showJamendoBrowser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowJamendoBrowser(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[90]"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40, scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none"
+            >
+              <div className="glass-strong rounded-2xl overflow-hidden w-full max-w-md pointer-events-auto" style={{ maxHeight: "75dvh" }}>
+                <div className="flex items-center justify-between px-3 pt-3 pb-1">
+                  <h3 className="text-sm font-semibold text-foreground">🎵 Browse Music</h3>
+                  <button onClick={() => setShowJamendoBrowser(false)} className="p-1 rounded-full hover:bg-muted">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <JamendoMusicBrowser
+                  onPlayInSpace={playOnlineTrack}
+                  onClose={() => setShowJamendoBrowser(false)}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 };
