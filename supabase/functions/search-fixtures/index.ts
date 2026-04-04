@@ -146,7 +146,8 @@ Deno.serve(async (req) => {
       const today = new Date().toISOString().split("T")[0];
       const rawFights = (fightData?.response || []).filter((f: any) => {
         const fightDate = f.date;
-        return fightDate && new Date(fightDate) >= new Date(today);
+        const hasNames = f.fighters?.first?.name && f.fighters?.second?.name;
+        return fightDate && hasNames && new Date(fightDate) >= new Date(today);
       }).slice(0, 20);
 
       const fixtures = rawFights.map((f: any) => ({
