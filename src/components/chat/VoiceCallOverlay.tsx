@@ -40,6 +40,7 @@ const VoiceCallOverlay = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const autoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stopToneRef = useRef<(() => void) | null>(null);
 
   // Connect to LiveKit room
   useEffect(() => {
