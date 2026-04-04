@@ -2261,8 +2261,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 {messages.length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Say something!</p>
                 )}
-                {messages.map((m) => (
-                  <div key={m.id} className={`group flex flex-col ${m.sender === user?.id ? "items-end" : "items-start"}`}>
+{messages.map((m) => (
+                  <div key={m.id} id={`chat-msg-${m.id}`} className={`group flex flex-col ${m.sender === user?.id ? "items-end" : "items-start"}`}>
                     <div className={`max-w-[80%] rounded-xl px-3 py-1.5 text-xs ${
                       m.sender === user?.id
                         ? "bg-primary text-primary-foreground"
@@ -2270,6 +2270,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     }`}>
                       {m.sender !== user?.id && (
                         <p className="font-semibold text-[10px] opacity-70 mb-0.5">{m.senderName}</p>
+                      )}
+                      {/* Quoted reply block */}
+                      {m.replyToContent && (
+                        <div
+                          className={`rounded-md px-2 py-1 mb-1 cursor-pointer border-l-2 ${
+                            m.sender === user?.id
+                              ? "bg-primary-foreground/10 border-primary-foreground/40"
+                              : "bg-background/60 border-primary/40"
+                          }`}
+                          onClick={() => {
+                            const el = document.getElementById(`chat-msg-${m.replyToId}`);
+                            if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("ring-2", "ring-primary/50"); setTimeout(() => el.classList.remove("ring-2", "ring-primary/50"), 1500); }
+                          }}
+                        >
+                          <p className="font-semibold text-[9px] opacity-70">↩ {m.replyToName}</p>
+                          <p className="text-[10px] opacity-80 truncate">{m.replyToContent.slice(0, 60)}{(m.replyToContent.length || 0) > 60 ? "…" : ""}</p>
+                        </div>
                       )}
                       <p>{m.text}</p>
                       <p className={`text-[9px] mt-0.5 ${m.sender === user?.id ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
@@ -2295,14 +2312,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         ))}
                       </div>
                     )}
-                    {/* Quick reaction buttons on hover/tap */}
-                    <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Quick reaction + reply buttons on hover/tap */}
+                    <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity items-center">
                       {CHAT_REACTIONS.map((emoji) => (
                         <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
                           className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-muted/80 active:scale-125 transition-transform">
                           {emoji}
                         </button>
                       ))}
+                      <button
+                        onClick={() => setReplyTo({ id: m.id, name: m.senderName, text: m.text })}
+                        className="ml-1 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
+                      >
+                        Reply
+                      </button>
                     </div>
                   </div>
                 ))}
