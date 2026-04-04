@@ -18,7 +18,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight, ChevronDown,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown, DollarSign, Bell, Check, CalendarIcon, KeyRound,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, Eye, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown, DollarSign, Bell, Check, CalendarIcon, KeyRound,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
