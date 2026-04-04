@@ -470,9 +470,25 @@ const Create = () => {
 
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
+    const isMma = sportType === "mma";
     let newTitle: string;
     let newDesc: string;
-    if (outcome === "home_win") {
+    if (isMma) {
+      // MMA-specific: outcomes are "[Fighter] Win"
+      if (outcome.includes(fixture.homeTeam)) {
+        newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      } else if (outcome.includes(fixture.awayTeam)) {
+        newTitle = `Will ${fixture.awayTeam} beat ${fixture.homeTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.awayTeam} defeats ${fixture.homeTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      } else if (outcome) {
+        newTitle = `Will "${outcome}" happen in ${fixture.homeTeam} vs ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if the condition "${outcome}" is met in the ${fixture.league || "UFC"} fight between ${fixture.homeTeam} and ${fixture.awayTeam} on ${matchDate}.`;
+      } else {
+        newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      }
+    } else if (outcome === "home_win") {
       newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
       newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise (including a draw).`;
     } else if (outcome === "away_win") {
@@ -510,11 +526,17 @@ const Create = () => {
     { value: "volleyball", label: "Volleyball" },
     { value: "handball", label: "Handball" },
   ];
-  const OUTCOME_TYPES = [
-    { value: "home_win", label: "Home Win" },
-    { value: "away_win", label: "Away Win" },
-    { value: "draw", label: "Draw" },
-  ];
+  const isMmaSport = sportType === "mma";
+  const OUTCOME_TYPES = isMmaSport
+    ? [
+        { value: selectedFixtureData ? `${selectedFixtureData.homeTeam} Win` : "fighter1_win", label: selectedFixtureData?.homeTeam || "Fighter 1" },
+        { value: selectedFixtureData ? `${selectedFixtureData.awayTeam} Win` : "fighter2_win", label: selectedFixtureData?.awayTeam || "Fighter 2" },
+      ]
+    : [
+        { value: "home_win", label: "Home Win" },
+        { value: "away_win", label: "Away Win" },
+        { value: "draw", label: "Draw" },
+      ];
   // AI content generation handler
   const handleAiGenerate = async (genType: "description" | "details" | "image") => {
     if (!user) { toast.error("Sign in to use AI generation"); return; }
@@ -2266,7 +2288,7 @@ const Create = () => {
                       {/* Predicted Outcome */}
                       <div>
                         <label className="text-xs font-semibold mb-1.5 block">Predicted Outcome</label>
-                        <div className="grid grid-cols-3 gap-1.5 mb-2">
+                        <div className={`grid ${isMmaSport ? 'grid-cols-2' : 'grid-cols-3'} gap-1.5 mb-2`}>
                           {OUTCOME_TYPES.map((o) => (
                             <button
                               key={o.value}
