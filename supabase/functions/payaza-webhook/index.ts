@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolvePayazaWebhookTokens } from "../_shared/payaza.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,7 @@ Deno.serve(async (req) => {
 
   try {
     // ── Webhook authentication via URL token ──
-    const url = new URL(req.url);
-    const urlToken = url.searchParams.get("token");
+    const { url, queryToken, pathToken, headerToken, candidateTokens } = resolvePayazaWebhookTokens(req);
     const expectedToken = Deno.env.get("PAYAZA_WEBHOOK_TOKEN");
 
     if (!expectedToken) {
@@ -24,8 +24,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (urlToken !== expectedToken) {
-      console.error("Payaza webhook token verification FAILED");
+    if (!candidateTokens.some((token) => token === expectedToken)) {
+      console.error(
+        "Payaza webhook token verification FAILED",
+        JSON.stringify({
+          pathname: url.pathname,
+          hasQueryToken: Boolean(queryToken),
+          hasPathToken: Boolean(pathToken),
+          hasHeaderToken: Boolean(headerToken),
+        }),
+      );
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401, headers: corsHeaders,
       });
