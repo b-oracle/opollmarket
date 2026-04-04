@@ -1,0 +1,1 @@
+UPDATE markets SET status = 'active', end_date = '2026-04-05' WHERE id IN ('218a112d-f39d-4318-804d-79bb83d997f6', '309a43df-5e7d-4b37-847c-44bc84f2cd1e', '58bea696-3422-4315-89dc-4313bb9880c6') AND sport_type = 'mma' AND status = 'ended';
