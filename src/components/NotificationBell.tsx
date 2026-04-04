@@ -125,6 +125,13 @@ const NotificationBell = () => {
       return;
     }
 
+    // Call notifications → navigate to the conversation
+    if (n.type === "call" && n.market_id) {
+      setOpen(false);
+      navigate(`/messages/${n.market_id}`);
+      return;
+    }
+
     // Draft reminder → go to create page
     if (n.title?.includes("Unfinished Draft")) {
       setOpen(false);

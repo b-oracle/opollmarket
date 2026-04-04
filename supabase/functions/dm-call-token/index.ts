@@ -311,6 +311,30 @@ Deno.serve(async (req) => {
         content: `[CALL:missed:0]`,
       });
 
+      // Notify callee about missed call
+      const { data: call2 } = await admin
+        .from("dm_calls")
+        .select("callee_id")
+        .eq("id", call_id)
+        .single();
+
+      if (call2) {
+        const { data: callerP } = await admin
+          .from("profiles")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+
+        await admin.from("notifications").insert({
+          user_id: call2.callee_id,
+          title: "Missed Call 📞",
+          message: `You missed a call from ${callerP?.display_name || "someone"}`,
+          type: "call",
+          actor_id: user.id,
+          market_id: call.conversation_id,
+        });
+      }
+
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
         await svc.deleteRoom(call.room_name);
