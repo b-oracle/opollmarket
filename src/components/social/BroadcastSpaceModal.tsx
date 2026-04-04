@@ -116,7 +116,7 @@ const BroadcastSpaceModal = ({ open, onClose, spaceId, spaceTitle }: BroadcastSp
 
   return (
     <Drawer open={open} onOpenChange={(v) => !v && onClose()}>
-      <DrawerContent className="px-4 pb-8">
+      <DrawerContent className="px-4 pb-24">
         <DrawerHeader className="px-0">
           <DrawerTitle className="flex items-center gap-2">
             <Megaphone className="w-5 h-5 text-primary" />
