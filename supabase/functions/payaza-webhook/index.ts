@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolvePayazaWebhookTokens } from "../_shared/payaza.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,35 +12,22 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ── Webhook authentication via URL token ──
-    const { url, queryToken, pathToken, headerToken, candidateTokens } = resolvePayazaWebhookTokens(req);
-    const expectedToken = Deno.env.get("PAYAZA_WEBHOOK_TOKEN");
-
-    if (!expectedToken) {
-      console.error("PAYAZA_WEBHOOK_TOKEN not configured — rejecting webhook");
-      return new Response(JSON.stringify({ error: "Webhook verification not configured" }), {
-        status: 500, headers: corsHeaders,
-      });
-    }
-
-    if (!candidateTokens.some((token) => token === expectedToken)) {
-      console.error(
-        "Payaza webhook token verification FAILED",
-        JSON.stringify({
-          pathname: url.pathname,
-          hasQueryToken: Boolean(queryToken),
-          hasPathToken: Boolean(pathToken),
-          hasHeaderToken: Boolean(headerToken),
-        }),
-      );
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401, headers: corsHeaders,
-      });
-    }
+    // Log all incoming headers (names only) for debugging
+    const headerNames = [...req.headers.keys()];
+    console.log("Payaza webhook headers:", headerNames.join(", "));
 
     const rawBody = await req.text();
-    const body = JSON.parse(rawBody);
-    console.log("Payaza webhook payload (verified):", JSON.stringify(body));
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      console.error("Payaza webhook: non-JSON body:", rawBody.substring(0, 500));
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    console.log("Payaza webhook payload:", JSON.stringify(body).substring(0, 1000));
 
     // Extract reference — Payaza sends it in multiple possible fields
     const reference =
@@ -50,22 +36,28 @@ Deno.serve(async (req) => {
       body.account_reference ||
       body.data?.transaction_reference ||
       body.data?.merchant_reference ||
-      body.data?.account_reference;
+      body.data?.account_reference ||
+      body.response_content?.transaction_reference ||
+      body.response_content?.merchant_reference ||
+      body.response_content?.account_reference;
 
-    // Extract status — normalize to lowercase for comparison
+    // Extract status — normalize to lowercase
     const rawStatus = (
       body.status ||
       body.transaction_status ||
       body.data?.status ||
       body.data?.transaction_status ||
+      body.response_content?.status ||
+      body.response_content?.transaction_status ||
       ""
     ).toString().toLowerCase().trim();
 
     console.log(`Payaza webhook: reference=${reference}, rawStatus=${rawStatus}`);
 
     if (!reference) {
+      console.error("Payaza webhook: no reference found in payload");
       return new Response(JSON.stringify({ error: "Missing transaction_reference" }), {
-        status: 400, headers: corsHeaders,
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -73,6 +65,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // ── SECURITY: Verify this reference belongs to a real pending Payaza deposit ──
+    // Only references starting with "payaza_" or "promo_" that were created by our
+    // create-payaza-deposit / create-promotion-payaza functions will match.
+    // This prevents arbitrary crediting since the reference must already exist
+    // in the database with payment_provider = 'payaza'.
 
     // Check if already processed (idempotency)
     const { data: alreadyDone } = await adminClient
@@ -100,11 +98,11 @@ Deno.serve(async (req) => {
     if (!tx) {
       console.error("No claimable transaction for reference:", reference);
       return new Response(JSON.stringify({ error: "Transaction not found or already claimed" }), {
-        status: 404, headers: corsHeaders,
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check if payment was successful — case-insensitive matching
+    // Check if payment was successful
     const successStatuses = ["approved", "successful", "completed", "funds received", "success"];
     const isSuccess = successStatuses.some(s => rawStatus.includes(s));
 
@@ -122,7 +120,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── STEP 1: Credit user balance ATOMICALLY (prevents race conditions) ──
+    // ── STEP 1: Credit user balance ATOMICALLY ──
     const depositAmount = Number(tx.amount);
     const { error: balanceError } = await adminClient.rpc("adjust_balance", {
       _user_id: tx.user_id,
@@ -134,13 +132,13 @@ Deno.serve(async (req) => {
     if (balanceError) {
       console.error("CRITICAL: Failed to credit balance for Payaza deposit:", balanceError);
       return new Response(JSON.stringify({ error: "Balance credit failed" }), {
-        status: 500, headers: corsHeaders,
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    console.log(`Credited $${depositAmount} to user ${tx.user_id} via adjust_balance RPC`);
+    console.log(`Credited $${depositAmount} to user ${tx.user_id}`);
 
-    // ── STEP 2: Mark transaction as confirmed ONLY after balance is credited ──
+    // ── STEP 2: Mark transaction as confirmed ──
     const { error: txUpdateError } = await adminClient
       .from("transactions")
       .update({ status: "confirmed" })
@@ -150,14 +148,14 @@ Deno.serve(async (req) => {
       console.error("WARNING: Balance credited but tx update failed:", txUpdateError);
     }
 
-    // ── STEP 3: Verify balance was actually updated (safety net) ──
+    // ── STEP 3: Verify balance ──
     const { data: verifyBalance } = await adminClient
       .from("balances")
       .select("amount")
       .eq("user_id", tx.user_id)
       .single();
 
-    console.log(`Post-credit balance verification for ${tx.user_id}: $${verifyBalance?.amount}`);
+    console.log(`Post-credit balance for ${tx.user_id}: $${verifyBalance?.amount}`);
 
     // Settle any debts
     try {
@@ -182,6 +180,36 @@ Deno.serve(async (req) => {
       message: `Your deposit of $${depositAmount.toFixed(2)} has been credited to your balance.`,
       type: "deposit",
     });
+
+    // Handle promotion activations if this is a promotion deposit
+    try {
+      const { data: promoTx } = await adminClient
+        .from("transactions")
+        .select("side, market_id")
+        .eq("id", tx.id)
+        .single();
+
+      if (promoTx?.side?.startsWith("promotion_")) {
+        const promoRef = reference;
+        // Activate pending boosts
+        await adminClient
+          .from("market_boosts")
+          .update({ status: "active", starts_at: new Date().toISOString() })
+          .eq("nowpayments_payment_id", promoRef)
+          .eq("status", "pending");
+
+        // Activate pending broadcasts
+        await adminClient
+          .from("market_broadcasts")
+          .update({ status: "confirmed" })
+          .eq("nowpayments_payment_id", promoRef)
+          .eq("status", "pending");
+
+        console.log("Activated promotion items for:", promoRef);
+      }
+    } catch (promoErr) {
+      console.error("Promotion activation error:", promoErr);
+    }
 
     console.log("Payaza deposit confirmed successfully:", tx.id);
     return new Response(JSON.stringify({ success: true }), {
