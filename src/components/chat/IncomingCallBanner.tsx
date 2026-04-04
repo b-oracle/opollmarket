@@ -175,6 +175,7 @@ const IncomingCallBanner = () => {
   // Expose a way for ChatView to start an outgoing call
   useEffect(() => {
     const handler = (e: CustomEvent) => {
+      setCallMinimized(false);
       setActiveCall(e.detail);
     };
     window.addEventListener("start-voice-call" as any, handler);
