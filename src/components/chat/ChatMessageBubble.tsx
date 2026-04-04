@@ -66,6 +66,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
     queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
     setShowReactions(false);
+    setShowFullPicker(false);
   }, [user, reactions, m.id, conversationId, queryClient]);
 
   const openPicker = useCallback(() => {
