@@ -112,7 +112,7 @@ const NotificationBell = () => {
     }
 
     // Gift notifications → navigate to sender's profile
-    if (n.type === "gift" && n.actor_id) {
+    if ((n.type === "gift" || n.title.includes("Gift Received")) && n.actor_id) {
       setOpen(false);
       navigate(`/user/${n.actor_id}`);
       return;
