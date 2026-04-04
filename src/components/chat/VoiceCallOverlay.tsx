@@ -171,6 +171,7 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   const handleEnd = useCallback(async () => {
+    intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (timerRef.current) clearInterval(timerRef.current);
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
