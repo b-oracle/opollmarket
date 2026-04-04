@@ -329,7 +329,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
         >
           <div className="flex items-center gap-2 p-2">
             {market.image_url && (
-              <img src={optimizedImageUrl(market.image_url, "thumb")} alt="" className="w-12 h-12 rounded object-cover shrink-0" loading="lazy" />
+              <img src={optimizedImageUrl(market.image_url, "thumb")} alt="" className="w-12 h-12 rounded object-contain bg-muted/30 shrink-0" loading="lazy" />
             )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold line-clamp-2">{market.title}</p>
