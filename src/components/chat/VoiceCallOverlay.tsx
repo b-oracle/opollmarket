@@ -271,7 +271,7 @@ const VoiceCallOverlay = ({
 
       {/* Close / back */}
       {status === "ended" && (
-        <button onClick={onClose} className="absolute top-6 right-6 text-muted-foreground">
+        <button onClick={onClose} className="absolute right-6 text-muted-foreground" style={{ top: "max(1.5rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
           <X className="w-5 h-5" />
         </button>
       )}
