@@ -295,6 +295,15 @@ Deno.serve(async (req) => {
             homeLogo = fixture.teams?.home?.logo || "";
             awayLogo = fixture.teams?.away?.logo || "";
             leagueName = fixture.league?.name || preset.league_name;
+          } else if (preset.sport_type === "mma") {
+            // MMA uses fighters structure instead of teams
+            matchId = String(fixture.id || "");
+            matchDate = fixture.date || "";
+            homeTeam = fixture.fighters?.first?.name || "Fighter 1";
+            awayTeam = fixture.fighters?.second?.name || "Fighter 2";
+            homeLogo = fixture.fighters?.first?.logo || "";
+            awayLogo = fixture.fighters?.second?.logo || "";
+            leagueName = fixture.league?.name || preset.league_name;
           } else {
             matchId = String(fixture.id || fixture.game?.id || "");
             matchDate = fixture.date || fixture.game?.date?.start || "";
