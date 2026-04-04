@@ -1178,13 +1178,45 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (!roomRef.current || !cameraOn) return;
     try {
       const newFacing = !facingBack;
-      await roomRef.current.localParticipant.setCameraEnabled(false);
-      await roomRef.current.localParticipant.setCameraEnabled(true, {
-        facingMode: newFacing ? "environment" : "user",
-      });
+      const desiredFacingMode = newFacing ? "environment" : "user";
+
+      // Get list of video devices and pick one matching the desired facing mode
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === "videoinput");
+
+      if (videoDevices.length < 2) {
+        toast.error("No other camera found on this device");
+        return;
+      }
+
+      // Try to find a device matching the desired facing mode via a temporary stream
+      let targetDeviceId: string | undefined;
+      try {
+        const testStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { exact: desiredFacingMode } },
+        });
+        const track = testStream.getVideoTracks()[0];
+        targetDeviceId = track.getSettings().deviceId;
+        track.stop();
+      } catch {
+        // Fallback: just pick a different device than the current one
+        const currentTrack = roomRef.current.localParticipant.getTrackPublication(Track.Source.Camera)?.track;
+        const currentDeviceId = currentTrack?.mediaStreamTrack?.getSettings()?.deviceId;
+        const other = videoDevices.find((d) => d.deviceId !== currentDeviceId);
+        targetDeviceId = other?.deviceId;
+      }
+
+      if (!targetDeviceId) {
+        toast.error("Could not find another camera");
+        return;
+      }
+
+      // Use switchActiveDevice which is the correct LiveKit API
+      await roomRef.current.switchActiveDevice("videoinput", targetDeviceId);
       setFacingBack(newFacing);
       updateParticipants(roomRef.current);
-    } catch {
+    } catch (err) {
+      console.error("flipCamera error:", err);
       toast.error("Failed to switch camera");
     }
   };
