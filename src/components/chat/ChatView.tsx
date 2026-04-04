@@ -213,6 +213,38 @@ const ChatView = () => {
   const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
   const isRejected = convStatus === "rejected";
 
+  const handleStartCall = useCallback(async () => {
+    if (calling || !conversationId || !user) return;
+    setCalling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dm-call-token", {
+        body: { action: "start", conversation_id: conversationId },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Failed to start call");
+
+      // Dispatch event to IncomingCallBanner (which manages the overlay)
+      window.dispatchEvent(
+        new CustomEvent("start-voice-call", {
+          detail: {
+            callId: data.call_id,
+            conversationId,
+            token: data.token,
+            url: data.url,
+            room: data.room,
+            passphrase: data.e2ee_passphrase,
+            otherName,
+            otherAvatar: (convo as any)?.other_user?.avatar_url,
+            isOutgoing: true,
+          },
+        })
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start call");
+    } finally {
+      setCalling(false);
+    }
+  }, [calling, conversationId, user, otherName, convo]);
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
       <SEOHead title={`Chat with ${otherName} | Pollmarket`} description="Direct message" />
