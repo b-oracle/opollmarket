@@ -23,7 +23,7 @@ const ChatSharePicker = ({ open, onClose, onShare }: ChatSharePickerProps) => {
       let q = supabase
         .from("markets")
         .select("id, title, category, yes_price, image_url")
-        .eq("status", "open")
+        .eq("status", "active")
         .eq("is_hidden", false)
         .order("volume", { ascending: false })
         .limit(20);
