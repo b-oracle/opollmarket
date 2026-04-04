@@ -136,23 +136,55 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     </div>
   );
 
+  const isDark = document.documentElement.classList.contains("dark");
+
   const pickerOverlay = showReactions && pickerPos && (
     <>
-      <div className="fixed inset-0 z-40" onClick={() => setShowReactions(false)} />
-      <div
-        className="fixed z-50 flex gap-1 bg-background border border-border rounded-full px-2 py-1 shadow-lg"
-        style={{ top: pickerPos.top, left: pickerPos.left }}
-      >
-        {REACTION_EMOJIS.map((emoji) => (
+      <div className="fixed inset-0 z-40" onClick={() => { setShowReactions(false); setShowFullPicker(false); }} />
+
+      {!showFullPicker ? (
+        <div
+          className="fixed z-50 flex gap-1 items-center bg-background border border-border rounded-full px-2 py-1 shadow-lg"
+          style={{ top: pickerPos.top, left: pickerPos.left }}
+        >
+          {REACTION_EMOJIS.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => toggleReaction(emoji)}
+              className="text-lg hover:scale-125 transition-transform active:scale-95 p-0.5"
+            >
+              {emoji}
+            </button>
+          ))}
           <button
-            key={emoji}
-            onClick={() => toggleReaction(emoji)}
-            className="text-lg hover:scale-125 transition-transform active:scale-95 p-0.5"
+            onClick={() => setShowFullPicker(true)}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent transition-colors"
           >
-            {emoji}
+            <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto"
+            style={{
+              ...(window.innerWidth >= 640 ? { top: pickerPos.top, left: Math.max(4, pickerPos.left - 100) } : {}),
+            }}
+          >
+            <EmojiPicker
+              onEmojiClick={(emojiData) => toggleReaction(emojiData.emoji)}
+              theme={isDark ? Theme.DARK : Theme.LIGHT}
+              width="100%"
+              height={350}
+              searchPlaceholder="Search emoji..."
+              lazyLoadEmojis
+            />
+          </motion.div>
+        </AnimatePresence>
+      )}
     </>
   );
 
