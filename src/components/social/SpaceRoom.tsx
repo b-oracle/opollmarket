@@ -867,6 +867,13 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Scroll to bottom when chat panel opens
+  useEffect(() => {
+    if (chatOpen) {
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "instant" }), 50);
+    }
+  }, [chatOpen]);
+
   // Connect to LiveKit
   useEffect(() => {
     if (!user) return;
