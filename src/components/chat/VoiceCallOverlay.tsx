@@ -48,6 +48,7 @@ const VoiceCallOverlay = ({
   const startTimeRef = useRef<number | null>(null);
   const autoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stopToneRef = useRef<(() => void) | null>(null);
+  const intentionalDisconnectRef = useRef(false);
 
   // Connect to LiveKit room
   useEffect(() => {
@@ -99,9 +100,11 @@ const VoiceCallOverlay = ({
         }
       })
       .catch((err) => {
-        console.error("Failed to connect to call:", err);
-        toast.error("Failed to connect to call");
-        handleEnd();
+        if (!intentionalDisconnectRef.current) {
+          console.error("Failed to connect to call:", err);
+          toast.error("Failed to connect to call");
+          handleEnd();
+        }
       });
 
     if (isOutgoing) {
@@ -168,6 +171,7 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   const handleEnd = useCallback(async () => {
+    intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (timerRef.current) clearInterval(timerRef.current);
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
@@ -183,6 +187,7 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   const handleCancel = useCallback(async () => {
+    intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
     roomRef.current?.disconnect();
