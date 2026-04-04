@@ -468,6 +468,7 @@ const App = () => {
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
                 </DeferredMount>
                 <GlobalSpaceRoom />
+                <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
