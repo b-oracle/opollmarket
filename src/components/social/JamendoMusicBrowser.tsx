@@ -54,13 +54,6 @@ const JamendoMusicBrowser = ({ onPlayInSpace, onClose }: JamendoMusicBrowserProp
       if (g) params.set("genre", g);
       params.set("limit", "20");
 
-      const { data, error } = await supabase.functions.invoke("jamendo-search", {
-        body: null,
-        headers: {},
-        method: "GET",
-      });
-
-      // Use direct fetch since invoke doesn't support query params well for GET
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const url = `https://${projectId}.supabase.co/functions/v1/jamendo-search?${params.toString()}`;
       const resp = await fetch(url);
