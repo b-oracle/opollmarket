@@ -2331,12 +2331,24 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 ))}
                 <div ref={chatEndRef} />
               </div>
+              {/* Reply banner */}
+              {replyTo && (
+                <div className="shrink-0 px-5 py-1.5 border-t border-border flex items-center gap-2 bg-muted/50">
+                  <CornerDownRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      Replying to <span className="font-semibold text-foreground">{replyTo.name}</span>: {replyTo.text.slice(0, 50)}
+                    </p>
+                  </div>
+                  <button onClick={() => setReplyTo(null)} className="text-[10px] text-destructive hover:underline shrink-0">✕</button>
+                </div>
+              )}
               <div className="shrink-0 px-5 py-3 border-t border-border flex gap-2 items-center">
                 <input
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                  placeholder="Send a message..."
+                  placeholder={replyTo ? `Reply to ${replyTo.name}...` : "Send a message..."}
                   className="flex-1 bg-muted rounded-full px-4 py-2 text-xs outline-none border border-border focus:border-primary"
                 />
                 <button onClick={sendChat} disabled={!chatInput.trim()}
