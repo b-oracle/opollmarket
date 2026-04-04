@@ -30,10 +30,49 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // FIX: Authenticate the caller — only service-role or admin users can dispatch webhooks
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsErr } = await userClient.auth.getClaims(token);
+    
+    // Allow service_role tokens (no claims needed) or admin users
+    if (claimsErr || !claimsData?.claims) {
+      // Check if it's a service role call (token matches service key)
+      // Service role calls come from other edge functions — they pass the service key as bearer
+      if (token !== serviceKey) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      // It's a user token — verify they're an admin
+      const userId = claimsData.claims.sub as string;
+      const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+      const { data: isSuperAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "super_admin" });
+      if (!isAdmin && !isSuperAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden: admin access required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const { event_type, market_id, payload } = await req.json();
 
-    if (!event_type) {
-      return new Response(JSON.stringify({ error: "Missing event_type" }), {
+    if (!event_type || typeof event_type !== "string") {
+      return new Response(JSON.stringify({ error: "Missing or invalid event_type" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -66,6 +105,14 @@ Deno.serve(async (req) => {
     for (const key of apiKeys) {
       if (!key.webhook_url) continue;
 
+      // Validate webhook URL protocol
+      try {
+        const webhookUrl = new URL(key.webhook_url);
+        if (!["https:", "http:"].includes(webhookUrl.protocol)) continue;
+      } catch {
+        continue;
+      }
+
       // Insert webhook event record
       const { data: eventRecord } = await admin
         .from("webhook_events")
@@ -80,9 +127,9 @@ Deno.serve(async (req) => {
 
       // Compute HMAC signature if webhook_secret exists
       let signature = "v1_unsigned";
-      if ((key as any).webhook_secret) {
+      if (key.webhook_secret) {
         try {
-          signature = await hmacSign((key as any).webhook_secret, bodyStr);
+          signature = await hmacSign(key.webhook_secret, bodyStr);
         } catch {
           signature = "v1_sign_error";
         }
@@ -132,7 +179,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("webhook-dispatch error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

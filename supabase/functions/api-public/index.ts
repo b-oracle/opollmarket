@@ -17,6 +17,16 @@ function err(message: string, status = 400) {
   return json({ error: message }, status);
 }
 
+// Sanitize error messages to avoid leaking internals
+function safeError(error: { message?: string }, fallback = "Operation failed") {
+  const msg = error?.message || fallback;
+  // Strip Postgres/Supabase internal details
+  if (msg.includes("violates") || msg.includes("duplicate key") || msg.includes("relation") || msg.includes("schema")) {
+    return fallback;
+  }
+  return msg;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -106,6 +116,11 @@ Deno.serve(async (req) => {
       const offset = parseInt(url.searchParams.get("offset") || "0");
       const status = url.searchParams.get("status") || "active";
 
+      // Validate offset/limit are non-negative integers
+      if (isNaN(limit) || limit < 1 || isNaN(offset) || offset < 0) {
+        return err("Invalid limit or offset");
+      }
+
       let query = admin
         .from("markets")
         .select("id, title, description, category, yes_price, no_price, volume, participants, end_date, status, image_url, market_type, created_at")
@@ -116,7 +131,7 @@ Deno.serve(async (req) => {
       if (category) query = query.eq("category", category);
 
       const { data, error } = await query;
-      if (error) return err(error.message, 500);
+      if (error) return err("Failed to fetch markets", 500);
       return json({ markets: data, count: data?.length ?? 0 });
     }
 
@@ -126,6 +141,10 @@ Deno.serve(async (req) => {
 
       const id = url.searchParams.get("id");
       if (!id) return err("Missing id parameter");
+      // Validate UUID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return err("Invalid market ID format");
+      }
 
       const { data, error } = await admin
         .from("markets")
@@ -133,7 +152,7 @@ Deno.serve(async (req) => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) return err(error.message, 500);
+      if (error) return err("Failed to fetch market", 500);
       if (!data) return err("Market not found", 404);
 
       // Also fetch options for multi-option markets
@@ -154,6 +173,9 @@ Deno.serve(async (req) => {
     if (action === "embed-data" && req.method === "GET") {
       const id = url.searchParams.get("id");
       if (!id) return err("Missing id parameter");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+        return err("Invalid market ID format");
+      }
 
       const { data, error } = await admin
         .from("markets")
@@ -161,7 +183,7 @@ Deno.serve(async (req) => {
         .eq("id", id)
         .maybeSingle();
 
-      if (error) return err(error.message, 500);
+      if (error) return err("Failed to fetch market", 500);
       if (!data) return err("Market not found", 404);
 
       let options = null;
@@ -177,12 +199,13 @@ Deno.serve(async (req) => {
       return json({ market: { ...data, options } });
     }
 
-    // ==================== USER BALANCE ====================
+    // ==================== USER BALANCE (scoped to authenticated user) ====================
     if (action === "balance" && req.method === "GET") {
       if (!hasPermission("read")) return err("Permission denied", 403);
 
-      const userId = url.searchParams.get("user_id");
-      if (!userId) return err("Missing user_id parameter");
+      // FIX: Scope to authenticated user only — no IDOR
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
 
       const { data, error } = await admin
         .from("balances")
@@ -191,16 +214,17 @@ Deno.serve(async (req) => {
         .eq("currency", "USDT")
         .maybeSingle();
 
-      if (error) return err(error.message, 500);
+      if (error) return err("Failed to fetch balance", 500);
       return json({ balance: data || { amount: 0, bonus_balance: 0, currency: "USDT" } });
     }
 
-    // ==================== USER POSITIONS ====================
+    // ==================== USER POSITIONS (scoped to authenticated user) ====================
     if (action === "positions" && req.method === "GET") {
       if (!hasPermission("read")) return err("Permission denied", 403);
 
-      const userId = url.searchParams.get("user_id");
-      if (!userId) return err("Missing user_id parameter");
+      // FIX: Scope to authenticated user only — no IDOR
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
 
       const { data, error } = await admin
         .from("positions")
@@ -208,7 +232,7 @@ Deno.serve(async (req) => {
         .eq("user_id", userId)
         .gt("shares", 0);
 
-      if (error) return err(error.message, 500);
+      if (error) return err("Failed to fetch positions", 500);
       return json({ positions: data });
     }
 
@@ -223,7 +247,11 @@ Deno.serve(async (req) => {
       const { marketId, side, amount, optionId } = body;
 
       if (!marketId || !amount) return err("Missing marketId or amount");
-      if (amount <= 0 || amount > 10000) return err("Amount must be between 0 and 10000");
+      if (typeof amount !== "number" || amount <= 0 || amount > 10000) return err("Amount must be between 0 and 10000");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(marketId)) {
+        return err("Invalid marketId format");
+      }
+      if (side && !["yes", "no"].includes(side)) return err("Side must be 'yes' or 'no'");
 
       // Invoke the existing place-bet edge function
       const placeBetUrl = `${supabaseUrl}/functions/v1/place-bet`;
@@ -243,7 +271,6 @@ Deno.serve(async (req) => {
       if (resp.ok && result.success && apiKeyRecord) {
         try {
           const commPercent = apiKeyRecord.affiliate_commission_percent || 5;
-          // Get prediction fee percent from settings
           const { data: settings } = await admin
             .from("commission_settings")
             .select("prediction_fee_percent")
@@ -254,10 +281,8 @@ Deno.serve(async (req) => {
           const commissionAmount = feeAmount * (commPercent / 100);
 
           if (result.transaction_id) {
-            // Tag transaction with api_key_id
             await admin.from("transactions").update({ api_key_id: apiKeyRecord.id }).eq("id", result.transaction_id);
 
-            // Record affiliate earning
             await admin.from("affiliate_earnings").insert({
               api_key_id: apiKeyRecord.id,
               transaction_id: result.transaction_id,
@@ -283,15 +308,20 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { email, password } = body;
       if (!email || !password) return err("Missing email or password");
+      // Validate email format
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err("Invalid email format");
+      // Enforce minimum password length
+      if (typeof password !== "string" || password.length < 8) return err("Password must be at least 8 characters");
 
+      // FIX: Do NOT auto-confirm email — require verification
       const { data, error } = await admin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
+        email_confirm: false,
       });
 
-      if (error) return err(error.message, 400);
-      return json({ user: { id: data.user.id, email: data.user.email } });
+      if (error) return err("Failed to create user", 400);
+      return json({ user: { id: data.user.id, email: data.user.email }, email_verification_required: true });
     }
 
     // ==================== DEPOSIT ====================
@@ -303,7 +333,7 @@ Deno.serve(async (req) => {
 
       const body = await req.json();
       const { amount, currency } = body;
-      if (!amount || amount <= 0) return err("Invalid amount");
+      if (!amount || typeof amount !== "number" || amount <= 0) return err("Invalid amount");
 
       // Invoke existing create-deposit edge function
       const depositUrl = `${supabaseUrl}/functions/v1/create-deposit`;
@@ -331,18 +361,32 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { title, description, category, endDate, marketType, options, imageUrl, resolutionSource, initialLiquidity } = body;
 
-      if (!title || title.trim().length < 5) return err("Title is required (min 5 chars)");
-      if (!description) return err("Description is required");
-      if (!category) return err("Category is required");
+      if (!title || typeof title !== "string" || title.trim().length < 5) return err("Title is required (min 5 chars)");
+      if (!description || typeof description !== "string") return err("Description is required");
+      if (!category || typeof category !== "string") return err("Category is required");
       if (!endDate) return err("endDate is required (ISO string)");
+      // Validate endDate is in the future
+      const parsedEndDate = new Date(endDate);
+      if (isNaN(parsedEndDate.getTime()) || parsedEndDate <= new Date()) {
+        return err("endDate must be a valid future ISO date");
+      }
       if (marketType === "multi" && (!options || !Array.isArray(options) || options.length < 2)) {
         return err("Multi-option markets require at least 2 options");
       }
 
       const liquidity = Math.max(0, Number(initialLiquidity) || 0);
 
-      // Check balance if liquidity > 0
-      if (liquidity > 0) {
+      // FIX: Apply market creation fee just like the frontend flow
+      const { data: feeSettings } = await admin
+        .from("commission_settings")
+        .select("market_creation_fee")
+        .limit(1)
+        .single();
+      const creationFee = feeSettings?.market_creation_fee || 0;
+      const totalCost = liquidity + creationFee;
+
+      // Check balance if totalCost > 0
+      if (totalCost > 0) {
         const { data: bal } = await admin
           .from("balances")
           .select("amount")
@@ -350,8 +394,8 @@ Deno.serve(async (req) => {
           .eq("currency", "USDT")
           .maybeSingle();
 
-        if (!bal || bal.amount < liquidity) {
-          return err("Insufficient balance for initial liquidity");
+        if (!bal || bal.amount < totalCost) {
+          return err("Insufficient balance for initial liquidity and creation fee");
         }
       }
 
@@ -373,7 +417,7 @@ Deno.serve(async (req) => {
         console.warn("Moderation check failed (non-critical):", modErr);
       }
 
-      // Insert market
+      // FIX: Insert market as 'pending' — require admin approval like frontend
       const { data: market, error: marketErr } = await admin
         .from("markets")
         .insert({
@@ -389,14 +433,14 @@ Deno.serve(async (req) => {
           api_key_id: apiKeyRecord.id,
           initial_liquidity: liquidity,
           liquidity,
-          status: "active",
+          status: "pending",
           yes_price: 50,
           no_price: 50,
         })
         .select("id, title, status, category, market_type, end_date, created_at")
         .single();
 
-      if (marketErr) return err(marketErr.message, 500);
+      if (marketErr) return err("Failed to create market", 500);
 
       // Insert options for multi markets
       if (marketType === "multi" && options?.length) {
@@ -409,9 +453,9 @@ Deno.serve(async (req) => {
         await admin.from("market_options").insert(optionRows);
       }
 
-      // Deduct liquidity from balance
-      if (liquidity > 0) {
-        await admin.rpc("adjust_balance", { p_user_id: userId, p_amount: -liquidity });
+      // FIX: Use correct RPC parameter names (_user_id, _delta)
+      if (totalCost > 0) {
+        await admin.rpc("adjust_balance", { _user_id: userId, _delta: -totalCost });
         await admin.from("transactions").insert({
           user_id: userId,
           type: "buy",
@@ -420,6 +464,17 @@ Deno.serve(async (req) => {
           status: "confirmed",
           side: "initial_liquidity",
         });
+        // Log creation fee separately if applicable
+        if (creationFee > 0) {
+          await admin.from("transactions").insert({
+            user_id: userId,
+            type: "fee",
+            amount: creationFee,
+            market_id: market.id,
+            status: "confirmed",
+            side: "market_creation_fee",
+          });
+        }
       }
 
       // Fetch creator display name
@@ -428,7 +483,7 @@ Deno.serve(async (req) => {
         await admin.from("markets").update({ creator_name: profile.display_name }).eq("id", market.id);
       }
 
-      return json({ market }, 201);
+      return json({ market, note: "Market created as pending — requires admin approval" }, 201);
     }
 
     return err(`Unknown action: ${action}`, 404);

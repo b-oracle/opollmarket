@@ -5,21 +5,22 @@ const corsHeaders = {
   "Cache-Control": "public, max-age=3600",
 };
 
+// FIX: Use relative URL derived at runtime instead of hardcoded project ref
 const SDK_JS = `
 /**
- * OPOLL JavaScript SDK v1.0.0
+ * OPOLL JavaScript SDK v1.1.0
  * https://opoll.org
  */
 (function(global) {
   'use strict';
 
-  var API_BASE = 'https://dqtjuhqndncanfwgjwva.supabase.co/functions/v1/api-public';
+  var DEFAULT_BASE = 'https://opoll.org/api';
 
   function OPOLL(options) {
     if (!options || !options.apiKey) throw new Error('OPOLL: apiKey is required');
     this.apiKey = options.apiKey;
     this.userToken = null;
-    this.baseUrl = options.baseUrl || API_BASE;
+    this.baseUrl = options.baseUrl || DEFAULT_BASE;
   }
 
   OPOLL.prototype._request = function(action, params, method, body) {
@@ -64,14 +65,14 @@ const SDK_JS = `
     return this._request('market', { id: id });
   };
 
-  // Get user balance
-  OPOLL.prototype.getBalance = function(userId) {
-    return this._request('balance', { user_id: userId });
+  // Get authenticated user's balance (no longer accepts userId param)
+  OPOLL.prototype.getBalance = function() {
+    return this._request('balance');
   };
 
-  // Get user positions
-  OPOLL.prototype.getPositions = function(userId) {
-    return this._request('positions', { user_id: userId });
+  // Get authenticated user's positions (no longer accepts userId param)
+  OPOLL.prototype.getPositions = function() {
+    return this._request('positions');
   };
 
   // Place a bet (requires user token)
