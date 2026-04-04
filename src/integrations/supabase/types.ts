@@ -2381,6 +2381,9 @@ export type Database = {
           created_at: string
           id: string
           reactions: Json
+          reply_to_content: string | null
+          reply_to_id: string | null
+          reply_to_name: string | null
           space_id: string
           user_id: string
           user_name: string
@@ -2390,6 +2393,9 @@ export type Database = {
           created_at?: string
           id?: string
           reactions?: Json
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_name?: string | null
           space_id: string
           user_id: string
           user_name?: string
@@ -2399,11 +2405,21 @@ export type Database = {
           created_at?: string
           id?: string
           reactions?: Json
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_name?: string | null
           space_id?: string
           user_id?: string
           user_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "space_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "space_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "space_messages_space_id_fkey"
             columns: ["space_id"]

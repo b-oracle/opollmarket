@@ -42,6 +42,7 @@ import {
   Monitor,
   MonitorOff,
   SwitchCamera,
+  CornerDownRight,
 } from "lucide-react";
 import NftBadge, { VerificationLevel } from "@/components/NftBadge";
 import { useActiveSpace } from "@/hooks/useActiveSpace";
@@ -87,6 +88,9 @@ interface ChatMessage {
   type: "message" | "reaction";
   timestamp: number;
   reactions?: Record<string, string[]>; // emoji -> array of user ids
+  replyToId?: string;
+  replyToContent?: string;
+  replyToName?: string;
 }
 
 const REACTIONS = ["🙏🏽", "👎🏽", "✌🏽", "👌🏽", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
@@ -158,6 +162,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string; label?: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -329,7 +334,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     (async () => {
       const { data } = await supabase
         .from("space_messages")
-        .select("id, user_id, user_name, content, created_at, reactions")
+        .select("id, user_id, user_name, content, created_at, reactions, reply_to_id, reply_to_content, reply_to_name")
         .eq("space_id", spaceId)
         .order("created_at", { ascending: true })
         .limit(200);
@@ -344,6 +349,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           type: "message" as const,
           timestamp: new Date(m.created_at).getTime(),
           reactions: m.reactions && typeof m.reactions === "object" && Object.keys(m.reactions as Record<string, unknown>).length > 0 ? (m.reactions as Record<string, string[]>) : undefined,
+          replyToId: m.reply_to_id || undefined,
+          replyToContent: m.reply_to_content || undefined,
+          replyToName: m.reply_to_name || undefined,
         };
       });
       setMessages(loaded);
@@ -370,6 +378,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               text: m.content,
               type: "message" as const,
               timestamp: new Date(m.created_at).getTime(),
+              replyToId: m.reply_to_id || undefined,
+              replyToContent: m.reply_to_content || undefined,
+              replyToName: m.reply_to_name || undefined,
             },
           ]);
           setChatOpen((open) => {
@@ -1522,12 +1533,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (!chatInput.trim() || !roomRef.current) return;
     const text = chatInput.trim();
     const senderName = roomRef.current.localParticipant.name || "You";
+    const currentReply = replyTo;
 
     // Still broadcast via data channel for instant delivery to connected peers
     const data = JSON.stringify({
       type: "message",
       text,
       senderName,
+      ...(currentReply ? { replyToId: currentReply.id, replyToContent: currentReply.text, replyToName: currentReply.name } : {}),
     });
     roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
 
@@ -1542,18 +1555,25 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         text,
         type: "message",
         timestamp: Date.now(),
+        ...(currentReply ? { replyToId: currentReply.id, replyToContent: currentReply.text, replyToName: currentReply.name } : {}),
       },
     ]);
 
     if (user?.id) {
+      const insertPayload: any = {
+        space_id: spaceId,
+        user_id: user.id,
+        user_name: senderName === "You" ? (user.email?.split("@")[0] || "Anonymous") : senderName,
+        content: text,
+      };
+      if (currentReply) {
+        insertPayload.reply_to_id = currentReply.id;
+        insertPayload.reply_to_content = currentReply.text.slice(0, 200);
+        insertPayload.reply_to_name = currentReply.name;
+      }
       supabase
         .from("space_messages")
-        .insert({
-          space_id: spaceId,
-          user_id: user.id,
-          user_name: senderName === "You" ? (user.email?.split("@")[0] || "Anonymous") : senderName,
-          content: text,
-        })
+        .insert(insertPayload)
         .select("id")
         .then(({ data: inserted }) => {
           // Replace local id with real DB id so reactions can be persisted
@@ -1568,6 +1588,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     }
 
     setChatInput("");
+    setReplyTo(null);
   };
 
   const sendReaction = (emoji: string) => {
@@ -2241,8 +2262,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 {messages.length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-8">No messages yet. Say something!</p>
                 )}
-                {messages.map((m) => (
-                  <div key={m.id} className={`group flex flex-col ${m.sender === user?.id ? "items-end" : "items-start"}`}>
+{messages.map((m) => (
+                  <div key={m.id} id={`chat-msg-${m.id}`} className={`group flex flex-col ${m.sender === user?.id ? "items-end" : "items-start"}`}>
                     <div className={`max-w-[80%] rounded-xl px-3 py-1.5 text-xs ${
                       m.sender === user?.id
                         ? "bg-primary text-primary-foreground"
@@ -2250,6 +2271,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     }`}>
                       {m.sender !== user?.id && (
                         <p className="font-semibold text-[10px] opacity-70 mb-0.5">{m.senderName}</p>
+                      )}
+                      {/* Quoted reply block */}
+                      {m.replyToContent && (
+                        <div
+                          className={`rounded-md px-2 py-1 mb-1 cursor-pointer border-l-2 ${
+                            m.sender === user?.id
+                              ? "bg-primary-foreground/10 border-primary-foreground/40"
+                              : "bg-background/60 border-primary/40"
+                          }`}
+                          onClick={() => {
+                            const el = document.getElementById(`chat-msg-${m.replyToId}`);
+                            if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.classList.add("ring-2", "ring-primary/50"); setTimeout(() => el.classList.remove("ring-2", "ring-primary/50"), 1500); }
+                          }}
+                        >
+                          <p className="font-semibold text-[9px] opacity-70">↩ {m.replyToName}</p>
+                          <p className="text-[10px] opacity-80 truncate">{m.replyToContent.slice(0, 60)}{(m.replyToContent.length || 0) > 60 ? "…" : ""}</p>
+                        </div>
                       )}
                       <p>{m.text}</p>
                       <p className={`text-[9px] mt-0.5 ${m.sender === user?.id ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
@@ -2275,25 +2313,43 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         ))}
                       </div>
                     )}
-                    {/* Quick reaction buttons on hover/tap */}
-                    <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Quick reaction + reply buttons on hover/tap */}
+                    <div className="flex gap-0.5 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity items-center">
                       {CHAT_REACTIONS.map((emoji) => (
                         <button key={emoji} onClick={() => reactToMessage(m.id, emoji)}
                           className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] hover:bg-muted/80 active:scale-125 transition-transform">
                           {emoji}
                         </button>
                       ))}
+                      <button
+                        onClick={() => setReplyTo({ id: m.id, name: m.senderName, text: m.text })}
+                        className="ml-1 px-1.5 py-0.5 rounded text-[9px] text-muted-foreground hover:text-primary hover:bg-muted/80 transition-colors"
+                      >
+                        Reply
+                      </button>
                     </div>
                   </div>
                 ))}
                 <div ref={chatEndRef} />
               </div>
+              {/* Reply banner */}
+              {replyTo && (
+                <div className="shrink-0 px-5 py-1.5 border-t border-border flex items-center gap-2 bg-muted/50">
+                  <CornerDownRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] text-muted-foreground truncate">
+                      Replying to <span className="font-semibold text-foreground">{replyTo.name}</span>: {replyTo.text.slice(0, 50)}
+                    </p>
+                  </div>
+                  <button onClick={() => setReplyTo(null)} className="text-[10px] text-destructive hover:underline shrink-0">✕</button>
+                </div>
+              )}
               <div className="shrink-0 px-5 py-3 border-t border-border flex gap-2 items-center">
                 <input
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendChat()}
-                  placeholder="Send a message..."
+                  placeholder={replyTo ? `Reply to ${replyTo.name}...` : "Send a message..."}
                   className="flex-1 bg-muted rounded-full px-4 py-2 text-xs outline-none border border-border focus:border-primary"
                 />
                 <button onClick={sendChat} disabled={!chatInput.trim()}
