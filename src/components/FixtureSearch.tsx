@@ -97,7 +97,7 @@ const FixtureSearch = ({ sportType, onSelect, selectedFixtureId, isMma }: Fixtur
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => fixtures.length > 0 && setOpen(true)}
-          placeholder="Type a team name (e.g. Arsenal, Lakers)"
+          placeholder={isMma ? "Type a fighter name (e.g. Adesanya)" : "Type a team name (e.g. Arsenal)"}
           className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-9 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         {loading && (
