@@ -39,6 +39,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
+  const [showFullPicker, setShowFullPicker] = useState(false);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
