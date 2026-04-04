@@ -50,9 +50,10 @@ import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import SpaceVideoGrid from "./SpaceVideoGrid";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv, Library } from "lucide-react";
 import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
+import JamendoMusicBrowser from "./JamendoMusicBrowser";
 
 interface SpaceRoomProps {
   spaceId: string;
@@ -454,6 +455,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const deviceMusicOffsetRef = useRef<number>(0);
   const deviceMusicStartTimeRef = useRef<number>(0);
   const deviceFileInputRef = useRef<HTMLInputElement>(null);
+  const [showJamendoBrowser, setShowJamendoBrowser] = useState(false);
 
   // Fetch tagged market IDs for this space + subscribe to realtime updates
   useEffect(() => {
@@ -1691,6 +1693,64 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setShowMusicMenu(false);
   };
 
+  // === Online Music (Jamendo) ===
+  const playOnlineTrack = async (url: string, name: string) => {
+    if (!hasModPowers || !roomRef.current) return;
+    // Stop any currently playing device music first
+    if (deviceMusicPlaying) await stopDeviceMusic();
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("Failed to fetch track");
+      const arrayBuffer = await resp.arrayBuffer();
+
+      const ctx = new AudioContext();
+      deviceMusicCtxRef.current = ctx;
+
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      deviceMusicBufferRef.current = audioBuffer;
+
+      const destination = ctx.createMediaStreamDestination();
+      deviceMusicDestRef.current = destination;
+
+      const gain = ctx.createGain();
+      gain.gain.value = deviceMusicVolume;
+      gain.connect(destination);
+      gain.connect(ctx.destination);
+      deviceMusicGainRef.current = gain;
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.loop = deviceMusicLoop;
+      source.connect(gain);
+      source.onended = () => {
+        if (!deviceMusicPaused && !source.loop) stopDeviceMusic();
+      };
+      source.start(0);
+      deviceMusicSourceRef.current = source;
+      deviceMusicOffsetRef.current = 0;
+      deviceMusicStartTimeRef.current = ctx.currentTime;
+
+      const mediaTrack = destination.stream.getAudioTracks()[0];
+      const pub = await roomRef.current.localParticipant.publishTrack(mediaTrack, {
+        name: "device-music",
+        source: Track.Source.ScreenShareAudio,
+      });
+      deviceMusicTrackRef.current = pub;
+
+      setDeviceMusicPlaying(true);
+      setDeviceMusicPaused(false);
+      setDjIdentity(user?.id ?? null);
+      setDeviceMusicName(name);
+      setShowMusicMenu(false);
+      setShowJamendoBrowser(false);
+      toast.success(`Now playing: ${name} 🎵`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to play track");
+      cleanupDeviceMusic();
+    }
+  };
+
   // === Device Music ===
   const handleDeviceMusicFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!hasModPowers) return;
@@ -2524,11 +2584,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                             <span>Someone is already playing music</span>
                           </div>
                         ) : (
+                        <>
+                        <button onClick={() => { setShowMusicMenu(false); setShowJamendoBrowser(true); }}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
+                          <Library className="w-3 h-3" />
+                          <span>Browse Music</span>
+                        </button>
                         <button onClick={() => deviceFileInputRef.current?.click()}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
                           <Upload className="w-3 h-3" />
                           <span>Play from device</span>
                         </button>
+                        </>
                         )
                       ) : (
                         <div className="px-3 py-1.5 space-y-1.5">
@@ -3402,6 +3469,41 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 >
                   Skip
                 </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Jamendo Music Browser */}
+      <AnimatePresence>
+        {showJamendoBrowser && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowJamendoBrowser(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[90]"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 40, scale: 0.95 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed inset-0 z-[90] flex items-center justify-center p-4 pointer-events-none"
+            >
+              <div className="glass-strong rounded-2xl overflow-hidden w-full max-w-md pointer-events-auto" style={{ maxHeight: "75dvh" }}>
+                <div className="flex items-center justify-between px-3 pt-3 pb-1">
+                  <h3 className="text-sm font-semibold text-foreground">🎵 Browse Music</h3>
+                  <button onClick={() => setShowJamendoBrowser(false)} className="p-1 rounded-full hover:bg-muted">
+                    <X className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <JamendoMusicBrowser
+                  onPlayInSpace={playOnlineTrack}
+                  onClose={() => setShowJamendoBrowser(false)}
+                />
               </div>
             </motion.div>
           </>

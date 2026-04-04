@@ -125,3 +125,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.dm-call-token]
     verify_jwt = false
+  [functions.jamendo-search]
+    verify_jwt = false
