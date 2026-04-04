@@ -288,6 +288,14 @@ const ConversationList = () => {
                 ))}
               </div>
             )
+          ) : tab === "calls" ? (
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-20">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              <CallHistoryTab />
+            </Suspense>
           ) : (
             pendingRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
