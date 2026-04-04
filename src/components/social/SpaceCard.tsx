@@ -1,6 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useActiveSpace } from "@/hooks/useActiveSpace";
+import { useSpacePresence } from "@/hooks/useSpacePresence";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X, Lock, Megaphone, XCircle } from "lucide-react";
@@ -36,6 +38,7 @@ const formatTime = (s: number) => {
 
 const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps) => {
   const { user } = useAuth();
+  const { activeSpace, maximize } = useActiveSpace();
   const queryClient = useQueryClient();
   const [joining, setJoining] = useState(false);
   const [togglingReminder, setTogglingReminder] = useState(false);
@@ -51,6 +54,15 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [savingTitle, setSavingTitle] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const isHost = user?.id === space.host_id;
+  const isLive = space.status === "live";
+  const isScheduled = space.status === "scheduled";
+  const isEnded = space.status === "ended";
+  const isActiveRoom = activeSpace?.id === space.id;
+  const { data: livePresence } = useSpacePresence(space.id, isLive && !!user);
+  const isParticipant = isActiveRoom || livePresence?.joined === true;
+  const listenerCount = livePresence?.participantCount ?? space.listener_count;
+
   const handleSaveCardTitle = async () => {
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === space.title) { setEditingTitle(false); return; }
@@ -207,21 +219,6 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     }
   };
 
-  const { data: isParticipant = false } = useQuery({
-    queryKey: ["space-participant", space.id, user?.id],
-    queryFn: async () => {
-      if (!user) return false;
-      const { count } = await supabase
-        .from("space_participants")
-        .select("id", { count: "exact", head: true })
-        .eq("space_id", space.id)
-        .eq("user_id", user.id)
-        .is("left_at", null);
-      return (count || 0) > 0;
-    },
-    enabled: !!user && space.status === "live",
-  });
-
   const { data: hasReminder = false } = useQuery({
     queryKey: ["space-reminder", space.id, user?.id],
     queryFn: async () => {
@@ -267,6 +264,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const handleJoinLeave = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) { toast.error("Sign in to join spaces"); return; }
+    if (isActiveRoom) {
+      maximize();
+      return;
+    }
     if (!isParticipant && onJoinRoom) {
       onJoinRoom(space.id);
       return;
@@ -304,14 +305,14 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     if (space.status === "scheduled") return;
     if (isRecorded) return; // Recorded spaces use inline player
     if (!user) { toast.error("Sign in to join spaces"); return; }
+    if (isActiveRoom) {
+      maximize();
+      return;
+    }
     if (onJoinRoom) onJoinRoom(space.id);
   };
 
   const hostName = hostProfile?.display_name || "Anonymous";
-  const isHost = user?.id === space.host_id;
-  const isLive = space.status === "live";
-  const isScheduled = space.status === "scheduled";
-  const isEnded = space.status === "ended";
 
   const { data: analytics } = useQuery({
     queryKey: ["space-analytics", space.id],
@@ -469,7 +470,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           {isLive && (
             <span className="flex items-center gap-1">
               <Headphones className="w-3 h-3" />
-              {space.listener_count} listening
+              {listenerCount} listening
             </span>
           )}
           {isScheduled && (
@@ -563,6 +564,8 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             >
               {joining ? (
                 <Loader2 className="w-3 h-3 animate-spin" />
+              ) : isActiveRoom ? (
+                <><Headphones className="w-3 h-3" /> In Room</>
               ) : isParticipant ? (
                 <><LogOut className="w-3 h-3" /> Leave</>
               ) : (
