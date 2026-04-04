@@ -20,6 +20,7 @@ interface IncomingCall {
 
 const IncomingCallBanner = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<{
     callId: string;
