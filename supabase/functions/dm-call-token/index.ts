@@ -242,6 +242,13 @@ Deno.serve(async (req) => {
         .update({ status: "missed", ended_at: new Date().toISOString() })
         .eq("id", call_id);
 
+      // Insert system message
+      await admin.from("dm_messages").insert({
+        conversation_id: call.conversation_id,
+        sender_id: user.id,
+        content: `[CALL:missed:0]`,
+      });
+
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
         await svc.deleteRoom(call.room_name);
