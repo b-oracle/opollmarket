@@ -255,7 +255,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
 
       const { error } = await supabase.from("status_updates").insert({
         user_id: user.id,
-        content: `🔥 Check out "${title}" on our prediction market! Make your OPinion count 👇🏽\n\n${cleanShareLink}`,
+        content: `Check out "${title}" on OPollmarket! Make your OPinion count👇🏽\n\n${cleanShareLink}`,
         image_url,
       });
       if (error) throw error;
