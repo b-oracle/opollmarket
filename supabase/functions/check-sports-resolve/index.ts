@@ -78,6 +78,29 @@ async function fetchMatchResult(
       };
     }
 
+    // MMA-specific parsing
+    if (sportType.toLowerCase() === "mma") {
+      const status = match.status?.short || "";
+      const finished = ["FT", "FIN"].includes(status);
+      const fighter1 = match.fighters?.first;
+      const fighter2 = match.fighters?.second;
+      let winner: string | null = null;
+      if (finished) {
+        if (fighter1?.winner === true) winner = "home";
+        else if (fighter2?.winner === true) winner = "away";
+        else if (fighter1?.winner === false && fighter2?.winner === false) winner = "draw";
+      }
+      return {
+        finished,
+        homeTeam: fighter1?.name || "Fighter 1",
+        awayTeam: fighter2?.name || "Fighter 2",
+        homeScore: null,
+        awayScore: null,
+        winner,
+        status,
+      };
+    }
+
     // Generic parsing for other sports
     const status = match.status?.short || match.game?.status?.short || "";
     const finished = ["FT", "AOT", "AP", "POST"].includes(status) || status === "FIN";
@@ -118,17 +141,17 @@ function determineWinningSide(
 
   const outcome = predictedOutcome.toLowerCase().trim();
 
-  if (outcome === "home_win" || outcome === "home") {
+  if (outcome === "home_win" || outcome === "home" || outcome === "fighter1_win") {
     return result.winner === "home" ? "yes" : "no";
   }
-  if (outcome === "away_win" || outcome === "away") {
+  if (outcome === "away_win" || outcome === "away" || outcome === "fighter2_win") {
     return result.winner === "away" ? "yes" : "no";
   }
   if (outcome === "draw") {
     return result.winner === "draw" ? "yes" : "no";
   }
 
-  // Team name matching
+  // Team/fighter name matching
   if (result.homeTeam.toLowerCase().includes(outcome) || outcome.includes(result.homeTeam.toLowerCase())) {
     return result.winner === "home" ? "yes" : "no";
   }

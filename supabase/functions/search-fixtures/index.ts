@@ -115,6 +115,65 @@ Deno.serve(async (req) => {
       });
     }
 
+    // MMA: search fighters then get fights
+    if (sportKey === "mma") {
+      const fighterResp = await fetch(
+        `https://${sportConfig.host}/fighters?search=${encodeURIComponent(team.trim())}`,
+        { headers }
+      );
+      const fighterData = await fighterResp.json();
+      const fighters = fighterData?.response?.slice(0, 5) || [];
+
+      if (fighters.length === 0) {
+        return new Response(JSON.stringify({ fixtures: [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const fighterId = fighters[0].id;
+      if (!fighterId) {
+        return new Response(JSON.stringify({ fixtures: [] }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const currentSeason = season || new Date().getFullYear();
+      const fightResp = await fetch(
+        `https://${sportConfig.host}${sportConfig.fixturePath}?fighter=${fighterId}&season=${currentSeason}`,
+        { headers }
+      );
+      const fightData = await fightResp.json();
+      const today = new Date().toISOString().split("T")[0];
+      const rawFights = (fightData?.response || []).filter((f: any) => {
+        const fightDate = f.date;
+        return fightDate && new Date(fightDate) >= new Date(today);
+      }).slice(0, 20);
+
+      const fixtures = rawFights.map((f: any) => ({
+        id: String(f.id || ""),
+        date: f.date || "",
+        status: f.status?.long || "Scheduled",
+        homeTeam: f.fighters?.first?.name || "TBD",
+        homeLogo: f.fighters?.first?.logo || "",
+        awayTeam: f.fighters?.second?.name || "TBD",
+        awayLogo: f.fighters?.second?.logo || "",
+        league: f.league?.name || "",
+        leagueLogo: f.league?.logo || "",
+        venue: "",
+      }));
+
+      return new Response(JSON.stringify({
+        fixtures,
+        teamMatches: fighters.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          logo: f.logo,
+        })),
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Generic for other sports: search teams then get games
     const teamResp = await fetch(
       `https://${sportConfig.host}${sportConfig.teamPath}?search=${encodeURIComponent(team.trim())}`,

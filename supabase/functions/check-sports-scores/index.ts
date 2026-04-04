@@ -65,6 +65,24 @@ async function fetchLiveScore(
       };
     }
 
+    // MMA-specific parsing (fighters structure, no live scores)
+    if (sportType.toLowerCase() === "mma") {
+      const statusShort = item.status?.short || "NS";
+      const liveStatuses = ["LIVE", "IN"];
+      const finishedStatuses = ["FT", "FIN"];
+      const fighter1 = item.fighters?.first;
+      const fighter2 = item.fighters?.second;
+      return {
+        homeTeam: fighter1?.name || "Fighter 1",
+        awayTeam: fighter2?.name || "Fighter 2",
+        homeScore: fighter1?.winner === true ? 1 : 0,
+        awayScore: fighter2?.winner === true ? 1 : 0,
+        status: statusShort,
+        isLive: liveStatuses.includes(statusShort),
+        isFinished: finishedStatuses.includes(statusShort),
+      };
+    }
+
     const statusShort = item.status?.short || item.game?.status?.short || "NS";
     const liveStatuses = ["Q1", "Q2", "Q3", "Q4", "OT", "HT", "1H", "2H", "LIVE", "BT"];
     const finishedStatuses = ["FT", "FIN", "AET", "AOT", "POST"];

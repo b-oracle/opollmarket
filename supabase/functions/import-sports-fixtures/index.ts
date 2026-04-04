@@ -15,6 +15,7 @@ const SPORT_API_MAP: Record<string, { host: string; fixturePath: string }> = {
   handball: { host: "v1.handball.api-sports.io", fixturePath: "/games" },
   volleyball: { host: "v1.volleyball.api-sports.io", fixturePath: "/games" },
   nfl: { host: "v1.american-football.api-sports.io", fixturePath: "/games" },
+  mma: { host: "v1.mma.api-sports.io", fixturePath: "/fights" },
 };
 
 function buildMarketTitle(homeTeam: string, awayTeam: string, league: string): string {
@@ -294,6 +295,15 @@ Deno.serve(async (req) => {
             homeLogo = fixture.teams?.home?.logo || "";
             awayLogo = fixture.teams?.away?.logo || "";
             leagueName = fixture.league?.name || preset.league_name;
+          } else if (preset.sport_type === "mma") {
+            // MMA uses fighters structure instead of teams
+            matchId = String(fixture.id || "");
+            matchDate = fixture.date || "";
+            homeTeam = fixture.fighters?.first?.name || "Fighter 1";
+            awayTeam = fixture.fighters?.second?.name || "Fighter 2";
+            homeLogo = fixture.fighters?.first?.logo || "";
+            awayLogo = fixture.fighters?.second?.logo || "";
+            leagueName = fixture.league?.name || preset.league_name;
           } else {
             matchId = String(fixture.id || fixture.game?.id || "");
             matchDate = fixture.date || fixture.game?.date?.start || "";
@@ -358,6 +368,7 @@ Deno.serve(async (req) => {
           }
 
           const isFootball = preset.sport_type === "football";
+          const isMma = preset.sport_type === "mma";
           const marketType = isFootball ? "multi" : "binary";
 
           // Set auto_resolve_deadline to 2 hours after match start (grace for delays)
@@ -378,7 +389,7 @@ Deno.serve(async (req) => {
             sport_type: preset.sport_type,
             sport_match_id: matchId,
             sport_league: leagueName,
-            sport_predicted_outcome: isFootball ? "multi_option" : "home_win",
+            sport_predicted_outcome: isFootball ? "multi_option" : isMma ? "fighter1_win" : "home_win",
             auto_resolve: true,
             auto_resolve_deadline: autoResolveDeadline.toISOString(),
             yes_price: isFootball ? 0.33 : 0.5,
