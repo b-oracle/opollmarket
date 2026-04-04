@@ -348,6 +348,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           type: "message" as const,
           timestamp: new Date(m.created_at).getTime(),
           reactions: m.reactions && typeof m.reactions === "object" && Object.keys(m.reactions as Record<string, unknown>).length > 0 ? (m.reactions as Record<string, string[]>) : undefined,
+          replyToId: m.reply_to_id || undefined,
+          replyToContent: m.reply_to_content || undefined,
+          replyToName: m.reply_to_name || undefined,
         };
       });
       setMessages(loaded);
