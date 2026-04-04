@@ -81,9 +81,24 @@ const AdminCreateMarket = () => {
 
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
+    const isMma = sportType === "mma";
     let newTitle: string;
     let newDesc: string;
-    if (outcome === "home_win") {
+    if (isMma) {
+      if (outcome.includes(fixture.homeTeam)) {
+        newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      } else if (outcome.includes(fixture.awayTeam)) {
+        newTitle = `Will ${fixture.awayTeam} beat ${fixture.homeTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.awayTeam} defeats ${fixture.homeTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      } else if (outcome) {
+        newTitle = `Will "${outcome}" happen in ${fixture.homeTeam} vs ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if the condition "${outcome}" is met in the ${fixture.league || "UFC"} fight between ${fixture.homeTeam} and ${fixture.awayTeam} on ${matchDate}.`;
+      } else {
+        newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      }
+    } else if (outcome === "home_win") {
       newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
       newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise (including a draw).`;
     } else if (outcome === "away_win") {
