@@ -1,38 +1,24 @@
 
 
-## Add Full Emoji Picker for Message Reactions
+## Update Sports Auto-Resolve UI for MMA vs Football
 
-### Problem
-Message reactions are limited to 6 hardcoded emojis (`❤️ 😂 👍 😮 😢 🔥`). The user wants a full emoji picker like the native iOS/WhatsApp one shown in the screenshot — with categories, search, and the complete emoji set.
+### Changes in `src/pages/Create.tsx`
 
-### Solution
-Install an emoji picker library (`emoji-picker-react` — lightweight, works well in React) and add a "+" button to the existing quick-reaction bar. Tapping "+" opens the full picker below/above the message.
+**1. Restrict sport selection to supported types only**
+- Change `SPORT_TYPES` to only include `football` and `mma` as clickable options
+- The other sports (basketball, hockey, etc.) become visually disabled with reduced opacity, a "Coming soon" tooltip, and no click handler
 
-### Steps
+**2. Adapt inputs when MMA is selected**
+- **League label**: Change from "League / Competition" to "Event (optional)" with placeholder "e.g. UFC 315, Bellator 300"
+- **Fixture search label**: Change from "Search Match by Team Name" to "Search Fight by Fighter Name" with placeholder "Type a fighter name (e.g. Adesanya)"
+- **Predicted Outcome**: Already handled (2 fighter buttons, no Draw) — no change needed
+- **Custom outcome input placeholder**: Change from "Or custom: over 2.5, btts, team name" to "Or custom: e.g. KO/TKO, submission" for MMA
+- **Details auto-fill**: Change "Home/Away" labels to "Fighter 1 / Fighter 2" in the generated markdown
 
-**1. Install `emoji-picker-react`**
-- `npm install emoji-picker-react`
-
-**2. Update `ChatMessageBubble.tsx`**
-
-- Keep the existing 6 quick-reaction emojis in the floating bar (fast access)
-- Add a "+" button at the end of the bar (like WhatsApp)
-- When "+" is tapped, replace the small pill bar with a full emoji picker panel (fixed position, same z-index)
-- On emoji select from the full picker, call `toggleReaction(emoji)` and close
-- The picker renders in dark/light mode matching the app theme
-
-**3. Picker positioning**
-- Render the full picker as a fixed overlay near the message bubble
-- On mobile (402px viewport), make it full-width at bottom of screen for easy thumb reach
-- Backdrop click dismisses it
-
-### UI Flow
-1. Long-press message → quick bar appears with `❤️ 😂 👍 😮 😢 🔥 ➕`
-2. Tap any quick emoji → reaction applied immediately
-3. Tap ➕ → full emoji picker slides up from bottom
-4. Pick any emoji → reaction applied, picker closes
+**3. Update FixtureSearch component**
+- Accept a new optional `isMma` prop to adjust placeholder text dynamically
 
 ### Files Changed
-- `package.json` — add `emoji-picker-react`
-- `src/components/chat/ChatMessageBubble.tsx` — add "+" button, full picker state, import picker component
+- `src/pages/Create.tsx` — disable unsupported sports, conditional labels/placeholders
+- `src/components/FixtureSearch.tsx` — accept `isMma` prop for label/placeholder changes
 
