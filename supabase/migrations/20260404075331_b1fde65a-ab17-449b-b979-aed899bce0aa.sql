@@ -1,0 +1,1 @@
+UPDATE markets SET sport_predicted_outcome = split_part(title, ' vs ', 1) || ' Win' WHERE sport_type = 'mma' AND sport_predicted_outcome = 'fighter1_win';

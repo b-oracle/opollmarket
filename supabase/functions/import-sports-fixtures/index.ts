@@ -425,7 +425,7 @@ Deno.serve(async (req) => {
             sport_type: preset.sport_type,
             sport_match_id: matchId,
             sport_league: leagueName,
-            sport_predicted_outcome: isFootball ? "multi_option" : isMma ? "fighter1_win" : "home_win",
+            sport_predicted_outcome: isFootball ? "multi_option" : isMma ? `${homeTeam} Win` : "home_win",
             auto_resolve: true,
             auto_resolve_deadline: autoResolveDeadline.toISOString(),
             yes_price: isFootball ? 0.33 : 0.5,
