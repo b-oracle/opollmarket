@@ -160,6 +160,7 @@ Deno.serve(async (req) => {
         message: `${callerProfile?.display_name || "Someone"} is calling you`,
         type: "call",
         actor_id: user.id,
+        market_id: conversation_id,
       });
 
       // Generate token for caller
@@ -239,7 +240,7 @@ Deno.serve(async (req) => {
 
       const { data: call } = await admin
         .from("dm_calls")
-        .select("callee_id, room_name, status")
+        .select("callee_id, caller_id, room_name, status, conversation_id")
         .eq("id", call_id)
         .single();
 
@@ -257,6 +258,22 @@ Deno.serve(async (req) => {
         conversation_id: call.conversation_id,
         sender_id: user.id,
         content: `[CALL:declined:0]`,
+      });
+
+      // Notify caller about declined call
+      const { data: calleeProfile } = await admin
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .single();
+
+      await admin.from("notifications").insert({
+        user_id: call.caller_id,
+        title: "Call Declined 📞",
+        message: `${calleeProfile?.display_name || "User"} declined your call`,
+        type: "call",
+        actor_id: user.id,
+        market_id: call.conversation_id,
       });
 
       // Destroy room
@@ -293,6 +310,30 @@ Deno.serve(async (req) => {
         sender_id: user.id,
         content: `[CALL:missed:0]`,
       });
+
+      // Notify callee about missed call
+      const { data: call2 } = await admin
+        .from("dm_calls")
+        .select("callee_id")
+        .eq("id", call_id)
+        .single();
+
+      if (call2) {
+        const { data: callerP } = await admin
+          .from("profiles")
+          .select("display_name")
+          .eq("id", user.id)
+          .single();
+
+        await admin.from("notifications").insert({
+          user_id: call2.callee_id,
+          title: "Missed Call 📞",
+          message: `You missed a call from ${callerP?.display_name || "someone"}`,
+          type: "call",
+          actor_id: user.id,
+          market_id: call.conversation_id,
+        });
+      }
 
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
