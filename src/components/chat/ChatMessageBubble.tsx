@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, SmilePlus, Plus } from "lucide-react";
+import { Gift, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -109,14 +109,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     navigate(path.startsWith("/") ? path : `/${path}`);
   };
 
-  const smileyButton = (
-    <button
-      onClick={(e) => { e.stopPropagation(); openPicker(); }}
-      className={`absolute ${isMine ? "left-0 -translate-x-full" : "right-0 translate-x-full"} top-1/2 -translate-y-1/2 p-0.5 rounded-full text-muted-foreground/40 hover:text-foreground hover:bg-accent transition-all`}
-    >
-      <SmilePlus className="w-3.5 h-3.5" />
-    </button>
-  );
 
   const reactionBadges = reactionEntries.length > 0 && (
     <div className="flex flex-wrap gap-1 mt-1">
@@ -226,7 +218,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
               {reactionBadges}
             </div>
           </motion.div>
-          {smileyButton}
         </div>
         {pickerOverlay}
       </div>
@@ -259,7 +250,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
           {reactionBadges}
         </div>
-        {smileyButton}
+        
       </div>
       {pickerOverlay}
     </div>
