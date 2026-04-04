@@ -100,9 +100,11 @@ const VoiceCallOverlay = ({
         }
       })
       .catch((err) => {
-        console.error("Failed to connect to call:", err);
-        toast.error("Failed to connect to call");
-        handleEnd();
+        if (!intentionalDisconnectRef.current) {
+          console.error("Failed to connect to call:", err);
+          toast.error("Failed to connect to call");
+          handleEnd();
+        }
       });
 
     if (isOutgoing) {
