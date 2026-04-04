@@ -166,6 +166,7 @@ const VoiceCallOverlay = ({
   const handleEnd = useCallback(async () => {
     setStatus("ended");
     if (timerRef.current) clearInterval(timerRef.current);
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
     roomRef.current?.disconnect();
 
     try {
