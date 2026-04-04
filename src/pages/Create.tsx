@@ -2288,7 +2288,7 @@ const Create = () => {
                       {/* Predicted Outcome */}
                       <div>
                         <label className="text-xs font-semibold mb-1.5 block">Predicted Outcome</label>
-                        <div className="grid grid-cols-3 gap-1.5 mb-2">
+                        <div className={`grid ${isMmaSport ? 'grid-cols-2' : 'grid-cols-3'} gap-1.5 mb-2`}>
                           {OUTCOME_TYPES.map((o) => (
                             <button
                               key={o.value}
