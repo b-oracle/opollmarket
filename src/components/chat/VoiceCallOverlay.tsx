@@ -65,6 +65,8 @@ const VoiceCallOverlay = ({
     room.on(RoomEvent.ParticipantConnected, () => {
       setStatus("active");
       startTimeRef.current = Date.now();
+      // Stop dial/ring tone
+      if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       if (autoTimeoutRef.current) {
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
