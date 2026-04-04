@@ -87,6 +87,9 @@ interface ChatMessage {
   type: "message" | "reaction";
   timestamp: number;
   reactions?: Record<string, string[]>; // emoji -> array of user ids
+  replyToId?: string;
+  replyToContent?: string;
+  replyToName?: string;
 }
 
 const REACTIONS = ["🙏🏽", "👎🏽", "✌🏽", "👌🏽", "🌹", "💝", "🔥", "🕺", "💃", "👏", "👍", "❤️", "😂", "💯", "🎯"];
