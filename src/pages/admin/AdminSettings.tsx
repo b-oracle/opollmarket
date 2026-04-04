@@ -1540,6 +1540,7 @@ const POPULAR_LEAGUES = [
   { id: 1, name: "FIFA World Cup", country: "World", sport: "football", logo: "https://media.api-sports.io/football/leagues/1.png" },
   { id: 12, name: "NBA", country: "USA", sport: "basketball", logo: "" },
   { id: 1, name: "NFL", country: "USA", sport: "nfl", logo: "" },
+  { id: 0, name: "UFC / MMA", country: "World", sport: "mma", logo: "https://media.api-sports.io/mma/leagues/1.png" },
 ];
 
 interface SportsPreset {
