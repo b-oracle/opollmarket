@@ -8,6 +8,28 @@ import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import SEOHead from "@/components/SEOHead";
 
+const CALL_MSG_REGEX = /^\[CALL:(ended|missed|declined):(\d+)\]$/;
+
+function formatLastMessage(msg: any): string {
+  if (!msg) return "";
+  if (msg.gift_amount) return `🎁 Gift $${msg.gift_amount}`;
+  const content = msg.content || "";
+  const match = content.match(CALL_MSG_REGEX);
+  if (match) {
+    const [, status, durStr] = match;
+    const dur = parseInt(durStr, 10);
+    if (status === "missed") return "📞 Missed call";
+    if (status === "declined") return "📞 Declined call";
+    if (dur > 0) {
+      const m = Math.floor(dur / 60);
+      const s = dur % 60;
+      return `📞 Call · ${m}:${s.toString().padStart(2, "0")}`;
+    }
+    return "📞 Call ended";
+  }
+  return content;
+}
+
 const CallHistoryTab = lazy(() => import("./CallHistoryTab"));
 
 interface ConversationRow {
@@ -74,7 +96,7 @@ const ConversationList = () => {
         results.push({
           ...c,
           other_user: profileMap.get(otherId) || { id: otherId, display_name: "User", avatar_url: null },
-          last_message: (lastMsg as any)?.gift_amount ? `🎁 Gift $${(lastMsg as any).gift_amount}` : (lastMsg as any)?.content || "",
+          last_message: formatLastMessage(lastMsg as any),
           unread_count: unread || 0,
         });
       }
