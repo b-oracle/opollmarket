@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
         .select("amount")
         .eq("user_id", userId)
         .eq("type", "deposit")
-        .in("status", ["confirmed", "partial"]);
+        .eq("status", "confirmed");
       const totalDeposits = (depositSum || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0);
 
       const { data: withdrawnSum } = await adminClient
