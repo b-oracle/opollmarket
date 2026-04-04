@@ -78,6 +78,29 @@ async function fetchMatchResult(
       };
     }
 
+    // MMA-specific parsing
+    if (sportType.toLowerCase() === "mma") {
+      const status = match.status?.short || "";
+      const finished = ["FT", "FIN"].includes(status);
+      const fighter1 = match.fighters?.first;
+      const fighter2 = match.fighters?.second;
+      let winner: string | null = null;
+      if (finished) {
+        if (fighter1?.winner === true) winner = "home";
+        else if (fighter2?.winner === true) winner = "away";
+        else if (fighter1?.winner === false && fighter2?.winner === false) winner = "draw";
+      }
+      return {
+        finished,
+        homeTeam: fighter1?.name || "Fighter 1",
+        awayTeam: fighter2?.name || "Fighter 2",
+        homeScore: null,
+        awayScore: null,
+        winner,
+        status,
+      };
+    }
+
     // Generic parsing for other sports
     const status = match.status?.short || match.game?.status?.short || "";
     const finished = ["FT", "AOT", "AP", "POST"].includes(status) || status === "FIN";
