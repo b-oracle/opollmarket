@@ -81,9 +81,24 @@ const AdminCreateMarket = () => {
 
   const generateSportsAutoFill = (fixture: { homeTeam: string; awayTeam: string; date: string; league: string; venue: string }, outcome: string) => {
     const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
+    const isMma = sportType === "mma";
     let newTitle: string;
     let newDesc: string;
-    if (outcome === "home_win") {
+    if (isMma) {
+      if (outcome.includes(fixture.homeTeam)) {
+        newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      } else if (outcome.includes(fixture.awayTeam)) {
+        newTitle = `Will ${fixture.awayTeam} beat ${fixture.homeTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.awayTeam} defeats ${fixture.homeTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      } else if (outcome) {
+        newTitle = `Will "${outcome}" happen in ${fixture.homeTeam} vs ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if the condition "${outcome}" is met in the ${fixture.league || "UFC"} fight between ${fixture.homeTeam} and ${fixture.awayTeam} on ${matchDate}.`;
+      } else {
+        newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
+        newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || "UFC"} fight scheduled for ${matchDate}. It resolves NO otherwise.`;
+      }
+    } else if (outcome === "home_win") {
       newTitle = `Will ${fixture.homeTeam} beat ${fixture.awayTeam} on ${matchDate}?`;
       newDesc = `This market resolves YES if ${fixture.homeTeam} defeats ${fixture.awayTeam} in their ${fixture.league || sportType} match scheduled for ${matchDate}. It resolves NO otherwise (including a draw).`;
     } else if (outcome === "away_win") {
@@ -111,22 +126,28 @@ const AdminCreateMarket = () => {
     { value: "below", label: "Closes below" },
   ];
   const SPORT_TYPES = [
-    { value: "football", label: "Football (Soccer)" },
-    { value: "basketball", label: "Basketball" },
-    { value: "nfl", label: "American Football" },
-    { value: "baseball", label: "Baseball" },
-    { value: "hockey", label: "Hockey" },
-    { value: "mma", label: "MMA / UFC" },
-    { value: "formula1", label: "Formula 1" },
-    { value: "rugby", label: "Rugby" },
-    { value: "volleyball", label: "Volleyball" },
-    { value: "handball", label: "Handball" },
+    { value: "football", label: "Football (Soccer)", enabled: true },
+    { value: "mma", label: "MMA / UFC", enabled: true },
+    { value: "basketball", label: "Basketball", enabled: false },
+    { value: "nfl", label: "American Football", enabled: false },
+    { value: "baseball", label: "Baseball", enabled: false },
+    { value: "hockey", label: "Hockey", enabled: false },
+    { value: "formula1", label: "Formula 1", enabled: false },
+    { value: "rugby", label: "Rugby", enabled: false },
+    { value: "volleyball", label: "Volleyball", enabled: false },
+    { value: "handball", label: "Handball", enabled: false },
   ];
-  const OUTCOME_TYPES = [
-    { value: "home_win", label: "Home Win" },
-    { value: "away_win", label: "Away Win" },
-    { value: "draw", label: "Draw" },
-  ];
+  const isMmaSport = sportType === "mma";
+  const OUTCOME_TYPES = isMmaSport
+    ? [
+        { value: selectedFixtureData ? `${selectedFixtureData.homeTeam} Win` : "fighter1_win", label: selectedFixtureData?.homeTeam || "Fighter 1" },
+        { value: selectedFixtureData ? `${selectedFixtureData.awayTeam} Win` : "fighter2_win", label: selectedFixtureData?.awayTeam || "Fighter 2" },
+      ]
+    : [
+        { value: "home_win", label: "Home Win" },
+        { value: "away_win", label: "Away Win" },
+        { value: "draw", label: "Draw" },
+      ];
 
   // AI generation state
   const [aiGenerationCost, setAiGenerationCost] = useState(0.5);
@@ -854,17 +875,19 @@ const AdminCreateMarket = () => {
                   <label className="text-xs font-semibold mb-1.5 block">Sport</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {SPORT_TYPES.map((s) => (
-                      <button key={s.value} onClick={() => { setSportType(s.value); setResolutionSource(`Auto-resolved via live ${s.label} match result`); }}
-                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${sportType === s.value ? "bg-primary/15 border border-primary/40 text-primary" : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"}`}>{s.label}</button>
+                      <button key={s.value} disabled={!s.enabled} onClick={() => { if (!s.enabled) return; setSportType(s.value); setResolutionSource(`Auto-resolved via live ${s.label} match result`); }}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${!s.enabled ? "bg-muted/30 border border-border/50 text-muted-foreground/40 cursor-not-allowed" : sportType === s.value ? "bg-primary/15 border border-primary/40 text-primary" : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"}`}
+                        title={!s.enabled ? "Coming soon" : undefined}>{s.label}{!s.enabled && <span className="ml-1 text-[9px] opacity-60">Soon</span>}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold mb-1.5 block">League (optional)</label>
-                  <input type="text" value={sportLeague} onChange={(e) => setSportLeague(e.target.value)} placeholder="e.g. Premier League, NBA" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  <label className="text-xs font-semibold mb-1.5 block">{isMmaSport ? "Event (optional)" : "League (optional)"}</label>
+                  <input type="text" value={sportLeague} onChange={(e) => setSportLeague(e.target.value)} placeholder={isMmaSport ? "e.g. UFC 315, Bellator 300" : "e.g. Premier League, La Liga"} className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <FixtureSearch
                   sportType={sportType}
+                  isMma={isMmaSport}
                   selectedFixtureId={sportMatchId}
                   onSelect={(fixture) => {
                     setSportMatchId(fixture.id);
@@ -875,7 +898,9 @@ const AdminCreateMarket = () => {
                       generateSportsAutoFill(fixtureInfo, sportPredictedOutcome);
                       const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
                       if (!details.trim()) {
-                        setDetails(`**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
+                        setDetails(isMmaSport
+                          ? `**Fight Details**\n- **Fighter 1:** ${fixture.homeTeam}\n- **Fighter 2:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **Event:** ${fixture.league || "TBD"}\n\n**Resolution**\nThis market will be auto-resolved based on the official fight result (Fight ID: ${fixture.id}).`
+                          : `**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
                       }
                       if (!endDate && fixture.date) {
                         try { setEndDate(new Date(fixture.date).toISOString().split("T")[0]); } catch {}
@@ -885,7 +910,7 @@ const AdminCreateMarket = () => {
                 />
                 <div>
                   <label className="text-xs font-semibold mb-1.5 block">Predicted Outcome</label>
-                  <div className="grid grid-cols-3 gap-1.5 mb-2">
+                  <div className={`grid ${isMmaSport ? 'grid-cols-2' : 'grid-cols-3'} gap-1.5 mb-2`}>
                     {OUTCOME_TYPES.map((o) => (
                       <button key={o.value} onClick={() => {
                         setSportPredictedOutcome(o.value);
@@ -897,7 +922,7 @@ const AdminCreateMarket = () => {
                   <input type="text" value={sportPredictedOutcome} onChange={(e) => {
                     setSportPredictedOutcome(e.target.value);
                     if (selectedFixtureData) generateSportsAutoFill(selectedFixtureData, e.target.value);
-                  }} placeholder="Or custom: over 2.5, btts, team name" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  }} placeholder={isMmaSport ? "Or custom: e.g. KO/TKO, submission" : "Or custom: over 2.5, btts, team name"} className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
