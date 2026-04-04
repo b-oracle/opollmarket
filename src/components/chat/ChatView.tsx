@@ -34,6 +34,7 @@ const ChatView = () => {
   const [showGift, setShowGift] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [calling, setCalling] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
