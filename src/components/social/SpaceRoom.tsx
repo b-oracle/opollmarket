@@ -1693,6 +1693,64 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setShowMusicMenu(false);
   };
 
+  // === Online Music (Jamendo) ===
+  const playOnlineTrack = async (url: string, name: string) => {
+    if (!hasModPowers || !roomRef.current) return;
+    // Stop any currently playing device music first
+    if (deviceMusicPlaying) await stopDeviceMusic();
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error("Failed to fetch track");
+      const arrayBuffer = await resp.arrayBuffer();
+
+      const ctx = new AudioContext();
+      deviceMusicCtxRef.current = ctx;
+
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      deviceMusicBufferRef.current = audioBuffer;
+
+      const destination = ctx.createMediaStreamDestination();
+      deviceMusicDestRef.current = destination;
+
+      const gain = ctx.createGain();
+      gain.gain.value = deviceMusicVolume;
+      gain.connect(destination);
+      gain.connect(ctx.destination);
+      deviceMusicGainRef.current = gain;
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.loop = deviceMusicLoop;
+      source.connect(gain);
+      source.onended = () => {
+        if (!deviceMusicPaused && !source.loop) stopDeviceMusic();
+      };
+      source.start(0);
+      deviceMusicSourceRef.current = source;
+      deviceMusicOffsetRef.current = 0;
+      deviceMusicStartTimeRef.current = ctx.currentTime;
+
+      const mediaTrack = destination.stream.getAudioTracks()[0];
+      const pub = await roomRef.current.localParticipant.publishTrack(mediaTrack, {
+        name: "device-music",
+        source: Track.Source.ScreenShareAudio,
+      });
+      deviceMusicTrackRef.current = pub;
+
+      setDeviceMusicPlaying(true);
+      setDeviceMusicPaused(false);
+      setDjIdentity(user?.id ?? null);
+      setDeviceMusicName(name);
+      setShowMusicMenu(false);
+      setShowJamendoBrowser(false);
+      toast.success(`Now playing: ${name} 🎵`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to play track");
+      cleanupDeviceMusic();
+    }
+  };
+
   // === Device Music ===
   const handleDeviceMusicFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!hasModPowers) return;
