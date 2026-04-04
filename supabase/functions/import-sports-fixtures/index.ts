@@ -256,6 +256,17 @@ Deno.serve(async (req) => {
 
         if (preset.sport_type === "football") {
           fixturesUrl = `https://${sportConfig.host}${sportConfig.fixturePath}?league=${preset.league_id}&next=${Math.min(maxImports * 2, 50)}`;
+        } else if (preset.sport_type === "mma") {
+          // MMA API uses date-based queries; fetch fights for the next N days
+          const daysAhead = preset.max_days_ahead || 14;
+          const dates: string[] = [];
+          for (let d = 0; d <= Math.min(daysAhead, 7); d++) {
+            const dt = new Date();
+            dt.setDate(dt.getDate() + d);
+            dates.push(dt.toISOString().split("T")[0]);
+          }
+          // Fetch first date; we'll handle multiple dates below
+          fixturesUrl = `https://${sportConfig.host}${sportConfig.fixturePath}?date=${dates[0]}`;
         } else {
           const currentSeason = new Date().getFullYear();
           fixturesUrl = `https://${sportConfig.host}${sportConfig.fixturePath}?league=${preset.league_id}&season=${currentSeason}`;
