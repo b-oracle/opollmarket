@@ -218,7 +218,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   };
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}&url=${encodeURIComponent(ogShareLink)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽`)}&url=${encodeURIComponent(ogShareLink)}`, "_blank");
   };
   const handleFacebook = () => {
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogShareLink)}`, "_blank");
