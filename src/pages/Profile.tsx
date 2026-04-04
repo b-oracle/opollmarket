@@ -18,7 +18,7 @@ import { bsc } from "wagmi/chains";
 import {
   Wallet, Gift, ArrowDownToLine, ArrowUpFromLine, ArrowUpRight, ArrowDownLeft,
   Repeat, LogIn, Send, MessageCircle, ExternalLink, ChevronRight, ChevronDown,
-  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown, DollarSign, Bell, Check, CalendarIcon, KeyRound,
+  Video, HelpCircle, Shield, ClipboardCheck, Lock, Trophy, Pencil, Download, Copy, Link2, Unlink, Loader2, Camera, Image, BarChart3, Globe, Eye, EyeOff, Users, Sparkles, Zap, ArrowUp, ArrowDown, DollarSign, Bell, Check, CalendarIcon, KeyRound,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import NftBadge, { isNftAvatar } from "@/components/NftBadge";
@@ -568,6 +568,7 @@ const Profile = () => {
   const { disconnect } = useDisconnect();
   const { open } = useAppKit();
   const [modalOpen, setModalOpen] = useState(false);
+  const [balanceHidden, setBalanceHidden] = useState(() => localStorage.getItem("hide_balance") === "1");
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
   const [resumeProvider, setResumeProvider] = useState<string | null>(null);
@@ -1332,9 +1333,23 @@ const Profile = () => {
         </AnimatePresence>
 
         {/* Balance + Stats */}
-        <div className="glass rounded-xl p-4 mb-3 text-center">
+        <div className="glass rounded-xl p-4 mb-3 text-center relative">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
-          <p className="text-3xl font-bold text-primary">${balance.toFixed(2)}</p>
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-3xl font-bold text-primary">
+              {balanceHidden ? "••••••" : `$${balance.toFixed(2)}`}
+            </p>
+            <button
+              onClick={() => {
+                const next = !balanceHidden;
+                setBalanceHidden(next);
+                localStorage.setItem("hide_balance", next ? "1" : "");
+              }}
+              className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground"
+            >
+              {balanceHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
           <p className="text-[10px] text-muted-foreground">USD</p>
         </div>
 
