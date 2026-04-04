@@ -23,7 +23,7 @@ interface FixtureSearchProps {
   isMma?: boolean;
 }
 
-const FixtureSearch = ({ sportType, onSelect, selectedFixtureId }: FixtureSearchProps) => {
+const FixtureSearch = ({ sportType, onSelect, selectedFixtureId, isMma }: FixtureSearchProps) => {
   const [query, setQuery] = useState("");
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(false);
