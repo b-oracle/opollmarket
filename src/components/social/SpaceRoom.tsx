@@ -1200,7 +1200,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         track.stop();
       } catch {
         // Fallback: just pick a different device than the current one
-        const currentTrack = roomRef.current.localParticipant.getTrackPublication("camera")?.track;
+        const currentTrack = roomRef.current.localParticipant.getTrackPublication(Track.Source.Camera)?.track;
         const currentDeviceId = currentTrack?.mediaStreamTrack?.getSettings()?.deviceId;
         const other = videoDevices.find((d) => d.deviceId !== currentDeviceId);
         targetDeviceId = other?.deviceId;
