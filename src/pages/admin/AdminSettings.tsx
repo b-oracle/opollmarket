@@ -1540,6 +1540,7 @@ const POPULAR_LEAGUES = [
   { id: 1, name: "FIFA World Cup", country: "World", sport: "football", logo: "https://media.api-sports.io/football/leagues/1.png" },
   { id: 12, name: "NBA", country: "USA", sport: "basketball", logo: "" },
   { id: 1, name: "NFL", country: "USA", sport: "nfl", logo: "" },
+  { id: 0, name: "UFC / MMA", country: "World", sport: "mma", logo: "https://media.api-sports.io/mma/leagues/1.png" },
 ];
 
 interface SportsPreset {
@@ -1698,7 +1699,7 @@ const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
           <Zap className="w-5 h-5" /> Sports Fixture Auto-Import
         </CardTitle>
         <CardDescription>
-          Import upcoming matches from leagues via API-Football. Markets are created as multi-option (Home/Draw/Away) for football, binary for others. Auto-resolves via existing sports resolution.
+          Import upcoming matches/fights from leagues via API-Sports. Football markets are multi-option (Home/Draw/Away), MMA markets are binary (Fighter 1 vs Fighter 2). Auto-resolves via sports resolution.
           {marketCount > 0 && <span className="ml-2 font-medium text-primary">{marketCount} total imported</span>}
         </CardDescription>
       </CardHeader>
