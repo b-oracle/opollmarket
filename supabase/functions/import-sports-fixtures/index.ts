@@ -284,7 +284,32 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        const fixtures = data?.response || [];
+        let fixtures = data?.response || [];
+
+        // For MMA, fetch additional days to get more upcoming fights
+        if (preset.sport_type === "mma") {
+          const daysAhead = preset.max_days_ahead || 14;
+          for (let d = 1; d <= Math.min(daysAhead, 7); d++) {
+            const dt = new Date();
+            dt.setDate(dt.getDate() + d);
+            const dateStr = dt.toISOString().split("T")[0];
+            try {
+              const dayResp = await fetch(
+                `https://${sportConfig.host}${sportConfig.fixturePath}?date=${dateStr}`,
+                { headers }
+              );
+              if (dayResp.ok) {
+                const dayData = await dayResp.json();
+                if (!dayData?.errors || Object.keys(dayData.errors).length === 0) {
+                  fixtures = fixtures.concat(dayData?.response || []);
+                }
+              }
+            } catch { /* skip failed date */ }
+          }
+          // Filter to only main card fights (is_main = true) from UFC events
+          fixtures = fixtures.filter((f: any) => f.is_main !== false);
+        }
+
         console.log(`[${preset.league_name}] API returned ${fixtures.length} fixtures`);
 
         for (const fixture of fixtures) {
