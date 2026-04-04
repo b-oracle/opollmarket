@@ -124,7 +124,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   })();
 
 
-  const salesMessage = `🔥 Check out "${title}" on our prediction market! Make your OPinion count, predict now 👇🏽\n\n${cleanShareLink}`;
+  const salesMessage = `Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${cleanShareLink}`;
 
   // Capture screenshot when modal opens
   useEffect(() => {
