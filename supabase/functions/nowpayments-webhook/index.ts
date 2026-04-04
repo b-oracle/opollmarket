@@ -491,7 +491,7 @@ Deno.serve(async (req) => {
     const { payment_status, order_id } = payload;
 
     // Accept "finished", "confirmed", and "sending" statuses for crediting
-    if (payment_status !== "finished" && payment_status !== "confirmed" && payment_status !== "partially_paid") {
+    if (payment_status !== "finished" && payment_status !== "confirmed") {
       console.log(`Ignoring status: ${payment_status}`);
       return new Response("OK", { status: 200, headers: corsHeaders });
     }
