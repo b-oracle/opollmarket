@@ -922,7 +922,7 @@ const AdminCreateMarket = () => {
                   <input type="text" value={sportPredictedOutcome} onChange={(e) => {
                     setSportPredictedOutcome(e.target.value);
                     if (selectedFixtureData) generateSportsAutoFill(selectedFixtureData, e.target.value);
-                  }} placeholder="Or custom: over 2.5, btts, team name" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  }} placeholder={isMmaSport ? "Or custom: e.g. KO/TKO, submission" : "Or custom: over 2.5, btts, team name"} className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <div>
                   <label className="text-xs font-semibold mb-1.5 block">Resolution Deadline Time (UTC)</label>
