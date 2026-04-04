@@ -73,47 +73,46 @@ Deno.serve(async (req) => {
       const calleeId = convo.user_a === user.id ? convo.user_b : convo.user_a;
 
       // Check if there's already an active/ringing call for this conversation
-      const { data: existingCall } = await admin
+      const { data: existingCalls } = await admin
         .from("dm_calls")
-        .select("id, status, created_at, room_name")
+        .select("id, status, created_at, started_at, room_name")
         .eq("conversation_id", conversation_id)
         .in("status", ["ringing", "active"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("created_at", { ascending: false });
 
-      if (existingCall) {
-        const ageMs = existingCall.created_at
-          ? Date.now() - new Date(existingCall.created_at).getTime()
-          : 0;
-        const isStaleRingingCall = existingCall.status === "ringing" && ageMs > 90_000;
+      if (existingCalls && existingCalls.length > 0) {
+        const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+        let blocked = false;
 
-        if (isStaleRingingCall) {
-          console.warn("Cleaning up stale ringing call", {
-            callId: existingCall.id,
-            conversation_id,
-            ageMs,
-          });
+        for (const ec of existingCalls) {
+          const ageMs = ec.created_at
+            ? Date.now() - new Date(ec.created_at).getTime()
+            : 0;
 
-          await admin
-            .from("dm_calls")
-            .update({ status: "missed", ended_at: new Date().toISOString() })
-            .eq("id", existingCall.id);
+          const isStaleRinging = ec.status === "ringing" && ageMs > 60_000;
+          const isStaleActive = ec.status === "active" && ec.started_at
+            ? Date.now() - new Date(ec.started_at).getTime() > 2 * 60 * 60 * 1000
+            : ec.status === "active" && ageMs > 2 * 60 * 60 * 1000;
 
-          try {
-            const cleanupSvc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-            await cleanupSvc.deleteRoom(existingCall.room_name);
-          } catch (cleanupErr) {
-            console.warn("Failed to delete stale room", cleanupErr);
+          if (isStaleRinging || isStaleActive) {
+            console.warn("Cleaning up stale call", { callId: ec.id, status: ec.status, ageMs });
+            await admin
+              .from("dm_calls")
+              .update({
+                status: isStaleRinging ? "missed" : "ended",
+                ended_at: new Date().toISOString(),
+              })
+              .eq("id", ec.id);
+
+            try { await svc.deleteRoom(ec.room_name); } catch { /* room may be gone */ }
+          } else {
+            blocked = true;
           }
-        } else {
+        }
+
+        if (blocked) {
           return json(
-            {
-              error:
-                existingCall.status === "active"
-                  ? "A call is already active in this chat"
-                  : "A previous call is still ringing. Please wait a moment and try again.",
-            },
+            { error: "There is an ongoing call in this chat. Please end it first or wait." },
             409
           );
         }
@@ -121,11 +120,11 @@ Deno.serve(async (req) => {
 
       const roomName = `dm-call-${conversation_id}-${Date.now()}`;
 
-      // Create LiveKit room
+      // Create LiveKit room with reduced emptyTimeout
       console.log("Creating LiveKit room:", { roomName, httpUrl });
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-        await svc.createRoom({ name: roomName, emptyTimeout: 120, maxParticipants: 2 });
+        await svc.createRoom({ name: roomName, emptyTimeout: 60, maxParticipants: 2 });
         console.log("LiveKit room created successfully");
       } catch (lkErr: any) {
         console.error("LiveKit room creation failed:", lkErr?.message || lkErr);
@@ -297,7 +296,13 @@ Deno.serve(async (req) => {
 
       if (!call) return json({ error: "Call not found" }, 404);
       if (call.caller_id !== user.id) return json({ error: "Not the caller" }, 403);
-      if (call.status !== "ringing") return json({ error: "Call is not ringing" }, 400);
+      // Tolerate already-ended calls
+      if (!["ringing", "active", "ended", "missed"].includes(call.status)) {
+        return json({ error: "Call is not ringing" }, 400);
+      }
+      if (call.status === "ended" || call.status === "missed") {
+        return json({ success: true });
+      }
 
       await admin
         .from("dm_calls")
@@ -356,6 +361,11 @@ Deno.serve(async (req) => {
       if (!call) return json({ error: "Call not found" }, 404);
       if (call.caller_id !== user.id && call.callee_id !== user.id)
         return json({ error: "Not a participant" }, 403);
+
+      // Tolerate already-ended calls — return success silently
+      if (["ended", "missed", "declined"].includes(call.status)) {
+        return json({ success: true, duration_seconds: call.started_at ? 0 : 0 });
+      }
 
       const now = new Date();
       const duration = call.started_at

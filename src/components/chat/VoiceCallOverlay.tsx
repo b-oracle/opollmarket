@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Room, RoomEvent, Track, ConnectionState } from "livekit-client";
-import { playDialTone, playRingtone } from "@/lib/sounds";
+import { Room, RoomEvent, Track } from "livekit-client";
+import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, PhoneOff, Mic, MicOff, Volume2, Lock, X, Minimize2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { PhoneOff, Mic, MicOff, Volume2, Lock, X, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceCallOverlayProps {
@@ -22,6 +21,8 @@ interface VoiceCallOverlayProps {
   onClose: () => void;
 }
 
+type CallStatus = "connecting" | "ringing" | "active" | "ended";
+
 const VoiceCallOverlay = ({
   callId,
   conversationId,
@@ -37,18 +38,65 @@ const VoiceCallOverlay = ({
   onMaximize,
   onClose,
 }: VoiceCallOverlayProps) => {
-  const [status, setStatus] = useState<"connecting" | "ringing" | "active" | "ended">(
+  const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
   const [muted, setMuted] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(false);
   const [duration, setDuration] = useState(0);
+
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const autoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stopToneRef = useRef<(() => void) | null>(null);
   const intentionalDisconnectRef = useRef(false);
+  const endingRef = useRef(false); // guard double-end
+  const statusRef = useRef<CallStatus>(isOutgoing ? "ringing" : "connecting");
+  const remoteTrackReceivedRef = useRef(false);
+
+  // Keep statusRef in sync
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  const handleEnd = useCallback(async () => {
+    if (endingRef.current) return;
+    endingRef.current = true;
+    intentionalDisconnectRef.current = true;
+    setStatus("ended");
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+    roomRef.current?.disconnect();
+
+    try {
+      await supabase.functions.invoke("dm-call-token", {
+        body: { action: "end", call_id: callId },
+      });
+    } catch { /* ignore */ }
+
+    setTimeout(onClose, 1000);
+  }, [callId, onClose]);
+
+  const handleCancel = useCallback(async () => {
+    if (endingRef.current) return;
+    endingRef.current = true;
+    intentionalDisconnectRef.current = true;
+    setStatus("ended");
+    if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+    roomRef.current?.disconnect();
+
+    try {
+      await supabase.functions.invoke("dm-call-token", {
+        body: { action: "cancel", call_id: callId },
+      });
+    } catch { /* ignore */ }
+
+    setTimeout(onClose, 500);
+  }, [callId, onClose]);
 
   // Connect to LiveKit room
   useEffect(() => {
@@ -60,9 +108,15 @@ const VoiceCallOverlay = ({
 
     room.on(RoomEvent.TrackSubscribed, (track) => {
       if (track.kind === Track.Kind.Audio) {
+        remoteTrackReceivedRef.current = true;
         const el = track.attach();
         el.id = `remote-audio-${track.sid}`;
         document.body.appendChild(el);
+        // Clear inactivity timeout once we receive audio
+        if (inactivityTimeoutRef.current) {
+          clearTimeout(inactivityTimeoutRef.current);
+          inactivityTimeoutRef.current = null;
+        }
       }
     });
 
@@ -78,6 +132,12 @@ const VoiceCallOverlay = ({
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
       }
+      // Start 60s inactivity timeout — auto-end if no remote audio received
+      inactivityTimeoutRef.current = setTimeout(() => {
+        if (statusRef.current === "active" && !remoteTrackReceivedRef.current) {
+          handleEnd();
+        }
+      }, 60_000);
     });
 
     room.on(RoomEvent.ParticipantDisconnected, () => {
@@ -85,7 +145,7 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.Disconnected, () => {
-      handleEnd();
+      if (!endingRef.current) handleEnd();
     });
 
     room
@@ -107,9 +167,10 @@ const VoiceCallOverlay = ({
         }
       });
 
+    // Auto-timeout for unanswered outgoing calls (60s)
     if (isOutgoing) {
       autoTimeoutRef.current = setTimeout(() => {
-        if (status === "ringing") {
+        if (statusRef.current === "ringing") {
           handleCancel();
         }
       }, 60000);
@@ -118,7 +179,17 @@ const VoiceCallOverlay = ({
     return () => {
       if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+      // Ensure call is ended on unmount
+      if (!endingRef.current && statusRef.current !== "ended") {
+        const s = statusRef.current;
+        if (s === "ringing" && isOutgoing) {
+          handleCancel();
+        } else if (s === "active" || s === "connecting") {
+          handleEnd();
+        }
+      }
       room.disconnect();
       roomRef.current = null;
     };
@@ -168,37 +239,6 @@ const VoiceCallOverlay = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [callId, onClose]);
-
-  const handleEnd = useCallback(async () => {
-    intentionalDisconnectRef.current = true;
-    setStatus("ended");
-    if (timerRef.current) clearInterval(timerRef.current);
-    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-    roomRef.current?.disconnect();
-
-    try {
-      await supabase.functions.invoke("dm-call-token", {
-        body: { action: "end", call_id: callId },
-      });
-    } catch { /* ignore */ }
-
-    setTimeout(onClose, 1000);
-  }, [callId, onClose]);
-
-  const handleCancel = useCallback(async () => {
-    intentionalDisconnectRef.current = true;
-    setStatus("ended");
-    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-    roomRef.current?.disconnect();
-
-    try {
-      await supabase.functions.invoke("dm-call-token", {
-        body: { action: "cancel", call_id: callId },
-      });
-    } catch { /* ignore */ }
-
-    setTimeout(onClose, 500);
   }, [callId, onClose]);
 
   const toggleMute = async () => {
