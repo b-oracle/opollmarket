@@ -419,7 +419,7 @@ Deno.serve(async (req) => {
             market_type: marketType,
             creator_wallet: creatorId,
             creator_name: creatorName,
-            end_date: fixtureDate.toISOString(),
+            end_date: new Date(fixtureDate.getTime() + 24 * 60 * 60 * 1000).toISOString(),
             resolution_source: "API-Football",
             image_url: imageUrl,
             sport_type: preset.sport_type,
