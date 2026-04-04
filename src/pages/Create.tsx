@@ -515,16 +515,16 @@ const Create = () => {
     { value: "below", label: "Closes below" },
   ];
   const SPORT_TYPES = [
-    { value: "football", label: "Football (Soccer)" },
-    { value: "basketball", label: "Basketball" },
-    { value: "nfl", label: "American Football" },
-    { value: "baseball", label: "Baseball" },
-    { value: "hockey", label: "Hockey" },
-    { value: "mma", label: "MMA / UFC" },
-    { value: "formula1", label: "Formula 1" },
-    { value: "rugby", label: "Rugby" },
-    { value: "volleyball", label: "Volleyball" },
-    { value: "handball", label: "Handball" },
+    { value: "football", label: "Football (Soccer)", enabled: true },
+    { value: "mma", label: "MMA / UFC", enabled: true },
+    { value: "basketball", label: "Basketball", enabled: false },
+    { value: "nfl", label: "American Football", enabled: false },
+    { value: "baseball", label: "Baseball", enabled: false },
+    { value: "hockey", label: "Hockey", enabled: false },
+    { value: "formula1", label: "Formula 1", enabled: false },
+    { value: "rugby", label: "Rugby", enabled: false },
+    { value: "volleyball", label: "Volleyball", enabled: false },
+    { value: "handball", label: "Handball", enabled: false },
   ];
   const isMmaSport = sportType === "mma";
   const OUTCOME_TYPES = isMmaSport
@@ -2235,17 +2235,22 @@ const Create = () => {
                           {SPORT_TYPES.map((s) => (
                             <button
                               key={s.value}
+                              disabled={!s.enabled}
                               onClick={() => {
+                                if (!s.enabled) return;
                                 setSportType(s.value);
                                 setResolutionSource(`Auto-resolved via live ${s.label} match result`);
                               }}
                               className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                                sportType === s.value
-                                  ? "bg-primary/15 border border-primary/40 text-primary"
-                                  : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
+                                !s.enabled
+                                  ? "bg-muted/30 border border-border/50 text-muted-foreground/40 cursor-not-allowed"
+                                  : sportType === s.value
+                                    ? "bg-primary/15 border border-primary/40 text-primary"
+                                    : "bg-muted/50 border border-border text-muted-foreground hover:text-foreground"
                               }`}
+                              title={!s.enabled ? "Coming soon" : undefined}
                             >
-                              {s.label}
+                              {s.label}{!s.enabled && <span className="ml-1 text-[9px] opacity-60">Soon</span>}
                             </button>
                           ))}
                         </div>
@@ -2253,12 +2258,12 @@ const Create = () => {
 
                       {/* League */}
                       <div>
-                        <label className="text-xs font-semibold mb-1.5 block">League / Competition (optional)</label>
+                        <label className="text-xs font-semibold mb-1.5 block">{isMmaSport ? "Event (optional)" : "League / Competition (optional)"}</label>
                         <input
                           type="text"
                           value={sportLeague}
                           onChange={(e) => setSportLeague(e.target.value)}
-                          placeholder="e.g. Premier League, NBA, UFC 300"
+                          placeholder={isMmaSport ? "e.g. UFC 315, Bellator 300" : "e.g. Premier League, La Liga"}
                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </div>
@@ -2266,6 +2271,7 @@ const Create = () => {
                       {/* Fixture Search */}
                       <FixtureSearch
                         sportType={sportType}
+                        isMma={isMmaSport}
                         selectedFixtureId={sportMatchId}
                         onSelect={(fixture) => {
                           setSportMatchId(fixture.id);
@@ -2276,7 +2282,9 @@ const Create = () => {
                             generateSportsAutoFill(fixtureInfo, sportPredictedOutcome);
                             const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
                             if (!details.trim()) {
-                              setDetails(`**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
+                              setDetails(isMmaSport
+                                ? `**Fight Details**\n- **Fighter 1:** ${fixture.homeTeam}\n- **Fighter 2:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **Event:** ${fixture.league || "TBD"}\n\n**Resolution**\nThis market will be auto-resolved based on the official fight result (Fight ID: ${fixture.id}).`
+                                : `**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
                             }
                             if (!endDate && fixture.date) {
                               try { setEndDate(new Date(fixture.date).toISOString().split("T")[0]); } catch {}
@@ -2313,7 +2321,7 @@ const Create = () => {
                             setSportPredictedOutcome(e.target.value);
                             if (selectedFixtureData) generateSportsAutoFill(selectedFixtureData, e.target.value);
                           }}
-                          placeholder="Or type custom: e.g. over 2.5, btts, team name"
+                          placeholder={isMmaSport ? "Or type custom: e.g. KO/TKO, submission" : "Or type custom: e.g. over 2.5, btts, team name"}
                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </div>

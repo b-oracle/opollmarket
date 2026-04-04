@@ -20,9 +20,10 @@ interface FixtureSearchProps {
   sportType: string;
   onSelect: (fixture: Fixture) => void;
   selectedFixtureId?: string;
+  isMma?: boolean;
 }
 
-const FixtureSearch = ({ sportType, onSelect, selectedFixtureId }: FixtureSearchProps) => {
+const FixtureSearch = ({ sportType, onSelect, selectedFixtureId, isMma }: FixtureSearchProps) => {
   const [query, setQuery] = useState("");
   const [fixtures, setFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(false);
@@ -88,7 +89,7 @@ const FixtureSearch = ({ sportType, onSelect, selectedFixtureId }: FixtureSearch
 
   return (
     <div ref={containerRef} className="relative">
-      <label className="text-xs font-semibold mb-1.5 block">Search Match by Team Name</label>
+      <label className="text-xs font-semibold mb-1.5 block">{isMma ? "Search Fight by Fighter Name" : "Search Match by Team Name"}</label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
@@ -96,7 +97,7 @@ const FixtureSearch = ({ sportType, onSelect, selectedFixtureId }: FixtureSearch
           value={query}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => fixtures.length > 0 && setOpen(true)}
-          placeholder="Type a team name (e.g. Arsenal, Lakers)"
+          placeholder={isMma ? "Type a fighter name (e.g. Adesanya)" : "Type a team name (e.g. Arsenal)"}
           className="w-full bg-muted/50 border border-border rounded-xl pl-9 pr-9 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
         {loading && (
