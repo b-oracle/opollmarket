@@ -121,3 +121,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.cleanup-audit-logs]
     verify_jwt = false
+  [functions.withdrawal-deposit-audit]
+    verify_jwt = false
