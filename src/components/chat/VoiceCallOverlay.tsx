@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track, ConnectionState } from "livekit-client";
+import { playDialTone, playRingtone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { Phone, PhoneOff, Mic, MicOff, Volume2, Lock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const VoiceCallOverlay = ({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const autoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stopToneRef = useRef<(() => void) | null>(null);
 
   // Connect to LiveKit room
   useEffect(() => {
@@ -63,6 +65,8 @@ const VoiceCallOverlay = ({
     room.on(RoomEvent.ParticipantConnected, () => {
       setStatus("active");
       startTimeRef.current = Date.now();
+      // Stop dial/ring tone
+      if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       if (autoTimeoutRef.current) {
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
@@ -84,6 +88,9 @@ const VoiceCallOverlay = ({
         if (!isOutgoing) {
           setStatus("active");
           startTimeRef.current = Date.now();
+        } else {
+          // Start dial tone for outgoing calls
+          stopToneRef.current = playDialTone();
         }
       })
       .catch((err) => {
@@ -104,6 +111,7 @@ const VoiceCallOverlay = ({
     return () => {
       if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       room.disconnect();
       roomRef.current = null;
     };
@@ -158,6 +166,7 @@ const VoiceCallOverlay = ({
   const handleEnd = useCallback(async () => {
     setStatus("ended");
     if (timerRef.current) clearInterval(timerRef.current);
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
     roomRef.current?.disconnect();
 
     try {
@@ -171,6 +180,7 @@ const VoiceCallOverlay = ({
 
   const handleCancel = useCallback(async () => {
     setStatus("ended");
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
     roomRef.current?.disconnect();
 
     try {

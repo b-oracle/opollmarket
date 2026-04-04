@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Plus, MessageCircle, Search, Inbox } from "lucide-react";
+import { ArrowLeft, Plus, MessageCircle, Search, Inbox, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import SEOHead from "@/components/SEOHead";
+
+const CallHistoryTab = lazy(() => import("./CallHistoryTab"));
 
 interface ConversationRow {
   id: string;
@@ -25,7 +27,7 @@ const ConversationList = () => {
   const queryClient = useQueryClient();
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"chats" | "requests">("chats");
+  const [tab, setTab] = useState<"chats" | "requests" | "calls">("chats");
 
   const { data: allConversations = [], isLoading } = useQuery({
     queryKey: ["dm-conversations", user?.id],
@@ -210,6 +212,16 @@ const ConversationList = () => {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setTab("calls")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              tab === "calls"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Calls
+          </button>
         </div>
 
         {/* Scrollable content */}
@@ -276,6 +288,14 @@ const ConversationList = () => {
                 ))}
               </div>
             )
+          ) : tab === "calls" ? (
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-20">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              <CallHistoryTab />
+            </Suspense>
           ) : (
             pendingRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">

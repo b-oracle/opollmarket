@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
+import { playRingtone } from "@/lib/sounds";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
@@ -31,6 +32,19 @@ const IncomingCallBanner = () => {
     isOutgoing: boolean;
   } | null>(null);
   const [answering, setAnswering] = useState(false);
+  const stopRingtoneRef = useRef<(() => void) | null>(null);
+
+  // Play ringtone when incoming call appears
+  useEffect(() => {
+    if (incomingCall && !activeCall) {
+      stopRingtoneRef.current = playRingtone();
+    } else {
+      if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+    }
+    return () => {
+      if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+    };
+  }, [incomingCall, activeCall]);
 
   // Subscribe to new incoming calls
   useEffect(() => {

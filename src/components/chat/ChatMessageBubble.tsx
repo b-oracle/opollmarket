@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, Plus } from "lucide-react";
+import { Gift, Plus, Phone, PhoneMissed, PhoneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +28,7 @@ interface ChatMessageBubbleProps {
 }
 
 const INTERNAL_LINK_REGEX = /(?:https?:\/\/[^\s]+)?\/(?:market|spaces)\/([a-f0-9-]+)/gi;
+const CALL_MSG_REGEX = /^\[CALL:(ended|missed|declined):(\d+)\]$/;
 
 function extractInternalLinks(content: string): string[] {
   const matches = content.match(INTERNAL_LINK_REGEX);
@@ -45,8 +46,9 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
   const isGift = m.gift_amount != null && m.gift_amount > 0;
+  const callMatch = m.content.match(CALL_MSG_REGEX);
   const reactions: Record<string, string[]> = (m.reactions as any) || {};
-  const links = extractInternalLinks(m.content);
+  const links = callMatch ? [] : extractInternalLinks(m.content);
 
   const toggleReaction = useCallback(async (emoji: string) => {
     if (!user) return;
@@ -186,6 +188,39 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     onPointerCancel: handlePointerCancel,
     onPointerLeave: handlePointerCancel,
   };
+
+  // System call message
+  if (callMatch) {
+    const [, callStatus, durationStr] = callMatch;
+    const dur = parseInt(durationStr, 10);
+    const formatCallDuration = (s: number) => {
+      const min = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${min}:${sec.toString().padStart(2, "0")}`;
+    };
+
+    const icon = callStatus === "ended"
+      ? <Phone className="w-4 h-4 text-emerald-500" />
+      : callStatus === "missed"
+        ? <PhoneMissed className="w-4 h-4 text-destructive" />
+        : <PhoneOff className="w-4 h-4 text-destructive" />;
+
+    const label = callStatus === "ended"
+      ? `Voice call · ${formatCallDuration(dur)}`
+      : callStatus === "missed"
+        ? "Missed call"
+        : "Call declined";
+
+    return (
+      <div className="flex justify-center my-2">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/60 text-muted-foreground text-xs">
+          {icon}
+          <span>{label}</span>
+          <span>· {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}</span>
+        </div>
+      </div>
+    );
+  }
 
   if (isGift) {
     return (

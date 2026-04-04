@@ -207,6 +207,13 @@ Deno.serve(async (req) => {
         .update({ status: "declined", ended_at: new Date().toISOString() })
         .eq("id", call_id);
 
+      // Insert system message
+      await admin.from("dm_messages").insert({
+        conversation_id: call.conversation_id,
+        sender_id: user.id,
+        content: `[CALL:declined:0]`,
+      });
+
       // Destroy room
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
@@ -222,7 +229,7 @@ Deno.serve(async (req) => {
 
       const { data: call } = await admin
         .from("dm_calls")
-        .select("caller_id, room_name, status")
+        .select("caller_id, room_name, status, conversation_id")
         .eq("id", call_id)
         .single();
 
@@ -234,6 +241,13 @@ Deno.serve(async (req) => {
         .from("dm_calls")
         .update({ status: "missed", ended_at: new Date().toISOString() })
         .eq("id", call_id);
+
+      // Insert system message
+      await admin.from("dm_messages").insert({
+        conversation_id: call.conversation_id,
+        sender_id: user.id,
+        content: `[CALL:missed:0]`,
+      });
 
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
@@ -249,7 +263,7 @@ Deno.serve(async (req) => {
 
       const { data: call } = await admin
         .from("dm_calls")
-        .select("caller_id, callee_id, room_name, status, started_at")
+        .select("caller_id, callee_id, room_name, status, started_at, conversation_id")
         .eq("id", call_id)
         .single();
 
@@ -270,6 +284,13 @@ Deno.serve(async (req) => {
           duration_seconds: duration,
         })
         .eq("id", call_id);
+
+      // Insert system message
+      await admin.from("dm_messages").insert({
+        conversation_id: call.conversation_id,
+        sender_id: user.id,
+        content: `[CALL:ended:${duration}]`,
+      });
 
       try {
         const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
