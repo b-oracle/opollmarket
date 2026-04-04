@@ -46,8 +46,9 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
   const isGift = m.gift_amount != null && m.gift_amount > 0;
+  const callMatch = m.content.match(CALL_MSG_REGEX);
   const reactions: Record<string, string[]> = (m.reactions as any) || {};
-  const links = extractInternalLinks(m.content);
+  const links = callMatch ? [] : extractInternalLinks(m.content);
 
   const toggleReaction = useCallback(async (emoji: string) => {
     if (!user) return;
