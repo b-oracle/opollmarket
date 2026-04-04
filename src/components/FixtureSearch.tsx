@@ -20,6 +20,7 @@ interface FixtureSearchProps {
   sportType: string;
   onSelect: (fixture: Fixture) => void;
   selectedFixtureId?: string;
+  isMma?: boolean;
 }
 
 const FixtureSearch = ({ sportType, onSelect, selectedFixtureId }: FixtureSearchProps) => {
