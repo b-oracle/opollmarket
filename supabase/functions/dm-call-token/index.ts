@@ -263,7 +263,7 @@ Deno.serve(async (req) => {
 
       const { data: call } = await admin
         .from("dm_calls")
-        .select("caller_id, callee_id, room_name, status, started_at")
+        .select("caller_id, callee_id, room_name, status, started_at, conversation_id")
         .eq("id", call_id)
         .single();
 
