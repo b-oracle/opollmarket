@@ -882,8 +882,8 @@ const AdminCreateMarket = () => {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-semibold mb-1.5 block">League (optional)</label>
-                  <input type="text" value={sportLeague} onChange={(e) => setSportLeague(e.target.value)} placeholder="e.g. Premier League, NBA" className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                  <label className="text-xs font-semibold mb-1.5 block">{isMmaSport ? "Event (optional)" : "League (optional)"}</label>
+                  <input type="text" value={sportLeague} onChange={(e) => setSportLeague(e.target.value)} placeholder={isMmaSport ? "e.g. UFC 315, Bellator 300" : "e.g. Premier League, La Liga"} className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 <FixtureSearch
                   sportType={sportType}
