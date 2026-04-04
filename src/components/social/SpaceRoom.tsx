@@ -377,6 +377,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               text: m.content,
               type: "message" as const,
               timestamp: new Date(m.created_at).getTime(),
+              replyToId: m.reply_to_id || undefined,
+              replyToContent: m.reply_to_content || undefined,
+              replyToName: m.reply_to_name || undefined,
             },
           ]);
           setChatOpen((open) => {
