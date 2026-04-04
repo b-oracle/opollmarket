@@ -9,28 +9,9 @@ export const useLiveSpaceUsers = () => {
   const { data: liveUserIds = new Set<string>() } = useQuery({
     queryKey: ["live-space-users"],
     queryFn: async () => {
-      // Get all participants in live spaces who haven't left
-      const { data: liveSpaces } = await supabase
-        .from("spaces")
-        .select("id")
-        .eq("status", "live")
-        .limit(50);
-
-      if (!liveSpaces || liveSpaces.length === 0) return new Set<string>();
-
-      const spaceIds = liveSpaces.map((s) => s.id);
-      const { data: participants } = await supabase
-        .from("space_participants")
-        .select("user_id, space_id")
-        .in("space_id", spaceIds)
-        .is("left_at", null);
-
-      if (!participants) return new Set<string>();
-
-      // Build a map of userId -> spaceId for join navigation
-      const ids = new Set<string>();
-      participants.forEach((p) => ids.add(p.user_id));
-      return ids;
+      const { data } = await supabase.rpc("get_live_space_user_ids" as any);
+      if (!data || !Array.isArray(data)) return new Set<string>();
+      return new Set<string>(data as string[]);
     },
     refetchInterval: 15000,
     staleTime: 10000,
