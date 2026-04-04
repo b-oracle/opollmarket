@@ -179,7 +179,53 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     ? Math.min(netReceived > 0 ? netReceived : requestedAmount, requestedAmount)
     : netReceived;
   const isPartial = creditAmount < requestedAmount * 0.98; // 2% tolerance
-  const finalStatus = isPartial ? "partial" : "confirmed";
+
+  // REJECT partial payments — do NOT credit, flag for admin review
+  if (isPartial) {
+    console.warn(`PARTIAL DEPOSIT REJECTED: received $${creditAmount.toFixed(2)} of $${requestedAmount.toFixed(2)} for payment ${paymentIdStr}. NOT crediting.`);
+
+    if (matchedTx) {
+      await supabase
+        .from("transactions")
+        .update({ status: "partial", nowpayments_payment_id: paymentIdStr, amount: Number(creditAmount) })
+        .eq("id", matchedTx.id);
+    } else {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "deposit",
+        amount: Number(creditAmount),
+        status: "partial",
+        nowpayments_payment_id: paymentIdStr,
+      });
+    }
+
+    // Notify user
+    const shortfall = Number(requestedAmount) - Number(creditAmount);
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Partial Deposit — Not Credited ⚠️",
+      message: `You sent $${Number(creditAmount).toFixed(2)} of the $${Number(requestedAmount).toFixed(2)} required. Partial deposits are not credited. Please contact support or retry with the full amount.`,
+      type: "deposit",
+    });
+
+    // Notify admins
+    const { data: adminRoles2 } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["admin", "super_admin"]);
+    for (const admin of adminRoles2 || []) {
+      await supabase.from("notifications").insert({
+        user_id: admin.user_id,
+        title: "⚠️ Partial Deposit Flagged",
+        message: `User ${userId.slice(0, 8)}… sent $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (payment ${paymentIdStr}). Not credited — needs manual review.`,
+        type: "info",
+      });
+    }
+
+    return; // Do NOT credit
+  }
+
+  const finalStatus = "confirmed";
 
   // 3. Credit the user's balance atomically (prevents race conditions)
   const { error: balanceError } = await supabase.rpc("adjust_balance", { 
@@ -200,7 +246,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
       .update({
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
-        amount: Number(creditAmount), // Update to actual credited amount
+        amount: Number(creditAmount),
       })
       .eq("id", matchedTx.id);
     if (txUpdateError) {
@@ -230,22 +276,12 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   console.log(`Post-credit balance verification for ${userId}: $${verifyBalance?.amount}`);
 
   // 5. Notify user
-  const shortfall = Number(requestedAmount) - Number(creditAmount);
-  if (isPartial) {
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      title: "Partial Deposit Received ⚠️",
-      message: `$${Number(creditAmount).toFixed(2)} of your $${Number(requestedAmount).toFixed(2)} deposit has been credited. You can top up the remaining $${shortfall.toFixed(2)}.`,
-      type: "deposit",
-    });
-  } else {
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      title: "Deposit Confirmed ✅",
-      message: `Your deposit of $${Number(creditAmount).toFixed(2)} has been confirmed.`,
-      type: "deposit",
-    });
-  }
+  await supabase.from("notifications").insert({
+    user_id: userId,
+    title: "Deposit Confirmed ✅",
+    message: `Your deposit of $${Number(creditAmount).toFixed(2)} has been confirmed.`,
+    type: "deposit",
+  });
 
   console.log(`Credited $${creditAmount} (${finalStatus}) to user ${userId}`);
 
