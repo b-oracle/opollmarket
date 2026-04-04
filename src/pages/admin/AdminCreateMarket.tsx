@@ -887,6 +887,7 @@ const AdminCreateMarket = () => {
                 </div>
                 <FixtureSearch
                   sportType={sportType}
+                  isMma={isMmaSport}
                   selectedFixtureId={sportMatchId}
                   onSelect={(fixture) => {
                     setSportMatchId(fixture.id);
