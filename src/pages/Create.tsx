@@ -510,11 +510,17 @@ const Create = () => {
     { value: "volleyball", label: "Volleyball" },
     { value: "handball", label: "Handball" },
   ];
-  const OUTCOME_TYPES = [
-    { value: "home_win", label: "Home Win" },
-    { value: "away_win", label: "Away Win" },
-    { value: "draw", label: "Draw" },
-  ];
+  const isMmaSport = sportType === "mma";
+  const OUTCOME_TYPES = isMmaSport
+    ? [
+        { value: selectedFixtureData ? `${selectedFixtureData.homeTeam} Win` : "fighter1_win", label: selectedFixtureData?.homeTeam || "Fighter 1" },
+        { value: selectedFixtureData ? `${selectedFixtureData.awayTeam} Win` : "fighter2_win", label: selectedFixtureData?.awayTeam || "Fighter 2" },
+      ]
+    : [
+        { value: "home_win", label: "Home Win" },
+        { value: "away_win", label: "Away Win" },
+        { value: "draw", label: "Draw" },
+      ];
   // AI content generation handler
   const handleAiGenerate = async (genType: "description" | "details" | "image") => {
     if (!user) { toast.error("Sign in to use AI generation"); return; }
