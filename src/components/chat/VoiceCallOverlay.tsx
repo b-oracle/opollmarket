@@ -41,6 +41,7 @@ const VoiceCallOverlay = ({
     isOutgoing ? "ringing" : "connecting"
   );
   const [muted, setMuted] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(false);
   const [duration, setDuration] = useState(0);
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -202,6 +203,17 @@ const VoiceCallOverlay = ({
     setMuted(newMuted);
   };
 
+  const toggleSpeaker = useCallback(() => {
+    const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
+    const newSpeaker = !speakerOn;
+    audioEls.forEach((el) => {
+      if (typeof (el as any).setSinkId === "function") {
+        (el as any).setSinkId(newSpeaker ? "default" : "communications").catch(() => {});
+      }
+    });
+    setSpeakerOn(newSpeaker);
+  }, [speakerOn]);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
@@ -244,22 +256,22 @@ const VoiceCallOverlay = ({
   // ── Full-screen overlay ──
   return (
     <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center">
-      {/* E2EE indicator */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-xs text-emerald-500">
-        <Lock className="w-3 h-3" />
-        <span>End-to-end encrypted</span>
+      {/* E2EE indicator + minimize */}
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6" style={{ paddingTop: "max(1.5rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
+        <div className="flex items-center gap-1.5 text-xs text-emerald-500">
+          <Lock className="w-3 h-3" />
+          <span>End-to-end encrypted</span>
+        </div>
+        {status !== "ended" && onMinimize && (
+          <button onClick={onMinimize} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+            <Minimize2 className="w-5 h-5" />
+          </button>
+        )}
       </div>
-
-      {/* Minimize button */}
-      {status !== "ended" && onMinimize && (
-        <button onClick={onMinimize} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors">
-          <Minimize2 className="w-5 h-5" />
-        </button>
-      )}
 
       {/* Close / back */}
       {status === "ended" && (
-        <button onClick={onClose} className="absolute top-6 right-6 text-muted-foreground">
+        <button onClick={onClose} className="absolute right-6 text-muted-foreground" style={{ top: "max(1.5rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
           <X className="w-5 h-5" />
         </button>
       )}
@@ -309,7 +321,14 @@ const VoiceCallOverlay = ({
         )}
 
         {status === "active" && (
-          <button className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-foreground">
+          <button
+            onClick={toggleSpeaker}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
+              speakerOn
+                ? "bg-primary/20 text-primary ring-2 ring-primary"
+                : "bg-muted text-foreground"
+            }`}
+          >
             <Volume2 className="w-6 h-6" />
           </button>
         )}
