@@ -6,6 +6,12 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
     // ── Webhook authentication via URL token ──
     const url = new URL(req.url);
     const urlToken = url.searchParams.get("token");
@@ -25,6 +31,7 @@ const corsHeaders = {
       });
     }
 
+    const rawBody = await req.text();
     const body = JSON.parse(rawBody);
     console.log("Payaza webhook payload (verified):", JSON.stringify(body));
 
@@ -118,7 +125,6 @@ const corsHeaders = {
 
     if (balanceError) {
       console.error("CRITICAL: Failed to credit balance for Payaza deposit:", balanceError);
-      // Do NOT mark transaction as confirmed — leave it pending so it can be retried
       return new Response(JSON.stringify({ error: "Balance credit failed" }), {
         status: 500, headers: corsHeaders,
       });
@@ -134,7 +140,6 @@ const corsHeaders = {
 
     if (txUpdateError) {
       console.error("WARNING: Balance credited but tx update failed:", txUpdateError);
-      // Balance was already credited — log for manual reconciliation
     }
 
     // ── STEP 3: Verify balance was actually updated (safety net) ──
