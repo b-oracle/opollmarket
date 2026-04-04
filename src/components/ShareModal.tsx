@@ -227,7 +227,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
     window.open(`https://wa.me/?text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${ogShareLink}`)}`, "_blank");
   };
   const handleTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(ogShareLink)}&text=${encodeURIComponent(`🔥 "${title}" - Make your OPinion count, predict now 👇🏽`)}`, "_blank");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(ogShareLink)}&text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽`)}`, "_blank");
   };
 
   const handleCopyEmbed = () => {
