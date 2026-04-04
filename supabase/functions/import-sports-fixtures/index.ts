@@ -368,6 +368,7 @@ Deno.serve(async (req) => {
           }
 
           const isFootball = preset.sport_type === "football";
+          const isMma = preset.sport_type === "mma";
           const marketType = isFootball ? "multi" : "binary";
 
           // Set auto_resolve_deadline to 2 hours after match start (grace for delays)
