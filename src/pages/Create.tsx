@@ -2319,7 +2319,7 @@ const Create = () => {
                             setSportPredictedOutcome(e.target.value);
                             if (selectedFixtureData) generateSportsAutoFill(selectedFixtureData, e.target.value);
                           }}
-                          placeholder="Or type custom: e.g. over 2.5, btts, team name"
+                          placeholder={isMmaSport ? "Or type custom: e.g. KO/TKO, submission" : "Or type custom: e.g. over 2.5, btts, team name"}
                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </div>
