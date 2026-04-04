@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
     const virtualAccountEndpoint = "/live/merchant-collection/merchant/virtual_account/generate_virtual_account/";
     const fullUrl = `${payazaBaseUrl}${virtualAccountEndpoint}`;
 
-    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook`;
+    const webhookToken = Deno.env.get("PAYAZA_WEBHOOK_TOKEN");
+    const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/payaza-webhook${webhookToken ? `?token=${webhookToken}` : ""}`;
 
     const virtualAccountPayload = {
       account_name: firstName,
