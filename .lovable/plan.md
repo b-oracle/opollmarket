@@ -1,55 +1,43 @@
 
 
-## Reply-to-Message in Live Space Chat
+## Fix: Chat Reactions Not Persisting on Other Users' Messages
 
-### Overview
-Add the ability for space chat participants to reply to specific messages, showing a quoted preview of the original message above the reply — similar to Twitter/WhatsApp reply threads.
+### Problem
+When you leave a live space and return, reactions (emojis) you or others placed on **other people's** messages are gone — only reactions on **your own** messages survive. This is because reactions are never actually saved to the database for other people's messages.
 
-### Database Change
-**Migration: Add `reply_to_id` and `reply_to_content` columns to `space_messages`**
+### Root Cause
+The `space_messages` UPDATE RLS policy checks if the current user is an active participant by querying `space_participants`. But `space_participants` itself has RLS policies that query back into `space_participants` (the recursion issue we partially fixed earlier). This causes the UPDATE to **silently fail** when reacting to someone else's message.
+
+The policy has an `OR user_id = auth.uid()` escape clause — so updating reactions on **your own** messages always works. That's why your own message reactions persist but others don't.
+
+### Fix
+
+**1. Migration: Use the recursion-safe helper function in the UPDATE policy**
+
+Replace the current `space_messages` UPDATE policy so it uses `public.is_space_participant()` (the `SECURITY DEFINER` function we already created) instead of directly querying `space_participants`:
 
 ```sql
-ALTER TABLE public.space_messages
-  ADD COLUMN reply_to_id uuid REFERENCES public.space_messages(id) ON DELETE SET NULL,
-  ADD COLUMN reply_to_content text,
-  ADD COLUMN reply_to_name text;
+DROP POLICY IF EXISTS "Users can update message reactions in their spaces"
+  ON public.space_messages;
+
+CREATE POLICY "Users can update message reactions in their spaces"
+ON public.space_messages FOR UPDATE TO authenticated
+USING (
+  public.is_space_participant(space_id, auth.uid())
+  OR user_id = auth.uid()
+)
+WITH CHECK (
+  public.is_space_participant(space_id, auth.uid())
+  OR user_id = auth.uid()
+);
 ```
 
-We store denormalized `reply_to_content` and `reply_to_name` so we don't need a join or extra query to render the quoted message — keeps the chat fast.
-
-### Code Changes
-
-**1. Update `ChatMessage` interface (`SpaceRoom.tsx`)**
-- Add `replyToId?: string`, `replyToContent?: string`, `replyToName?: string` fields
-
-**2. Add reply state**
-- New state: `replyTo: { id: string; name: string; text: string } | null`
-- A "Reply" button appears on hover/tap alongside the existing reaction buttons
-- When set, a small banner appears above the chat input showing "Replying to **Name**: message preview..." with a cancel (X) button
-
-**3. Update `sendChat()` function**
-- Include `reply_to_id`, `reply_to_content`, `reply_to_name` in both the data-channel broadcast and the DB insert when `replyTo` is set
-- Clear `replyTo` after sending
-
-**4. Update message loading and realtime handler**
-- Map `reply_to_id`, `reply_to_content`, `reply_to_name` from DB rows and realtime payloads into the `ChatMessage` object
-
-**5. Update message rendering**
-- When a message has `replyToContent`, render a small quoted block above the message text:
-  ```
-  ┌──────────────────────┐
-  │ ↩ Name               │  ← muted, smaller text
-  │ Original message...  │  ← truncated to ~60 chars
-  ├──────────────────────┤
-  │ Reply text           │  ← normal message
-  │                 9:42 │
-  └──────────────────────┘
-  ```
-- Tapping the quoted block scrolls to the original message (if still in view)
+This is a one-line policy swap — the `is_space_participant` function bypasses RLS (it's `SECURITY DEFINER`), breaking the recursive loop.
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| Migration SQL | Add `reply_to_id`, `reply_to_content`, `reply_to_name` to `space_messages` |
-| `src/components/social/SpaceRoom.tsx` | Add reply state, reply UI banner, update `sendChat`, update message rendering with quoted block, add Reply button alongside reactions |
+| New migration SQL | Replace UPDATE policy on `space_messages` to use `is_space_participant()` |
+
+No frontend code changes needed — the `reactToMessage` function already persists to DB correctly; it's only the RLS policy blocking the write.
 
