@@ -2271,6 +2271,7 @@ const Create = () => {
                       {/* Fixture Search */}
                       <FixtureSearch
                         sportType={sportType}
+                        isMma={isMmaSport}
                         selectedFixtureId={sportMatchId}
                         onSelect={(fixture) => {
                           setSportMatchId(fixture.id);
