@@ -15,6 +15,7 @@ const SPORT_API_MAP: Record<string, { host: string; fixturePath: string }> = {
   handball: { host: "v1.handball.api-sports.io", fixturePath: "/games" },
   volleyball: { host: "v1.volleyball.api-sports.io", fixturePath: "/games" },
   nfl: { host: "v1.american-football.api-sports.io", fixturePath: "/games" },
+  mma: { host: "v1.mma.api-sports.io", fixturePath: "/fights" },
 };
 
 function buildMarketTitle(homeTeam: string, awayTeam: string, league: string): string {
