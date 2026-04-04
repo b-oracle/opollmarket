@@ -41,6 +41,7 @@ const VoiceCallOverlay = ({
     isOutgoing ? "ringing" : "connecting"
   );
   const [muted, setMuted] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(false);
   const [duration, setDuration] = useState(0);
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
