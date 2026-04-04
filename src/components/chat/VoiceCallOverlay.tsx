@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track, ConnectionState } from "livekit-client";
+import { playDialTone, playRingtone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { Phone, PhoneOff, Mic, MicOff, Volume2, Lock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
