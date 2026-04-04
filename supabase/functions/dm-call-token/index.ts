@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
         .eq("id", conversation_id)
         .single();
 
+      console.log("start call - convo lookup:", { convoErr: convoErr?.message, convoId: convo?.id, status: convo?.status });
+
       if (convoErr || !convo) return json({ error: "Conversation not found" }, 404);
       if (convo.status !== "active") return json({ error: "Conversation is not active" }, 400);
 
@@ -84,8 +86,15 @@ Deno.serve(async (req) => {
       const roomName = `dm-call-${conversation_id}-${Date.now()}`;
 
       // Create LiveKit room
-      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
-      await svc.createRoom({ name: roomName, emptyTimeout: 120, maxParticipants: 2 });
+      console.log("Creating LiveKit room:", { roomName, httpUrl });
+      try {
+        const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+        await svc.createRoom({ name: roomName, emptyTimeout: 120, maxParticipants: 2 });
+        console.log("LiveKit room created successfully");
+      } catch (lkErr: any) {
+        console.error("LiveKit room creation failed:", lkErr?.message || lkErr);
+        return json({ error: "Failed to create call room" }, 500);
+      }
 
       // Insert call record
       const { data: callData, error: callErr } = await admin
