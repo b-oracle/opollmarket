@@ -1,69 +1,26 @@
 
 
-## Fix: Private Space Invite Notifications Not Being Created
+## Fix Login PIN Behavior
 
-### Problem
-When a host creates a private space and invites users, the `space_invites` rows are correctly inserted (9 exist in the database), but zero "Space Invite 🎙️" notifications have ever been created. The notification insert on line 134 of `CreateSpaceModal.tsx` silently fails — the Supabase client returns `{ error }` but the code never checks it, so the failure is invisible.
+### Problems Identified
 
-### Root Cause
-The notification insert error is swallowed. The most likely cause is an RLS timing or evaluation issue. To make this robust, the fix will:
-
-1. **Add error checking** to the notification insert so failures surface as toast errors
-2. **Move notification creation server-side** by adding it to the `space_invites` table as a trigger — this runs as `SECURITY DEFINER` and bypasses RLS entirely, guaranteeing delivery
+1. **Inactivity timeout is 1 hour** — user wants 30 minutes
+2. **Race condition in Auth.tsx onVerified**: The `onVerified` callback uses `supabase.auth.getSession().then(...)` to get the user ID asynchronously. This is fragile — the user is already known at that point from the login flow, and the async chain can silently fail, causing the App-level `LoginSecurityGuard` to not find the verified flag and potentially re-prompt
+3. **Feature toggle dependency**: The inactivity-based re-prompt only works when the `session_timeout` feature toggle is enabled. If it's off, PIN verification persists indefinitely after first login (no re-prompt on inactivity)
 
 ### Solution
 
-**1. Database Migration — Create a trigger on `space_invites`**
+**1. Change inactivity timeout from 1 hour to 30 minutes**
+- `src/App.tsx` line 228: Change `SESSION_PIN_TIMEOUT_MS` from `3_600_000` to `1_800_000` (30 minutes)
 
-Add a trigger function that automatically creates a notification whenever a row is inserted into `space_invites`:
+**2. Fix the Auth.tsx onVerified race condition**
+- `src/pages/Auth.tsx` lines 408-415: Instead of using async `getSession()`, use the `user` object already available in component state (from `useAuth()`) to write the localStorage key synchronously. This guarantees the App-level guard sees the verified flag immediately.
 
-```sql
-CREATE OR REPLACE FUNCTION public.notify_space_invitee()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  _host_name text;
-  _space_title text;
-BEGIN
-  SELECT p.display_name INTO _host_name
-  FROM profiles p WHERE p.id = NEW.inviter_id;
-
-  SELECT s.title INTO _space_title
-  FROM spaces s WHERE s.id = NEW.space_id;
-
-  INSERT INTO notifications (user_id, title, message, type, actor_id, market_id)
-  VALUES (
-    NEW.invitee_id,
-    'Space Invite 🎙️',
-    COALESCE(_host_name, 'Someone') || ' invited you to join "' || COALESCE(_space_title, 'a Space') || '"',
-    'info',
-    NEW.inviter_id,
-    NEW.space_id
-  );
-
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER trg_notify_space_invitee
-AFTER INSERT ON public.space_invites
-FOR EACH ROW EXECUTE FUNCTION public.notify_space_invitee();
-```
-
-**2. `src/components/social/CreateSpaceModal.tsx` — Remove client-side notification insert**
-
-Remove lines 125–134 (the manual notification insert block). The trigger now handles this automatically and reliably whenever a `space_invites` row is created — whether from the modal, admin tools, or the co-host invite flow.
-
-### Why This Is Better
-- **Guaranteed delivery**: Trigger runs as `SECURITY DEFINER`, bypassing RLS
-- **Personalized message**: Includes the host's display name in the notification
-- **Single source of truth**: Any code path that inserts into `space_invites` automatically generates a notification
-- **No silent failures**: Trigger errors will propagate to the insert call
+**3. Ensure session_timeout toggle is enabled**
+- Verify the `session_timeout` feature toggle exists and is enabled in the database, since the inactivity re-prompt logic is gated behind it
 
 ### Files Changed
-- New migration (1 file) — trigger function + trigger
-- `src/components/social/CreateSpaceModal.tsx` — remove ~10 lines (notification insert block)
+- `src/App.tsx` — 1 line change (timeout constant)
+- `src/pages/Auth.tsx` — ~5 lines changed (onVerified handler)
+- Possibly a migration to ensure `session_timeout` toggle exists
 
