@@ -1,9 +1,48 @@
 import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 const getLiveSpaceUsersQueryKey = (viewerId?: string) => ["live-space-users", viewerId ?? "guest"];
+const LIVE_SPACE_USERS_CHANNEL = "live-space-users-sync";
+
+const liveSpaceQueryInvalidators = new Set<() => void>();
+let liveSpaceUsersChannel: ReturnType<typeof supabase.channel> | null = null;
+let liveSpaceUsersChannelRefs = 0;
+
+const invalidateLiveSpaceQueries = (queryClient: QueryClient) => {
+  void queryClient.invalidateQueries({ queryKey: ["live-space-users"] });
+  void queryClient.invalidateQueries({ queryKey: ["live-space-for-user"] });
+};
+
+const ensureLiveSpaceUsersSubscription = (queryClient: QueryClient) => {
+  const invalidate = () => invalidateLiveSpaceQueries(queryClient);
+
+  liveSpaceQueryInvalidators.add(invalidate);
+  liveSpaceUsersChannelRefs += 1;
+
+  if (!liveSpaceUsersChannel) {
+    const broadcastInvalidation = () => {
+      for (const listener of liveSpaceQueryInvalidators) listener();
+    };
+
+    liveSpaceUsersChannel = supabase
+      .channel(LIVE_SPACE_USERS_CHANNEL)
+      .on("postgres_changes", { event: "*", schema: "public", table: "spaces" }, broadcastInvalidation)
+      .on("postgres_changes", { event: "*", schema: "public", table: "space_participants" }, broadcastInvalidation)
+      .subscribe();
+  }
+
+  return () => {
+    liveSpaceQueryInvalidators.delete(invalidate);
+    liveSpaceUsersChannelRefs = Math.max(0, liveSpaceUsersChannelRefs - 1);
+
+    if (liveSpaceUsersChannelRefs === 0 && liveSpaceUsersChannel) {
+      void supabase.removeChannel(liveSpaceUsersChannel);
+      liveSpaceUsersChannel = null;
+    }
+  };
+};
 
 /**
  * Returns a Set of user IDs that are currently live in an active space.
@@ -16,21 +55,8 @@ export const useLiveSpaceUsers = () => {
   useEffect(() => {
     if (loading || !user) return;
 
-    const queryKey = getLiveSpaceUsersQueryKey(user.id);
-    const invalidate = () => {
-      queryClient.invalidateQueries({ queryKey });
-    };
-
-    const channel = supabase
-      .channel(`live-space-users:${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "spaces" }, invalidate)
-      .on("postgres_changes", { event: "*", schema: "public", table: "space_participants" }, invalidate)
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [loading, queryClient, user]);
+    return ensureLiveSpaceUsersSubscription(queryClient);
+  }, [loading, queryClient, user?.id]);
 
   const { data: liveUserIds = new Set<string>() } = useQuery({
     queryKey: getLiveSpaceUsersQueryKey(user?.id),
