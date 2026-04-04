@@ -50,9 +50,10 @@ import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import SpaceVideoGrid from "./SpaceVideoGrid";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv, Library } from "lucide-react";
 import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
+import JamendoMusicBrowser from "./JamendoMusicBrowser";
 
 interface SpaceRoomProps {
   spaceId: string;
