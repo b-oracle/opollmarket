@@ -1335,7 +1335,7 @@ const Profile = () => {
         {/* Balance + Stats */}
         <div className="glass rounded-xl p-4 mb-3 text-center relative">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
-          <div className="flex items-center justify-center gap-2">
+          <div className="relative flex items-center justify-center">
             <p className="text-3xl font-bold text-primary">
               {balanceHidden ? "••••••" : `$${balance.toFixed(2)}`}
             </p>
@@ -1345,7 +1345,7 @@ const Profile = () => {
                 setBalanceHidden(next);
                 localStorage.setItem("hide_balance", next ? "1" : "");
               }}
-              className="p-1.5 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground"
+              className="absolute right-0 p-1.5 rounded-lg hover:bg-muted/50 transition-colors text-muted-foreground"
             >
               {balanceHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
