@@ -1,26 +1,38 @@
 
 
-## Fix Login PIN Behavior
+## Add Full Emoji Picker for Message Reactions
 
-### Problems Identified
-
-1. **Inactivity timeout is 1 hour** — user wants 30 minutes
-2. **Race condition in Auth.tsx onVerified**: The `onVerified` callback uses `supabase.auth.getSession().then(...)` to get the user ID asynchronously. This is fragile — the user is already known at that point from the login flow, and the async chain can silently fail, causing the App-level `LoginSecurityGuard` to not find the verified flag and potentially re-prompt
-3. **Feature toggle dependency**: The inactivity-based re-prompt only works when the `session_timeout` feature toggle is enabled. If it's off, PIN verification persists indefinitely after first login (no re-prompt on inactivity)
+### Problem
+Message reactions are limited to 6 hardcoded emojis (`❤️ 😂 👍 😮 😢 🔥`). The user wants a full emoji picker like the native iOS/WhatsApp one shown in the screenshot — with categories, search, and the complete emoji set.
 
 ### Solution
+Install an emoji picker library (`emoji-picker-react` — lightweight, works well in React) and add a "+" button to the existing quick-reaction bar. Tapping "+" opens the full picker below/above the message.
 
-**1. Change inactivity timeout from 1 hour to 30 minutes**
-- `src/App.tsx` line 228: Change `SESSION_PIN_TIMEOUT_MS` from `3_600_000` to `1_800_000` (30 minutes)
+### Steps
 
-**2. Fix the Auth.tsx onVerified race condition**
-- `src/pages/Auth.tsx` lines 408-415: Instead of using async `getSession()`, use the `user` object already available in component state (from `useAuth()`) to write the localStorage key synchronously. This guarantees the App-level guard sees the verified flag immediately.
+**1. Install `emoji-picker-react`**
+- `npm install emoji-picker-react`
 
-**3. Ensure session_timeout toggle is enabled**
-- Verify the `session_timeout` feature toggle exists and is enabled in the database, since the inactivity re-prompt logic is gated behind it
+**2. Update `ChatMessageBubble.tsx`**
+
+- Keep the existing 6 quick-reaction emojis in the floating bar (fast access)
+- Add a "+" button at the end of the bar (like WhatsApp)
+- When "+" is tapped, replace the small pill bar with a full emoji picker panel (fixed position, same z-index)
+- On emoji select from the full picker, call `toggleReaction(emoji)` and close
+- The picker renders in dark/light mode matching the app theme
+
+**3. Picker positioning**
+- Render the full picker as a fixed overlay near the message bubble
+- On mobile (402px viewport), make it full-width at bottom of screen for easy thumb reach
+- Backdrop click dismisses it
+
+### UI Flow
+1. Long-press message → quick bar appears with `❤️ 😂 👍 😮 😢 🔥 ➕`
+2. Tap any quick emoji → reaction applied immediately
+3. Tap ➕ → full emoji picker slides up from bottom
+4. Pick any emoji → reaction applied, picker closes
 
 ### Files Changed
-- `src/App.tsx` — 1 line change (timeout constant)
-- `src/pages/Auth.tsx` — ~5 lines changed (onVerified handler)
-- Possibly a migration to ensure `session_timeout` toggle exists
+- `package.json` — add `emoji-picker-react`
+- `src/components/chat/ChatMessageBubble.tsx` — add "+" button, full picker state, import picker component
 
