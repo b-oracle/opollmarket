@@ -3769,6 +3769,7 @@ export type Database = {
           verification_level: string
         }[]
       }
+      get_live_space_user_ids: { Args: never; Returns: string[] }
       get_platform_user_count: { Args: never; Returns: number }
       get_platform_volume: {
         Args: never
