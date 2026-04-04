@@ -40,11 +40,9 @@ const OrderBook = ({ yesPrice, noPrice, liquidity, marketId }: OrderBookProps) =
     queryFn: async () => {
       if (!marketId) return [];
       const { data } = await supabase
-        .from("transactions")
+        .from("public_market_trades")
         .select("id, side, amount, price, shares, created_at")
         .eq("market_id", marketId)
-        .in("type", ["buy", "sell"])
-        .eq("status", "confirmed")
         .in("side", ["yes", "no"])
         .order("created_at", { ascending: false })
         .limit(100);

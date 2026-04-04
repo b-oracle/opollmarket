@@ -25,12 +25,11 @@ export const useLimitOrders = (marketId?: string) => {
     queryFn: async () => {
       if (!marketId) return [];
       const { data } = await supabase
-        .from("limit_orders")
+        .from("public_orderbook" as any)
         .select("id, market_id, option_id, side, order_type, limit_price, amount, shares, status, created_at")
         .eq("market_id", marketId)
-        .eq("status", "pending")
         .order("limit_price", { ascending: false });
-      return (data || []) as LimitOrder[];
+      return (data || []) as unknown as LimitOrder[];
     },
     enabled: !!marketId,
     refetchInterval: 10000,

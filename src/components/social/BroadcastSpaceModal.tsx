@@ -22,11 +22,11 @@ const BroadcastSpaceModal = ({ open, onClose, spaceId, spaceTitle }: BroadcastSp
     queryKey: ["commission-settings-broadcast"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("commission_settings")
+        .from("public_commission_settings" as any)
         .select("broadcast_price")
         .limit(1)
         .single();
-      return data;
+      return data as unknown as { broadcast_price: number } | null;
     },
     staleTime: 60_000,
   });
