@@ -410,7 +410,8 @@ Deno.serve(async (req) => {
 
           const isFootball = preset.sport_type === "football";
           const isMma = preset.sport_type === "mma";
-          const marketType = isFootball ? "multi" : "binary";
+          const isMultiOption = isFootball || isMma;
+          const marketType = isMultiOption ? "multi" : "binary";
 
           // Set auto_resolve_deadline to 2 hours after match start (grace for delays)
           const autoResolveDeadline = new Date(fixtureDate.getTime() + 2 * 60 * 60 * 1000);
@@ -430,7 +431,7 @@ Deno.serve(async (req) => {
             sport_type: preset.sport_type,
             sport_match_id: matchId,
             sport_league: leagueName,
-            sport_predicted_outcome: isFootball ? "multi_option" : isMma ? `${homeTeam} Win` : "home_win",
+            sport_predicted_outcome: isMultiOption ? "multi_option" : "home_win",
             auto_resolve: true,
             auto_resolve_deadline: autoResolveDeadline.toISOString(),
             yes_price: isFootball ? 0.33 : 0.5,
@@ -446,13 +447,22 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          // For football multi-option markets, create options
-          if (isFootball && newMarket) {
-            const options = [
-              { label: `${homeTeam} Win`, market_id: newMarket.id, price: 0.33, sort_order: 0 },
-              { label: "Draw", market_id: newMarket.id, price: 0.34, sort_order: 1 },
-              { label: `${awayTeam} Win`, market_id: newMarket.id, price: 0.33, sort_order: 2 },
-            ];
+          // For multi-option markets, create options
+          if (isMultiOption && newMarket) {
+            let options;
+            if (isFootball) {
+              options = [
+                { label: `${homeTeam} Win`, market_id: newMarket.id, price: 0.33, sort_order: 0 },
+                { label: "Draw", market_id: newMarket.id, price: 0.34, sort_order: 1 },
+                { label: `${awayTeam} Win`, market_id: newMarket.id, price: 0.33, sort_order: 2 },
+              ];
+            } else {
+              // MMA: two fighter options, no draw
+              options = [
+                { label: `${homeTeam} Win`, market_id: newMarket.id, price: 0.50, sort_order: 0 },
+                { label: `${awayTeam} Win`, market_id: newMarket.id, price: 0.50, sort_order: 1 },
+              ];
+            }
             const { error: optErr } = await adminClient.from("market_options").insert(options);
             if (optErr) {
               errors.push(`Options error for "${title.slice(0, 50)}": ${optErr.message}`);
