@@ -218,7 +218,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
               {reactionBadges}
             </div>
           </motion.div>
-          {smileyButton}
         </div>
         {pickerOverlay}
       </div>
