@@ -1642,6 +1642,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const toggleAmbientMusic = (trackId: string) => {
+    if (!hasModPowers) return;
     if (ambientTrack === trackId) {
       stopAmbient();
       setAmbientTrack(null);
