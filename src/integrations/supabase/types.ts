@@ -3901,6 +3901,10 @@ export type Database = {
         Args: { user_a: string; user_b: string }
         Returns: boolean
       }
+      is_space_participant: {
+        Args: { _space_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_valid_referral_code:
         | {
             Args: { _code: string }
