@@ -207,7 +207,24 @@ const ChatView = () => {
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "start", conversation_id: conversationId },
       });
-      if (error || data?.error) throw new Error(data?.error || "Failed to start call");
+
+      if (error) {
+        let message = error.message || "Failed to start call";
+        const errorContext = (error as any)?.context;
+
+        if (errorContext instanceof Response) {
+          try {
+            const payload = await errorContext.json();
+            if (payload?.error) message = payload.error;
+          } catch {
+            // Keep the default message when the response body isn't JSON
+          }
+        }
+
+        throw new Error(message);
+      }
+
+      if (data?.error) throw new Error(data.error);
 
       // Dispatch event to IncomingCallBanner (which manages the overlay)
       window.dispatchEvent(

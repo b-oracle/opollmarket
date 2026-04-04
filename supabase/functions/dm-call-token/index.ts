@@ -75,13 +75,49 @@ Deno.serve(async (req) => {
       // Check if there's already an active/ringing call for this conversation
       const { data: existingCall } = await admin
         .from("dm_calls")
-        .select("id")
+        .select("id, status, created_at, room_name")
         .eq("conversation_id", conversation_id)
         .in("status", ["ringing", "active"])
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (existingCall) return json({ error: "A call is already in progress" }, 400);
+      if (existingCall) {
+        const ageMs = existingCall.created_at
+          ? Date.now() - new Date(existingCall.created_at).getTime()
+          : 0;
+        const isStaleRingingCall = existingCall.status === "ringing" && ageMs > 90_000;
+
+        if (isStaleRingingCall) {
+          console.warn("Cleaning up stale ringing call", {
+            callId: existingCall.id,
+            conversation_id,
+            ageMs,
+          });
+
+          await admin
+            .from("dm_calls")
+            .update({ status: "missed", ended_at: new Date().toISOString() })
+            .eq("id", existingCall.id);
+
+          try {
+            const cleanupSvc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+            await cleanupSvc.deleteRoom(existingCall.room_name);
+          } catch (cleanupErr) {
+            console.warn("Failed to delete stale room", cleanupErr);
+          }
+        } else {
+          return json(
+            {
+              error:
+                existingCall.status === "active"
+                  ? "A call is already active in this chat"
+                  : "A previous call is still ringing. Please wait a moment and try again.",
+            },
+            409
+          );
+        }
+      }
 
       const roomName = `dm-call-${conversation_id}-${Date.now()}`;
 
