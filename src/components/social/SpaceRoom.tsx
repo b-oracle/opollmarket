@@ -1665,6 +1665,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // === Device Music ===
   const handleDeviceMusicFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!hasModPowers) return;
     const file = e.target.files?.[0];
     if (!file || !roomRef.current) return;
     e.target.value = ""; // reset input
