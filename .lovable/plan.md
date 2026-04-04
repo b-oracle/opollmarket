@@ -1,40 +1,40 @@
 
 
-## Convert UFC/MMA Markets from Binary (Yes/No) to Multi-Option (Fighter Names)
+## Adaptive Image Fitting for Market Feeds and Social Status Cards
 
-Currently, MMA markets are created as `binary` type, so users see generic "Yes" and "No" buttons. They should instead see "Buy Fighter1 Name" and "Buy Fighter2 Name" — exactly how football markets show "Home Win / Draw / Away Win".
+### Problem
+Images use `object-cover` everywhere, which crops aggressively — especially on tall or narrow images. This causes important content to be cut off. The user wants images to adapt naturally to their containers.
 
-The UI already fully supports this — `BetModal`, `MarketCard`, and `MarketDetail` all render named option buttons for `multi` type markets. The only changes needed are in the edge functions.
+### Solution
+Use `object-contain` with a background fill so images fit fully within containers without cropping, while avoiding empty whitespace gaps.
 
 ### Changes
 
-**1. `supabase/functions/import-sports-fixtures/index.ts`**
+**1. Market Card background image (`MarketCard.tsx`)**
+- Keep `object-cover` here — this is a decorative background behind text with a gradient overlay, not a content image. Over-cropping is less of an issue since it's at 40% opacity.
+- Reduce parallax bleed from `-8px` to `-4px` to minimize zoom further.
 
-- Change MMA `marketType` from `"binary"` to `"multi"`
-- After inserting the market, create two `market_options` rows: `"{Fighter1} Win"` and `"{Fighter2} Win"` (using actual fighter names)
-- Update `sport_predicted_outcome` to `"multi_option"` (same as football)
-- Set initial prices to 0.50 each
+**2. Social Status Card — post images (`StatusCard.tsx`, line ~357)**
+- Change from `object-cover` to a hybrid approach: wrap the image in a container with `bg-muted/30` background, use `object-contain` so the full image is always visible, and set `max-h-96` with `w-full` to cap height.
+- Before: `<img ... className="w-full max-h-96 object-cover rounded-lg" />`
+- After: `<img ... className="w-full max-h-96 object-contain rounded-lg" />`
+- The parent `bg-muted/20` already provides a subtle background for any letterboxing.
 
-**2. `supabase/functions/check-sports-resolve/index.ts`**
+**3. Social Status Card — market thumbnail (`StatusCard.tsx`, line ~332)**
+- Change the small market preview thumbnail from `object-cover` to `object-contain` with a muted background, so market thumbnails aren't cropped.
+- Before: `className="w-12 h-12 rounded object-cover shrink-0"`
+- After: `className="w-12 h-12 rounded object-contain bg-muted/30 shrink-0"`
 
-- The `determineWinningOption()` function already matches option labels containing fighter names + "win" against the result — this should work as-is for MMA multi-option markets
-- Update the resolution path: when an MMA market is now `multi` type, it will flow through the multi-option resolution branch (using `winning_option_id`) instead of the binary branch (using `winning_side`), which is correct
+**4. Social Ad Card — market thumbnail (`SocialAdCard.tsx`)**
+- Same change as above for the ad card's market thumbnail.
 
-**3. `supabase/functions/search-fixtures/index.ts`** (if MMA user-created markets also need this)
+**5. Image compression presets (`optimizedImage.ts`)**
+- No changes needed — the server-side transforms are fine. The issue is purely CSS fitting behavior.
 
-- Ensure user-created MMA markets also default to `multi` type with fighter name options
-
-### No UI Changes Needed
-
-The existing `MarketCard` and `MarketDetail` components already render multi-option markets with colored option buttons showing the label text (e.g., "Conor McGregor Win — 50%"). The `BetModal` header already shows "Buy {optionLabel}".
-
-### Impact on Existing Markets
-
-Existing binary MMA markets will continue to work as binary. Only newly imported markets going forward will use the multi-option format.
-
-### Files Changed
-| File | Action |
+### Summary of file changes
+| File | Change |
 |------|--------|
-| `supabase/functions/import-sports-fixtures/index.ts` | Edit — MMA → multi type + create fighter options |
-| `supabase/functions/search-fixtures/index.ts` | Edit — same change for user-created MMA markets |
+| `src/components/MarketCard.tsx` | Reduce parallax bleed to -4px |
+| `src/components/social/StatusCard.tsx` | Post images → `object-contain`; market thumb → `object-contain` with bg |
+| `src/components/social/SocialAdCard.tsx` | Market thumb → `object-contain` with bg |
 
