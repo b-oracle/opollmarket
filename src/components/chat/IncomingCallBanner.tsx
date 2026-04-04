@@ -38,13 +38,24 @@ const IncomingCallBanner = () => {
 
   // Play ringtone when incoming call appears
   useEffect(() => {
+    let vibrateInterval: ReturnType<typeof setInterval> | null = null;
     if (incomingCall && !activeCall) {
       stopRingtoneRef.current = playRingtone();
+      // Vibrate pattern: 500ms on, 500ms off, repeating
+      if (navigator.vibrate) {
+        navigator.vibrate([500, 500, 500, 500, 500]);
+        vibrateInterval = setInterval(() => {
+          navigator.vibrate([500, 500, 500, 500, 500]);
+        }, 3000);
+      }
     } else {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+      if (navigator.vibrate) navigator.vibrate(0);
     }
     return () => {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+      if (vibrateInterval) clearInterval(vibrateInterval);
+      if (navigator.vibrate) navigator.vibrate(0);
     };
   }, [incomingCall, activeCall]);
 
