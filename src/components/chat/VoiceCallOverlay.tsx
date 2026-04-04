@@ -88,6 +88,9 @@ const VoiceCallOverlay = ({
         if (!isOutgoing) {
           setStatus("active");
           startTimeRef.current = Date.now();
+        } else {
+          // Start dial tone for outgoing calls
+          stopToneRef.current = playDialTone();
         }
       })
       .catch((err) => {
