@@ -406,7 +406,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
         onClose={() => setStoryCreatorOpen(false)}
         preLinkedMarketId={marketId}
         preLinkedMarketTitle={title}
-        preContent={!marketId ? `🔥 Check out "${title}" on our prediction market! Make your OPinion count 👇🏽\n\n${marketUrl}` : undefined}
+        preContent={!marketId ? `Check out "${title}" on OPollmarket! Make your OPinion count👇🏽\n\n${marketUrl}` : undefined}
       />
     </>
   );
