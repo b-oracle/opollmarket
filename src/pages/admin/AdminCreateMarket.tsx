@@ -898,7 +898,9 @@ const AdminCreateMarket = () => {
                       generateSportsAutoFill(fixtureInfo, sportPredictedOutcome);
                       const matchDate = (() => { try { return new Date(fixture.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); } catch { return fixture.date; } })();
                       if (!details.trim()) {
-                        setDetails(`**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
+                        setDetails(isMmaSport
+                          ? `**Fight Details**\n- **Fighter 1:** ${fixture.homeTeam}\n- **Fighter 2:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **Event:** ${fixture.league || "TBD"}\n\n**Resolution**\nThis market will be auto-resolved based on the official fight result (Fight ID: ${fixture.id}).`
+                          : `**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
                       }
                       if (!endDate && fixture.date) {
                         try { setEndDate(new Date(fixture.date).toISOString().split("T")[0]); } catch {}
