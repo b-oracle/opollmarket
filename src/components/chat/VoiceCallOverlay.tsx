@@ -203,6 +203,17 @@ const VoiceCallOverlay = ({
     setMuted(newMuted);
   };
 
+  const toggleSpeaker = useCallback(() => {
+    const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
+    const newSpeaker = !speakerOn;
+    audioEls.forEach((el) => {
+      if (typeof (el as any).setSinkId === "function") {
+        (el as any).setSinkId(newSpeaker ? "default" : "communications").catch(() => {});
+      }
+    });
+    setSpeakerOn(newSpeaker);
+  }, [speakerOn]);
+
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
