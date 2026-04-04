@@ -1,5 +1,4 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Search, Play, Pause, Music, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
