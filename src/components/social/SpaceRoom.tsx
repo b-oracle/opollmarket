@@ -1628,7 +1628,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   };
 
   const sendSoundReaction = (soundId: string) => {
-    if (!roomRef.current || !user) return;
+    if (!roomRef.current || !user || !hasModPowers) return;
     // Play locally
     playSoundById(soundId);
     // Broadcast to peers
