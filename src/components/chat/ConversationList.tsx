@@ -212,6 +212,16 @@ const ConversationList = () => {
               </span>
             )}
           </button>
+          <button
+            onClick={() => setTab("calls")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              tab === "calls"
+                ? "text-primary border-b-2 border-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Calls
+          </button>
         </div>
 
         {/* Scrollable content */}
