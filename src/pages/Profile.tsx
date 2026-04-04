@@ -568,6 +568,7 @@ const Profile = () => {
   const { disconnect } = useDisconnect();
   const { open } = useAppKit();
   const [modalOpen, setModalOpen] = useState(false);
+  const [balanceHidden, setBalanceHidden] = useState(() => localStorage.getItem("hide_balance") === "1");
   const [modalTab, setModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
   const [resumeProvider, setResumeProvider] = useState<string | null>(null);
