@@ -32,6 +32,19 @@ const IncomingCallBanner = () => {
     isOutgoing: boolean;
   } | null>(null);
   const [answering, setAnswering] = useState(false);
+  const stopRingtoneRef = useRef<(() => void) | null>(null);
+
+  // Play ringtone when incoming call appears
+  useEffect(() => {
+    if (incomingCall && !activeCall) {
+      stopRingtoneRef.current = playRingtone();
+    } else {
+      if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+    }
+    return () => {
+      if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+    };
+  }, [incomingCall, activeCall]);
 
   // Subscribe to new incoming calls
   useEffect(() => {
