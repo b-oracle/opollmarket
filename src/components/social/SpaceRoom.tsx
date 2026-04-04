@@ -333,7 +333,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     (async () => {
       const { data } = await supabase
         .from("space_messages")
-        .select("id, user_id, user_name, content, created_at, reactions")
+        .select("id, user_id, user_name, content, created_at, reactions, reply_to_id, reply_to_content, reply_to_name")
         .eq("space_id", spaceId)
         .order("created_at", { ascending: true })
         .limit(200);
