@@ -13,26 +13,12 @@ const json = (data: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const extractEnvValue = (value: string | null, key: string) => {
-  const normalized = (value || "").trim();
-  if (!normalized) return "";
-  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const assignmentMatch = normalized.match(
-    new RegExp(
-      `(?:^|[\\n\\r;\\s])${escapedKey}\\s*=\\s*(?:"([^"\\n\\r]+)"|'([^'\\n\\r]+)'|([^\\s;\\n\\r]+))`,
-      "i"
-    )
-  );
-  const fromAssignment = assignmentMatch?.[1] || assignmentMatch?.[2] || assignmentMatch?.[3];
-  const candidate = (fromAssignment || normalized).trim();
-  return candidate.replace(/^['\"`]|['\"`]$/g, "");
-};
-
 function getLivekitConfig() {
-  const apiKey = extractEnvValue(Deno.env.get("LIVEKIT_API_KEY"), "LIVEKIT_API_KEY");
-  const apiSecret = extractEnvValue(Deno.env.get("LIVEKIT_API_SECRET"), "LIVEKIT_API_SECRET");
-  const livekitUrl = extractEnvValue(Deno.env.get("LIVEKIT_URL"), "LIVEKIT_URL");
+  const apiKey = (Deno.env.get("LIVEKIT_API_KEY") || "").trim();
+  const apiSecret = (Deno.env.get("LIVEKIT_API_SECRET") || "").trim();
+  const livekitUrl = (Deno.env.get("LIVEKIT_URL") || "").trim();
   const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+  console.log("LiveKit config check:", { apiKey: !!apiKey, apiSecret: !!apiSecret, livekitUrl: !!livekitUrl, url: livekitUrl });
   return { apiKey, apiSecret, livekitUrl, httpUrl };
 }
 
