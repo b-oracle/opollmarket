@@ -1699,7 +1699,7 @@ const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
           <Zap className="w-5 h-5" /> Sports Fixture Auto-Import
         </CardTitle>
         <CardDescription>
-          Import upcoming matches from leagues via API-Football. Markets are created as multi-option (Home/Draw/Away) for football, binary for others. Auto-resolves via existing sports resolution.
+          Import upcoming matches/fights from leagues via API-Sports. Football markets are multi-option (Home/Draw/Away), MMA markets are binary (Fighter 1 vs Fighter 2). Auto-resolves via sports resolution.
           {marketCount > 0 && <span className="ml-2 font-medium text-primary">{marketCount} total imported</span>}
         </CardDescription>
       </CardHeader>
