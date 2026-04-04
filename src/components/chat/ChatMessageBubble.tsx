@@ -189,6 +189,39 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     onPointerLeave: handlePointerCancel,
   };
 
+  // System call message
+  if (callMatch) {
+    const [, callStatus, durationStr] = callMatch;
+    const dur = parseInt(durationStr, 10);
+    const formatCallDuration = (s: number) => {
+      const min = Math.floor(s / 60);
+      const sec = s % 60;
+      return `${min}:${sec.toString().padStart(2, "0")}`;
+    };
+
+    const icon = callStatus === "ended"
+      ? <Phone className="w-4 h-4 text-emerald-500" />
+      : callStatus === "missed"
+        ? <PhoneMissed className="w-4 h-4 text-destructive" />
+        : <PhoneOff className="w-4 h-4 text-destructive" />;
+
+    const label = callStatus === "ended"
+      ? `Voice call · ${formatCallDuration(dur)}`
+      : callStatus === "missed"
+        ? "Missed call"
+        : "Call declined";
+
+    return (
+      <div className="flex justify-center my-2">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/60 text-muted-foreground text-xs">
+          {icon}
+          <span>{label}</span>
+          <span>· {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}</span>
+        </div>
+      </div>
+    );
+  }
+
   if (isGift) {
     return (
       <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
