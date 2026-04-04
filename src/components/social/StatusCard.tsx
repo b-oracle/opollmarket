@@ -355,7 +355,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
       {/* Legacy image display */}
       {!market && status.image_url && (
         <div className="rounded-lg overflow-hidden bg-muted/20">
-          <img src={optimizedImageUrl(status.image_url, "card")} alt="" className="w-full max-h-96 object-cover rounded-lg" loading="lazy" />
+          <img src={optimizedImageUrl(status.image_url, "card")} alt="" className="w-full max-h-96 object-contain rounded-lg" loading="lazy" />
         </div>
       )}
 
