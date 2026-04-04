@@ -223,23 +223,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const handleSendInvite = async (inviteeId: string, inviteeName: string) => {
     setInviteSending(inviteeId);
     try {
-      await supabase.from("space_invites" as any).insert({
+      const { error: inviteErr } = await supabase.from("space_invites" as any).insert({
         space_id: spaceId,
         inviter_id: user!.id,
         invitee_id: inviteeId,
       });
-      await supabase.from("notifications").insert({
-        user_id: inviteeId,
-        title: "Space Invite 🎙️",
-        message: `You've been invited to join "${displayTitle}"`,
-        type: "info",
-        actor_id: user!.id,
-        market_id: spaceId,
-      });
-      toast.success(`Invited ${inviteeName}`);
+      if (inviteErr) {
+        if (inviteErr.message?.includes("duplicate") || inviteErr.code === "23505") {
+          toast.info(`${inviteeName} already invited`);
+        } else {
+          throw new Error(inviteErr.message);
+        }
+      } else {
+        // Notification is handled by the DB trigger (trg_notify_space_invitee)
+        toast.success(`Invited ${inviteeName}`);
+      }
     } catch (err: any) {
-      if (err.message?.includes("duplicate")) toast.info(`${inviteeName} already invited`);
-      else toast.error(err.message || "Failed to invite");
+      toast.error(err.message || "Failed to invite");
     } finally {
       setInviteSending(null);
     }
