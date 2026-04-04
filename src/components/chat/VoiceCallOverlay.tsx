@@ -256,18 +256,18 @@ const VoiceCallOverlay = ({
   // ── Full-screen overlay ──
   return (
     <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center">
-      {/* E2EE indicator */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-xs text-emerald-500">
-        <Lock className="w-3 h-3" />
-        <span>End-to-end encrypted</span>
+      {/* E2EE indicator + minimize */}
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6" style={{ paddingTop: "max(1.5rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
+        <div className="flex items-center gap-1.5 text-xs text-emerald-500">
+          <Lock className="w-3 h-3" />
+          <span>End-to-end encrypted</span>
+        </div>
+        {status !== "ended" && onMinimize && (
+          <button onClick={onMinimize} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+            <Minimize2 className="w-5 h-5" />
+          </button>
+        )}
       </div>
-
-      {/* Minimize button */}
-      {status !== "ended" && onMinimize && (
-        <button onClick={onMinimize} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors">
-          <Minimize2 className="w-5 h-5" />
-        </button>
-      )}
 
       {/* Close / back */}
       {status === "ended" && (
