@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track, ConnectionState } from "livekit-client";
 import { playDialTone, playRingtone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, PhoneOff, Mic, MicOff, Volume2, Lock, X } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Volume2, Lock, X, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -16,6 +16,9 @@ interface VoiceCallOverlayProps {
   isOutgoing: boolean;
   otherUserName: string;
   otherUserAvatar?: string;
+  minimized?: boolean;
+  onMinimize?: () => void;
+  onMaximize?: () => void;
   onClose: () => void;
 }
 
@@ -29,6 +32,9 @@ const VoiceCallOverlay = ({
   isOutgoing,
   otherUserName,
   otherUserAvatar,
+  minimized = false,
+  onMinimize,
+  onMaximize,
   onClose,
 }: VoiceCallOverlayProps) => {
   const [status, setStatus] = useState<"connecting" | "ringing" | "active" | "ended">(
@@ -65,7 +71,6 @@ const VoiceCallOverlay = ({
     room.on(RoomEvent.ParticipantConnected, () => {
       setStatus("active");
       startTimeRef.current = Date.now();
-      // Stop dial/ring tone
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       if (autoTimeoutRef.current) {
         clearTimeout(autoTimeoutRef.current);
@@ -89,7 +94,6 @@ const VoiceCallOverlay = ({
           setStatus("active");
           startTimeRef.current = Date.now();
         } else {
-          // Start dial tone for outgoing calls
           stopToneRef.current = playDialTone();
         }
       })
@@ -99,7 +103,6 @@ const VoiceCallOverlay = ({
         handleEnd();
       });
 
-    // Auto-timeout for outgoing calls (60s)
     if (isOutgoing) {
       autoTimeoutRef.current = setTimeout(() => {
         if (status === "ringing") {
@@ -205,6 +208,40 @@ const VoiceCallOverlay = ({
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // ── Mini call bar ──
+  if (minimized) {
+    return (
+      <div
+        onClick={onMaximize}
+        className="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-4 py-2 flex items-center gap-3 cursor-pointer animate-in slide-in-from-top active:bg-emerald-700 transition-colors"
+        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+      >
+        <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+            {otherUserAvatar ? (
+              <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
+            ) : (
+              <span className="text-[10px] font-bold">{otherUserName.charAt(0).toUpperCase()}</span>
+            )}
+          </div>
+          <span className="text-sm font-medium truncate">{otherUserName}</span>
+          <span className="text-xs opacity-80">
+            {status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
+          </span>
+        </div>
+        <span className="text-xs opacity-80">Tap to return</span>
+        <button
+          onClick={(e) => { e.stopPropagation(); status === "ringing" && isOutgoing ? handleCancel() : handleEnd(); }}
+          className="w-7 h-7 rounded-full bg-destructive flex items-center justify-center shrink-0"
+        >
+          <PhoneOff className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  // ── Full-screen overlay ──
   return (
     <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center">
       {/* E2EE indicator */}
@@ -212,6 +249,13 @@ const VoiceCallOverlay = ({
         <Lock className="w-3 h-3" />
         <span>End-to-end encrypted</span>
       </div>
+
+      {/* Minimize button */}
+      {status !== "ended" && onMinimize && (
+        <button onClick={onMinimize} className="absolute top-6 right-6 text-muted-foreground hover:text-foreground transition-colors">
+          <Minimize2 className="w-5 h-5" />
+        </button>
+      )}
 
       {/* Close / back */}
       {status === "ended" && (

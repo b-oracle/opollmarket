@@ -34,6 +34,7 @@ const IncomingCallBanner = () => {
     isOutgoing: boolean;
   } | null>(null);
   const [answering, setAnswering] = useState(false);
+  const [callMinimized, setCallMinimized] = useState(false);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
 
   // Play ringtone when incoming call appears
@@ -174,6 +175,7 @@ const IncomingCallBanner = () => {
   // Expose a way for ChatView to start an outgoing call
   useEffect(() => {
     const handler = (e: CustomEvent) => {
+      setCallMinimized(false);
       setActiveCall(e.detail);
     };
     window.addEventListener("start-voice-call" as any, handler);
@@ -230,7 +232,10 @@ const IncomingCallBanner = () => {
             isOutgoing={activeCall.isOutgoing}
             otherUserName={activeCall.otherName}
             otherUserAvatar={activeCall.otherAvatar}
-            onClose={() => setActiveCall(null)}
+            minimized={callMinimized}
+            onMinimize={() => setCallMinimized(true)}
+            onMaximize={() => setCallMinimized(false)}
+            onClose={() => { setActiveCall(null); setCallMinimized(false); }}
           />
         </Suspense>
       )}
