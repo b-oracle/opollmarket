@@ -163,7 +163,12 @@ export const usePWAUpdate = () => {
     },
   });
 
-  // Also check on visibility change + listen for controllerchange to auto-reload
+  // Check for updates on visibility change — NO auto-reload on controllerchange.
+  // The old `controllerchange` → `window.location.reload()` listener was the root
+  // cause of infinite reload loops: a new SW could activate (via skipWaiting from
+  // another tab, or the SW itself), triggering a reload that re-checked for updates,
+  // found another waiting worker, and looped. With `registerType: 'prompt'`, the
+  // user should always control when the reload happens via the "Update" button.
   useEffect(() => {
     if (blockedContext) {
       waitingVersionRef.current = null;
@@ -179,26 +184,10 @@ export const usePWAUpdate = () => {
       }
     };
 
-    // When a new SW takes over (via skipWaiting), reload the page
-    const handleControllerChange = () => {
-      // Guard against reload loops: only reload once per controller change
-      const reloadGuard = safeStorage.getSession(RELOAD_GUARD_KEY);
-      if (reloadGuard) {
-        // Already reloaded for this SW activation — clear and stop
-        safeStorage.removeSession(RELOAD_GUARD_KEY);
-        return;
-      }
-      safeStorage.setSession(RELOAD_GUARD_KEY, Date.now().toString());
-      // Small delay to let the new SW fully settle before reload
-      setTimeout(() => window.location.reload(), 300);
-    };
-
     document.addEventListener("visibilitychange", handleVisibility);
-    navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
 
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
-      navigator.serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
 
       if (registrationRef.current && updateFoundHandlerRef.current) {
         registrationRef.current.removeEventListener("updatefound", updateFoundHandlerRef.current);
