@@ -2258,12 +2258,12 @@ const Create = () => {
 
                       {/* League */}
                       <div>
-                        <label className="text-xs font-semibold mb-1.5 block">League / Competition (optional)</label>
+                        <label className="text-xs font-semibold mb-1.5 block">{isMmaSport ? "Event (optional)" : "League / Competition (optional)"}</label>
                         <input
                           type="text"
                           value={sportLeague}
                           onChange={(e) => setSportLeague(e.target.value)}
-                          placeholder="e.g. Premier League, NBA, UFC 300"
+                          placeholder={isMmaSport ? "e.g. UFC 315, Bellator 300" : "e.g. Premier League, La Liga"}
                           className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </div>
