@@ -232,7 +232,10 @@ const IncomingCallBanner = () => {
             isOutgoing={activeCall.isOutgoing}
             otherUserName={activeCall.otherName}
             otherUserAvatar={activeCall.otherAvatar}
-            onClose={() => setActiveCall(null)}
+            minimized={callMinimized}
+            onMinimize={() => setCallMinimized(true)}
+            onMaximize={() => setCallMinimized(false)}
+            onClose={() => { setActiveCall(null); setCallMinimized(false); }}
           />
         </Suspense>
       )}
