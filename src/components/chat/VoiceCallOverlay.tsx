@@ -111,6 +111,7 @@ const VoiceCallOverlay = ({
     return () => {
       if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
+      if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       room.disconnect();
       roomRef.current = null;
     };
