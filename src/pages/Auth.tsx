@@ -407,11 +407,13 @@ const Auth = () => {
         }}
         onVerified={() => {
           setShowLoginSecurity(false);
-          // Mark session as verified so App-level LoginSecurityGuard doesn't re-prompt
-          const uid = supabase.auth.getSession().then(({ data }) => data?.session?.user?.id);
-          uid.then(id => { if (id) try { localStorage.setItem(`login_sec_verified_${id}`, Date.now().toString()); } catch {} });
+          // Use user from useAuth() synchronously — avoids async race condition
+          if (user?.id) {
+            try { localStorage.setItem(`login_sec_verified_${user.id}`, Date.now().toString()); } catch {}
+          }
           toast.success("Logged in successfully!");
-          navigate("/");
+          const redirectTo = searchParams.get("redirect");
+          navigate(redirectTo || "/");
         }}
         requirePin={loginSecReqs.require_pin}
         requireTotp={loginSecReqs.require_totp}

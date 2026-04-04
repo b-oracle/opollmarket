@@ -225,7 +225,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
 // Gate that requires PIN/TOTP verification on login for ALL auth methods (OAuth, session restore, email/password)
 const LOGIN_SECURITY_VERIFIED_KEY = "login_sec_verified_";
 
-const SESSION_PIN_TIMEOUT_MS = 3_600_000; // 1 hour
+const SESSION_PIN_TIMEOUT_MS = 1_800_000; // 30 minutes
 const SESSION_LOGOUT_TIMEOUT_MS = 86_400_000; // 24 hours
 const LAST_ACTIVE_KEY = "last_active_";
 
