@@ -803,6 +803,53 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_calls: {
+        Row: {
+          callee_id: string
+          caller_id: string
+          conversation_id: string
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          room_name: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          callee_id: string
+          caller_id: string
+          conversation_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          room_name: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          callee_id?: string
+          caller_id?: string
+          conversation_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          room_name?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dm_calls_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "dm_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dm_conversations: {
         Row: {
           created_at: string

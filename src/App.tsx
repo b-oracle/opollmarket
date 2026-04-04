@@ -29,6 +29,7 @@ import { VerificationThresholdProvider } from "./components/NftBadge";
 
 const PendingCopyTrades = lazy(() => import("./components/PendingCopyTrades"));
 const AimtellProvider = lazy(() => import("./components/AimtellProvider"));
+const IncomingCallBanner = lazy(() => import("./components/chat/IncomingCallBanner"));
 
 // Lazy-loaded pages
 const Index = lazy(() => import("./pages/Index"));
@@ -467,6 +468,7 @@ const App = () => {
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
                 </DeferredMount>
                 <GlobalSpaceRoom />
+                <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">

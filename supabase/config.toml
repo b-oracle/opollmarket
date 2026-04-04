@@ -123,3 +123,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.withdrawal-deposit-audit]
     verify_jwt = false
+  [functions.dm-call-token]
+    verify_jwt = false

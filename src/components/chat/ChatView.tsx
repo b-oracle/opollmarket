@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ const ChatView = () => {
   const [showGift, setShowGift] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [calling, setCalling] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -212,6 +213,38 @@ const ChatView = () => {
   const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
   const isRejected = convStatus === "rejected";
 
+  const handleStartCall = useCallback(async () => {
+    if (calling || !conversationId || !user) return;
+    setCalling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dm-call-token", {
+        body: { action: "start", conversation_id: conversationId },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Failed to start call");
+
+      // Dispatch event to IncomingCallBanner (which manages the overlay)
+      window.dispatchEvent(
+        new CustomEvent("start-voice-call", {
+          detail: {
+            callId: data.call_id,
+            conversationId,
+            token: data.token,
+            url: data.url,
+            room: data.room,
+            passphrase: data.e2ee_passphrase,
+            otherName,
+            otherAvatar: (convo as any)?.other_user?.avatar_url,
+            isOutgoing: true,
+          },
+        })
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start call");
+    } finally {
+      setCalling(false);
+    }
+  }, [calling, conversationId, user, otherName, convo]);
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
       <SEOHead title={`Chat with ${otherName} | Pollmarket`} description="Direct message" />
@@ -234,6 +267,16 @@ const ChatView = () => {
           <span className="text-sm font-semibold truncate">{otherName}</span>
           {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
+        {convStatus === "active" && (
+          <button
+            onClick={handleStartCall}
+            disabled={calling}
+            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+            aria-label="Voice call"
+          >
+            <Phone className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* Pending request banner for recipient */}
