@@ -1532,12 +1532,14 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (!chatInput.trim() || !roomRef.current) return;
     const text = chatInput.trim();
     const senderName = roomRef.current.localParticipant.name || "You";
+    const currentReply = replyTo;
 
     // Still broadcast via data channel for instant delivery to connected peers
     const data = JSON.stringify({
       type: "message",
       text,
       senderName,
+      ...(currentReply ? { replyToId: currentReply.id, replyToContent: currentReply.text, replyToName: currentReply.name } : {}),
     });
     roomRef.current.localParticipant.publishData(new TextEncoder().encode(data), { reliable: true });
 
@@ -1552,18 +1554,25 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         text,
         type: "message",
         timestamp: Date.now(),
+        ...(currentReply ? { replyToId: currentReply.id, replyToContent: currentReply.text, replyToName: currentReply.name } : {}),
       },
     ]);
 
     if (user?.id) {
+      const insertPayload: any = {
+        space_id: spaceId,
+        user_id: user.id,
+        user_name: senderName === "You" ? (user.email?.split("@")[0] || "Anonymous") : senderName,
+        content: text,
+      };
+      if (currentReply) {
+        insertPayload.reply_to_id = currentReply.id;
+        insertPayload.reply_to_content = currentReply.text.slice(0, 200);
+        insertPayload.reply_to_name = currentReply.name;
+      }
       supabase
         .from("space_messages")
-        .insert({
-          space_id: spaceId,
-          user_id: user.id,
-          user_name: senderName === "You" ? (user.email?.split("@")[0] || "Anonymous") : senderName,
-          content: text,
-        })
+        .insert(insertPayload)
         .select("id")
         .then(({ data: inserted }) => {
           // Replace local id with real DB id so reactions can be persisted
@@ -1578,6 +1587,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     }
 
     setChatInput("");
+    setReplyTo(null);
   };
 
   const sendReaction = (emoji: string) => {
