@@ -463,7 +463,8 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2">
+        {/* Stats row */}
         <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
           {isLive && (
             <span className="flex items-center gap-1">
@@ -478,15 +479,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          {/* Share button - always visible */}
+        {/* Actions row - wraps on small screens */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Share button */}
           <button
             onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
             className="px-2.5 py-1.5 rounded-lg bg-muted text-muted-foreground hover:text-foreground text-[10px] font-semibold flex items-center gap-1 transition-colors"
           >
             <Share2 className="w-3 h-3" />
           </button>
-          {/* Broadcast button - scheduled and live */}
+          {/* Broadcast button */}
           {(isScheduled || isLive) && (
             <button
               onClick={(e) => { e.stopPropagation(); setBroadcastOpen(true); }}
@@ -500,7 +502,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             <button
               onClick={handleToggleReminder}
               disabled={togglingReminder}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-colors ${
+              className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap ${
                 hasReminder
                   ? "bg-primary/10 text-primary hover:bg-destructive/10 hover:text-destructive"
                   : "bg-primary text-primary-foreground"
@@ -511,7 +513,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
               ) : hasReminder ? (
                 <><BellOff className="w-3 h-3" /> Remove Reminder</>
               ) : (
-                <><Bell className="w-3 h-3" /> Set Reminder</>
+                <><Bell className="w-3 h-3" /> Remind Me</>
               )}
             </button>
           )}
@@ -528,14 +530,14 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
                   queryClient.invalidateQueries({ queryKey: ["spaces"] });
                   toast.success("Space is now live! 🎙️");
                 }}
-                className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors flex items-center gap-1 whitespace-nowrap"
               >
                 <Radio className="w-3 h-3" /> Go Live
               </button>
               <button
                 onClick={handleCancelSpace}
                 disabled={cancelling}
-                className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-semibold hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-semibold hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-1 whitespace-nowrap"
               >
                 {cancelling ? <Loader2 className="w-3 h-3 animate-spin" /> : <><XCircle className="w-3 h-3" /> Cancel</>}
               </button>
@@ -544,7 +546,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           {isHost && isLive && (
             <button
               onClick={handleEndSpace}
-              className="px-3 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors"
+              className="px-2.5 py-1.5 rounded-lg bg-destructive/10 text-destructive text-[10px] font-semibold hover:bg-destructive/20 transition-colors whitespace-nowrap"
             >
               End Space
             </button>
@@ -553,7 +555,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
             <button
               onClick={handleJoinLeave}
               disabled={joining}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-colors ${
+              className={`px-2.5 py-1.5 rounded-lg text-[10px] font-semibold flex items-center gap-1 transition-colors whitespace-nowrap ${
                 isParticipant
                   ? "bg-muted text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   : "bg-primary text-primary-foreground"
