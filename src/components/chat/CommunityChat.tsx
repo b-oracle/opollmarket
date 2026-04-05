@@ -175,7 +175,13 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
           size="sm"
           variant={isMember ? "outline" : "default"}
           className="h-7 text-xs"
-          onClick={toggleMembership}
+          onClick={() => {
+            if (isMember) {
+              setShowLeaveConfirm(true);
+            } else {
+              toggleMembership();
+            }
+          }}
         >
           {isMember ? "Leave" : "Join"}
         </Button>
