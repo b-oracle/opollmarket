@@ -48,6 +48,7 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
+  const [flipReactions, setFlipReactions] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
@@ -78,6 +79,10 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
   }, [user, reactions, m.id, conversationId, queryClient]);
 
   const openPicker = useCallback(() => {
+    if (bubbleRef.current) {
+      const rect = bubbleRef.current.getBoundingClientRect();
+      setFlipReactions(rect.top < 100);
+    }
     setShowReactions(true);
     if (navigator.vibrate) navigator.vibrate(10);
   }, []);
@@ -202,7 +207,8 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
       {!showFullPicker ? (
         <div
           className={cn(
-            "absolute bottom-full mb-1 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+            "absolute z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+            flipReactions ? "top-full mt-1" : "bottom-full mb-1",
             isMine ? "right-0" : "left-0"
           )}
         >

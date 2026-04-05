@@ -39,7 +39,9 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
+  const [flipReactions, setFlipReactions] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
+  const bubbleRef = useRef<HTMLDivElement>(null);
   const isMe = m.user_id === user?.id;
   const reactions: Record<string, string[]> = (m.reactions as any) || {};
 
@@ -63,6 +65,10 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   }, [user, reactions, m.id, m.ticket_id, queryClient]);
 
   const openPicker = useCallback(() => {
+    if (bubbleRef.current) {
+      const rect = bubbleRef.current.getBoundingClientRect();
+      setFlipReactions(rect.top < 100);
+    }
     setShowReactions(true);
     if (navigator.vibrate) navigator.vibrate(10);
   }, []);
@@ -147,12 +153,13 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
     <>
       <div className="fixed inset-0 z-40" onClick={dismiss} />
       {!showFullPicker ? (
-        <div
-          className={cn(
-            "absolute bottom-full mb-1 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
-            isMe ? "right-0" : "left-0"
-          )}
-        >
+         <div
+           className={cn(
+             "absolute z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+             flipReactions ? "top-full mt-1" : "bottom-full mb-1",
+             isMe ? "right-0" : "left-0"
+           )}
+         >
           {REACTION_EMOJIS.map((emoji) => (
             <button key={emoji} onClick={() => toggleReaction(emoji)} className="text-base hover:scale-125 transition-transform active:scale-95 p-0.5">
               {emoji}
@@ -210,6 +217,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
             </span>
           </div>
           <div
+            ref={bubbleRef}
             className={cn(
               "rounded-2xl px-3.5 py-2 select-none touch-none",
               isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"
