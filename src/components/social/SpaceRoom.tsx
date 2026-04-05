@@ -2467,11 +2467,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <button onClick={() => setReplyTo(null)} className="text-[10px] text-destructive hover:underline shrink-0">✕</button>
                 </div>
               )}
+              {/* Mention suggestions dropdown */}
+              {mentionQuery !== null && mentionSuggestions.length > 0 && (
+                <div className="shrink-0 px-5 py-1 border-t border-border bg-card">
+                  {mentionSuggestions.map((p, i) => (
+                    <button key={p.identity} onClick={() => insertMention(p.name)}
+                      className={`w-full text-left px-3 py-1.5 rounded text-xs flex items-center gap-2 transition-colors ${i === mentionIndex ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}>
+                      <span className="font-medium">@{p.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="shrink-0 px-5 py-3 border-t border-border flex gap-2 items-center">
                 <input
+                  ref={chatInputRef}
                   value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendChat()}
+                  onChange={(e) => handleChatInputChange(e.target.value)}
+                  onKeyDown={handleChatKeyDown}
                   placeholder={replyTo ? `Reply to ${replyTo.name}...` : "Send a message..."}
                   className="flex-1 bg-muted rounded-full px-4 py-2 text-xs outline-none border border-border focus:border-primary"
                 />
