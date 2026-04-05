@@ -217,6 +217,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
             </span>
           </div>
           <div
+            ref={bubbleRef}
             className={cn(
               "rounded-2xl px-3.5 py-2 select-none touch-none",
               isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"
