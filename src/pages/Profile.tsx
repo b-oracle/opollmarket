@@ -261,15 +261,10 @@ const WhatsAppNotifPrefs = ({ userId }: { userId?: string }) => {
         <div className="bg-muted/30 rounded-lg p-3 space-y-2">
           {NOTIF_PREFS_KEYS.map(({ key, label, desc }) => (
             <label key={key} className="flex items-center gap-3 cursor-pointer py-1">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={prefs[key]}
-                onClick={() => togglePref(key)}
-                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${prefs[key] ? "bg-green-500" : "bg-muted-foreground/30"}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${prefs[key] ? "translate-x-4" : ""}`} />
-              </button>
+               <Switch
+                checked={prefs[key]}
+                onCheckedChange={() => togglePref(key)}
+              />
               <div className="min-w-0">
                 <span className="text-xs font-medium block">{label}</span>
                 <span className="text-[10px] text-muted-foreground">{desc}</span>
@@ -777,7 +772,8 @@ const Profile = () => {
         .from("transactions")
         .select("*, markets(title), market_options(label)")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       return data || [];
     },
     enabled: !!user,
@@ -792,7 +788,8 @@ const Profile = () => {
         .from("quick_bets")
         .select("*, quick_rounds(*)")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       return data || [];
     },
     enabled: !!user,
@@ -930,7 +927,7 @@ const Profile = () => {
       )}
 
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))' }}>
+      <div className="max-w-lg md:max-w-4xl mx-auto px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))', paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8 relative">
           <button
@@ -1334,6 +1331,8 @@ const Profile = () => {
 
         {/* Balance + Stats */}
         <div
+          role="button"
+          aria-labelledby="balance-label"
           className="glass rounded-xl p-4 mb-3 text-center cursor-pointer active:scale-[0.98] transition-transform select-none"
           onClick={() => {
             const next = !balanceHidden;
@@ -1341,7 +1340,7 @@ const Profile = () => {
             localStorage.setItem("hide_balance", next ? "1" : "");
           }}
         >
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1" id="balance-label">Balance</p>
           <p className="text-3xl font-bold text-primary">
             {balanceHidden ? "••••••" : `$${balance.toFixed(2)}`}
           </p>
@@ -1354,7 +1353,7 @@ const Profile = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
 
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           {(() => {
             const predictionBuyTxns = transactions.filter(
               (t: any) =>
@@ -1481,11 +1480,13 @@ const Profile = () => {
           </button>
           <button onClick={openDeposit} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <ArrowDownToLine className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">Deposit Funds</span>
+            <span className="text-sm font-medium flex-1 text-left">Deposit Funds</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button onClick={openWithdraw} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <ArrowUpFromLine className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">Withdraw</span>
+            <span className="text-sm font-medium flex-1 text-left">Withdraw</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button onClick={() => navigate("/rankings")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <Trophy className="w-5 h-5 text-primary" />
@@ -1525,19 +1526,19 @@ const Profile = () => {
 
         {/* Security & KYC */}
         <div className="mb-6">
-          <a
-            href="/setup-security"
+          <button
+            onClick={() => navigate("/setup-security")}
             className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors"
           >
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Shield className="w-5 h-5 text-primary" />
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-semibold">Security & KYC</p>
               <p className="text-xs text-muted-foreground">Manage PIN, 2FA, password & identity verification</p>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
-          </a>
+          </button>
         </div>
 
         {/* Personal Info moved to Edit Profile modal */}
@@ -1696,17 +1697,17 @@ const Profile = () => {
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </button>
               ) : (
-                <a
+                <button
                   key={item.label}
-                  href={item.href}
-                  className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]"
+                  onClick={() => navigate(item.href)}
+                  className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98] text-left"
                 >
                   <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-muted-foreground">
                     <item.icon className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-medium flex-1">{item.label}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                </a>
+                </button>
               )
             ))}
           </div>
@@ -1721,17 +1722,17 @@ const Profile = () => {
               { icon: ClipboardCheck, label: "Terms & Conditions", href: "/terms" },
               { icon: Lock, label: "Privacy Policy", href: "/privacy" },
             ].map((item) => (
-              <a
+              <button
                 key={item.label}
-                href={item.href}
+                onClick={() => navigate(item.href)}
                 className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]"
               >
                 <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-muted-foreground">
                   <item.icon className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium flex-1">{item.label}</span>
+                <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </a>
+              </button>
             ))}
           </div>
         </div>
