@@ -1,54 +1,48 @@
 
 
-## Enhance Support Ticket System
+## Fix: Reaction Bar Visibility and Positioning in DM Chat
 
-### Changes
+### Problems
+1. The **"+" button** (to open full emoji picker) is clipped/hidden on mobile — the reaction bar overflows or gets cut off on small screens.
+2. The reaction bar uses **fixed positioning** based on initial coordinates, so it **detaches from the bubble** when the user scrolls.
 
-**1. Database Migration -- Add `category` column to `support_tickets`**
+### Solution
 
-```sql
-ALTER TABLE public.support_tickets
-ADD COLUMN category text NOT NULL DEFAULT 'general';
+**File: `src/components/chat/ChatMessageBubble.tsx`**
+
+1. **Sticky positioning instead of fixed**: Change the reaction bar from `fixed` with absolute `top/left` coordinates to being rendered **inside the bubble's relative container** using `absolute` positioning. This keeps it anchored to the message bubble regardless of scroll position.
+
+2. **Ensure "+" button visibility**: The current bar uses `rounded-full px-2` with 6 emojis + "+" + copy/delete buttons, which overflows on narrow screens. Fix by:
+   - Reducing emoji button padding slightly
+   - Adding `overflow-visible` and ensuring the bar doesn't get clipped by parent `overflow-hidden`
+   - Using `right-0` or `left-0` anchoring based on `isMine` to keep it within viewport
+
+3. **Positioning logic**: Remove the `pickerPos` state that calculates viewport-absolute coordinates. Instead, render the bar as an absolutely-positioned child above the bubble (`bottom-full mb-1`), aligned left for received messages and right for sent messages.
+
+4. **Backdrop stays fixed**: The dismiss overlay remains `fixed inset-0` as it should cover the whole screen.
+
+### Technical Details
+
+```text
+Before (fixed, detaches on scroll):
+  ┌─────────────────────────┐  ← fixed top/left
+  │ ❤️ 😂 👍 😮 😢 🔥 [+] │
+  └─────────────────────────┘
+         ... scroll ...
+  ┌───────────┐
+  │  message  │  ← bubble scrolled away
+  └───────────┘
+
+After (absolute, anchored to bubble):
+  ┌───────────┐
+  │ ❤️😂👍😮😢🔥[+]📋🗑│  ← absolute, bottom-full
+  ├───────────┤
+  │  message  │
+  └───────────┘
 ```
 
-No new table needed -- just one column addition.
-
-**2. Update chat rules: only `closed` locks the chat**
-
-Currently `SupportChat.tsx` blocks messaging when status is `closed` OR `resolved`. Change this so only `closed` permanently locks the conversation. `resolved` tickets remain open for continued messaging (admin can re-open or user can follow up).
-
-**3. Admin `is_staff` detection in `SupportChat`**
-
-Currently `is_staff` is hardcoded to `false` in `sendMessage`. Add a prop `isStaff?: boolean` to `SupportChat` so `AdminSupport` can pass `isStaff={true}`, and the insert uses that value. This lets admin/support/moderator replies show as staff messages.
-
-**4. Complaint category picker in `SupportTab.tsx`**
-
-Replace the free-text "Subject" input with a category selector + optional subject. Categories:
-
-| Value | Label |
-|-------|-------|
-| `withdrawal` | Withdrawal Issue |
-| `deposit` | Deposit Issue |
-| `quick_trade` | Quick Trade Issue |
-| `prediction` | Prediction Market Issue |
-| `account` | Account / Profile Issue |
-| `kyc` | KYC / Verification |
-| `copy_trade` | Copy Trading Issue |
-| `technical` | Technical / Bug Report |
-| `general` | Other / General |
-
-The category is saved on the ticket and displayed as a badge in both user and admin ticket lists.
-
-**5. Show category badge in `AdminSupport.tsx`**
-
-Display the category alongside the status badge so staff can quickly triage.
-
 ### Files Changed
-
 | File | Change |
 |------|--------|
-| Migration SQL | Add `category` column to `support_tickets` |
-| `src/components/chat/SupportTab.tsx` | Add category selector dropdown, save category on ticket, show category badge in list |
-| `src/components/chat/SupportChat.tsx` | Accept `isStaff` prop, use it in insert; change closed check to only `status === 'closed'` |
-| `src/pages/admin/AdminSupport.tsx` | Pass `isStaff={true}` to `SupportChat`; show category badge on ticket cards |
+| `src/components/chat/ChatMessageBubble.tsx` | Replace fixed-position reaction bar with absolute-positioned bar anchored to bubble; remove `pickerPos` state; adjust sizing for mobile |
 
