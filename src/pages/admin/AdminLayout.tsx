@@ -48,7 +48,7 @@ const navItems: NavItem[] = [
 ];
 
 const AdminLayout = () => {
-  const { user, loading, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, signOut, rolesLoaded } = useAuth();
+  const { user, loading, isSuperAdmin, isAdmin, isModerator, isSupport, hasAdminAccess, canEdit, signOut, rolesLoaded } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
