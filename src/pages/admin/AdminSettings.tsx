@@ -1825,11 +1825,15 @@ const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 const TOGGLE_CATEGORIES: Record<string, { label: string; keys: string[] }> = {
   core: {
     label: "🏠 Core Platform",
-    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading"],
+    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading", "welcome_bonus"],
+  },
+  communication: {
+    label: "📨 Communication & Support",
+    keys: ["dm_chat", "communities", "support_tickets", "user_settings"],
   },
   social: {
     label: "💬 Social Features",
-    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload", "live_streaming"],
+    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload", "live_streaming", "ai_social_generation"],
   },
   charts: {
     label: "📊 Charts & Display",
