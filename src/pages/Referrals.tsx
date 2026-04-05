@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Gift, Copy, Check, Users, DollarSign, ArrowLeft, Share2, LogIn, ChevronLeft, ChevronRight,
+  Gift, Copy, Check, Users, DollarSign, ArrowLeft, Share2, LogIn, ChevronLeft, ChevronRight, Coins,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
