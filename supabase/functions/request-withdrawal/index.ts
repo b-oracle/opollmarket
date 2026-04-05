@@ -287,15 +287,15 @@ Deno.serve(async (req) => {
     // Cooldown: prevent rapid repeated withdrawals (configurable)
     const cooldownMinutes = settings?.withdrawal_cooldown_minutes ?? 5;
     const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-    const { data: recentWithdrawals } = await adminClient
+    const { data: recentWithdrawalsCooldown } = await adminClient
       .from("withdrawal_requests")
       .select("id, created_at")
       .eq("user_id", userId)
       .gte("created_at", cooldownCutoff)
       .limit(1);
 
-    if (recentWithdrawals && recentWithdrawals.length > 0) {
-      const lastTime = new Date(recentWithdrawals[0].created_at);
+    if (recentWithdrawalsCooldown && recentWithdrawalsCooldown.length > 0) {
+      const lastTime = new Date(recentWithdrawalsCooldown[0].created_at);
       const waitUntil = new Date(lastTime.getTime() + cooldownMinutes * 60 * 1000);
       const secsLeft = Math.ceil((waitUntil.getTime() - Date.now()) / 1000);
       const minsLeft = Math.ceil(secsLeft / 60);
@@ -327,10 +327,10 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .gte("created_at", dailyCutoff);
 
-    const dailyTotal = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
+    const dailyTotalAnomaly = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
     const ANOMALY_THRESHOLD = 1000; // $1000 in 24h triggers alert
 
-    if (dailyTotal >= ANOMALY_THRESHOLD) {
+    if (dailyTotalAnomaly >= ANOMALY_THRESHOLD) {
       // Fire-and-forget admin alert
       const { data: adminUsers } = await adminClient
         .from("user_roles")
@@ -342,11 +342,11 @@ Deno.serve(async (req) => {
         const alertNotifications = adminUsers.map((admin: any) => ({
           user_id: admin.user_id,
           title: "⚠️ Withdrawal Anomaly Detected",
-          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyTotal.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
+          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyTotalAnomaly.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
           type: "system",
         }));
         await adminClient.from("notifications").insert(alertNotifications);
-        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyTotal} ip=${clientIp}`);
+        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyTotalAnomaly} ip=${clientIp}`);
       }
     }
 
