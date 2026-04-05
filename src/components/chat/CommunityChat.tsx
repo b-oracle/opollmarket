@@ -231,7 +231,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   {showBar && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveReactionId(null)} />
-                      <div className="absolute bottom-full mb-1 left-0 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl">
+                      <div className={cn("absolute left-0 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl", (e => { const el = document.querySelector(`[data-msg-id="${m.id}"]`); return el && el.getBoundingClientRect().top < 100 ? "top-full mt-1" : "bottom-full mb-1"; })())}>
                         {REACTION_EMOJIS.map((emoji) => (
                           <button
                             key={emoji}
