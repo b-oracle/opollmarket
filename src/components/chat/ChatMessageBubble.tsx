@@ -79,6 +79,10 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
   }, [user, reactions, m.id, conversationId, queryClient]);
 
   const openPicker = useCallback(() => {
+    if (bubbleRef.current) {
+      const rect = bubbleRef.current.getBoundingClientRect();
+      setFlipReactions(rect.top < 100);
+    }
     setShowReactions(true);
     if (navigator.vibrate) navigator.vibrate(10);
   }, []);
