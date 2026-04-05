@@ -13,9 +13,10 @@ interface MarketTagSelectorProps {
   selected: MarketTag[];
   onChange: (markets: MarketTag[]) => void;
   max?: number;
+  categoryFilter?: string;
 }
 
-const MarketTagSelector = ({ selected, onChange, max = 5 }: MarketTagSelectorProps) => {
+const MarketTagSelector = ({ selected, onChange, max = 5, categoryFilter }: MarketTagSelectorProps) => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MarketTag[]>([]);
   const [searching, setSearching] = useState(false);

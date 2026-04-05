@@ -1,0 +1,1 @@
+ALTER TABLE public.community_messages ADD COLUMN tagged_market_ids text[] DEFAULT '{}';
