@@ -177,6 +177,12 @@ const AdminSettings = () => {
         setWelcomeBonusPercent(String(d.welcome_bonus_percent ?? 0));
         setWelcomeBonusCap(String(d.welcome_bonus_cap ?? 0));
         setGiftFeePercent(String(d.gift_fee_percent ?? 2));
+        setPredictionMinBet(String(d.prediction_min_bet ?? 1));
+        setPredictionMaxBet(String(d.prediction_max_bet ?? 10000));
+        setDepositMinAmount(String(d.deposit_min_amount ?? 1));
+        setDepositMaxAmount(String(d.deposit_max_amount ?? 50000));
+        setPushPromptCooldownDays(String(d.push_prompt_cooldown_days ?? 14));
+        setDepositExpiryMinutes(String(d.deposit_expiry_minutes ?? 60));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
