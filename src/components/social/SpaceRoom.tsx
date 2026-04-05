@@ -2412,7 +2412,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                           <p className="text-[10px] opacity-80 truncate">{m.replyToContent.slice(0, 60)}{(m.replyToContent.length || 0) > 60 ? "…" : ""}</p>
                         </div>
                       )}
-                      <p>{m.text}</p>
+                      <p>{renderMessageText(m.text)}</p>
                       <p className={`text-[9px] mt-0.5 ${m.sender === user?.id ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
                         {new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
