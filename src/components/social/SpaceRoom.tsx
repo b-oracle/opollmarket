@@ -1174,6 +1174,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     try {
       await roomRef.current.localParticipant.setMicrophoneEnabled(muted);
       setMuted(!muted);
+      wasMicOnRef.current = muted; // muted was the old state, so if muted=true we're unmuting
     } catch { toast.error("Microphone access denied"); }
   };
 
