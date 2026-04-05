@@ -130,7 +130,7 @@ const SupportTab = () => {
   };
 
   if (activeTicket) {
-    return <SupportChat ticketId={activeTicket} onBack={() => { setActiveTicket(null); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }} />;
+    return <SupportChat ticketId={activeTicket} isStaff={isStaffTicket} onBack={() => { setActiveTicket(null); setIsStaffTicket(false); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }} />;
   }
 
   return (
