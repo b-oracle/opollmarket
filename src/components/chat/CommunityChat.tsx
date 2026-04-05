@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, X, Reply, Plus } from "lucide-react";
+import { ArrowLeft, Send, X, Reply, Copy } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -191,7 +191,20 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     </span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0 relative">
+                <div
+                  className="flex-1 min-w-0 relative select-none touch-none"
+                  onPointerDown={(e) => {
+                    if (e.button !== 0) return;
+                    const timer = setTimeout(() => {
+                      setActiveReactionId(m.id);
+                      if (navigator.vibrate) navigator.vibrate(10);
+                    }, 500);
+                    const cancel = () => clearTimeout(timer);
+                    e.currentTarget.addEventListener("pointerup", cancel, { once: true });
+                    e.currentTarget.addEventListener("pointercancel", cancel, { once: true });
+                    e.currentTarget.addEventListener("pointerleave", cancel, { once: true });
+                  }}
+                >
                   {/* Reaction bar */}
                   {showBar && (
                     <>
@@ -213,6 +226,18 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                           title="Reply"
                         >
                           <Reply className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (m.content) {
+                              navigator.clipboard.writeText(m.content).then(() => toast.success("Copied")).catch(() => toast.error("Failed to copy"));
+                            }
+                            setActiveReactionId(null);
+                          }}
+                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
+                          title="Copy"
+                        >
+                          <Copy className="w-3 h-3 text-muted-foreground" />
                         </button>
                       </div>
                     </>
@@ -254,12 +279,6 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => setActiveReactionId(showBar ? null : m.id)}
-                  className="opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity self-start mt-1"
-                >
-                  <Plus className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
-                </button>
               </div>
             );
           })
