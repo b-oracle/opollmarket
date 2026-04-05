@@ -400,8 +400,45 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
         </div>
       )}
 
+      {/* Tag selector panel */}
+      {showTagSelector && (
+        <div className="shrink-0 px-4 py-2 border-t border-border bg-muted/30">
+          <MarketTagSelector
+            selected={taggedMarkets}
+            onChange={setTaggedMarkets}
+            max={3}
+            categoryFilter={categoryFilter}
+          />
+          <button
+            onClick={() => setShowTagSelector(false)}
+            className="text-[10px] text-muted-foreground mt-1 hover:text-foreground"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* Tagged markets preview */}
+      {taggedMarkets.length > 0 && !showTagSelector && (
+        <div className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 border-t border-border bg-muted/30">
+          <TrendingUp className="w-3 h-3 text-primary shrink-0" />
+          <span className="text-[10px] text-muted-foreground">{taggedMarkets.length} market{taggedMarkets.length > 1 ? "s" : ""} tagged</span>
+          <button onClick={() => { setTaggedMarkets([]); }} className="ml-auto">
+            <X className="w-3 h-3 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+
       {/* Input */}
       <div className="shrink-0 px-4 py-1.5 flex gap-2" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
+        <button
+          onClick={() => isMember && setShowTagSelector(!showTagSelector)}
+          disabled={!isMember}
+          className="h-9 w-9 flex items-center justify-center shrink-0 text-muted-foreground hover:text-primary disabled:opacity-40 transition-colors"
+          title="Tag markets"
+        >
+          <TrendingUp className="w-4 h-4" />
+        </button>
         <Input
           placeholder={isMember ? "Type a message..." : "Join to chat"}
           value={message}
@@ -413,7 +450,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
         <Button
           size="sm"
           className="h-9 w-9 p-0"
-          disabled={!isMember || !message.trim()}
+          disabled={!isMember || (!message.trim() && taggedMarkets.length === 0)}
           onClick={sendMessage}
         >
           <Send className="w-4 h-4" />
