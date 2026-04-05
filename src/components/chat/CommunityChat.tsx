@@ -36,6 +36,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
+  const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
