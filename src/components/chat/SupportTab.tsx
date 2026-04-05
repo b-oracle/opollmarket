@@ -129,7 +129,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
     }
   };
 
-  if (activeTicket) {
+  if (!onOpenChat && activeTicket) {
     return <SupportChat ticketId={activeTicket} isStaff={isStaffTicket} onBack={() => { setActiveTicket(null); setIsStaffTicket(false); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }} />;
   }
 
