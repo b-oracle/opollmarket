@@ -389,7 +389,7 @@ const ConversationList = () => {
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             }>
-              <SupportTab />
+              <SupportTab onOpenChat={(ticketId, isStaff) => setActiveSupportTicket({ ticketId, isStaff })} />
             </Suspense>
           ) : tab === "settings" ? (
             <Suspense fallback={
