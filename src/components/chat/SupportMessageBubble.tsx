@@ -65,6 +65,10 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   }, [user, reactions, m.id, m.ticket_id, queryClient]);
 
   const openPicker = useCallback(() => {
+    if (bubbleRef.current) {
+      const rect = bubbleRef.current.getBoundingClientRect();
+      setFlipReactions(rect.top < 100);
+    }
     setShowReactions(true);
     if (navigator.vibrate) navigator.vibrate(10);
   }, []);
