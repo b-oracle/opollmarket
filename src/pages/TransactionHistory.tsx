@@ -137,7 +137,7 @@ const TransactionHistory = () => {
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
-      <div className="max-w-lg mx-auto px-4 pt-20 pb-28">
+      <div className="max-w-lg mx-auto px-4 pb-28" style={{ paddingTop: 'calc(var(--content-top) + 0.75rem)' }}>
         <div className="flex items-center gap-3 mb-5">
           <button
             onClick={() => navigate(-1)}

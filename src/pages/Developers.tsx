@@ -64,7 +64,7 @@ const Developers = () => {
       />
       <TopBar />
 
-      <div className="max-w-3xl mx-auto px-3 sm:px-4 pt-16 sm:pt-20 lg:pt-24">
+      <div className="max-w-3xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(var(--content-top) + 0.75rem)' }}>
         {/* Header */}
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <button onClick={() => navigate(-1)} className="p-1.5 sm:p-2 rounded-xl glass hover:bg-muted/50 transition-colors shrink-0">
