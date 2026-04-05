@@ -6,6 +6,16 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -39,6 +49,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const [message, setMessage] = useState("");
   const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -165,7 +176,13 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
           size="sm"
           variant={isMember ? "outline" : "default"}
           className="h-7 text-xs"
-          onClick={toggleMembership}
+          onClick={() => {
+            if (isMember) {
+              setShowLeaveConfirm(true);
+            } else {
+              toggleMembership();
+            }
+          }}
         >
           {isMember ? "Leave" : "Join"}
         </Button>
@@ -330,6 +347,29 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
           <Send className="w-4 h-4" />
         </Button>
       </div>
+
+      <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Leave {label}?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              You'll no longer receive messages from this community. You can rejoin anytime.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowLeaveConfirm(false);
+                toggleMembership();
+              }}
+              className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Leave
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
