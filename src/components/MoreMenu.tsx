@@ -63,7 +63,7 @@ const MoreMenu = ({ open, onOpenChange }: MoreMenuProps) => {
           </SheetHeader>
 
           <motion.div
-            className="space-y-5 overflow-y-auto"
+            className="space-y-3 overflow-y-auto"
             style={{ maxHeight: 'calc(85dvh - 5rem)', paddingBottom: 'calc(var(--safe-bottom) + 6rem)', WebkitOverflowScrolling: "touch", touchAction: "pan-y", overscrollBehavior: "contain", willChange: "scroll-position" } as React.CSSProperties}
             variants={staggerContainer}
             initial="hidden"
