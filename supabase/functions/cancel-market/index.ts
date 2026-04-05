@@ -281,11 +281,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update market status
-    await adminClient
-      .from("markets")
-      .update({ status: "cancelled" })
-      .eq("id", market_id);
+    // Market status already set to 'cancelled' atomically by cancel_market_atomic RPC
 
     return new Response(
       JSON.stringify({
