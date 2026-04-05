@@ -35,6 +35,7 @@ interface SupportMessageBubbleProps {
 
 const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: SupportMessageBubbleProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
