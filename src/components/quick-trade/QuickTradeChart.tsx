@@ -273,8 +273,8 @@ function QuickTradeChart(props: QuickTradeChartProps) {
         className="fixed inset-0 z-50 bg-background flex flex-col"
         style={{
           paddingTop: "var(--safe-top)",
-          paddingLeft: "env(safe-area-inset-left, 0px)",
-          paddingRight: "env(safe-area-inset-right, 0px)",
+          paddingLeft: "var(--safe-left)",
+          paddingRight: "var(--safe-right)",
         }}
       >
         <div className="relative flex-1 p-4">

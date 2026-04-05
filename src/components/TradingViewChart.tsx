@@ -622,8 +622,8 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
       className={`${isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"} overflow-hidden`}
       style={isFullscreen ? { 
         paddingTop: 'var(--safe-top)',
-        paddingLeft: 'env(safe-area-inset-left, 0px)',
-        paddingRight: 'env(safe-area-inset-right, 0px)',
+        paddingLeft: 'var(--safe-left)',
+        paddingRight: 'var(--safe-right)',
       } : undefined}
     >
       {/* Resolution flash/glow overlay */}
