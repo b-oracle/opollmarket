@@ -218,21 +218,24 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   className="flex-1 min-w-0 relative select-none touch-none"
                   onPointerDown={(e) => {
                     if (e.button !== 0) return;
+                    const target = e.currentTarget;
                     const timer = setTimeout(() => {
+                      const rect = target.getBoundingClientRect();
+                      setFlipReactions(rect.top < 100);
                       setActiveReactionId(m.id);
                       if (navigator.vibrate) navigator.vibrate(10);
                     }, 500);
                     const cancel = () => clearTimeout(timer);
-                    e.currentTarget.addEventListener("pointerup", cancel, { once: true });
-                    e.currentTarget.addEventListener("pointercancel", cancel, { once: true });
-                    e.currentTarget.addEventListener("pointerleave", cancel, { once: true });
+                    target.addEventListener("pointerup", cancel, { once: true });
+                    target.addEventListener("pointercancel", cancel, { once: true });
+                    target.addEventListener("pointerleave", cancel, { once: true });
                   }}
                 >
                   {/* Reaction bar */}
                   {showBar && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setActiveReactionId(null)} />
-                      <div className={cn("absolute left-0 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl", (e => { const el = document.querySelector(`[data-msg-id="${m.id}"]`); return el && el.getBoundingClientRect().top < 100 ? "top-full mt-1" : "bottom-full mb-1"; })())}>
+                      <div className={cn("absolute left-0 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl", flipReactions ? "top-full mt-1" : "bottom-full mb-1")}>
                         {REACTION_EMOJIS.map((emoji) => (
                           <button
                             key={emoji}
