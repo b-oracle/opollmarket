@@ -381,7 +381,7 @@ const ConversationList = () => {
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             }>
-              <CommunitiesTab />
+              <CommunitiesTab onOpenChat={(slug, label) => setActiveCommunityChat({ slug, label })} />
             </Suspense>
           ) : tab === "support" ? (
             <Suspense fallback={
