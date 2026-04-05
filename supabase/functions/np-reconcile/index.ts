@@ -229,24 +229,8 @@ Deno.serve(async (req) => {
         const isPartial = creditAmount < requestedAmount * 0.98;
         const finalStatus = isPartial ? "partial" : "confirmed";
 
-        // Credit user balance
-        const { data: balance } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", dep.user_id)
-          .eq("currency", "USDT")
-          .single();
-
-        if (balance) {
-          await adminClient
-            .from("balances")
-            .update({
-              amount: Number(balance.amount) + creditAmount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", dep.user_id)
-            .eq("currency", "USDT");
-        }
+        // Credit user balance atomically
+        await adminClient.rpc("adjust_balance", { _user_id: dep.user_id, _delta: creditAmount, _bonus_delta: 0 });
 
         // Update transaction
         await adminClient
