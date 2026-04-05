@@ -33,6 +33,12 @@ export interface CommissionSettings {
   welcome_bonus_percent: number;
   welcome_bonus_cap: number;
   gift_fee_percent: number;
+  prediction_min_bet: number;
+  prediction_max_bet: number;
+  deposit_min_amount: number;
+  deposit_max_amount: number;
+  push_prompt_cooldown_days: number;
+  deposit_expiry_minutes: number;
 }
 
 export const useCommissionSettings = () => {
