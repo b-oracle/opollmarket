@@ -103,30 +103,8 @@ Deno.serve(async (req) => {
         share_percent: sharePercent,
       });
 
-      // Credit to user's bonus balance
-      await adminClient
-        .from("balances")
-        .update({
-          bonus_balance: adminClient.rpc ? undefined : undefined, // We need raw SQL for increment
-        })
-        .eq("user_id", creatorProfile.id);
-
-      // Use RPC-style increment via raw update
-      const { data: currentBalance } = await adminClient
-        .from("balances")
-        .select("bonus_balance")
-        .eq("user_id", creatorProfile.id)
-        .eq("currency", "USDT")
-        .single();
-
-      if (currentBalance) {
-        const newBonus = Number(currentBalance.bonus_balance || 0) + shareAmount;
-        await adminClient
-          .from("balances")
-          .update({ bonus_balance: newBonus, updated_at: new Date().toISOString() })
-          .eq("user_id", creatorProfile.id)
-          .eq("currency", "USDT");
-      }
+      // Credit to user's bonus balance atomically
+      await adminClient.rpc("adjust_balance", { _user_id: creatorProfile.id, _delta: 0, _bonus_delta: shareAmount, _insurance_delta: 0 });
 
       // Notify the user
       await adminClient.from("notifications").insert({
