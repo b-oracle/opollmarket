@@ -251,8 +251,8 @@ Deno.serve(async (req) => {
         netProceeds,
         exitFee,
         grossProceeds,
-        newYesPrice: marketUpdate.yes_price,
-        newNoPrice: marketUpdate.no_price,
+        newYesPrice: newYesPrice,
+        newNoPrice: newNoPrice,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
