@@ -70,8 +70,6 @@ interface PartialInfo {
 }
 
 const PRESET_AMOUNTS = [25, 50, 100, 250];
-const MIN_AMOUNT = 1;
-const MAX_AMOUNT = 50000;
 
 const CRYPTO_GROUPS = [
   {

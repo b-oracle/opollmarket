@@ -48,8 +48,6 @@ interface BetModalProps {
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
-const MIN_AMOUNT = 1;
-const MAX_AMOUNT = 10000;
 
 const ShareToXButton = ({ marketTitle, marketId, side, optionLabel }: { marketTitle: string; marketId?: string; side: string; optionLabel?: string }) => {
   const [sharing, setSharing] = useState(false);
