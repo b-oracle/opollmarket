@@ -85,34 +85,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // action === "accept" — execute the trade
-    const { data: bal } = await supabase
-      .from("balances")
-      .select("amount")
-      .eq("user_id", user.id)
-      .eq("currency", "USDT")
-      .single();
-
-    const balance = Number(bal?.amount || 0);
-
-    if (balance < trade.amount) {
-      await supabase
-        .from("pending_copy_trades")
-        .update({ status: "failed", updated_at: new Date().toISOString() })
-        .eq("id", pending_trade_id);
-
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        title: "Copy Trade Failed 💸",
-        message: `Insufficient balance ($${trade.amount.toFixed(2)} needed, $${balance.toFixed(2)} available).`,
-        type: "info",
-      });
-
-      return new Response(JSON.stringify({ error: "Insufficient balance" }), {
-        status: 400, headers: corsHeaders,
-      });
-    }
-
+    // action === "accept" — execute the trade with atomic balance deduction
     if (trade.trade_type === "prediction" && trade.market_id && trade.side) {
       const { data: commData } = await supabase
         .from("commission_settings")
@@ -123,16 +96,34 @@ Deno.serve(async (req) => {
       const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
       const totalFee = trade.amount * predictionFeePercent;
       const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
-      const totalDeduct = trade.amount;
       const tradePrice = trade.price || 50;
       const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
-      // Deduct balance
-      await supabase
-        .from("balances")
-        .update({ amount: balance - totalDeduct, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      // Atomic debit — prevents race conditions
+      const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
+        _user_id: user.id,
+        _main_deduct: trade.amount,
+        _bonus_deduct: 0,
+      });
+
+      if (!debitResult?.success) {
+        await supabase
+          .from("pending_copy_trades")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", pending_trade_id);
+
+        const balance = debitResult?.available || 0;
+        await supabase.from("notifications").insert({
+          user_id: user.id,
+          title: "Copy Trade Failed 💸",
+          message: `Insufficient balance ($${trade.amount.toFixed(2)} needed, $${Number(balance).toFixed(2)} available).`,
+          type: "info",
+        });
+
+        return new Response(JSON.stringify({ error: "Insufficient balance" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
 
       // Create position
       await supabase.from("positions").insert({
@@ -147,7 +138,7 @@ Deno.serve(async (req) => {
       await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
-        amount: totalDeduct,
+        amount: trade.amount,
         market_id: trade.market_id,
         option_id: trade.option_id || null,
         side: trade.side,
@@ -157,8 +148,7 @@ Deno.serve(async (req) => {
         is_copy_trade: true,
       });
 
-      // Record the copy trade earning entry (commission will be calculated on resolution based on profit)
-      // For now, record with 0 profit — actual commission is applied when market resolves
+      // Record the copy trade earning entry
       await supabase.from("copy_trade_earnings").insert({
         trader_user_id: trade.trader_user_id,
         copier_user_id: user.id,
@@ -192,7 +182,7 @@ Deno.serve(async (req) => {
       market_id: trade.market_id || null,
     });
 
-    // Notify the trader that their trade was copied
+    // Notify the trader
     const { data: copierProfile } = await supabase
       .from("profiles")
       .select("display_name")

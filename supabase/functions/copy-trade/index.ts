@@ -17,6 +17,22 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ── Authentication: verify caller is the trader ──
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+    const { data: { user }, error: authErr } = await supabase.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: corsHeaders,
+      });
+    }
+
     const { trader_user_id, market_id, option_id, side, amount, price, shares, trade_type } = await req.json();
 
     if (!trader_user_id || !trade_type) {
@@ -25,9 +41,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Verify the caller IS the trader (prevent spoofing)
+    if (user.id !== trader_user_id) {
+      return new Response(JSON.stringify({ error: "Forbidden: caller must be the trader" }), {
+        status: 403, headers: corsHeaders,
+      });
+    }
+
     const copyField = trade_type === "quick_trade" ? "copy_quick_trades" : "copy_predictions";
 
-    // Get ALL copiers who have the relevant copy field enabled (both auto and manual)
+    // Get ALL copiers who have the relevant copy field enabled
     const { data: copiers, error: copierErr } = await supabase
       .from("copy_settings")
       .select("user_id, max_amount, auto_copy")
@@ -58,7 +81,7 @@ Deno.serve(async (req) => {
       marketTitle = market?.title || "";
     }
 
-    // Get commission settings for auto-copy execution
+    // Get commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
       .select("prediction_fee_percent, copy_trade_commission_percent")
@@ -80,39 +103,30 @@ Deno.serve(async (req) => {
           : `$${copyAmount.toFixed(2)} on ${(side || "").toUpperCase()}${marketTitle ? ` — "${marketTitle}"` : ""}`;
 
         if (copier.auto_copy) {
-          // ── AUTO-COPY: Execute immediately ──
-          const { data: bal } = await supabase
-            .from("balances")
-            .select("amount")
-            .eq("user_id", copier.user_id)
-            .eq("currency", "USDT")
-            .single();
-
-          const balance = Number(bal?.amount || 0);
-
-          if (balance < copyAmount) {
-            await supabase.from("notifications").insert({
-              user_id: copier.user_id,
-              title: "Copy Trade Failed 💸",
-              message: `Insufficient balance to auto-copy trade ($${copyAmount.toFixed(2)} needed).`,
-              type: "info",
-              market_id: market_id || null,
-            });
-            continue;
-          }
-
+          // ── AUTO-COPY: Execute immediately with atomic balance deduction ──
           if (trade_type === "prediction" && market_id && side) {
+            // Atomic debit — prevents race conditions
+            const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
+              _user_id: copier.user_id,
+              _main_deduct: copyAmount,
+              _bonus_deduct: 0,
+            });
+
+            if (!debitResult?.success) {
+              await supabase.from("notifications").insert({
+                user_id: copier.user_id,
+                title: "Copy Trade Failed 💸",
+                message: `Insufficient balance to auto-copy trade ($${copyAmount.toFixed(2)} needed).`,
+                type: "info",
+                market_id: market_id || null,
+              });
+              continue;
+            }
+
             const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
             const totalFee = copyAmount * predictionFeePercent;
             const tradePrice = price || 50;
             const finalShares = copyShares || Math.max(0.01, Number(((copyAmount - totalFee) / (tradePrice / 100)).toFixed(2)));
-
-            // Deduct balance
-            await supabase
-              .from("balances")
-              .update({ amount: balance - copyAmount, updated_at: new Date().toISOString() })
-              .eq("user_id", copier.user_id)
-              .eq("currency", "USDT");
 
             // Create position
             await supabase.from("positions").insert({
@@ -150,7 +164,7 @@ Deno.serve(async (req) => {
             });
           }
 
-          // Notify copier (confirmation)
+          // Notify copier
           await supabase.from("notifications").insert({
             user_id: copier.user_id,
             title: "Trade Auto-Copied! 📋",
@@ -190,7 +204,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Notify trader once about all copies (both auto and manual)
+    // Notify trader once
     if (copiedCount + queuedCount > 0) {
       await supabase.from("notifications").insert({
         user_id: trader_user_id,
