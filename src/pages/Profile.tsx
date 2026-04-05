@@ -927,7 +927,7 @@ const Profile = () => {
       )}
 
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))' }}>
+      <div className="max-w-lg md:max-w-4xl mx-auto px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))', paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8 relative">
           <button
