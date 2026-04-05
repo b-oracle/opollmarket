@@ -1541,8 +1541,61 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     finally { setPromoting(null); setRecordingLoading(false); setActionTarget(null); setActionType(null); }
   };
 
+  // Mention helpers
+  const mentionSuggestions = React.useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return participants.filter(p => p.name.toLowerCase().includes(q) && p.identity !== user?.id).slice(0, 5);
+  }, [mentionQuery, participants, user?.id]);
+
+  const handleChatInputChange = (val: string) => {
+    setChatInput(val);
+    const cursorPos = chatInputRef.current?.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    const cursorPos = chatInputRef.current?.selectionStart || chatInput.length;
+    const textBefore = chatInput.slice(0, cursorPos);
+    const textAfter = chatInput.slice(cursorPos);
+    const newBefore = textBefore.replace(/@(\w*)$/, `@${name} `);
+    setChatInput(newBefore + textAfter);
+    setMentionQuery(null);
+    setTimeout(() => chatInputRef.current?.focus(), 0);
+  };
+
+  const handleChatKeyDown = (e: React.KeyboardEvent) => {
+    if (mentionQuery !== null && mentionSuggestions.length > 0) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionSuggestions.length - 1)); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Tab" || e.key === "Enter") { e.preventDefault(); insertMention(mentionSuggestions[mentionIndex].name); return; }
+      if (e.key === "Escape") { e.preventDefault(); setMentionQuery(null); return; }
+    }
+    if (e.key === "Enter") sendChat();
+  };
+
+  const renderMessageText = (text: string) => {
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("@")) {
+        const name = part.slice(1);
+        const isParticipant = participants.some(p => p.name === name);
+        return <span key={i} className={`font-semibold ${isParticipant ? "text-primary cursor-pointer hover:underline" : ""}`}>{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   const sendChat = () => {
     if (!chatInput.trim() || !roomRef.current) return;
+    setMentionQuery(null);
     const text = chatInput.trim();
     const senderName = roomRef.current.localParticipant.name || "You";
     const currentReply = replyTo;
