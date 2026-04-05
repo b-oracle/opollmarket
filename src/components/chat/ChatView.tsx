@@ -360,7 +360,7 @@ const ChatView = () => {
       )}
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-2">
+      <div ref={scrollRef} data-chat-scroll className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 px-4 py-4 space-y-2">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center px-6 py-20">
             <span className="text-6xl mb-4">💬</span>

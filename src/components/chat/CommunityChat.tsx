@@ -190,7 +190,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       </div>
 
       {/* Messages */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div ref={scrollContainerRef} data-chat-scroll className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-10">
             No messages yet. Be the first to start the conversation!
