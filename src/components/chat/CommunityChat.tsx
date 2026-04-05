@@ -77,6 +77,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
 
       return msgs.map((m: any) => ({
         ...m,
+        reactions: m.reactions || {},
         profile: profileMap.get(m.user_id) || { display_name: "User", avatar_url: null },
       }));
     },
@@ -84,11 +85,10 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     refetchInterval: 5000,
   });
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel(`community-${slug}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "community_messages", filter: `community_slug=eq.${slug}` }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "community_messages", filter: `community_slug=eq.${slug}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
       })
       .subscribe();
@@ -96,7 +96,6 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [slug, queryClient]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "instant" as any });
   }, [messages.length]);
@@ -134,6 +133,24 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     setReplyTo(null);
   }, [user, message, slug, replyTo]);
 
+  const toggleReaction = useCallback(async (messageId: string, emoji: string, currentReactions: Record<string, string[]>) => {
+    if (!user) return;
+    const updated = { ...currentReactions };
+    const users = updated[emoji] || [];
+    if (users.includes(user.id)) {
+      updated[emoji] = users.filter((u) => u !== user.id);
+      if (updated[emoji].length === 0) delete updated[emoji];
+    } else {
+      updated[emoji] = [...users, user.id];
+    }
+    await supabase
+      .from("community_messages" as any)
+      .update({ reactions: updated } as any)
+      .eq("id", messageId);
+    queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
+    setActiveReactionId(null);
+  }, [user, slug, queryClient]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -160,9 +177,11 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
           </p>
         ) : (
           messages.map((m: CommunityMessage) => {
-            const isMe = m.user_id === user?.id;
+            const reactions: Record<string, string[]> = (m.reactions as any) || {};
+            const reactionEntries = Object.entries(reactions).filter(([, users]) => users.length > 0);
+            const showBar = activeReactionId === m.id;
             return (
-              <div key={m.id} className="group flex gap-2">
+              <div key={m.id} className="group relative flex gap-2">
                 <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5">
                   {m.profile?.avatar_url ? (
                     <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
@@ -172,7 +191,32 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     </span>
                   )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 relative">
+                  {/* Reaction bar */}
+                  {showBar && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setActiveReactionId(null)} />
+                      <div className="absolute bottom-full mb-1 left-0 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl">
+                        {REACTION_EMOJIS.map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => toggleReaction(m.id, emoji, reactions)}
+                            className="text-base hover:scale-125 transition-transform active:scale-95 p-0.5"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                        <div className="w-px h-4 bg-border mx-0.5 flex-shrink-0" />
+                        <button
+                          onClick={() => { setReplyTo(m); setActiveReactionId(null); }}
+                          className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
+                          title="Reply"
+                        >
+                          <Reply className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      </div>
+                    </>
+                  )}
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold">{m.profile?.display_name || "User"}</span>
                     <span className="text-[10px] text-muted-foreground">
@@ -189,12 +233,32 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   {m.image_url && (
                     <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover" alt="" />
                   )}
+                  {/* Reaction pills */}
+                  {reactionEntries.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {reactionEntries.map(([emoji, users]) => (
+                        <button
+                          key={emoji}
+                          onClick={() => toggleReaction(m.id, emoji, reactions)}
+                          className={cn(
+                            "flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                            users.includes(user?.id || "")
+                              ? "bg-primary/15 border-primary/30 text-primary"
+                              : "bg-muted/50 border-border text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          <span>{emoji}</span>
+                          <span className="text-[10px]">{users.length}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
-                  onClick={() => setReplyTo(m)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity self-start mt-1"
+                  onClick={() => setActiveReactionId(showBar ? null : m.id)}
+                  className="opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity self-start mt-1"
                 >
-                  <Reply className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
+                  <Plus className="w-3.5 h-3.5 text-muted-foreground hover:text-primary" />
                 </button>
               </div>
             );
