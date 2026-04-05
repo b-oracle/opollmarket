@@ -32,7 +32,7 @@ const categoryMap: Record<string, string> = {
   "twitter-x": "Twitter/X",
 };
 
-const CommunitiesTab = () => {
+const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: string) => void }) => {
   const { user } = useAuth();
   const [activeCommunity, setActiveCommunity] = useState<{ slug: string; label: string } | null>(null);
 
@@ -65,7 +65,7 @@ const CommunitiesTab = () => {
     staleTime: 30_000,
   });
 
-  if (activeCommunity) {
+  if (!onOpenChat && activeCommunity) {
     return (
       <CommunityChat
         slug={activeCommunity.slug}
