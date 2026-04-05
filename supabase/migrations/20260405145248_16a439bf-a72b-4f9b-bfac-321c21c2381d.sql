@@ -1,0 +1,1 @@
+ALTER TABLE public.community_messages ADD COLUMN reactions jsonb NOT NULL DEFAULT '{}'::jsonb;
