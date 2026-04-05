@@ -788,7 +788,8 @@ const Profile = () => {
         .from("quick_bets")
         .select("*, quick_rounds(*)")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       return data || [];
     },
     enabled: !!user,
