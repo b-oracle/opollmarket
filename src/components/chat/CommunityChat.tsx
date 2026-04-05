@@ -49,6 +49,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const [message, setMessage] = useState("");
   const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
+  const [flipReactions, setFlipReactions] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
