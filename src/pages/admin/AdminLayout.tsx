@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "rea
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle,
 } from "lucide-react";
 
 type NavItem = {
@@ -12,7 +12,7 @@ type NavItem = {
   icon: any;
   end?: boolean;
   /** Which roles can see this nav item. super_admin sees everything. */
-  roles?: ("super_admin" | "admin" | "moderator")[];
+  roles?: ("super_admin" | "admin" | "moderator" | "support")[];
 };
 
 const navItems: NavItem[] = [
@@ -44,10 +44,11 @@ const navItems: NavItem[] = [
   { to: "/admin/aimtell", label: "Aimtell Push", icon: Bell, roles: ["super_admin"] },
   { to: "/admin/api-keys", label: "API Keys", icon: FileCode2, roles: ["super_admin", "admin"] },
   { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin"] },
+  { to: "/admin/support", label: "Support Tickets", icon: HelpCircle, roles: ["super_admin", "admin", "support"] },
 ];
 
 const AdminLayout = () => {
-  const { user, loading, isSuperAdmin, isAdmin, isModerator, hasAdminAccess, canEdit, signOut, rolesLoaded } = useAuth();
+  const { user, loading, isSuperAdmin, isAdmin, isModerator, isSupport, hasAdminAccess, canEdit, signOut, rolesLoaded } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,14 +66,14 @@ const AdminLayout = () => {
   }, [location.pathname]);
 
   // Determine current user's role for nav filtering
-  const userRole = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : "moderator";
+  const userRole = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : isModerator ? "moderator" : "support";
 
   const filteredNavItems = navItems.filter((item) => {
     if (!item.roles) return true; // visible to all roles
     return item.roles.includes(userRole);
   });
 
-  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Moderator";
+  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : isModerator ? "Moderator" : "Support";
 
   if (loading || (user && !rolesLoaded)) {
     return (
