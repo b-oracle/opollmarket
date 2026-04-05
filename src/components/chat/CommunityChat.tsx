@@ -174,6 +174,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       payload.reply_to_content = (replyTo.content || "").slice(0, 100);
       payload.reply_to_name = replyTo.profile?.display_name || "User";
     }
+    if (taggedMarkets.length > 0) {
+      payload.tagged_market_ids = taggedMarkets.map((m) => m.id);
+    }
     const { error } = await supabase.from("community_messages" as any).insert(payload);
     if (error) {
       toast.error("Failed to send message");
@@ -181,7 +184,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     }
     setMessage("");
     setReplyTo(null);
-  }, [user, message, slug, replyTo]);
+    setTaggedMarkets([]);
+    setShowTagSelector(false);
+  }, [user, message, slug, replyTo, taggedMarkets]);
 
   const toggleReaction = useCallback(async (messageId: string, emoji: string, currentReactions: Record<string, string[]>) => {
     if (!user) return;
