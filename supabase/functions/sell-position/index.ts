@@ -171,35 +171,17 @@ Deno.serve(async (req) => {
     }
 
     // 9. Update market volume & liquidity
-    const newVolume = Number(market.volume) + grossProceeds;
-    const newLiquidity = Math.max(0, Number(market.liquidity) - netProceeds);
+    // 9. Atomic market volume, liquidity & AMM price update (prevents race conditions)
+    const { data: priceResult } = await supabase.rpc("sell_update_market_prices", {
+      _market_id: market.id,
+      _side: position.side,
+      _gross_proceeds: grossProceeds,
+      _net_proceeds: netProceeds,
+      _is_multi: isMulti,
+    });
 
-    const marketUpdate: Record<string, any> = {
-      volume: newVolume,
-      liquidity: newLiquidity,
-    };
-
-    // 10. AMM price recalculation
-    if (!isMulti) {
-      const totalLiq = Number(market.volume) + Number(market.liquidity) + 100;
-      const impact = Math.min(grossProceeds / totalLiq, 0.15);
-      let newYes = Number(market.yes_price);
-
-      if (position.side === "yes") {
-        // Selling YES pushes yes_price down
-        newYes = Math.max(0.01, newYes - impact);
-      } else {
-        // Selling NO pushes yes_price up
-        newYes = Math.min(0.99, newYes + impact);
-      }
-      const newNo = Math.round((1 - newYes) * 100) / 100;
-      newYes = Math.round(newYes * 100) / 100;
-
-      marketUpdate.yes_price = newYes;
-      marketUpdate.no_price = newNo;
-    }
-
-    await supabase.from("markets").update(marketUpdate).eq("id", market.id);
+    const newYesPrice = priceResult?.yes_price;
+    const newNoPrice = priceResult?.no_price;
 
     // Multi/range: rebalance option prices
     if (isMulti && position.option_id) {
