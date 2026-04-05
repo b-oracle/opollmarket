@@ -215,13 +215,13 @@ const ConversationList = () => {
         {/* Tabs */}
         <div className="shrink-0 flex border-b border-border overflow-x-auto no-scrollbar">
           {([
-            { key: "chats" as const, label: "Chats", icon: null },
-            { key: "requests" as const, label: "Requests", icon: null, badge: requestCount },
-            { key: "calls" as const, label: "Calls", icon: null },
-            { key: "communities" as const, label: "Communities", icon: null },
-            { key: "support" as const, label: "Support", icon: null },
-            { key: "settings" as const, label: "Settings", icon: null },
-          ]).map((t) => (
+            { key: "chats" as const, label: "Chats", icon: null, featureKey: null },
+            { key: "requests" as const, label: "Requests", icon: null, badge: requestCount, featureKey: null },
+            { key: "calls" as const, label: "Calls", icon: null, featureKey: null },
+            { key: "communities" as const, label: "Communities", icon: null, featureKey: "communities" },
+            { key: "support" as const, label: "Support", icon: null, featureKey: "support_tickets" },
+            { key: "settings" as const, label: "Settings", icon: null, featureKey: "user_settings" },
+          ] as const).filter((t) => !t.featureKey || isFeatureEnabled(t.featureKey)).map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
@@ -232,9 +232,9 @@ const ConversationList = () => {
               }`}
             >
               {t.label}
-              {(t.badge || 0) > 0 && (
+              {((t as any).badge || 0) > 0 && (
                 <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                  {t.badge}
+                  {(t as any).badge}
                 </span>
               )}
             </button>
