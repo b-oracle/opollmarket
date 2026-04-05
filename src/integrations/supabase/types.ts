@@ -3953,6 +3953,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      buy_update_market_prices: {
+        Args: {
+          _bet_amount: number
+          _is_multi: boolean
+          _market_id: string
+          _pool_amount: number
+          _side: string
+        }
+        Returns: Json
+      }
       can_send_dm: {
         Args: { _conversation_id: string; _sender_id: string }
         Returns: boolean
