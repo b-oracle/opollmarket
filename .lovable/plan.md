@@ -1,43 +1,36 @@
 
 
-## Add Delivered/Seen/Read Status Indicators to DM Messages
+## Add Admin Escrow Management UI
 
 ### Overview
-Add WhatsApp-style message status indicators (single check = Sent, double check = Delivered, blue double check = Read) below the sender's own messages.
+Create a new admin page where super admins can view all creation fee escrows and release them (refund to user or mark as used). This eliminates the need for manual database intervention.
 
-### How It Works
-- **Sent** (✓): Message exists in database (already the case when inserted)
-- **Delivered**: Not practical without push notification delivery confirmation — we'll skip this and use Sent → Read (two states), which is the realistic model for a web app
-- **Read** (✓✓ blue): The `read_at` field already exists on `dm_messages` and is already being set when the recipient views messages in `ChatView.tsx`
-
-No database changes needed — `read_at` already exists and is already populated.
+### Database
+No migration needed — the `creation_fee_escrows` table and `release_creation_fee_escrow` RPC already exist with `refunded` and `used` actions.
 
 ### Changes
 
-**File: `src/components/chat/ChatMessageBubble.tsx`**
+**1. New file: `src/pages/admin/AdminEscrows.tsx`**
+- Fetch all rows from `creation_fee_escrows` joined with `profiles` (display_name, email) via user_id
+- Display a table with columns: User, Amount, Status, Created, Released At
+- For rows with `status = 'held'`, show two action buttons:
+  - **Refund** — calls `release_creation_fee_escrow(id, 'refunded')`, credits user balance
+  - **Mark Used** — calls `release_creation_fee_escrow(id, 'used')`, credits platform pool
+- Confirmation dialog before each action
+- Filter tabs: All / Held / Refunded / Used
+- Fire audit log entry on each action
 
-1. Add `Check` and `CheckCheck` icons from lucide-react
-2. For `isMine` messages only, render a status indicator next to the timestamp:
-   - If `read_at` is not null → blue double-check icon (✓✓) with "Read" semantics
-   - If `read_at` is null → single grey check (✓) meaning "Sent"
-3. The indicator appears inline after the time text, keeping the layout compact
+**2. `src/pages/admin/AdminLayout.tsx`**
+- Add nav item: `{ to: "/admin/escrows", label: "Escrows", icon: Lock, roles: ["super_admin"] }`
 
-### Visual
-
-```text
-┌──────────────────────────┐
-│ Hey, what's up?          │
-│         2 min ago  ✓✓    │  ← blue double check = read
-└──────────────────────────┘
-
-┌──────────────────────────┐
-│ Just sent this           │
-│         just now   ✓     │  ← grey single check = sent
-└──────────────────────────┘
-```
+**3. `src/App.tsx`**
+- Add lazy import for `AdminEscrows`
+- Add route `<Route path="escrows" element={<AdminEscrows />} />` inside AdminLayout
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| `src/components/chat/ChatMessageBubble.tsx` | Add read/sent status icons on sender's messages next to timestamp |
+| `src/pages/admin/AdminEscrows.tsx` | New — escrow list with refund/use actions |
+| `src/pages/admin/AdminLayout.tsx` | Add Escrows nav item |
+| `src/App.tsx` | Add lazy import + route |
 
