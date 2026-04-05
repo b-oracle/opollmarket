@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import {
   X,
   ArrowDownToLine,
@@ -70,8 +71,6 @@ interface PartialInfo {
 }
 
 const PRESET_AMOUNTS = [25, 50, 100, 250];
-const MIN_AMOUNT = 1;
-const MAX_AMOUNT = 50000;
 
 const CRYPTO_GROUPS = [
   {
@@ -98,6 +97,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const queryClient = useQueryClient();
   const { balance, bonusBalance } = useUserBalance();
   const { isFeatureEnabled } = useFeatureToggles();
+  const { data: commission } = useCommissionSettings();
+  const MIN_AMOUNT = commission?.deposit_min_amount ?? 1;
+  const MAX_AMOUNT = commission?.deposit_max_amount ?? 50000;
+  const DEPOSIT_EXPIRY_MINUTES = commission?.deposit_expiry_minutes ?? 60;
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
   const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
@@ -351,7 +354,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
       setTimeRemaining("");
       return;
     }
-    const EXPIRY_MS = 60 * 60 * 1000; // 1 hour
+    const EXPIRY_MS = DEPOSIT_EXPIRY_MINUTES * 60 * 1000;
     const tick = () => {
       const elapsed = Date.now() - depositCreatedAt;
       const remaining = EXPIRY_MS - elapsed;

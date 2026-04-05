@@ -467,6 +467,9 @@ export type Database = {
           creator_fee_blue_percent: number
           creator_fee_gold_percent: number
           creator_fee_percent: number
+          deposit_expiry_minutes: number
+          deposit_max_amount: number
+          deposit_min_amount: number
           deposit_provider: string
           exit_fee_percent: number
           fallback_naira_rate: number
@@ -497,6 +500,9 @@ export type Database = {
           payaza_mode: string
           payout_provider: string
           prediction_fee_percent: number
+          prediction_max_bet: number
+          prediction_min_bet: number
+          push_prompt_cooldown_days: number
           qt_disabled_assets: string
           qt_enabled_assets: string
           qt_enabled_timeframes: string
@@ -539,6 +545,9 @@ export type Database = {
           creator_fee_blue_percent?: number
           creator_fee_gold_percent?: number
           creator_fee_percent?: number
+          deposit_expiry_minutes?: number
+          deposit_max_amount?: number
+          deposit_min_amount?: number
           deposit_provider?: string
           exit_fee_percent?: number
           fallback_naira_rate?: number
@@ -569,6 +578,9 @@ export type Database = {
           payaza_mode?: string
           payout_provider?: string
           prediction_fee_percent?: number
+          prediction_max_bet?: number
+          prediction_min_bet?: number
+          push_prompt_cooldown_days?: number
           qt_disabled_assets?: string
           qt_enabled_assets?: string
           qt_enabled_timeframes?: string
@@ -611,6 +623,9 @@ export type Database = {
           creator_fee_blue_percent?: number
           creator_fee_gold_percent?: number
           creator_fee_percent?: number
+          deposit_expiry_minutes?: number
+          deposit_max_amount?: number
+          deposit_min_amount?: number
           deposit_provider?: string
           exit_fee_percent?: number
           fallback_naira_rate?: number
@@ -641,6 +656,9 @@ export type Database = {
           payaza_mode?: string
           payout_provider?: string
           prediction_fee_percent?: number
+          prediction_max_bet?: number
+          prediction_min_bet?: number
+          push_prompt_cooldown_days?: number
           qt_disabled_assets?: string
           qt_enabled_assets?: string
           qt_enabled_timeframes?: string
@@ -3691,6 +3709,9 @@ export type Database = {
           creator_fee_blue_percent: number | null
           creator_fee_gold_percent: number | null
           creator_fee_percent: number | null
+          deposit_expiry_minutes: number | null
+          deposit_max_amount: number | null
+          deposit_min_amount: number | null
           deposit_provider: string | null
           exit_fee_percent: number | null
           gift_fee_percent: number | null
@@ -3709,6 +3730,9 @@ export type Database = {
           osure_enabled: boolean | null
           payout_provider: string | null
           prediction_fee_percent: number | null
+          prediction_max_bet: number | null
+          prediction_min_bet: number | null
+          push_prompt_cooldown_days: number | null
           qt_disabled_assets: string | null
           qt_enabled_assets: string | null
           qt_enabled_timeframes: string | null

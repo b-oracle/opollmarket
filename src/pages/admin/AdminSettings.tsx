@@ -100,6 +100,12 @@ const AdminSettings = () => {
   const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
   const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
   const [giftFeePercent, setGiftFeePercent] = useState("2");
+  const [predictionMinBet, setPredictionMinBet] = useState("1");
+  const [predictionMaxBet, setPredictionMaxBet] = useState("10000");
+  const [depositMinAmount, setDepositMinAmount] = useState("1");
+  const [depositMaxAmount, setDepositMaxAmount] = useState("50000");
+  const [pushPromptCooldownDays, setPushPromptCooldownDays] = useState("14");
+  const [depositExpiryMinutes, setDepositExpiryMinutes] = useState("60");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -171,6 +177,12 @@ const AdminSettings = () => {
         setWelcomeBonusPercent(String(d.welcome_bonus_percent ?? 0));
         setWelcomeBonusCap(String(d.welcome_bonus_cap ?? 0));
         setGiftFeePercent(String(d.gift_fee_percent ?? 2));
+        setPredictionMinBet(String(d.prediction_min_bet ?? 1));
+        setPredictionMaxBet(String(d.prediction_max_bet ?? 10000));
+        setDepositMinAmount(String(d.deposit_min_amount ?? 1));
+        setDepositMaxAmount(String(d.deposit_max_amount ?? 50000));
+        setPushPromptCooldownDays(String(d.push_prompt_cooldown_days ?? 14));
+        setDepositExpiryMinutes(String(d.deposit_expiry_minutes ?? 60));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -226,6 +238,12 @@ const AdminSettings = () => {
   const welcomeBonusPercentNum = parseFloat(welcomeBonusPercent) || 0;
   const welcomeBonusCapNum = parseFloat(welcomeBonusCap) || 0;
   const giftFeePercentNum = parseFloat(giftFeePercent) || 2;
+  const predictionMinBetNum = parseFloat(predictionMinBet) || 1;
+  const predictionMaxBetNum = parseFloat(predictionMaxBet) || 10000;
+  const depositMinAmountNum = parseFloat(depositMinAmount) || 1;
+  const depositMaxAmountNum = parseFloat(depositMaxAmount) || 50000;
+  const pushPromptCooldownDaysNum = parseInt(pushPromptCooldownDays) || 14;
+  const depositExpiryMinutesNum = parseInt(depositExpiryMinutes) || 60;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
@@ -337,8 +355,14 @@ const AdminSettings = () => {
                   osure_100_premium: osure100PremiumNum,
                    welcome_bonus_percent: welcomeBonusPercentNum,
                    welcome_bonus_cap: welcomeBonusCapNum,
-                   gift_fee_percent: giftFeePercentNum,
-            updated_at: new Date().toISOString(),
+                    gift_fee_percent: giftFeePercentNum,
+                    prediction_min_bet: predictionMinBetNum,
+                    prediction_max_bet: predictionMaxBetNum,
+                    deposit_min_amount: depositMinAmountNum,
+                    deposit_max_amount: depositMaxAmountNum,
+                    push_prompt_cooldown_days: pushPromptCooldownDaysNum,
+                    deposit_expiry_minutes: depositExpiryMinutesNum,
+             updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
@@ -1079,6 +1103,46 @@ const AdminSettings = () => {
                   <Label htmlFor="giftFeePercent" className="text-xs">Gift Fee (%)</Label>
                   <Input id="giftFeePercent" type="number" min={0} max={100} step={0.5} value={giftFeePercent} onChange={(e) => setGiftFeePercent(e.target.value)} disabled={!canEdit} />
                   <p className="text-[10px] text-muted-foreground">Current: {giftFeePercentNum}% — e.g. $1.00 gift → recipient gets ${(1 - 1 * giftFeePercentNum / 100).toFixed(2)}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Platform Limits */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" /> Platform Limits
+                </CardTitle>
+                <CardDescription className="text-xs">Dynamic min/max amounts for predictions, deposits, and other platform-wide limits.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="predictionMinBet" className="text-xs">Prediction Min Bet ($)</Label>
+                    <Input id="predictionMinBet" type="number" min={0} step={1} value={predictionMinBet} onChange={(e) => setPredictionMinBet(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="predictionMaxBet" className="text-xs">Prediction Max Bet ($)</Label>
+                    <Input id="predictionMaxBet" type="number" min={1} step={100} value={predictionMaxBet} onChange={(e) => setPredictionMaxBet(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositMinAmount" className="text-xs">Deposit Min ($)</Label>
+                    <Input id="depositMinAmount" type="number" min={0} step={1} value={depositMinAmount} onChange={(e) => setDepositMinAmount(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositMaxAmount" className="text-xs">Deposit Max ($)</Label>
+                    <Input id="depositMaxAmount" type="number" min={1} step={1000} value={depositMaxAmount} onChange={(e) => setDepositMaxAmount(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositExpiryMinutes" className="text-xs">Deposit Expiry (min)</Label>
+                    <Input id="depositExpiryMinutes" type="number" min={5} step={5} value={depositExpiryMinutes} onChange={(e) => setDepositExpiryMinutes(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Payment window timeout</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pushPromptCooldownDays" className="text-xs">Push Prompt Cooldown (days)</Label>
+                    <Input id="pushPromptCooldownDays" type="number" min={1} step={1} value={pushPromptCooldownDays} onChange={(e) => setPushPromptCooldownDays(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Days before re-prompting push notifications</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>

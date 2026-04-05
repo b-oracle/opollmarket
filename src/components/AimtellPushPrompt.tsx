@@ -3,9 +3,10 @@ import { Bell, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { aimtellPromptSubscribe } from "@/lib/aimtell";
 
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
+
 const STORAGE_KEY = "aimtell_prompt_cooldown_until";
 const SESSION_KEY = "aimtell_prompt_seen_session";
-const COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
 
 const isStandaloneDisplay = () => {
   if (typeof window === "undefined") return false;
@@ -29,9 +30,10 @@ const supportsWebPush = () => {
   return true;
 };
 
-const setPromptCooldown = () => {
+const setPromptCooldown = (cooldownDays: number) => {
   try {
-    localStorage.setItem(STORAGE_KEY, String(Date.now() + COOLDOWN_MS));
+    const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
+    localStorage.setItem(STORAGE_KEY, String(Date.now() + cooldownMs));
   } catch {
     // ignore storage failures
   }
@@ -45,6 +47,8 @@ const setPromptCooldown = () => {
  */
 const AimtellPushPrompt = () => {
   const [visible, setVisible] = useState(false);
+  const { data: commission } = useCommissionSettings();
+  const cooldownDays = commission?.push_prompt_cooldown_days ?? 14;
 
   useEffect(() => {
     if (!supportsWebPush()) return;
@@ -74,13 +78,13 @@ const AimtellPushPrompt = () => {
 
   const handleAccept = () => {
     setVisible(false);
-    setPromptCooldown();
+    setPromptCooldown(cooldownDays);
     aimtellPromptSubscribe();
   };
 
   const handleDismiss = () => {
     setVisible(false);
-    setPromptCooldown();
+    setPromptCooldown(cooldownDays);
   };
 
   return (

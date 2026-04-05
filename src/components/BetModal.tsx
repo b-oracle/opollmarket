@@ -48,8 +48,6 @@ interface BetModalProps {
 }
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
-const MIN_AMOUNT = 1;
-const MAX_AMOUNT = 10000;
 
 const ShareToXButton = ({ marketTitle, marketId, side, optionLabel }: { marketTitle: string; marketId?: string; side: string; optionLabel?: string }) => {
   const [sharing, setSharing] = useState(false);
@@ -98,6 +96,8 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const { user, isEmailVerified } = useAuth();
   const { balance, bonusBalance, totalBalance } = useUserBalance();
   const { data: commission } = useCommissionSettings();
+  const MIN_AMOUNT = commission?.prediction_min_bet ?? 1;
+  const MAX_AMOUNT = commission?.prediction_max_bet ?? 10000;
   const placeBet = usePlaceBet();
   const placeLimitOrder = usePlaceLimitOrder();
   const navigate = useNavigate();
