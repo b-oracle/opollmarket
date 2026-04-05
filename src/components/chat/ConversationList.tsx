@@ -51,6 +51,7 @@ const ConversationList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"chats" | "requests" | "calls" | "communities" | "support" | "settings">("chats");
