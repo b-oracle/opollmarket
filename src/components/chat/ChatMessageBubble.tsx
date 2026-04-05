@@ -319,8 +319,13 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             {cleanContent && (
               <p className="text-sm whitespace-pre-wrap break-words">{cleanContent}</p>
             )}
-            <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+            <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? "text-primary-foreground/60 justify-end" : "text-muted-foreground"}`}>
               {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+              {isMine && (
+                m.read_at
+                  ? <CheckCheck className="w-3 h-3 text-blue-500" />
+                  : <Check className="w-3 h-3 text-primary-foreground/60" />
+              )}
             </p>
           </div>
 
