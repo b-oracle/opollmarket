@@ -4176,6 +4176,16 @@ export type Database = {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
       }
+      sell_update_market_prices: {
+        Args: {
+          _gross_proceeds: number
+          _is_multi: boolean
+          _market_id: string
+          _net_proceeds: number
+          _side: string
+        }
+        Returns: Json
+      }
       send_dm_gift: {
         Args: {
           p_amount: number
