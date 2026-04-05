@@ -772,7 +772,8 @@ const Profile = () => {
         .from("transactions")
         .select("*, markets(title), market_options(label)")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(200);
       return data || [];
     },
     enabled: !!user,
