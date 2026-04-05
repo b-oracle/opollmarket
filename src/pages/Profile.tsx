@@ -1722,17 +1722,17 @@ const Profile = () => {
               { icon: ClipboardCheck, label: "Terms & Conditions", href: "/terms" },
               { icon: Lock, label: "Privacy Policy", href: "/privacy" },
             ].map((item) => (
-              <a
+              <button
                 key={item.label}
-                href={item.href}
+                onClick={() => navigate(item.href)}
                 className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]"
               >
                 <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center shrink-0 text-muted-foreground">
                   <item.icon className="w-5 h-5" />
                 </div>
-                <span className="text-sm font-medium flex-1">{item.label}</span>
+                <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </a>
+              </button>
             ))}
           </div>
         </div>
