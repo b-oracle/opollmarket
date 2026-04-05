@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import ChatLinkPreview from "./ChatLinkPreview";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 
@@ -42,8 +43,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
-  const [showActions, setShowActions] = useState(false);
-  const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
@@ -74,16 +73,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   }, [user, reactions, m.id, conversationId, queryClient]);
 
   const openPicker = useCallback(() => {
-    if (!bubbleRef.current) return;
-    const rect = bubbleRef.current.getBoundingClientRect();
-    const desiredTop = rect.top - 44;
-    const minTop = 60;
-    setPickerPos({
-      top: desiredTop < minTop ? rect.bottom + 4 : desiredTop,
-      left: Math.max(8, Math.min(rect.left + rect.width / 2 - 100, window.innerWidth - 208)),
-    });
     setShowReactions(true);
-    setShowActions(true);
     if (navigator.vibrate) navigator.vibrate(10);
   }, []);
 
@@ -111,7 +101,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
       });
     }
     setShowReactions(false);
-    setShowActions(false);
+    setShowFullPicker(false);
   }, [m.content]);
 
   const handleDelete = useCallback(async () => {
@@ -127,8 +117,13 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
       toast.error("Failed to delete");
     }
     setShowReactions(false);
-    setShowActions(false);
+    setShowFullPicker(false);
   }, [isMine, m.id, conversationId, queryClient]);
+
+  const dismiss = useCallback(() => {
+    setShowReactions(false);
+    setShowFullPicker(false);
+  }, []);
 
   const reactionEntries = Object.entries(reactions).filter(([, users]) => users.length > 0);
 
@@ -161,51 +156,55 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
   const isDark = document.documentElement.classList.contains("dark");
 
-  const pickerOverlay = showReactions && pickerPos && (
+  const pointerProps = {
+    onPointerDown: handlePointerDown,
+    onPointerUp: handlePointerUp,
+    onPointerCancel: handlePointerCancel,
+    onPointerLeave: handlePointerCancel,
+  };
+
+  const reactionBar = showReactions && (
     <>
-      <div className="fixed inset-0 z-40" onClick={() => { setShowReactions(false); setShowFullPicker(false); setShowActions(false); }} />
+      <div className="fixed inset-0 z-40" onClick={dismiss} />
 
       {!showFullPicker ? (
         <div
-          className="fixed z-50 flex gap-1 items-center bg-background border border-border rounded-full px-2 py-1 shadow-lg"
-          style={{ top: pickerPos.top, left: pickerPos.left }}
+          className={cn(
+            "absolute bottom-full mb-1 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+            isMine ? "right-0" : "left-0"
+          )}
         >
           {REACTION_EMOJIS.map((emoji) => (
             <button
               key={emoji}
               onClick={() => toggleReaction(emoji)}
-              className="text-lg hover:scale-125 transition-transform active:scale-95 p-0.5"
+              className="text-base hover:scale-125 transition-transform active:scale-95 p-0.5"
             >
               {emoji}
             </button>
           ))}
           <button
             onClick={() => setShowFullPicker(true)}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent transition-colors"
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-muted hover:bg-accent transition-colors flex-shrink-0"
           >
-            <Plus className="w-3.5 h-3.5 text-muted-foreground" />
+            <Plus className="w-3 h-3 text-muted-foreground" />
           </button>
-          {/* Copy & Delete actions */}
-          {showActions && (
-            <>
-              <div className="w-px h-5 bg-border mx-0.5" />
-              <button
-                onClick={handleCopy}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
-                title="Copy"
-              >
-                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-              </button>
-              {isMine && (
-                <button
-                  onClick={handleDelete}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                </button>
-              )}
-            </>
+          <div className="w-px h-4 bg-border mx-0.5 flex-shrink-0" />
+          <button
+            onClick={handleCopy}
+            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
+            title="Copy"
+          >
+            <Copy className="w-3 h-3 text-muted-foreground" />
+          </button>
+          {isMine && (
+            <button
+              onClick={handleDelete}
+              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
+              title="Delete"
+            >
+              <Trash2 className="w-3 h-3 text-destructive" />
+            </button>
           )}
         </div>
       ) : (
@@ -214,10 +213,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:left-auto sm:right-auto"
-            style={{
-              ...(window.innerWidth >= 640 ? { top: pickerPos.top, left: Math.max(4, pickerPos.left - 100) } : {}),
-            }}
+            className="fixed z-50 bottom-0 left-0 right-0"
           >
             <EmojiPicker
               onEmojiClick={(emojiData) => toggleReaction(emojiData.emoji)}
@@ -232,13 +228,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
       )}
     </>
   );
-
-  const pointerProps = {
-    onPointerDown: handlePointerDown,
-    onPointerUp: handlePointerUp,
-    onPointerCancel: handlePointerCancel,
-    onPointerLeave: handlePointerCancel,
-  };
 
   // System call message
   if (callMatch) {
@@ -275,7 +264,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
   if (isGift) {
     return (
-      <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
+      <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`}>
         <div className="relative" ref={bubbleRef}>
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -304,15 +293,15 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
               {reactionBadges}
             </div>
           </motion.div>
+          {reactionBar}
         </div>
-        {pickerOverlay}
       </div>
     );
   }
 
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"} group relative`}>
-      <div className="relative max-w-[75%]" ref={bubbleRef}>
+    <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`}>
+      <div className="relative max-w-[75%] overflow-visible" ref={bubbleRef}>
         <div className="space-y-1">
           <div
             className={`rounded-2xl px-3.5 py-2 select-none touch-none ${
@@ -336,9 +325,8 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
           {reactionBadges}
         </div>
-        
+        {reactionBar}
       </div>
-      {pickerOverlay}
     </div>
   );
 };
