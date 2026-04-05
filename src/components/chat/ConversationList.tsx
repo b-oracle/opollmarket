@@ -55,6 +55,8 @@ const ConversationList = () => {
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"chats" | "requests" | "calls" | "communities" | "support" | "settings">("chats");
+  const [activeCommunityChat, setActiveCommunityChat] = useState<{ slug: string; label: string } | null>(null);
+  const [activeSupportTicket, setActiveSupportTicket] = useState<{ ticketId: string; isStaff: boolean } | null>(null);
 
   const topTabs = [
     { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
