@@ -56,6 +56,22 @@ const ConversationList = () => {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"chats" | "requests" | "calls" | "communities" | "support" | "settings">("chats");
 
+  const topTabs = [
+    { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
+    { key: "requests" as const, label: "Requests", badge: 0, featureKey: null },
+    { key: "calls" as const, label: "Calls", badge: 0, featureKey: null },
+  ];
+
+  const bottomTabs = [
+    { key: "chats" as const, label: "Chats", icon: MessageCircle, featureKey: null },
+    { key: "communities" as const, label: "Communities", icon: Users, featureKey: "communities" },
+    { key: "support" as const, label: "Support", icon: HelpCircle, featureKey: "support_tickets" },
+    { key: "settings" as const, label: "Settings", icon: Settings, featureKey: "user_settings" },
+  ].filter((t) => !t.featureKey || isFeatureEnabled(t.featureKey));
+
+  const isTopTab = (t: string) => ["chats", "requests", "calls"].includes(t);
+  const activeSection = isTopTab(tab) ? "chats" : tab;
+
   const { data: allConversations = [], isLoading } = useQuery({
     queryKey: ["dm-conversations", user?.id],
     queryFn: async () => {
@@ -212,39 +228,34 @@ const ConversationList = () => {
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="shrink-0 flex border-b border-border overflow-x-auto no-scrollbar">
-          {([
-            { key: "chats" as const, label: "Chats", icon: null, featureKey: null },
-            { key: "requests" as const, label: "Requests", icon: null, badge: requestCount, featureKey: null },
-            { key: "calls" as const, label: "Calls", icon: null, featureKey: null },
-            { key: "communities" as const, label: "Communities", icon: null, featureKey: "communities" },
-            { key: "support" as const, label: "Support", icon: null, featureKey: "support_tickets" },
-            { key: "settings" as const, label: "Settings", icon: null, featureKey: "user_settings" },
-          ] as const).filter((t) => !t.featureKey || isFeatureEnabled(t.featureKey)).map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
-                tab === t.key
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t.label}
-              {((t as any).badge || 0) > 0 && (
-                <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                  {(t as any).badge}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        {/* Top tabs - only show for chat section */}
+        {isTopTab(tab) && (
+          <div className="shrink-0 flex border-b border-border">
+            {topTabs.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
+                  tab === t.key
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+                {t.key === "requests" && requestCount > 0 && (
+                  <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                    {requestCount}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto min-h-0" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
+        <div className="flex-1 overflow-y-auto min-h-0 pb-16">
           {/* New chat picker */}
-          {showNewChat && (
+          {showNewChat && isTopTab(tab) && (
             <div className="border-b border-border p-4 space-y-3">
               <Input
                 placeholder="Search users..."
@@ -281,8 +292,8 @@ const ConversationList = () => {
             </div>
           )}
 
-          {/* Conversation list */}
-          {isLoading ? (
+          {/* Tab content */}
+          {isLoading && isTopTab(tab) ? (
             <div className="flex items-center justify-center py-20">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
@@ -302,6 +313,19 @@ const ConversationList = () => {
               <div className="divide-y divide-border">
                 {conversations.map((c) => (
                   <ConversationItem key={c.id} c={c} navigate={navigate} />
+                ))}
+              </div>
+            )
+          ) : tab === "requests" ? (
+            pendingRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+                <Inbox className="w-12 h-12 opacity-30" />
+                <p className="text-sm">No message requests</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {pendingRequests.map((c) => (
+                  <ConversationItem key={c.id} c={c} navigate={navigate} isPending />
                 ))}
               </div>
             )
@@ -337,20 +361,28 @@ const ConversationList = () => {
             }>
               <SettingsTab />
             </Suspense>
-          ) : (
-            pendingRequests.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-                <Inbox className="w-12 h-12 opacity-30" />
-                <p className="text-sm">No message requests</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {pendingRequests.map((c) => (
-                  <ConversationItem key={c.id} c={c} navigate={navigate} isPending />
-                ))}
-              </div>
-            )
-          )}
+          ) : null}
+        </div>
+
+        {/* WhatsApp-style bottom nav */}
+        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          <div className="flex items-center justify-around h-14">
+            {bottomTabs.map(({ key, label, icon: Icon }) => {
+              const isActive = activeSection === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className="flex flex-col items-center gap-0.5 py-1 px-3 transition-colors"
+                >
+                  <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+                    {label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
