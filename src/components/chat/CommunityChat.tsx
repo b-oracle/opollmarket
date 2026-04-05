@@ -110,9 +110,24 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
+      // Collect all tagged market IDs
+      const allTaggedIds = [...new Set(msgs.flatMap((m: any) => m.tagged_market_ids || []))].filter(Boolean) as string[];
+      let taggedMarketMap = new Map<string, MarketTag>();
+      if (allTaggedIds.length > 0) {
+        const { data: taggedData } = await supabase
+          .from("markets")
+          .select("id, title, yes_price, image_url")
+          .in("id", allTaggedIds);
+        if (taggedData) {
+          taggedData.forEach((tm) => taggedMarketMap.set(tm.id, { id: tm.id, title: tm.title, yes_price: tm.yes_price, image_url: tm.image_url }));
+        }
+      }
+
       return msgs.map((m: any) => ({
         ...m,
         reactions: m.reactions || {},
+        tagged_market_ids: m.tagged_market_ids || [],
+        tagged_markets: (m.tagged_market_ids || []).map((id: string) => taggedMarketMap.get(id)).filter(Boolean),
         profile: profileMap.get(m.user_id) || { display_name: "User", avatar_url: null },
       }));
     },
