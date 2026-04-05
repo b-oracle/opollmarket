@@ -24,7 +24,7 @@ interface SupportMessage {
   reply_to_id?: string | null;
   reply_to_content?: string | null;
   reply_to_sender_name?: string | null;
-  profile?: { display_name: string; avatar_url: string | null };
+  profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
 
 interface SupportMessageBubbleProps {
