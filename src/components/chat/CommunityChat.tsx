@@ -29,7 +29,7 @@ interface CommunityMessage {
   reply_to_name: string | null;
   reactions: Record<string, string[]>;
   created_at: string;
-  profile?: { display_name: string; avatar_url: string | null };
+  profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
 
 const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
