@@ -81,7 +81,10 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
   const openPicker = useCallback(() => {
     if (bubbleRef.current) {
       const rect = bubbleRef.current.getBoundingClientRect();
-      setFlipReactions(rect.top < 100);
+      const scrollContainer = bubbleRef.current.closest('[data-chat-scroll]');
+      const containerTop = scrollContainer ? scrollContainer.getBoundingClientRect().top : 0;
+      const trayHeight = 48;
+      setFlipReactions(rect.top - containerTop < trayHeight + 8);
     }
     setShowReactions(true);
     if (navigator.vibrate) navigator.vibrate(10);
