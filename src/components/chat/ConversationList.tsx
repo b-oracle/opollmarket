@@ -211,42 +211,32 @@ const ConversationList = () => {
         </div>
 
         {/* Tabs */}
-        <div className="shrink-0 flex border-b border-border">
-          <button
-            onClick={() => setTab("chats")}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              tab === "chats"
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Chats
-          </button>
-          <button
-            onClick={() => setTab("requests")}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors relative ${
-              tab === "requests"
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Requests
-            {requestCount > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
-                {requestCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setTab("calls")}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              tab === "calls"
-                ? "text-primary border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Calls
-          </button>
+        <div className="shrink-0 flex border-b border-border overflow-x-auto no-scrollbar">
+          {([
+            { key: "chats" as const, label: "Chats", icon: null },
+            { key: "requests" as const, label: "Requests", icon: null, badge: requestCount },
+            { key: "calls" as const, label: "Calls", icon: null },
+            { key: "communities" as const, label: "Communities", icon: null },
+            { key: "support" as const, label: "Support", icon: null },
+            { key: "settings" as const, label: "Settings", icon: null },
+          ]).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`shrink-0 px-3 py-2.5 text-sm font-medium transition-colors relative whitespace-nowrap ${
+                tab === t.key
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              {(t.badge || 0) > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {t.badge}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Scrollable content */}
