@@ -69,6 +69,10 @@ export const usePWAUpdate = () => {
     (candidate: ServiceWorker, registration: ServiceWorkerRegistration): boolean => {
       if (blockedContext) return false;
 
+      // Cooldown: suppress prompts for 30s after an update was applied
+      const cooldownUntil = safeStorage.getSession(UPDATE_COOLDOWN_KEY);
+      if (cooldownUntil && Date.now() < Number(cooldownUntil)) return false;
+
       const candidateVersion = getWorkerVersion(candidate);
       if (!candidateVersion) return false;
 
