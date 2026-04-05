@@ -247,8 +247,14 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                       </div>
                     </>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold">{m.profile?.display_name || "User"}</span>
+                    {m.profile?.verification_level === "gold" && (
+                      <BadgeCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    )}
+                    {m.profile?.verification_level === "blue" && (
+                      <BadgeCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                     </span>
