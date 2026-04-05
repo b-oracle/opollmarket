@@ -160,13 +160,13 @@ const SupportTab = () => {
             <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>Cancel</Button>
           </div>
         </div>
-      ) : (
+      ) : !isStaff ? (
         <div className="p-4 border-b border-border">
           <Button size="sm" onClick={() => setShowNew(true)} className="w-full gap-2">
             <Plus className="w-4 h-4" /> New Support Ticket
           </Button>
         </div>
-      )}
+      ) : null}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
