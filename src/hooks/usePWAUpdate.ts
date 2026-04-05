@@ -4,6 +4,7 @@ import { cleanupBlockedPwaContext, isPwaBlockedContext } from "@/lib/pwa";
 
 const DISMISSED_SW_KEY = "opoll_sw_dismissed_version";
 const APPLIED_SW_KEY = "opoll_sw_applied_version";
+const UPDATE_COOLDOWN_KEY = "opoll_sw_update_cooldown";
 const UPDATE_POLL_MS = 10 * 60 * 1000;
 
 const getWorkerVersion = (worker: ServiceWorker | null | undefined): string | null => {
@@ -67,6 +68,10 @@ export const usePWAUpdate = () => {
   const shouldPromptForWorker = useCallback(
     (candidate: ServiceWorker, registration: ServiceWorkerRegistration): boolean => {
       if (blockedContext) return false;
+
+      // Cooldown: suppress prompts for 30s after an update was applied
+      const cooldownUntil = safeStorage.getSession(UPDATE_COOLDOWN_KEY);
+      if (cooldownUntil && Date.now() < Number(cooldownUntil)) return false;
 
       const candidateVersion = getWorkerVersion(candidate);
       if (!candidateVersion) return false;
@@ -213,6 +218,9 @@ export const usePWAUpdate = () => {
         safeStorage.removeLocal(DISMISSED_SW_KEY);
       }
     }
+
+    // Set a 30-second cooldown to prevent re-prompting after reload
+    safeStorage.setSession(UPDATE_COOLDOWN_KEY, String(Date.now() + 30_000));
 
     if (waitingSW) {
       waitingSW.postMessage({ type: "SKIP_WAITING" });
