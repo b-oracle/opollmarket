@@ -13,6 +13,7 @@ interface AuthContextValue {
   isSuperAdmin: boolean;
   isAdmin: boolean;
   isModerator: boolean;
+  isSupport: boolean;
   hasAdminAccess: boolean;
   canEdit: boolean;
   isEmailVerified: boolean;
