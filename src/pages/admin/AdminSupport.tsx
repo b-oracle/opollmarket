@@ -29,7 +29,7 @@ const AdminSupport = () => {
       const { data } = await q;
       if (!data || data.length === 0) return [];
 
-      const userIds = [...new Set(data.map((t: any) => t.user_id))];
+      const userIds = [...new Set(data.map((t: any) => t.user_id))] as string[];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url")

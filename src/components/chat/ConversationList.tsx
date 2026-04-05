@@ -311,6 +311,30 @@ const ConversationList = () => {
             }>
               <CallHistoryTab />
             </Suspense>
+          ) : tab === "communities" ? (
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-20">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              <CommunitiesTab />
+            </Suspense>
+          ) : tab === "support" ? (
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-20">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              <SupportTab />
+            </Suspense>
+          ) : tab === "settings" ? (
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-20">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              <SettingsTab />
+            </Suspense>
           ) : (
             pendingRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
