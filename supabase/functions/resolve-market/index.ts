@@ -237,7 +237,6 @@ async function handleResolve(
     // NORMAL: Two-sided market
     // For multi-option/range markets, use capital-first parimutuel model
     const totalWinnerShares = winningPositions.reduce((s, p) => s + p.shares, 0);
-    let payoutPerShare = 1; // default $1/share for binary
 
     let profitPerShare = 0;
     if ((market.market_type === "multi" || market.market_type === "range") && totalWinnerShares > 0) {

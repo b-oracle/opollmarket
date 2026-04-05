@@ -163,6 +163,11 @@ Deno.serve(async (req) => {
               is_copy_trade: true,
             });
 
+            // Credit prediction fee to platform pool (same as place-bet)
+            if (totalFee > 0) {
+              await supabase.rpc("adjust_platform_pool", { _delta: totalFee });
+            }
+
             // Record copy trade earning entry
             const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
             await supabase.from("copy_trade_earnings").insert({
