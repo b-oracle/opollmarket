@@ -525,8 +525,8 @@ const Feed = () => {
           right: 0,
           transition: 'left 0.3s ease',
           ['--feed-card-height' as any]: isDesktop
-            ? 'calc(100dvh - 3.5rem - var(--safe-top))'
-            : 'calc(100dvh - 3.5rem - var(--safe-top) - 4rem - var(--safe-bottom))',
+            ? 'calc(100dvh - var(--content-top))'
+            : 'calc(100dvh - var(--content-top) - var(--content-bottom))',
         }}
         onTouchStart={pullHandlers.onTouchStart}
         onTouchMove={pullHandlers.onTouchMove}
