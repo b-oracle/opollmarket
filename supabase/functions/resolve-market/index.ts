@@ -202,6 +202,7 @@ async function handleResolve(
 
   // Pay out winners
   let totalPaidOut = 0;
+  let payoutPerShare = 1; // default $1/share — hoisted so copy-trade logic can access it
 
   if (winningPositions.length === 0) {
     // ONE-SIDED: Everyone lost — platform profit, no refund
