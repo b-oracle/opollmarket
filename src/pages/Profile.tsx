@@ -1353,7 +1353,7 @@ const Profile = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
 
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           {(() => {
             const predictionBuyTxns = transactions.filter(
               (t: any) =>
