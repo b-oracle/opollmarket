@@ -47,6 +47,8 @@ const setPromptCooldown = (cooldownDays: number) => {
  */
 const AimtellPushPrompt = () => {
   const [visible, setVisible] = useState(false);
+  const { data: commission } = useCommissionSettings();
+  const cooldownDays = commission?.push_prompt_cooldown_days ?? 14;
 
   useEffect(() => {
     if (!supportsWebPush()) return;
@@ -76,13 +78,13 @@ const AimtellPushPrompt = () => {
 
   const handleAccept = () => {
     setVisible(false);
-    setPromptCooldown();
+    setPromptCooldown(cooldownDays);
     aimtellPromptSubscribe();
   };
 
   const handleDismiss = () => {
     setVisible(false);
-    setPromptCooldown();
+    setPromptCooldown(cooldownDays);
   };
 
   return (
