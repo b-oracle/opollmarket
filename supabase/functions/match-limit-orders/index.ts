@@ -21,10 +21,8 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
-      // Check if it's the service role key (internal calls)
       const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       if (token !== serviceKey) {
-        // Verify as a user JWT and check admin role
         const userClient = createClient(
           Deno.env.get("SUPABASE_URL")!,
           Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -77,6 +75,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Fetch prediction fee percent (same as place-bet)
+    const { data: commData } = await supabase
+      .from("commission_settings")
+      .select("prediction_fee_percent")
+      .limit(1)
+      .single();
+    const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
+
     // Get pending limit orders for this market
     const { data: pendingOrders } = await supabase
       .from("limit_orders")
@@ -95,21 +101,37 @@ Deno.serve(async (req) => {
     const isMulti = market.market_type === "multi" || market.market_type === "range";
 
     for (const order of pendingOrders) {
+      // Re-fetch live market prices after each fill to avoid stale price matching
+      const { data: liveMarket } = await supabase
+        .from("markets")
+        .select("yes_price, no_price")
+        .eq("id", market_id)
+        .eq("status", "active")
+        .single();
+
+      if (!liveMarket) break; // Market no longer active
+
       const currentPrice =
         order.side === "yes"
-          ? Number(market.yes_price)
-          : Number(market.no_price);
+          ? Number(liveMarket.yes_price)
+          : Number(liveMarket.no_price);
 
       // Fill condition: current price <= limit price (buying at or below target)
       if (currentPrice > order.limit_price) continue;
 
-      // 1. Create position
+      // Calculate fee and net amount (matching place-bet logic)
+      const orderAmount = Number(order.amount);
+      const totalFee = orderAmount * predictionFeePercent;
+      const netAmount = orderAmount - totalFee;
+      const actualShares = netAmount / order.limit_price;
+
+      // 1. Create position with fee-adjusted shares
       await supabase.from("positions").insert({
         user_id: order.user_id,
         market_id: order.market_id,
         option_id: order.option_id || null,
         side: order.side,
-        shares: order.shares,
+        shares: actualShares,
         avg_price: order.limit_price,
       });
 
@@ -117,35 +139,40 @@ Deno.serve(async (req) => {
       await supabase.from("transactions").insert({
         user_id: order.user_id,
         type: "buy",
-        amount: order.amount,
+        amount: orderAmount,
         market_id: order.market_id,
         option_id: order.option_id || null,
         side: order.side,
-        shares: order.shares,
+        shares: actualShares,
         price: order.limit_price,
         status: "confirmed",
       });
 
-      // 3. Atomic market volume + price update via RPC (prevents stale accumulation)
+      // 3. Credit fee to platform pool (same as place-bet)
+      if (totalFee > 0) {
+        await supabase.rpc("adjust_platform_pool", { _delta: totalFee });
+      }
+
+      // 4. Atomic market volume + price update via RPC
       await supabase.rpc("buy_update_market_prices", {
         _market_id: market_id,
         _side: order.side,
-        _pool_amount: Number(order.amount),
-        _bet_amount: Number(order.amount),
+        _pool_amount: netAmount,
+        _bet_amount: orderAmount,
         _is_multi: isMulti,
       });
 
-      // 4. Mark order as filled
+      // 5. Mark order as filled
       await supabase
         .from("limit_orders")
         .update({ status: "filled", updated_at: new Date().toISOString() })
         .eq("id", order.id);
 
-      // 5. Notify user
+      // 6. Notify user
       await supabase.from("notifications").insert({
         user_id: order.user_id,
         title: "Limit Order Filled! ✅",
-        message: `Your ${order.side.toUpperCase()} limit order at ${Math.round(order.limit_price * 100)}¢ for $${Number(order.amount).toFixed(2)} has been filled.`,
+        message: `Your ${order.side.toUpperCase()} limit order at ${Math.round(order.limit_price * 100)}¢ for $${orderAmount.toFixed(2)} has been filled.`,
         type: "info",
         market_id: order.market_id,
       });
