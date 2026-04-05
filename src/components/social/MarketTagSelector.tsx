@@ -28,12 +28,15 @@ const MarketTagSelector = ({ selected, onChange, max = 5, categoryFilter }: Mark
     }
     const timeout = setTimeout(async () => {
       setSearching(true);
-      const { data } = await supabase
+      let q = supabase
         .from("markets")
         .select("id, title, yes_price, image_url")
         .ilike("title", `%${query.trim()}%`)
-        .eq("status", "active")
-        .limit(10);
+        .eq("status", "active");
+      if (categoryFilter) {
+        q = q.eq("category", categoryFilter);
+      }
+      const { data } = await q.limit(10);
       setResults(
         (data || [])
           .filter((m) => !selected.some((s) => s.id === m.id))
