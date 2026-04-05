@@ -1132,9 +1132,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               });
             });
 
-            const recorder = new MediaRecorder(destination.stream, {
-              mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm",
-            });
+            const recMime = MediaRecorder.isTypeSupported("audio/mp4")
+              ? "audio/mp4"
+              : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+                ? "audio/webm;codecs=opus"
+                : "audio/webm";
+            const recorder = new MediaRecorder(destination.stream, { mimeType: recMime });
             recorder.ondataavailable = (e) => {
               if (e.data.size > 0) recordedChunksRef.current.push(e.data);
             };
