@@ -226,7 +226,7 @@ const Referrals = () => {
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
                 className="glass rounded-xl p-4 text-center">
-                <DollarSign className="w-5 h-5 text-primary mx-auto mb-1" />
+                <Coins className="w-5 h-5 text-primary mx-auto mb-1" />
                 <p className="text-xl font-bold">${totalEarned.toFixed(2)}</p>
                 <p className="text-[10px] text-muted-foreground">Bonus</p>
               </motion.div>
