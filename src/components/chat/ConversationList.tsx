@@ -31,6 +31,9 @@ function formatLastMessage(msg: any): string {
 }
 
 const CallHistoryTab = lazy(() => import("./CallHistoryTab"));
+const CommunitiesTab = lazy(() => import("./CommunitiesTab"));
+const SupportTab = lazy(() => import("./SupportTab"));
+const SettingsTab = lazy(() => import("./SettingsTab"));
 
 interface ConversationRow {
   id: string;
