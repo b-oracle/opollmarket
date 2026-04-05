@@ -32,7 +32,7 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
   closed: { icon: CheckCircle2, label: "Closed", color: "text-muted-foreground bg-muted" },
 };
 
-const SupportTab = () => {
+const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
