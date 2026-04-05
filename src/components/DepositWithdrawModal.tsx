@@ -97,6 +97,10 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
   const queryClient = useQueryClient();
   const { balance, bonusBalance } = useUserBalance();
   const { isFeatureEnabled } = useFeatureToggles();
+  const { data: commission } = useCommissionSettings();
+  const MIN_AMOUNT = commission?.deposit_min_amount ?? 1;
+  const MAX_AMOUNT = commission?.deposit_max_amount ?? 50000;
+  const DEPOSIT_EXPIRY_MINUTES = commission?.deposit_expiry_minutes ?? 60;
   const fiatEnabled = isFeatureEnabled("fiat_deposit_payaza");
   const fiatWithdrawalEnabled = isFeatureEnabled("fiat_withdrawal");
 
