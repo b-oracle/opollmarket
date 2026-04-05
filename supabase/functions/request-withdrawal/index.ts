@@ -294,7 +294,7 @@ Deno.serve(async (req) => {
       .gte("created_at", cooldownCutoff)
       .limit(1);
 
-    if (recentWithdrawals && recentWithdrawals.length > 0) {
+    if (recentWithdrawalsCooldown && recentWithdrawalsCooldown.length > 0) {
       const lastTime = new Date(recentWithdrawals[0].created_at);
       const waitUntil = new Date(lastTime.getTime() + cooldownMinutes * 60 * 1000);
       const secsLeft = Math.ceil((waitUntil.getTime() - Date.now()) / 1000);
