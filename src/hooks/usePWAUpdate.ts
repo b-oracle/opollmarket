@@ -219,6 +219,9 @@ export const usePWAUpdate = () => {
       }
     }
 
+    // Set a 30-second cooldown to prevent re-prompting after reload
+    safeStorage.setSession(UPDATE_COOLDOWN_KEY, String(Date.now() + 30_000));
+
     if (waitingSW) {
       waitingSW.postMessage({ type: "SKIP_WAITING" });
     }
