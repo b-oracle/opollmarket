@@ -105,6 +105,18 @@ Deno.serve(async (req) => {
         if (copier.auto_copy) {
           // ── AUTO-COPY: Execute immediately with atomic balance deduction ──
           if (trade_type === "prediction" && market_id && side) {
+            // Verify market is still active before copying
+            const { data: marketCheck } = await supabase
+              .from("markets")
+              .select("status")
+              .eq("id", market_id)
+              .single();
+
+            if (!marketCheck || marketCheck.status !== "active") {
+              console.warn(`Skipping copy for ${copier.user_id}: market ${market_id} is ${marketCheck?.status}`);
+              continue;
+            }
+
             // Atomic debit — prevents race conditions
             const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
               _user_id: copier.user_id,
