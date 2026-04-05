@@ -381,18 +381,7 @@ Deno.serve(async (req) => {
           const payout = capital - fee;
           if (payout <= 0) continue;
 
-          const { data: balance } = await adminClient
-            .from("balances")
-            .select("amount")
-            .eq("user_id", pos.user_id)
-            .single();
-
-          if (balance) {
-            await adminClient
-              .from("balances")
-              .update({ amount: balance.amount + payout, updated_at: new Date().toISOString() })
-              .eq("user_id", pos.user_id);
-          }
+          await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
 
           await adminClient.from("transactions").insert({
             user_id: pos.user_id,
