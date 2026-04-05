@@ -100,6 +100,12 @@ const AdminSettings = () => {
   const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
   const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
   const [giftFeePercent, setGiftFeePercent] = useState("2");
+  const [predictionMinBet, setPredictionMinBet] = useState("1");
+  const [predictionMaxBet, setPredictionMaxBet] = useState("10000");
+  const [depositMinAmount, setDepositMinAmount] = useState("1");
+  const [depositMaxAmount, setDepositMaxAmount] = useState("50000");
+  const [pushPromptCooldownDays, setPushPromptCooldownDays] = useState("14");
+  const [depositExpiryMinutes, setDepositExpiryMinutes] = useState("60");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
