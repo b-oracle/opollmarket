@@ -1331,6 +1331,8 @@ const Profile = () => {
 
         {/* Balance + Stats */}
         <div
+          role="button"
+          aria-labelledby="balance-label"
           className="glass rounded-xl p-4 mb-3 text-center cursor-pointer active:scale-[0.98] transition-transform select-none"
           onClick={() => {
             const next = !balanceHidden;
