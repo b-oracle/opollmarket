@@ -230,7 +230,6 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
           <p className="text-xs text-muted-foreground">This ticket has been closed</p>
         </div>
       )}
-    </div>
 
       <AlertDialog open={!!statusConfirm} onOpenChange={(o) => !o && setStatusConfirm(null)}>
         <AlertDialogContent>
