@@ -255,7 +255,7 @@ const ConversationList = () => {
         )}
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto min-h-0 pb-16">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {/* New chat picker */}
           {showNewChat && isTopTab(tab) && (
             <div className="border-b border-border p-4 space-y-3">
