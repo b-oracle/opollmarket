@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2 } from "lucide-react";
+import { Gift, Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2, Check, CheckCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -287,8 +287,13 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
               >
                 ${m.gift_amount}
               </motion.p>
-              <p className="text-[10px] text-muted-foreground mt-1.5">
+              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
                 {isMine ? "Gift sent" : "Gift received"} · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                {isMine && (
+                  m.read_at
+                    ? <CheckCheck className="w-3 h-3 text-blue-500" />
+                    : <Check className="w-3 h-3 text-muted-foreground" />
+                )}
               </p>
               {reactionBadges}
             </div>
@@ -314,8 +319,13 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             {cleanContent && (
               <p className="text-sm whitespace-pre-wrap break-words">{cleanContent}</p>
             )}
-            <p className={`text-[10px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+            <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? "text-primary-foreground/60 justify-end" : "text-muted-foreground"}`}>
               {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+              {isMine && (
+                m.read_at
+                  ? <CheckCheck className="w-3 h-3 text-blue-500" />
+                  : <Check className="w-3 h-3 text-primary-foreground/60" />
+              )}
             </p>
           </div>
 
