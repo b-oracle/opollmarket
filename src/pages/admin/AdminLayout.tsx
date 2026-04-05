@@ -73,7 +73,7 @@ const AdminLayout = () => {
     return item.roles.includes(userRole);
   });
 
-  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Moderator";
+  const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : isModerator ? "Moderator" : "Support";
 
   if (loading || (user && !rolesLoaded)) {
     return (
