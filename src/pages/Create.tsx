@@ -1768,7 +1768,7 @@ const Create = () => {
   return (
     <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(2rem + var(--content-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4 pt-24 sm:pt-20">
+      <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(var(--content-top) + 0.75rem)' }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

@@ -535,7 +535,7 @@ const Commissions = () => {
     return (
       <div className="min-h-screen bg-background">
         <TopBar />
-        <div className="flex items-center justify-center pt-32">
+        <div className="flex items-center justify-center" style={{ paddingTop: 'calc(var(--content-top) + 2rem)' }}>
           <p className="text-muted-foreground">Please sign in to view commissions.</p>
         </div>
         <BottomNav />
