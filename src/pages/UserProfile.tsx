@@ -267,9 +267,9 @@ const UserProfile = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(1.5rem + var(--content-top))' }}>
           <Lock className="w-12 h-12 text-muted-foreground mb-4" />
           <h2 className="text-lg font-bold mb-2">Profile Not Found</h2>
           <p className="text-sm text-muted-foreground mb-4">This user doesn't exist or their profile is private.</p>
@@ -282,9 +282,9 @@ const UserProfile = () => {
 
   if (!profile.is_public && !isOwnProfile) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))' }}>
           <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center mb-4">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -317,7 +317,7 @@ const UserProfile = () => {
     <div
       ref={containerRef}
       className="h-dvh bg-background overflow-y-auto overscroll-contain"
-      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
+      style={{ paddingBottom: 'calc(1rem + var(--content-bottom))', touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
       onTouchStart={pullHandlers.onTouchStart}
       onTouchMove={pullHandlers.onTouchMove}
       onTouchEnd={pullHandlers.onTouchEnd}
@@ -326,7 +326,7 @@ const UserProfile = () => {
 
       <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))' }}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => isOwnProfile ? navigate("/profile") : navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors">

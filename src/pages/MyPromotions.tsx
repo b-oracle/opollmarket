@@ -218,7 +218,7 @@ const MyPromotions = () => {
   return (
     <div className="min-h-screen bg-background">
       <TopBar />
-      <div className="max-w-3xl mx-auto px-4 pt-[calc(3.5rem+env(safe-area-inset-top)+1rem)] pb-24">
+      <div className="max-w-3xl mx-auto px-4 pt-[calc(3.5rem+var(--safe-top)+1rem)] pb-24">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-muted transition-colors">

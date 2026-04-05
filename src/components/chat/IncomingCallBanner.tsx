@@ -186,7 +186,7 @@ const IncomingCallBanner = () => {
     <>
       {/* Incoming call banner */}
       {incomingCall && !activeCall && (
-        <div className="fixed top-0 left-0 right-0 z-[9998] bg-primary text-primary-foreground px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+        <div className="fixed top-0 left-0 right-0 z-[9998] bg-primary text-primary-foreground px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
           <div
             className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
             onClick={() => navigate(`/messages/${incomingCall.conversation_id}`)}

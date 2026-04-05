@@ -275,7 +275,7 @@ const VoiceCallOverlay = ({
       <div
         onClick={onMaximize}
         className="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-4 py-2 flex items-center gap-3 cursor-pointer animate-in slide-in-from-top active:bg-emerald-700 transition-colors"
-        style={{ paddingTop: "max(0.5rem, env(safe-area-inset-top))" }}
+        style={{ paddingTop: "max(0.5rem, var(--safe-top))" }}
       >
         <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -306,7 +306,7 @@ const VoiceCallOverlay = ({
   return (
     <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center">
       {/* E2EE indicator + minimize */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6" style={{ paddingTop: "max(1.5rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
         <div className="flex items-center gap-1.5 text-xs text-emerald-500">
           <Lock className="w-3 h-3" />
           <span>End-to-end encrypted</span>
@@ -320,7 +320,7 @@ const VoiceCallOverlay = ({
 
       {/* Close / back */}
       {status === "ended" && (
-        <button onClick={onClose} className="absolute right-6 text-muted-foreground" style={{ top: "max(1.5rem, calc(env(safe-area-inset-top) + 0.5rem))" }}>
+        <button onClick={onClose} className="absolute right-6 text-muted-foreground" style={{ top: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
           <X className="w-5 h-5" />
         </button>
       )}

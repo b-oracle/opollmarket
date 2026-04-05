@@ -663,9 +663,9 @@ const Commissions = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
       <TopBar />
-      <div className="max-w-2xl mx-auto px-4 pt-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)]">
+      <div className="max-w-2xl mx-auto px-4 pt-[calc(3.5rem+var(--safe-top)+0.5rem)]">
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <button onClick={() => navigate(-1)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">

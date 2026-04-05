@@ -6,6 +6,16 @@
 
 @layer base {
   :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    --topbar-h: 3.5rem;
+    --bottomnav-h: 4rem;
+    --content-top: calc(var(--topbar-h) + var(--safe-top));
+    --content-bottom: calc(var(--bottomnav-h) + var(--safe-bottom));
+
     --background: 210 20% 98%;
     --foreground: 220 15% 10%;
 
@@ -127,8 +137,8 @@
     touch-action: pan-y;
     -webkit-user-select: none;
     user-select: none;
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
   }
 
   #root {
@@ -219,6 +229,13 @@
   .gradient-overlay {
     background: linear-gradient(0deg, hsl(var(--background)) 0%, transparent 50%, transparent 70%, hsl(var(--background) / 0.5) 100%);
   }
+
+
+  .pt-safe { padding-top: var(--safe-top); }
+  .pb-safe { padding-bottom: var(--safe-bottom); }
+  .pt-content { padding-top: var(--content-top); }
+  .pb-content { padding-bottom: var(--content-bottom); }
+  .mt-content { margin-top: var(--content-top); }
 }
 
 @keyframes shake {

@@ -239,7 +239,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             className="fixed inset-y-0 right-0 w-full max-w-md bg-background z-[61] overscroll-contain"
-            style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom))" } as React.CSSProperties}
+            style={{ paddingBottom: "calc(1rem + var(--safe-bottom))" } as React.CSSProperties}
           >
             {/* Flex column layout – header stays fixed, content scrolls */}
             <div
@@ -252,7 +252,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             {/* Header */}
             <div
               className="shrink-0 bg-background/80 backdrop-blur-xl border-b border-border px-4 flex items-center gap-3 z-10"
-              style={{ paddingTop: "calc(0.75rem + env(safe-area-inset-top))", paddingBottom: "0.75rem" }}
+              style={{ paddingTop: "calc(0.75rem + var(--safe-top))", paddingBottom: "0.75rem" }}
             >
               <button
                 onClick={onClose}

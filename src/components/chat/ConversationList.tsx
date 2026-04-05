@@ -215,7 +215,7 @@ const ConversationList = () => {
       <SEOHead title="Messages | Pollmarket" description="Direct messages" />
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
-        <div className="shrink-0 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 z-30" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+        <div className="shrink-0 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 z-30" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
           <button onClick={() => navigate("/feed")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -367,7 +367,7 @@ const ConversationList = () => {
         </div>
 
         {/* WhatsApp-style bottom nav */}
-        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="shrink-0 border-t border-border bg-background/95 backdrop-blur" style={{ paddingBottom: "var(--safe-bottom)" }}>
           <div className="flex items-center justify-around h-14">
             {bottomTabs.map(({ key, label, icon: Icon }) => {
               const isActive = activeSection === key;

@@ -31,7 +31,7 @@ const BottomNav = () => {
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-[70] glass-strong border-0 shadow-[0_-1px_8px_-2px_hsl(var(--foreground)/0.08)] lg:hidden" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-[70] glass-strong border-0 shadow-[0_-1px_8px_-2px_hsl(var(--foreground)/0.08)] lg:hidden" style={{ paddingBottom: 'var(--safe-bottom)' }}>
         <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
           {navItems.map(({ icon: Icon, label, path }) => {
             const isActive = path !== "__more__" && location.pathname === path;

@@ -621,9 +621,9 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
     <div 
       className={`${isFullscreen ? "fixed inset-0 z-50 bg-background flex flex-col" : "relative"} overflow-hidden`}
       style={isFullscreen ? { 
-        paddingTop: 'env(safe-area-inset-top, 0px)',
-        paddingLeft: 'env(safe-area-inset-left, 0px)',
-        paddingRight: 'env(safe-area-inset-right, 0px)',
+        paddingTop: 'var(--safe-top)',
+        paddingLeft: 'var(--safe-left)',
+        paddingRight: 'var(--safe-right)',
       } : undefined}
     >
       {/* Resolution flash/glow overlay */}
@@ -800,7 +800,7 @@ const TradingViewChart = forwardRef<HTMLDivElement, TradingViewChartProps>(funct
           <button
             onClick={() => setIsFullscreen(false)}
             className="absolute left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold text-sm shadow-lg active:scale-95 transition-transform"
-            style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+            style={{ bottom: 'calc(1.5rem + var(--safe-bottom))' }}
             title="Exit fullscreen"
           >
             <Minimize2 className="w-4 h-4" />

@@ -437,7 +437,7 @@ const Feed = () => {
       {/* Feed tabs - slide-in from right */}
       <div
         className="fixed right-0 z-30 flex items-center pointer-events-auto"
-        style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px) + 10px)' }}>
+        style={{ top: 'calc(3.5rem + var(--safe-top) + 10px)' }}>
         
         <motion.div
           className="flex items-center"
@@ -500,7 +500,7 @@ const Feed = () => {
 
       {/* Empty bookmarks state */}
       {feedTab === "bookmarks" && allSortedMarkets.length === 0 ?
-      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'calc(3.5rem + env(safe-area-inset-top, 0px))', marginLeft: !isDesktop ? undefined : (collapsed ? '4.5rem' : '15rem'), transition: 'margin-left 0.3s ease' }}>
+      <div className="flex-1 flex items-center justify-center px-4" style={{ marginTop: 'var(--content-top)', marginLeft: !isDesktop ? undefined : (collapsed ? '4.5rem' : '15rem'), transition: 'margin-left 0.3s ease' }}>
           <div className="text-center space-y-3">
             <Bookmark className="w-12 h-12 text-muted-foreground/30 mx-auto" />
             <p className="text-sm font-medium text-muted-foreground">Your watchlist is empty</p>
@@ -519,14 +519,14 @@ const Feed = () => {
         className="snap-feed w-full"
         style={{ 
           position: 'fixed',
-          top: 'calc(3.5rem + env(safe-area-inset-top, 0px))',
-          bottom: isDesktop ? 0 : 'calc(4rem + env(safe-area-inset-bottom, 0px))',
+          top: 'var(--content-top)',
+          bottom: isDesktop ? 0 : 'var(--content-bottom)',
           left: sidebarLeft,
           right: 0,
           transition: 'left 0.3s ease',
           ['--feed-card-height' as any]: isDesktop
-            ? 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px))'
-            : 'calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4rem - env(safe-area-inset-bottom, 0px))',
+            ? 'calc(100dvh - var(--content-top))'
+            : 'calc(100dvh - var(--content-top) - var(--content-bottom))',
         }}
         onTouchStart={pullHandlers.onTouchStart}
         onTouchMove={pullHandlers.onTouchMove}

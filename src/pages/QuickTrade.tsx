@@ -1300,7 +1300,7 @@ export default function QuickTrade() {
     <>
       <SEOHead title="Quick Trade — Fast Predictions" description="Predict if assets go UP or DOWN — Crypto, Commodities, Forex" />
       <TopBar />
-      <div className="min-h-screen bg-background pt-[calc(3.5rem+env(safe-area-inset-top))]" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="min-h-screen bg-background pt-[var(--content-top)]" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <div className="max-w-xl md:max-w-3xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4">
 
           {/* Header */}
