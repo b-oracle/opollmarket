@@ -256,7 +256,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId)
       .gte("created_at", dailyCutoff);
 
-    const dailyTotal = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
+    const dailyWithdrawalTotal = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
     const ANOMALY_THRESHOLD = 1000; // $1000 in 24h triggers alert
 
     if (dailyTotal >= ANOMALY_THRESHOLD) {

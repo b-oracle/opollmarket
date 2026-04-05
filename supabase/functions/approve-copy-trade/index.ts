@@ -87,6 +87,24 @@ Deno.serve(async (req) => {
 
     // action === "accept" — execute the trade with atomic balance deduction
     if (trade.trade_type === "prediction" && trade.market_id && trade.side) {
+      // Verify market is still active before executing
+      const { data: marketCheck } = await supabase
+        .from("markets")
+        .select("status")
+        .eq("id", trade.market_id)
+        .single();
+
+      if (!marketCheck || marketCheck.status !== "active") {
+        await supabase
+          .from("pending_copy_trades")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", pending_trade_id);
+
+        return new Response(JSON.stringify({ error: "Market is no longer active" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+
       const { data: commData } = await supabase
         .from("commission_settings")
         .select("prediction_fee_percent, copy_trade_commission_percent")
@@ -123,6 +141,11 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: "Insufficient balance" }), {
           status: 400, headers: corsHeaders,
         });
+      }
+
+      // Credit prediction fee to platform pool
+      if (totalFee > 0) {
+        await supabase.rpc("adjust_platform_pool", { _delta: totalFee });
       }
 
       // Create position
