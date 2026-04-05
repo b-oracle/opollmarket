@@ -837,11 +837,11 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                             : "Complete identity verification in your Profile to enable withdrawals."}
                         </p>
                         <a
-                          href="/profile"
+                          href="/setup-security"
                           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
                           onClick={handleClose}
                         >
-                          Go to Profile → Verify Identity
+                          Verify Identity
                         </a>
                       </div>
                     )}
