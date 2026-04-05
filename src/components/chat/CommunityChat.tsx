@@ -184,7 +184,10 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
             const showBar = activeReactionId === m.id;
             return (
               <div key={m.id} className="group relative flex gap-2">
-                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5">
+                <button
+                  onClick={() => navigate(`/user/${m.user_id}`)}
+                  className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5"
+                >
                   {m.profile?.avatar_url ? (
                     <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
                   ) : (
@@ -192,7 +195,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                       {(m.profile?.display_name || "?").charAt(0).toUpperCase()}
                     </span>
                   )}
-                </div>
+                </button>
                 <div
                   className="flex-1 min-w-0 relative select-none touch-none"
                   onPointerDown={(e) => {
