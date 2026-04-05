@@ -212,6 +212,38 @@ const ConversationList = () => {
 
   const requestCount = pendingRequests.length;
 
+  // Full-screen community chat overlay
+  if (activeCommunityChat) {
+    return (
+      <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+        <SEOHead title={`${activeCommunityChat.label} | Pollmarket`} description="Community chat" />
+        <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
+          <CommunityChat
+            slug={activeCommunityChat.slug}
+            label={activeCommunityChat.label}
+            onBack={() => setActiveCommunityChat(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Full-screen support chat overlay
+  if (activeSupportTicket) {
+    return (
+      <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+        <SEOHead title="Support | Pollmarket" description="Support chat" />
+        <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
+          <SupportChat
+            ticketId={activeSupportTicket.ticketId}
+            isStaff={activeSupportTicket.isStaff}
+            onBack={() => { setActiveSupportTicket(null); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
       <SEOHead title="Messages | Pollmarket" description="Direct messages" />
