@@ -68,8 +68,12 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
   const [flipReactions, setFlipReactions] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const categoryFilter = SLUG_TO_CATEGORY[slug] || undefined;
 
   const { data: isMember, refetch: refetchMembership } = useQuery({
     queryKey: ["community-membership", user?.id, slug],
