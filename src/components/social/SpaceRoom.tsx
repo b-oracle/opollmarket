@@ -1649,6 +1649,26 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               prev.map((m) => m.id === localId ? { ...m, id: dbId } : m)
             );
           }
+
+          // Notify mentioned users
+          const mentions = text.match(/@(\w+)/g);
+          if (mentions && mentions.length > 0) {
+            const mentionedNames = mentions.map((m: string) => m.slice(1));
+            const mentionedUsers = participants.filter(
+              (p) => mentionedNames.includes(p.name) && p.identity !== user.id
+            );
+            const senderDisplayName = insertPayload.user_name || "Someone";
+            for (const mu of mentionedUsers) {
+              supabase.from("notifications").insert({
+                user_id: mu.identity,
+                title: "You were mentioned 🎙️",
+                message: `${senderDisplayName} mentioned you in a live space: "${text.length > 80 ? text.slice(0, 80) + "…" : text}"`,
+                type: "info",
+                market_id: spaceId,
+                actor_id: user.id,
+              }).then(() => {});
+            }
+          }
         });
     }
 
