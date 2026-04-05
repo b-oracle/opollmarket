@@ -1338,7 +1338,7 @@ const Profile = () => {
             localStorage.setItem("hide_balance", next ? "1" : "");
           }}
         >
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1" id="balance-label">Balance</p>
           <p className="text-3xl font-bold text-primary">
             {balanceHidden ? "••••••" : `$${balance.toFixed(2)}`}
           </p>
