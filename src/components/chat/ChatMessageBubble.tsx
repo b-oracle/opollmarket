@@ -2,12 +2,13 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, Plus, Phone, PhoneMissed, PhoneOff } from "lucide-react";
+import { Gift, Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import ChatLinkPreview from "./ChatLinkPreview";
+import { toast } from "sonner";
 
 const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 
@@ -41,6 +42,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
+  const [showActions, setShowActions] = useState(false);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number } | null>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -75,17 +77,17 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     if (!bubbleRef.current) return;
     const rect = bubbleRef.current.getBoundingClientRect();
     const desiredTop = rect.top - 44;
-    const minTop = 60; // below header
+    const minTop = 60;
     setPickerPos({
       top: desiredTop < minTop ? rect.bottom + 4 : desiredTop,
       left: Math.max(8, Math.min(rect.left + rect.width / 2 - 100, window.innerWidth - 208)),
     });
     setShowReactions(true);
+    setShowActions(true);
     if (navigator.vibrate) navigator.vibrate(10);
   }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    // Only primary button
     if (e.button !== 0) return;
     longPressTimer.current = setTimeout(() => {
       openPicker();
@@ -100,6 +102,34 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     clearTimeout(longPressTimer.current);
   }, []);
 
+  const handleCopy = useCallback(() => {
+    if (m.content) {
+      navigator.clipboard.writeText(m.content).then(() => {
+        toast.success("Message copied");
+      }).catch(() => {
+        toast.error("Failed to copy");
+      });
+    }
+    setShowReactions(false);
+    setShowActions(false);
+  }, [m.content]);
+
+  const handleDelete = useCallback(async () => {
+    if (!isMine) return;
+    try {
+      await supabase
+        .from("dm_messages" as any)
+        .delete()
+        .eq("id", m.id);
+      queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
+      toast.success("Message deleted");
+    } catch {
+      toast.error("Failed to delete");
+    }
+    setShowReactions(false);
+    setShowActions(false);
+  }, [isMine, m.id, conversationId, queryClient]);
+
   const reactionEntries = Object.entries(reactions).filter(([, users]) => users.length > 0);
 
   const cleanContent = links.length > 0
@@ -110,7 +140,6 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     const path = link.replace(/https?:\/\/[^/]+/, "");
     navigate(path.startsWith("/") ? path : `/${path}`);
   };
-
 
   const reactionBadges = reactionEntries.length > 0 && (
     <div className="flex flex-wrap gap-1 mt-1">
@@ -134,7 +163,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
   const pickerOverlay = showReactions && pickerPos && (
     <>
-      <div className="fixed inset-0 z-40" onClick={() => { setShowReactions(false); setShowFullPicker(false); }} />
+      <div className="fixed inset-0 z-40" onClick={() => { setShowReactions(false); setShowFullPicker(false); setShowActions(false); }} />
 
       {!showFullPicker ? (
         <div
@@ -156,6 +185,28 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
           >
             <Plus className="w-3.5 h-3.5 text-muted-foreground" />
           </button>
+          {/* Copy & Delete actions */}
+          {showActions && (
+            <>
+              <div className="w-px h-5 bg-border mx-0.5" />
+              <button
+                onClick={handleCopy}
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-accent transition-colors"
+                title="Copy"
+              >
+                <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              {isMine && (
+                <button
+                  onClick={handleDelete}
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors"
+                  title="Delete"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                </button>
+              )}
+            </>
+          )}
         </div>
       ) : (
         <AnimatePresence>

@@ -225,12 +225,16 @@ const VoiceCallOverlay = ({
         (payload: any) => {
           const newStatus = payload.new?.status;
           if (newStatus === "declined" || newStatus === "missed" || newStatus === "ended") {
+            if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             setStatus("ended");
             roomRef.current?.disconnect();
             setTimeout(onClose, 1500);
           } else if (newStatus === "active") {
+            // Stop dial/ring tone when call becomes active
+            if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+            if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
             setStatus("active");
-            startTimeRef.current = Date.now();
+            if (!startTimeRef.current) startTimeRef.current = Date.now();
           }
         }
       )

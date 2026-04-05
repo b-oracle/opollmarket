@@ -973,7 +973,26 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           setDjIdentity(prev => prev === p.identity ? null : prev);
           updateParticipants(room);
         });
-        room.on(RoomEvent.TrackMuted, () => updateParticipants(room));
+        room.on(RoomEvent.TrackMuted, (pub, participant) => {
+          updateParticipants(room);
+          // Detect browser auto-muting the local mic (e.g. on app switch)
+          // and restore it if the user didn't intentionally mute
+          if (
+            participant.identity === room.localParticipant.identity &&
+            pub.source === Track.Source.Microphone &&
+            wasMicOnRef.current &&
+            !forceMuted
+          ) {
+            // Wait a moment then try to re-enable
+            setTimeout(async () => {
+              try {
+                if (roomRef.current && wasMicOnRef.current && !forceMuted) {
+                  await room.localParticipant.setMicrophoneEnabled(true);
+                }
+              } catch {}
+            }, 500);
+          }
+        });
         room.on(RoomEvent.TrackUnmuted, () => updateParticipants(room));
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
         room.on(RoomEvent.ParticipantPermissionsChanged, () => {
@@ -1155,6 +1174,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     try {
       await roomRef.current.localParticipant.setMicrophoneEnabled(muted);
       setMuted(!muted);
+      wasMicOnRef.current = muted; // muted was the old state, so if muted=true we're unmuting
     } catch { toast.error("Microphone access denied"); }
   };
 
