@@ -72,7 +72,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       const userIds = [...new Set(msgs.map((m: any) => m.user_id))] as string[];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", userIds);
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
