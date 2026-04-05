@@ -440,88 +440,57 @@ Deno.serve(async (req) => {
       amount: totalCost,
       market_id: marketId,
       option_id: optionId || null,
-      side,
       side: normalizedSide,
       shares: actualShares,
       price: price / 100,
       status: "confirmed",
     });
 
-    // Update market volume, participants & AMM prices
-    const { data: mkt } = await supabase
-      .from("markets")
-      .select("volume, liquidity, participants, yes_price, no_price, market_type, initial_liquidity")
-      .eq("id", marketId)
-      .single();
+    // Update market volume, participants & AMM prices atomically
+    const isMulti = isMultiOrRangeMarket;
+    await supabase.rpc("buy_update_market_prices", {
+      _market_id: marketId,
+      _side: normalizedSide,
+      _pool_amount: poolAmount,
+      _bet_amount: amount,
+      _is_multi: isMulti,
+    });
 
-    if (mkt) {
-      const isMulti = mkt.market_type === "multi" || mkt.market_type === "range";
-      const newVolume = Number(mkt.volume) + amount;
-      const newLiquidity = Number(mkt.liquidity || 0) + poolAmount;
+    // Multi-option: rebalance option prices
+    if (isMulti && optionId) {
+      const { data: allOptions } = await supabase
+        .from("market_options")
+        .select("id, price")
+        .eq("market_id", marketId);
 
-      // Count distinct participants instead of blindly incrementing
-      const { count: distinctParticipants } = await supabase
-        .from("positions")
-        .select("user_id", { count: "exact", head: true })
-        .eq("market_id", marketId)
-        .gt("shares", 0);
+      if (allOptions && allOptions.length > 0) {
+        const { data: mkt } = await supabase
+          .from("markets")
+          .select("volume, liquidity")
+          .eq("id", marketId)
+          .single();
 
-      const updateFields: Record<string, any> = {
-        volume: newVolume,
-        liquidity: newLiquidity,
-        participants: distinctParticipants ?? (mkt.participants + 1),
-      };
-
-      if (!isMulti) {
-        const currentYes = Number(mkt.yes_price);
-        const totalLiq = Number(mkt.volume) + poolAmount + 100;
+        const totalLiq = Number(mkt?.volume || 0) + 100;
         const impact = Math.min(poolAmount / totalLiq, 0.15);
+        const selectedOpt = allOptions.find((o: any) => o.id === optionId);
 
-        let newYes: number;
-        if (normalizedSide === "yes") {
-          newYes = Math.min(0.99, currentYes + impact);
-        } else {
-          newYes = Math.max(0.01, currentYes - impact);
-        }
-        const newNo = Math.round((1 - newYes) * 100) / 100;
-        newYes = Math.round(newYes * 100) / 100;
+        if (selectedOpt) {
+          const newSelectedPrice = Math.min(0.99, Number(selectedOpt.price) + impact);
 
-        updateFields.yes_price = newYes;
-        updateFields.no_price = newNo;
-      }
+          await supabase.from("market_options")
+            .update({ price: Math.round(newSelectedPrice * 100) / 100 })
+            .eq("id", optionId);
 
-      await supabase.from("markets").update(updateFields).eq("id", marketId);
+          const othersTotal = allOptions
+            .filter((o: any) => o.id !== optionId)
+            .reduce((sum: number, o: any) => sum + Number(o.price), 0);
 
-      // Multi-option: rebalance prices
-      if (isMulti && optionId) {
-        const { data: allOptions } = await supabase
-          .from("market_options")
-          .select("id, price")
-          .eq("market_id", marketId);
-
-        if (allOptions && allOptions.length > 0) {
-          const totalLiq = Number(mkt.volume) + poolAmount + 100;
-          const impact = Math.min(poolAmount / totalLiq, 0.15);
-          const selectedOpt = allOptions.find((o: any) => o.id === optionId);
-
-          if (selectedOpt) {
-            const newSelectedPrice = Math.min(0.99, Number(selectedOpt.price) + impact);
-
-            await supabase.from("market_options")
-              .update({ price: Math.round(newSelectedPrice * 100) / 100 })
-              .eq("id", optionId);
-
-            const othersTotal = allOptions
-              .filter((o: any) => o.id !== optionId)
-              .reduce((sum: number, o: any) => sum + Number(o.price), 0);
-
-            if (othersTotal > 0) {
-              const remaining = Math.max(0.01, 1 - newSelectedPrice);
-              const scaleFactor = remaining / othersTotal;
-              for (const opt of allOptions.filter((o: any) => o.id !== optionId)) {
-                const newPrice = Math.max(0.01, Math.round(Number(opt.price) * scaleFactor * 100) / 100);
-                await supabase.from("market_options").update({ price: newPrice }).eq("id", opt.id);
-              }
+          if (othersTotal > 0) {
+            const remaining = Math.max(0.01, 1 - newSelectedPrice);
+            const scaleFactor = remaining / othersTotal;
+            for (const opt of allOptions.filter((o: any) => o.id !== optionId)) {
+              const newPrice = Math.max(0.01, Math.round(Number(opt.price) * scaleFactor * 100) / 100);
+              await supabase.from("market_options").update({ price: newPrice }).eq("id", opt.id);
             }
           }
         }
