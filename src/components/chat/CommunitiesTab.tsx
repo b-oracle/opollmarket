@@ -32,7 +32,7 @@ const categoryMap: Record<string, string> = {
   "twitter-x": "Twitter/X",
 };
 
-const CommunitiesTab = () => {
+const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: string) => void }) => {
   const { user } = useAuth();
   const [activeCommunity, setActiveCommunity] = useState<{ slug: string; label: string } | null>(null);
 
@@ -65,7 +65,7 @@ const CommunitiesTab = () => {
     staleTime: 30_000,
   });
 
-  if (activeCommunity) {
+  if (!onOpenChat && activeCommunity) {
     return (
       <CommunityChat
         slug={activeCommunity.slug}
@@ -82,7 +82,7 @@ const CommunitiesTab = () => {
       {COMMUNITIES.map((c) => (
         <button
           key={c.slug}
-          onClick={() => setActiveCommunity(c)}
+          onClick={() => onOpenChat ? onOpenChat(c.slug, c.label) : setActiveCommunity(c)}
           className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors text-left"
         >
           <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">

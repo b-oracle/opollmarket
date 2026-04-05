@@ -35,6 +35,8 @@ const CallHistoryTab = lazy(() => import("./CallHistoryTab"));
 const CommunitiesTab = lazy(() => import("./CommunitiesTab"));
 const SupportTab = lazy(() => import("./SupportTab"));
 const SettingsTab = lazy(() => import("./SettingsTab"));
+import CommunityChat from "./CommunityChat";
+import SupportChat from "./SupportChat";
 
 interface ConversationRow {
   id: string;
@@ -55,6 +57,8 @@ const ConversationList = () => {
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"chats" | "requests" | "calls" | "communities" | "support" | "settings">("chats");
+  const [activeCommunityChat, setActiveCommunityChat] = useState<{ slug: string; label: string } | null>(null);
+  const [activeSupportTicket, setActiveSupportTicket] = useState<{ ticketId: string; isStaff: boolean } | null>(null);
 
   const topTabs = [
     { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
@@ -210,6 +214,38 @@ const ConversationList = () => {
 
   const requestCount = pendingRequests.length;
 
+  // Full-screen community chat overlay
+  if (activeCommunityChat) {
+    return (
+      <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+        <SEOHead title={`${activeCommunityChat.label} | Pollmarket`} description="Community chat" />
+        <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
+          <CommunityChat
+            slug={activeCommunityChat.slug}
+            label={activeCommunityChat.label}
+            onBack={() => setActiveCommunityChat(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Full-screen support chat overlay
+  if (activeSupportTicket) {
+    return (
+      <div className="h-[100dvh] bg-background flex flex-col overflow-hidden">
+        <SEOHead title="Support | Pollmarket" description="Support chat" />
+        <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
+          <SupportChat
+            ticketId={activeSupportTicket.ticketId}
+            isStaff={activeSupportTicket.isStaff}
+            onBack={() => { setActiveSupportTicket(null); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
       <SEOHead title="Messages | Pollmarket" description="Direct messages" />
@@ -255,7 +291,7 @@ const ConversationList = () => {
         )}
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto min-h-0 pb-16">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {/* New chat picker */}
           {showNewChat && isTopTab(tab) && (
             <div className="border-b border-border p-4 space-y-3">
@@ -345,7 +381,7 @@ const ConversationList = () => {
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             }>
-              <CommunitiesTab />
+              <CommunitiesTab onOpenChat={(slug, label) => setActiveCommunityChat({ slug, label })} />
             </Suspense>
           ) : tab === "support" ? (
             <Suspense fallback={
@@ -353,7 +389,7 @@ const ConversationList = () => {
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             }>
-              <SupportTab />
+              <SupportTab onOpenChat={(ticketId, isStaff) => setActiveSupportTicket({ ticketId, isStaff })} />
             </Suspense>
           ) : tab === "settings" ? (
             <Suspense fallback={

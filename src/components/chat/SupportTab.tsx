@@ -32,7 +32,7 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
   closed: { icon: CheckCircle2, label: "Closed", color: "text-muted-foreground bg-muted" },
 };
 
-const SupportTab = () => {
+const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
@@ -120,7 +120,7 @@ const SupportTab = () => {
       setCategory("");
       setDesc("");
       setShowNew(false);
-      setActiveTicket(ticket.id);
+      if (onOpenChat) { onOpenChat(ticket.id, false); } else { setActiveTicket(ticket.id); }
       toast.success("Ticket created");
     } catch {
       toast.error("Failed to create ticket");
@@ -129,7 +129,7 @@ const SupportTab = () => {
     }
   };
 
-  if (activeTicket) {
+  if (!onOpenChat && activeTicket) {
     return <SupportChat ticketId={activeTicket} isStaff={isStaffTicket} onBack={() => { setActiveTicket(null); setIsStaffTicket(false); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }} />;
   }
 
@@ -185,7 +185,11 @@ const SupportTab = () => {
             return (
               <button
                 key={t.id}
-                onClick={() => { setActiveTicket(t.id); if (isStaff && t.user_id !== user?.id) setIsStaffTicket(true); }}
+                onClick={() => {
+                  const staffView = isStaff && t.user_id !== user?.id;
+                  if (onOpenChat) { onOpenChat(t.id, staffView); }
+                  else { setActiveTicket(t.id); if (staffView) setIsStaffTicket(true); }
+                }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${sc.color}`}>

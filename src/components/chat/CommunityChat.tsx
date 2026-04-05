@@ -282,7 +282,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       )}
 
       {/* Input */}
-      <div className="shrink-0 px-4 py-1.5 pb-0 flex gap-2">
+      <div className="shrink-0 px-4 py-1.5 flex gap-2" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
         <Input
           placeholder={isMember ? "Type a message..." : "Join to chat"}
           value={message}
