@@ -787,11 +787,17 @@ async function handleQTCommand(supabase: any, phone: string, rawText: string) {
 
   if (roundErr || !round) { await sendWA(phone, "❌ Failed to create round. Try again."); return; }
 
-  // Deduct balance
-  await supabase.from("balances").update({
-    amount: Number(bal!.amount) - amount,
-    updated_at: new Date().toISOString(),
-  }).eq("user_id", userId).eq("currency", "USDT");
+  // Deduct balance atomically
+  const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
+    _user_id: userId,
+    _main_deduct: amount,
+    _bonus_deduct: 0,
+  });
+
+  if (!debitResult?.success) {
+    await sendWA(phone, `❌ Insufficient balance. Please try again.`);
+    return;
+  }
 
   // Place bet
   await supabase.from("quick_bets").insert({

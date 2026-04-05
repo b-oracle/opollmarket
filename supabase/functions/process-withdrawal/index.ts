@@ -113,24 +113,12 @@ Deno.serve(async (req) => {
         type: "withdrawal",
       });
     } else {
-      // Reject: refund balance
-      const { data: balance } = await adminClient
-        .from("balances")
-        .select("amount")
-        .eq("user_id", withdrawal.user_id)
-        .eq("currency", "USDT")
-        .single();
-
-      if (balance) {
-        await adminClient
-          .from("balances")
-          .update({
-            amount: Number(balance.amount) + Number(withdrawal.amount),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", withdrawal.user_id)
-          .eq("currency", "USDT");
-      }
+      // Reject: refund balance atomically
+      await adminClient.rpc("adjust_balance", {
+        _user_id: withdrawal.user_id,
+        _delta: Number(withdrawal.amount),
+        _bonus_delta: 0,
+      });
 
       await adminClient
         .from("withdrawal_requests")

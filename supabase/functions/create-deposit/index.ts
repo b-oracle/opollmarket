@@ -35,18 +35,28 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const { amount, pay_currency } = await req.json();
 
-    if (!amount || amount < 1 || amount > 50000) {
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Fetch dynamic limits
+    const { data: limitsData } = await adminClient
+      .from("commission_settings")
+      .select("deposit_min_amount, deposit_max_amount")
+      .limit(1)
+      .single();
+    const depositMin = Number(limitsData?.deposit_min_amount) || 1;
+    const depositMax = Number(limitsData?.deposit_max_amount) || 50000;
+
+    if (!amount || amount < depositMin || amount > depositMax) {
       return new Response(
-        JSON.stringify({ error: "Amount must be between 1 and 50000" }),
+        JSON.stringify({ error: `Amount must be between $${depositMin} and $${depositMax.toLocaleString()}` }),
         { status: 400, headers: corsHeaders }
       );
     }
 
     // --- Spam & block checks ---
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Check if user is blocked
     const { data: profile } = await adminClient

@@ -136,9 +136,17 @@ Deno.serve(async (req) => {
     const payoutMarkdown = Number(settings?.naira_payout_markdown) || 0;
     const fallbackRate = Number((settings as any)?.fallback_payout_naira_rate) || Number(settings?.fallback_naira_rate) || 1500;
 
-    if (!amount || amount < minWithdrawal || amount > 50000) {
+    // Use dynamic max from settings
+    const { data: depositLimitsData } = await adminClient
+      .from("commission_settings")
+      .select("deposit_max_amount")
+      .limit(1)
+      .single();
+    const maxWithdrawal = Number(depositLimitsData?.deposit_max_amount) || 50000;
+
+    if (!amount || amount < minWithdrawal || amount > maxWithdrawal) {
       return new Response(
-        JSON.stringify({ error: `Amount must be between $${minWithdrawal} and $50,000` }),
+        JSON.stringify({ error: `Amount must be between $${minWithdrawal} and $${maxWithdrawal.toLocaleString()}` }),
         { status: 400, headers: corsHeaders }
       );
     }

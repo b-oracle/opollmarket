@@ -212,9 +212,17 @@ Deno.serve(async (req) => {
     const minWithdrawal = settings?.min_withdrawal_amount ?? 5;
     const withdrawalFeePercent = Math.max(0, Math.min(100, Number(settings?.withdrawal_fee_percent) || 0));
 
-    if (!amount || amount < minWithdrawal || amount > 50000) {
+    // Use dynamic max from settings
+    const { data: depositLimitsData } = await adminClient
+      .from("commission_settings")
+      .select("deposit_max_amount")
+      .limit(1)
+      .single();
+    const maxWithdrawal = Number(depositLimitsData?.deposit_max_amount) || 50000;
+
+    if (!amount || amount < minWithdrawal || amount > maxWithdrawal) {
       return new Response(
-        JSON.stringify({ error: `Amount must be between $${minWithdrawal} and $50,000` }),
+        JSON.stringify({ error: `Amount must be between $${minWithdrawal} and $${maxWithdrawal.toLocaleString()}` }),
         { status: 400, headers: corsHeaders }
       );
     }
