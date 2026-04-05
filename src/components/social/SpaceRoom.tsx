@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -164,6 +164,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: string; name: string; text: string } | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const chatInputRef = useRef<HTMLInputElement>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; identity: string; label?: string }[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -1538,8 +1541,61 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     finally { setPromoting(null); setRecordingLoading(false); setActionTarget(null); setActionType(null); }
   };
 
+  // Mention helpers
+  const mentionSuggestions = React.useMemo(() => {
+    if (mentionQuery === null) return [];
+    const q = mentionQuery.toLowerCase();
+    return participants.filter(p => p.name.toLowerCase().includes(q) && p.identity !== user?.id).slice(0, 5);
+  }, [mentionQuery, participants, user?.id]);
+
+  const handleChatInputChange = (val: string) => {
+    setChatInput(val);
+    const cursorPos = chatInputRef.current?.selectionStart || val.length;
+    const textBeforeCursor = val.slice(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setMentionIndex(0);
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    const cursorPos = chatInputRef.current?.selectionStart || chatInput.length;
+    const textBefore = chatInput.slice(0, cursorPos);
+    const textAfter = chatInput.slice(cursorPos);
+    const newBefore = textBefore.replace(/@(\w*)$/, `@${name} `);
+    setChatInput(newBefore + textAfter);
+    setMentionQuery(null);
+    setTimeout(() => chatInputRef.current?.focus(), 0);
+  };
+
+  const handleChatKeyDown = (e: React.KeyboardEvent) => {
+    if (mentionQuery !== null && mentionSuggestions.length > 0) {
+      if (e.key === "ArrowDown") { e.preventDefault(); setMentionIndex(i => Math.min(i + 1, mentionSuggestions.length - 1)); return; }
+      if (e.key === "ArrowUp") { e.preventDefault(); setMentionIndex(i => Math.max(i - 1, 0)); return; }
+      if (e.key === "Tab" || e.key === "Enter") { e.preventDefault(); insertMention(mentionSuggestions[mentionIndex].name); return; }
+      if (e.key === "Escape") { e.preventDefault(); setMentionQuery(null); return; }
+    }
+    if (e.key === "Enter") sendChat();
+  };
+
+  const renderMessageText = (text: string) => {
+    const parts = text.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("@")) {
+        const name = part.slice(1);
+        const isParticipant = participants.some(p => p.name === name);
+        return <span key={i} className={`font-semibold ${isParticipant ? "text-primary cursor-pointer hover:underline" : ""}`}>{part}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   const sendChat = () => {
     if (!chatInput.trim() || !roomRef.current) return;
+    setMentionQuery(null);
     const text = chatInput.trim();
     const senderName = roomRef.current.localParticipant.name || "You";
     const currentReply = replyTo;
@@ -2356,7 +2412,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                           <p className="text-[10px] opacity-80 truncate">{m.replyToContent.slice(0, 60)}{(m.replyToContent.length || 0) > 60 ? "…" : ""}</p>
                         </div>
                       )}
-                      <p>{m.text}</p>
+                      <p>{renderMessageText(m.text)}</p>
                       <p className={`text-[9px] mt-0.5 ${m.sender === user?.id ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
                         {new Date(m.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
@@ -2411,11 +2467,23 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   <button onClick={() => setReplyTo(null)} className="text-[10px] text-destructive hover:underline shrink-0">✕</button>
                 </div>
               )}
+              {/* Mention suggestions dropdown */}
+              {mentionQuery !== null && mentionSuggestions.length > 0 && (
+                <div className="shrink-0 px-5 py-1 border-t border-border bg-card">
+                  {mentionSuggestions.map((p, i) => (
+                    <button key={p.identity} onClick={() => insertMention(p.name)}
+                      className={`w-full text-left px-3 py-1.5 rounded text-xs flex items-center gap-2 transition-colors ${i === mentionIndex ? "bg-primary/10 text-primary" : "hover:bg-muted"}`}>
+                      <span className="font-medium">@{p.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="shrink-0 px-5 py-3 border-t border-border flex gap-2 items-center">
                 <input
+                  ref={chatInputRef}
                   value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendChat()}
+                  onChange={(e) => handleChatInputChange(e.target.value)}
+                  onKeyDown={handleChatKeyDown}
                   placeholder={replyTo ? `Reply to ${replyTo.name}...` : "Send a message..."}
                   className="flex-1 bg-muted rounded-full px-4 py-2 text-xs outline-none border border-border focus:border-primary"
                 />
