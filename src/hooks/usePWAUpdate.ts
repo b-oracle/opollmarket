@@ -4,6 +4,7 @@ import { cleanupBlockedPwaContext, isPwaBlockedContext } from "@/lib/pwa";
 
 const DISMISSED_SW_KEY = "opoll_sw_dismissed_version";
 const APPLIED_SW_KEY = "opoll_sw_applied_version";
+const UPDATE_COOLDOWN_KEY = "opoll_sw_update_cooldown";
 const UPDATE_POLL_MS = 10 * 60 * 1000;
 
 const getWorkerVersion = (worker: ServiceWorker | null | undefined): string | null => {
