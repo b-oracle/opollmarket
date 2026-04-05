@@ -440,7 +440,6 @@ Deno.serve(async (req) => {
       amount: totalCost,
       market_id: marketId,
       option_id: optionId || null,
-      side,
       side: normalizedSide,
       shares: actualShares,
       price: price / 100,
