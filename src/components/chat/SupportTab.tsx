@@ -3,12 +3,27 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, HelpCircle, ChevronRight, Clock, CheckCircle2, AlertCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import SupportChat from "./SupportChat";
+
+const categories = [
+  { value: "withdrawal", label: "Withdrawal Issue" },
+  { value: "deposit", label: "Deposit Issue" },
+  { value: "quick_trade", label: "Quick Trade Issue" },
+  { value: "prediction", label: "Prediction Market Issue" },
+  { value: "account", label: "Account / Profile Issue" },
+  { value: "kyc", label: "KYC / Verification" },
+  { value: "copy_trade", label: "Copy Trading Issue" },
+  { value: "technical", label: "Technical / Bug Report" },
+  { value: "general", label: "Other / General" },
+];
+
+const categoryMap = Object.fromEntries(categories.map((c) => [c.value, c.label]));
 
 const statusConfig: Record<string, { icon: React.ElementType; label: string; color: string }> = {
   open: { icon: AlertCircle, label: "Open", color: "text-amber-500 bg-amber-500/10" },
@@ -21,7 +36,7 @@ const SupportTab = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
-  const [subject, setSubject] = useState("");
+  const [category, setCategory] = useState("");
   const [desc, setDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
@@ -41,12 +56,13 @@ const SupportTab = () => {
   });
 
   const createTicket = async () => {
-    if (!user || !subject.trim() || !desc.trim()) return;
+    if (!user || !category || !desc.trim()) return;
     setSubmitting(true);
     try {
+      const subject = categoryMap[category] || category;
       const { data: ticket, error } = await supabase
         .from("support_tickets" as any)
-        .insert({ user_id: user.id, subject: subject.trim() } as any)
+        .insert({ user_id: user.id, subject, category } as any)
         .select("id")
         .single() as any;
 
@@ -60,7 +76,7 @@ const SupportTab = () => {
       } as any);
 
       queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
-      setSubject("");
+      setCategory("");
       setDesc("");
       setShowNew(false);
       setActiveTicket(ticket.id);
@@ -78,15 +94,18 @@ const SupportTab = () => {
 
   return (
     <div>
-      {/* New ticket form */}
       {showNew ? (
         <div className="p-4 border-b border-border space-y-3">
-          <Input
-            placeholder="Subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="h-9"
-          />
+          <Select value={category} onValueChange={setCategory}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder="Select issue category..." />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Textarea
             placeholder="Describe your issue..."
             value={desc}
@@ -94,7 +113,7 @@ const SupportTab = () => {
             className="min-h-[80px] text-sm"
           />
           <div className="flex gap-2">
-            <Button size="sm" disabled={submitting || !subject.trim() || !desc.trim()} onClick={createTicket}>
+            <Button size="sm" disabled={submitting || !category || !desc.trim()} onClick={createTicket}>
               {submitting ? "Creating..." : "Submit Ticket"}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>Cancel</Button>
@@ -108,7 +127,6 @@ const SupportTab = () => {
         </div>
       )}
 
-      {/* Ticket list */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -134,10 +152,15 @@ const SupportTab = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-semibold truncate block">{t.subject}</span>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.color}`}>
                       {sc.label}
                     </span>
+                    {t.category && t.category !== "general" && (
+                      <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                        {categoryMap[t.category] || t.category}
+                      </Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
                     </span>

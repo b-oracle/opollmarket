@@ -8,6 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatDistanceToNow } from "date-fns";
 import SupportChat from "@/components/chat/SupportChat";
 
+const categoryMap: Record<string, string> = {
+  withdrawal: "Withdrawal",
+  deposit: "Deposit",
+  quick_trade: "Quick Trade",
+  prediction: "Prediction",
+  account: "Account",
+  kyc: "KYC",
+  copy_trade: "Copy Trade",
+  technical: "Technical",
+  general: "General",
+};
+
 const AdminSupport = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -55,7 +67,7 @@ const AdminSupport = () => {
   if (activeTicket) {
     return (
       <div className="h-[80vh]">
-        <SupportChat ticketId={activeTicket} onBack={() => { setActiveTicket(null); queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] }); }} />
+        <SupportChat ticketId={activeTicket} isStaff={true} onBack={() => { setActiveTicket(null); queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] }); }} />
       </div>
     );
   }
@@ -101,6 +113,11 @@ const AdminSupport = () => {
             >
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-semibold flex-1 truncate">{t.subject}</span>
+                {t.category && (
+                  <Badge variant="secondary" className="text-[10px] h-5">
+                    {categoryMap[t.category] || t.category}
+                  </Badge>
+                )}
                 <Badge variant="outline" className={`text-[10px] ${statusColors[t.status] || ""}`}>
                   {t.status}
                 </Badge>

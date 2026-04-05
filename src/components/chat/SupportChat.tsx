@@ -11,9 +11,10 @@ import { toast } from "sonner";
 interface SupportChatProps {
   ticketId: string;
   onBack: () => void;
+  isStaff?: boolean;
 }
 
-const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
+const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
@@ -58,7 +59,6 @@ const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
     refetchInterval: 5000,
   });
 
-  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel(`support-${ticketId}`)
@@ -83,7 +83,7 @@ const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
       user_id: user.id,
       content: text || "",
       image_url: imageUrl || null,
-      is_staff: false,
+      is_staff: isStaff,
     } as any);
 
     if (error) {
@@ -91,7 +91,7 @@ const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
       return;
     }
     setMessage("");
-  }, [user, message, ticketId]);
+  }, [user, message, ticketId, isStaff]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -108,7 +108,8 @@ const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
     e.target.value = "";
   };
 
-  const isClosed = ticket?.status === "closed" || ticket?.status === "resolved";
+  // Only 'closed' permanently locks the chat
+  const isLocked = ticket?.status === "closed";
 
   return (
     <div className="flex flex-col h-full">
@@ -156,7 +157,7 @@ const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
         <div ref={bottomRef} />
       </div>
 
-      {!isClosed && (
+      {!isLocked && (
         <div className="shrink-0 px-4 py-3 border-t border-border flex gap-2">
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground">
@@ -174,9 +175,9 @@ const SupportChat = ({ ticketId, onBack }: SupportChatProps) => {
           </Button>
         </div>
       )}
-      {isClosed && (
+      {isLocked && (
         <div className="shrink-0 px-4 py-3 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground">This ticket has been {ticket?.status}</p>
+          <p className="text-xs text-muted-foreground">This ticket has been closed</p>
         </div>
       )}
     </div>
