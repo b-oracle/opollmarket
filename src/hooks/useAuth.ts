@@ -31,6 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
+  const [isSupport, setIsSupport] = useState(false);
   const [rolesLoaded, setRolesLoaded] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const lastSessionRef = useRef<Session | null>(null);
