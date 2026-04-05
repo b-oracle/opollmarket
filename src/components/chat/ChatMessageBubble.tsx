@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2, Check, CheckCheck } from "lucide-react";
+import { Gift, Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2, Check, CheckCheck, Reply } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,11 +22,16 @@ interface Message {
   created_at: string;
   read_at: string | null;
   reactions?: Record<string, string[]>;
+  reply_to_id?: string | null;
+  reply_to_content?: string | null;
+  reply_to_sender_name?: string | null;
 }
 
 interface ChatMessageBubbleProps {
   message: Message;
   conversationId: string;
+  onReply?: (info: { id: string; content: string; senderName: string }) => void;
+  onScrollToMessage?: (messageId: string) => void;
 }
 
 const INTERNAL_LINK_REGEX = /(?:https?:\/\/[^\s]+)?\/(?:market|spaces)\/([a-f0-9-]+)/gi;
@@ -37,7 +42,7 @@ function extractInternalLinks(content: string): string[] {
   return matches || [];
 }
 
-const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProps) => {
+const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMessage }: ChatMessageBubbleProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -120,6 +125,17 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     setShowFullPicker(false);
   }, [isMine, m.id, conversationId, queryClient]);
 
+  const handleReply = useCallback(() => {
+    if (!onReply) return;
+    onReply({
+      id: m.id,
+      content: m.content,
+      senderName: isMine ? "You" : "them",
+    });
+    setShowReactions(false);
+    setShowFullPicker(false);
+  }, [onReply, m.id, m.content, isMine]);
+
   const dismiss = useCallback(() => {
     setShowReactions(false);
     setShowFullPicker(false);
@@ -163,6 +179,22 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
     onPointerLeave: handlePointerCancel,
   };
 
+  // Reply preview shown above message content
+  const replyPreview = m.reply_to_id && m.reply_to_content && (
+    <button
+      onClick={() => m.reply_to_id && onScrollToMessage?.(m.reply_to_id)}
+      className={cn(
+        "w-full text-left text-[11px] px-2.5 py-1.5 rounded-lg mb-1 border-l-2 truncate",
+        isMine
+          ? "bg-primary-foreground/10 border-primary-foreground/40 text-primary-foreground/80"
+          : "bg-foreground/5 border-primary/40 text-muted-foreground"
+      )}
+    >
+      <span className="font-semibold block text-[10px]">{m.reply_to_sender_name || "User"}</span>
+      <span className="truncate block">{m.reply_to_content.slice(0, 80)}</span>
+    </button>
+  );
+
   const reactionBar = showReactions && (
     <>
       <div className="fixed inset-0 z-40" onClick={dismiss} />
@@ -190,6 +222,13 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             <Plus className="w-3 h-3 text-muted-foreground" />
           </button>
           <div className="w-px h-4 bg-border mx-0.5 flex-shrink-0" />
+          <button
+            onClick={handleReply}
+            className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
+            title="Reply"
+          >
+            <Reply className="w-3 h-3 text-muted-foreground" />
+          </button>
           <button
             onClick={handleCopy}
             className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
@@ -252,7 +291,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
         : "Call declined";
 
     return (
-      <div className="flex justify-center my-2">
+      <div className="flex justify-center my-2" id={`msg-${m.id}`}>
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/60 text-muted-foreground text-xs">
           {icon}
           <span>{label}</span>
@@ -264,7 +303,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
 
   if (isGift) {
     return (
-      <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`}>
+      <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`} id={`msg-${m.id}`}>
         <div className="relative" ref={bubbleRef}>
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -305,7 +344,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
   }
 
   return (
-    <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`}>
+    <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`} id={`msg-${m.id}`}>
       <div className="relative max-w-[75%] overflow-visible" ref={bubbleRef}>
         <div className="space-y-1">
           <div
@@ -316,6 +355,7 @@ const ChatMessageBubble = ({ message: m, conversationId }: ChatMessageBubbleProp
             }`}
             {...pointerProps}
           >
+            {replyPreview}
             {cleanContent && (
               <p className="text-sm whitespace-pre-wrap break-words">{cleanContent}</p>
             )}
