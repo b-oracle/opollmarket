@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
         const alertNotifications = adminUsers.map((admin: any) => ({
           user_id: admin.user_id,
           title: "⚠️ Withdrawal Anomaly Detected",
-          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyTotal.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
+          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyTotalAnomaly.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
           type: "system",
         }));
         await adminClient.from("notifications").insert(alertNotifications);
