@@ -82,7 +82,7 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
       {COMMUNITIES.map((c) => (
         <button
           key={c.slug}
-          onClick={() => setActiveCommunity(c)}
+          onClick={() => onOpenChat ? onOpenChat(c.slug, c.label) : setActiveCommunity(c)}
           className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors text-left"
         >
           <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
