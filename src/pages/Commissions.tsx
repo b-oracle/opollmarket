@@ -663,7 +663,7 @@ const Commissions = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
       <TopBar />
       <div className="max-w-2xl mx-auto px-4 pt-[calc(3.5rem+var(--safe-top)+0.5rem)]">
         {/* Header */}

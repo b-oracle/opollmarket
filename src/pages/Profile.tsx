@@ -836,9 +836,9 @@ const Profile = () => {
 
   if (!authLoading && !user) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + var(--safe-top))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(1.5rem + var(--content-top))' }}>
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
             <Wallet className="w-8 h-8 text-muted-foreground" />
           </div>
@@ -859,7 +859,7 @@ const Profile = () => {
   return (
     <div
       className="h-dvh bg-background overflow-y-auto overscroll-contain"
-      style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))', touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
+      style={{ paddingBottom: 'calc(1rem + var(--content-bottom))', touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -930,7 +930,7 @@ const Profile = () => {
       )}
 
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + var(--safe-top))' }}>
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))' }}>
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8 relative">
           <button

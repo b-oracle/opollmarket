@@ -291,7 +291,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
 
           {/* Modal */}
           <div className="fixed inset-x-0 z-50 flex items-center justify-center pointer-events-none"
-            style={{ top: "calc(3.5rem + var(--safe-top))", bottom: "calc(4rem + var(--safe-bottom))", padding: "1rem" }}>
+            style={{ top: "var(--content-top)", bottom: "var(--content-bottom)", padding: "1rem" }}>
             <div
               className="pointer-events-auto w-full max-w-sm md:max-w-lg bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col"
               style={{ maxHeight: "100%" }}

@@ -40,7 +40,7 @@ const Terms = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+    <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
       <SEOHead title="Terms & Conditions – OPollMarket" description="Read the Terms & Conditions governing your use of OPollMarket prediction markets, trading rules, fees, and user responsibilities." path="/terms" />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border" style={{ paddingTop: 'var(--safe-top)' }}>
         <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">

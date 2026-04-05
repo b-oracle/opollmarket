@@ -152,7 +152,7 @@ const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PageFallback = () => (
-  <div className="flex items-center justify-center min-h-screen pt-[calc(3.5rem+var(--safe-top))] pb-[calc(4rem+var(--safe-bottom))]">
+  <div className="flex items-center justify-center min-h-screen pt-[var(--content-top)] pb-[var(--content-bottom)]">
     <LogoLoader />
   </div>
 );

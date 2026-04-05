@@ -197,7 +197,7 @@ const Index = () => {
   return (
     <div
       className="min-h-dvh bg-background"
-      style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))', touchAction: 'pan-y', overscrollBehavior: 'none' }}
+      style={{ paddingBottom: 'calc(1rem + var(--content-bottom))', touchAction: 'pan-y', overscrollBehavior: 'none' }}
       onTouchStart={pullHandlers.onTouchStart}
       onTouchMove={pullHandlers.onTouchMove}
       onTouchEnd={pullHandlers.onTouchEnd}
@@ -207,7 +207,7 @@ const Index = () => {
 
       <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
-      <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + var(--safe-top))' }}>
+      <div className="max-w-lg md:max-w-4xl xl:max-w-6xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(1.5rem + var(--content-top))' }}>
         {/* Mobile Hero */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-8 md:hidden">
           <h2 className="text-2xl sm:text-3xl font-bold leading-tight mb-2">

@@ -243,7 +243,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
 
             {/* Controls */}
             {/* Controls - use flex-col-reverse so search results grow upward */}
-            <div className="px-4 shrink-0 pb-4 lg:pb-6 flex flex-col gap-3" style={{ paddingBottom: `calc(5rem + var(--safe-bottom))` }}>
+            <div className="px-4 shrink-0 pb-4 lg:pb-6 flex flex-col gap-3" style={{ paddingBottom: `calc(1rem + var(--content-bottom))` }}>
               {/* Background colors */}
               {!imagePreview && (
                 <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 justify-center">

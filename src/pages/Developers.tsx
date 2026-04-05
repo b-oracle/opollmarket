@@ -57,7 +57,7 @@ const Developers = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+    <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
       <SEOHead
         title="Developer Docs — OPOLL API & SDK"
         description="Integrate OPOLL prediction markets into your app with our REST API, JavaScript SDK, embeddable widgets, and WordPress plugin."

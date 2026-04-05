@@ -531,7 +531,7 @@ const Rankings = () => {
   }, [myRankPage, currentUserId]);
 
   return (
-    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-24 sm:pt-20 lg:pt-24">
         <div className="flex items-center gap-3 mb-1">

@@ -1455,7 +1455,7 @@ const Create = () => {
   // --- Auth Loading ---
   if (authLoading) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
         <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-20 flex items-center justify-center min-h-[70dvh]">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -1468,7 +1468,7 @@ const Create = () => {
   // --- Auth Gate: Must be signed in ---
   if (!user) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
         <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[70dvh]">
           <motion.div
@@ -1530,7 +1530,7 @@ const Create = () => {
   // --- Token Gate Screen (user is signed in, check wallet + tokens) ---
   if (!isConnected || !gatePassed) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
         <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[70dvh]">
           <motion.div
@@ -1766,7 +1766,7 @@ const Create = () => {
 
   // --- Market Creation Form ---
   return (
-    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(6rem + var(--safe-bottom))' }}>
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(2rem + var(--content-bottom))' }}>
       <TopBar />
       <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4 pt-24 sm:pt-20">
         {/* Header */}
