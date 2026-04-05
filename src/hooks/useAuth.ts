@@ -52,15 +52,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkRoles = useCallback(async (userId: string, mounted: { current: boolean }) => {
     try {
-      const [{ data: superAdminData }, { data: adminData }, { data: modData }] = await Promise.all([
+      const [{ data: superAdminData }, { data: adminData }, { data: modData }, { data: supportData }] = await Promise.all([
         supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" as any }),
         supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
         supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }),
+        supabase.rpc("has_role", { _user_id: userId, _role: "support" as any }),
       ]);
       if (mounted.current) {
         setIsSuperAdmin(!!superAdminData);
         setIsAdmin(!!adminData);
         setIsModerator(!!modData);
+        setIsSupport(!!supportData);
         setRolesLoaded(true);
       }
     } catch {
@@ -68,6 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsSuperAdmin(false);
         setIsAdmin(false);
         setIsModerator(false);
+        setIsSupport(false);
         setRolesLoaded(true);
       }
     }
