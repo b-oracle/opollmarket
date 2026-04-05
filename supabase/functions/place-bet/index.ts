@@ -87,6 +87,45 @@ Deno.serve(async (req) => {
 
     const isMultiOrRangeMarket = marketCheck.market_type === "multi" || marketCheck.market_type === "range";
 
+    // ── Server-side price validation ──
+    // Prevent client from sending a manipulated price
+    if (!isMultiOrRangeMarket) {
+      const { data: serverMarket } = await supabase
+        .from("markets")
+        .select("yes_price, no_price")
+        .eq("id", marketId)
+        .single();
+
+      if (serverMarket) {
+        const serverPrice = side === "yes"
+          ? Math.round(Number(serverMarket.yes_price) * 100)
+          : Math.round(Number(serverMarket.no_price) * 100);
+        // Allow up to 2% tolerance for AMM movement between client fetch and server execution
+        const tolerance = Math.max(2, serverPrice * 0.02);
+        if (Math.abs(price - serverPrice) > tolerance) {
+          return new Response(JSON.stringify({ error: "Price has moved. Please refresh and try again." }), {
+            status: 400, headers: corsHeaders,
+          });
+        }
+      }
+    } else if (optionId) {
+      const { data: serverOption } = await supabase
+        .from("market_options")
+        .select("price")
+        .eq("id", optionId)
+        .single();
+
+      if (serverOption) {
+        const serverPrice = Math.round(Number(serverOption.price) * 100);
+        const tolerance = Math.max(2, serverPrice * 0.02);
+        if (Math.abs(price - serverPrice) > tolerance) {
+          return new Response(JSON.stringify({ error: "Price has moved. Please refresh and try again." }), {
+            status: 400, headers: corsHeaders,
+          });
+        }
+      }
+    }
+
     if (!isMultiOrRangeMarket && side !== "yes" && side !== "no") {
       return new Response(JSON.stringify({ error: "Invalid side" }), {
         status: 400, headers: corsHeaders,

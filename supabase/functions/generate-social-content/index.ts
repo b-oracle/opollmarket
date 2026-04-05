@@ -64,7 +64,8 @@ serve(async (req) => {
 
     const cost = Number(settings?.ai_generation_cost ?? 0.5);
 
-    // Check and deduct balance
+    // Check and deduct balance atomically
+    // First check available balance
     const { data: bal, error: balErr } = await adminClient
       .from("balances")
       .select("amount, bonus_balance")
@@ -92,29 +93,22 @@ serve(async (req) => {
     const bonusDeduct = Math.min(bonus, cost);
     const mainDeduct = cost - bonusDeduct;
 
-    const { error: updateErr } = await adminClient
-      .from("balances")
-      .update({
-        bonus_balance: bonus - bonusDeduct,
-        amount: main - mainDeduct,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id)
-      .eq("currency", "USDT");
+    // Atomic debit
+    const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
+      _user_id: user.id,
+      _main_deduct: mainDeduct,
+      _bonus_deduct: bonusDeduct,
+    });
 
-    if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to deduct balance" }), {
+    if (!debitResult?.success) {
+      return new Response(JSON.stringify({ error: debitResult?.error || "Failed to deduct balance" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const refund = async () => {
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
     };
 
     // Record transaction

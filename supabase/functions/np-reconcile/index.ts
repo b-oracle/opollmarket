@@ -229,24 +229,8 @@ Deno.serve(async (req) => {
         const isPartial = creditAmount < requestedAmount * 0.98;
         const finalStatus = isPartial ? "partial" : "confirmed";
 
-        // Credit user balance
-        const { data: balance } = await adminClient
-          .from("balances")
-          .select("amount")
-          .eq("user_id", dep.user_id)
-          .eq("currency", "USDT")
-          .single();
-
-        if (balance) {
-          await adminClient
-            .from("balances")
-            .update({
-              amount: Number(balance.amount) + creditAmount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", dep.user_id)
-            .eq("currency", "USDT");
-        }
+        // Credit user balance atomically
+        await adminClient.rpc("adjust_balance", { _user_id: dep.user_id, _delta: creditAmount, _bonus_delta: 0 });
 
         // Update transaction
         await adminClient
@@ -482,6 +466,7 @@ Deno.serve(async (req) => {
       const adjustments: Array<{ user_id: string; deducted: number; new_balance: number; prev_balance: number }> = [];
 
       for (const [userId, totalDeduct] of userExcessMap) {
+        // Get previous balance for audit logging
         const { data: balance } = await adminClient
           .from("balances")
           .select("amount")
@@ -494,11 +479,8 @@ Deno.serve(async (req) => {
         const prevBalance = Number(balance.amount);
         const newBalance = Math.round((prevBalance - totalDeduct) * 100) / 100;
 
-        await adminClient
-          .from("balances")
-          .update({ amount: newBalance, updated_at: new Date().toISOString() })
-          .eq("user_id", userId)
-          .eq("currency", "USDT");
+        // Atomic deduction
+        await adminClient.rpc("adjust_balance", { _user_id: userId, _delta: -totalDeduct, _bonus_delta: 0 });
 
         // Update transaction amounts to NP outcome_amount
         for (const m of matched) {

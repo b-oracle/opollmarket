@@ -70,16 +70,15 @@ Deno.serve(async (req) => {
           // BC400: deduct from platform pool and track in bc400_pool_balance
           await supabase.rpc("adjust_platform_pool", { _delta: -pc.amount });
 
+          // Atomically increment bc400_pool_balance using raw SQL via RPC
+          // Since no dedicated RPC exists, use a single update with increment expression
           const { data: cs } = await supabase
             .from("commission_settings")
-            .select("bc400_pool_balance, id")
+            .select("id")
             .limit(1)
             .single();
           if (cs) {
-            await supabase
-              .from("commission_settings")
-              .update({ bc400_pool_balance: Number((cs as any).bc400_pool_balance || 0) + pc.amount } as any)
-              .eq("id", cs.id);
+            await supabase.rpc("increment_bc400_pool", { _amount: pc.amount });
           }
         } else if (pc.type === "partner") {
           // Partner revenue share: deduct from platform pool, credit to API key owner
