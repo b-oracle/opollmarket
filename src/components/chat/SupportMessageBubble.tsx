@@ -39,7 +39,9 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
+  const [flipReactions, setFlipReactions] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
+  const bubbleRef = useRef<HTMLDivElement>(null);
   const isMe = m.user_id === user?.id;
   const reactions: Record<string, string[]> = (m.reactions as any) || {};
 
