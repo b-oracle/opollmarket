@@ -491,7 +491,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
               </div>
 
               {/* Input */}
-              <div className="border-t border-border/30 px-4 py-3" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+              <div className="border-t border-border/30 px-4 py-3" style={{ paddingBottom: "max(0.75rem, var(--safe-bottom))" }}>
                 {replyTo && (
                   <div className="flex items-center justify-between mb-2 px-1">
                     <span className="text-[10px] text-primary">

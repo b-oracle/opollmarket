@@ -291,7 +291,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
 
           {/* Modal */}
           <div className="fixed inset-x-0 z-50 flex items-center justify-center pointer-events-none"
-            style={{ top: "calc(3.5rem + env(safe-area-inset-top))", bottom: "calc(4rem + env(safe-area-inset-bottom))", padding: "1rem" }}>
+            style={{ top: "calc(3.5rem + var(--safe-top))", bottom: "calc(4rem + var(--safe-bottom))", padding: "1rem" }}>
             <div
               className="pointer-events-auto w-full max-w-sm md:max-w-lg bg-card border border-border rounded-2xl shadow-xl overflow-hidden flex flex-col"
               style={{ maxHeight: "100%" }}
@@ -385,7 +385,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
 
               {/* Sticky footer: native share */}
               {typeof navigator !== "undefined" && navigator.share && (
-                <div className="px-4 py-3 border-t border-border/30 shrink-0" style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}>
+                <div className="px-4 py-3 border-t border-border/30 shrink-0" style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}>
                   <button
                     onClick={handleNativeShare}
                     disabled={capturing}

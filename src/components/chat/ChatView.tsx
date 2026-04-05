@@ -286,7 +286,7 @@ const ChatView = () => {
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
       <SEOHead title={`Chat with ${otherName} | Pollmarket`} description="Direct message" />
       {/* Header */}
-      <div className="bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
+      <div className="bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
         <button onClick={() => navigate("/messages")} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -381,7 +381,7 @@ const ChatView = () => {
 
       {/* Input bar */}
       {canSendMessage && !isRejected ? (
-        <div className="bg-background/95 backdrop-blur border-t border-border px-4 py-3 shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+        <div className="bg-background/95 backdrop-blur border-t border-border px-4 py-3 shrink-0" style={{ paddingBottom: "max(0.75rem, var(--safe-bottom))" }}>
           {/* Reply context banner */}
           {replyTo && (
             <div className="max-w-lg mx-auto mb-2 flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 border-l-2 border-primary">
@@ -435,11 +435,11 @@ const ChatView = () => {
           </div>
         </div>
       ) : !isRejected && convStatus === "pending" && isSenderOfRequest ? (
-        <div className="bg-muted/30 border-t border-border px-4 py-3 text-center shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+        <div className="bg-muted/30 border-t border-border px-4 py-3 text-center shrink-0" style={{ paddingBottom: "max(0.75rem, var(--safe-bottom))" }}>
           <p className="text-xs text-muted-foreground">You can send more messages once your request is accepted</p>
         </div>
       ) : isRejected ? (
-        <div className="bg-muted/30 border-t border-border px-4 py-3 text-center shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+        <div className="bg-muted/30 border-t border-border px-4 py-3 text-center shrink-0" style={{ paddingBottom: "max(0.75rem, var(--safe-bottom))" }}>
           <p className="text-xs text-muted-foreground">You can no longer send messages in this conversation</p>
         </div>
       ) : null}

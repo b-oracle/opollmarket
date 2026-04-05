@@ -531,7 +531,7 @@ const Rankings = () => {
   }, [myRankPage, currentUserId]);
 
   return (
-    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
       <TopBar />
       <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4 pt-24 sm:pt-20 lg:pt-24">
         <div className="flex items-center gap-3 mb-1">
@@ -1040,7 +1040,7 @@ const Rankings = () => {
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
               onClick={scrollToMyRank}
               className="fixed bottom-24 right-4 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-opacity text-xs font-semibold"
-              style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+              style={{ marginBottom: 'var(--safe-bottom)' }}
             >
               <Star className="w-3.5 h-3.5 fill-current" />
               Your Rank: #{myRankIndex + 1}

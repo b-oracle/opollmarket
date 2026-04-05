@@ -29,9 +29,9 @@ const Privacy = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
       <SEOHead title="Privacy Policy – OPollMarket" description="Learn how OPollMarket collects, uses, and protects your personal data. Our privacy policy covers data security, cookies, and your rights." path="/privacy" />
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border" style={{ paddingTop: 'var(--safe-top)' }}>
         <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted transition">
             <ArrowLeft className="w-5 h-5" />

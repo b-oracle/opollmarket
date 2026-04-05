@@ -836,9 +836,9 @@ const Profile = () => {
 
   if (!authLoading && !user) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center" style={{ minHeight: "60vh", paddingTop: 'calc(5rem + var(--safe-top))' }}>
           <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-4">
             <Wallet className="w-8 h-8 text-muted-foreground" />
           </div>
@@ -859,7 +859,7 @@ const Profile = () => {
   return (
     <div
       className="h-dvh bg-background overflow-y-auto overscroll-contain"
-      style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))', touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
+      style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))', touchAction: 'pan-y', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -930,7 +930,7 @@ const Profile = () => {
       )}
 
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + var(--safe-top))' }}>
         {/* Avatar & Profile Edit */}
         <div className="flex flex-col items-center mb-8 relative">
           <button
@@ -995,7 +995,7 @@ const Profile = () => {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
                 className="fixed z-[90] inset-0 m-auto w-[calc(100%-2rem)] max-w-md lg:max-w-lg h-fit glass-strong rounded-2xl p-5 overflow-y-auto flex flex-col"
-                style={{ maxHeight: "calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 6rem)", paddingBottom: "1.5rem" }}
+                style={{ maxHeight: "calc(100dvh - var(--safe-top) - var(--safe-bottom) - 6rem)", paddingBottom: "1.5rem" }}
               >
                 <h3 className="text-sm font-bold mb-4">Edit Profile</h3>
                 <div className="space-y-3">

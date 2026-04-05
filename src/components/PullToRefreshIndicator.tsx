@@ -18,7 +18,7 @@ const PullToRefreshIndicator = ({
 }: PullToRefreshIndicatorProps) => (
   <motion.div
     className="fixed left-0 right-0 z-40 flex items-center justify-center pointer-events-none"
-    style={{ top: 'calc(3.5rem + env(safe-area-inset-top, 0px))' }}
+    style={{ top: 'calc(3.5rem + var(--safe-top))' }}
     initial={{ opacity: 0, y: -20 }}
     animate={{
       opacity: pulling || refreshing ? 1 : 0,

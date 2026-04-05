@@ -484,9 +484,9 @@ const Portfolio = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex items-center justify-center min-h-[60dvh]" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex items-center justify-center min-h-[60dvh]" style={{ paddingTop: 'calc(5rem + var(--safe-top))' }}>
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
         <BottomNav />
@@ -496,9 +496,9 @@ const Portfolio = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center min-h-[60dvh]" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
+        <div className="max-w-lg md:max-w-4xl mx-auto px-4 flex flex-col items-center justify-center min-h-[60dvh]" style={{ paddingTop: 'calc(5rem + var(--safe-top))' }}>
           <div className="glass rounded-2xl p-8 text-center max-w-sm">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Wallet className="w-8 h-8 text-primary" />
@@ -521,9 +521,9 @@ const Portfolio = () => {
   }
 
   return (
-    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+    <div className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(5rem + var(--safe-bottom))' }}>
       <TopBar />
-      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top, 0px))' }}>
+      <div className="max-w-lg md:max-w-4xl mx-auto px-3 sm:px-4" style={{ paddingTop: 'calc(5rem + var(--safe-top))' }}>
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
           <div className="flex items-center gap-3 mb-1">

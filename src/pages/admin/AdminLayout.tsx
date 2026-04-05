@@ -104,7 +104,7 @@ const AdminLayout = () => {
           lg:static lg:translate-x-0
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        style={{ paddingTop: "var(--safe-top)" }}
       >
         <div className="h-14 flex items-center justify-between px-4 border-b border-border">
           <h1 className="text-lg font-bold text-primary">System-Mod Engine</h1>
@@ -170,7 +170,7 @@ const AdminLayout = () => {
       {/* Main content */}
       <main className="flex-1 overflow-y-auto min-w-0">
         {/* Mobile header */}
-        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 border-b border-border bg-card/95 backdrop-blur-sm lg:hidden" style={{ paddingTop: "calc(env(safe-area-inset-top) + 0.25rem)", minHeight: "calc(3.5rem + env(safe-area-inset-top))" }}>
+        <div className="sticky top-0 z-30 flex items-center gap-3 px-4 border-b border-border bg-card/95 backdrop-blur-sm lg:hidden" style={{ paddingTop: "calc(var(--safe-top) + 0.25rem)", minHeight: "calc(3.5rem + var(--safe-top))" }}>
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg hover:bg-muted transition-colors -ml-2"

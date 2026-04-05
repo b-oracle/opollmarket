@@ -168,7 +168,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
 
           <div className="relative z-10 flex flex-col h-full w-full lg:h-auto lg:max-h-[90vh] lg:max-w-lg lg:rounded-2xl lg:border lg:border-border lg:bg-background lg:shadow-2xl lg:overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top, 0px))` }}>
+            <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ paddingTop: `calc(0.75rem + var(--safe-top))` }}>
               <button onClick={handleClose} className="w-9 h-9 rounded-full glass flex items-center justify-center">
                 <X className="w-5 h-5" />
               </button>
@@ -243,7 +243,7 @@ const StoryCreator = ({ open, onClose, preLinkedMarketId, preLinkedMarketTitle, 
 
             {/* Controls */}
             {/* Controls - use flex-col-reverse so search results grow upward */}
-            <div className="px-4 shrink-0 pb-4 lg:pb-6 flex flex-col gap-3" style={{ paddingBottom: `calc(5rem + env(safe-area-inset-bottom, 0px))` }}>
+            <div className="px-4 shrink-0 pb-4 lg:pb-6 flex flex-col gap-3" style={{ paddingBottom: `calc(5rem + var(--safe-bottom))` }}>
               {/* Background colors */}
               {!imagePreview && (
                 <div className="flex gap-2 overflow-x-auto no-scrollbar px-1 py-1 justify-center">

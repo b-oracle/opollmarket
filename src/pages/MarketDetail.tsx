@@ -543,9 +543,9 @@ const MarketDetail = () => {
   const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
   return (
-    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(8rem + env(safe-area-inset-bottom))' }}>
+    <div ref={pageRef} className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(8rem + var(--safe-bottom))' }}>
       {market && <SEOHead title={market.title} description={market.description} path={`/market/${id}`} image={ogImageUrl} type="article" />}
-      <div className="sticky top-0 z-20 glass-strong" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="sticky top-0 z-20 glass-strong" style={{ paddingTop: 'var(--safe-top)' }}>
         <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
           <div className="flex items-center gap-2">
@@ -962,7 +962,7 @@ const MarketDetail = () => {
       </div>
 
       {!isMulti && !commentsReached && !shareOpen && (
-        <div className="fixed left-0 right-0 lg:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent lg:bottom-0" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom))' }}>
+        <div className="fixed left-0 right-0 lg:left-60 z-[60] px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-transparent lg:bottom-0" style={{ bottom: 'calc(4rem + var(--safe-bottom))' }}>
           <div className="w-full max-w-lg lg:max-w-4xl mx-auto flex gap-3">
             {isEnded ? (
               <div className={`flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex items-center justify-center gap-2 ${

@@ -123,7 +123,7 @@ const Followers = () => {
     <div
       ref={containerRef}
       className="h-dvh bg-background overflow-y-auto overscroll-contain"
-      style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))", touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
+      style={{ paddingBottom: "calc(5rem + var(--safe-bottom))", touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', willChange: 'scroll-position' } as React.CSSProperties}
       onTouchStart={pullHandlers.onTouchStart}
       onTouchMove={pullHandlers.onTouchMove}
       onTouchEnd={pullHandlers.onTouchEnd}
@@ -132,7 +132,7 @@ const Followers = () => {
 
       <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
-      <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4" style={{ paddingTop: "calc(5rem + env(safe-area-inset-top))" }}>
+      <div className="max-w-lg md:max-w-2xl mx-auto px-3 sm:px-4" style={{ paddingTop: "calc(5rem + var(--safe-top))" }}>
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => navigate(-1)} className="w-9 h-9 rounded-full glass flex items-center justify-center">
