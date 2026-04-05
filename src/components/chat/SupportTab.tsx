@@ -192,7 +192,9 @@ const SupportTab = () => {
                   <StatusIcon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold truncate block">{t.subject}</span>
+                  <span className="text-sm font-semibold truncate block">
+                    {isStaff && t.profile ? `${t.profile.display_name}: ` : ""}{t.subject}
+                  </span>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.color}`}>
                       {sc.label}
