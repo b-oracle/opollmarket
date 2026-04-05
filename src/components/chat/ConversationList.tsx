@@ -56,6 +56,22 @@ const ConversationList = () => {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"chats" | "requests" | "calls" | "communities" | "support" | "settings">("chats");
 
+  const topTabs = [
+    { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
+    { key: "requests" as const, label: "Requests", badge: 0, featureKey: null },
+    { key: "calls" as const, label: "Calls", badge: 0, featureKey: null },
+  ];
+
+  const bottomTabs = [
+    { key: "chats" as const, label: "Chats", icon: MessageCircle, featureKey: null },
+    { key: "communities" as const, label: "Communities", icon: Users, featureKey: "communities" },
+    { key: "support" as const, label: "Support", icon: HelpCircle, featureKey: "support_tickets" },
+    { key: "settings" as const, label: "Settings", icon: Settings, featureKey: "user_settings" },
+  ].filter((t) => !t.featureKey || isFeatureEnabled(t.featureKey));
+
+  const isTopTab = (t: string) => ["chats", "requests", "calls"].includes(t);
+  const activeSection = isTopTab(tab) ? "chats" : tab;
+
   const { data: allConversations = [], isLoading } = useQuery({
     queryKey: ["dm-conversations", user?.id],
     queryFn: async () => {
