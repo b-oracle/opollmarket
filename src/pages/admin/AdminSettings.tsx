@@ -1106,6 +1106,46 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Platform Limits */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" /> Platform Limits
+                </CardTitle>
+                <CardDescription className="text-xs">Dynamic min/max amounts for predictions, deposits, and other platform-wide limits.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="predictionMinBet" className="text-xs">Prediction Min Bet ($)</Label>
+                    <Input id="predictionMinBet" type="number" min={0} step={1} value={predictionMinBet} onChange={(e) => setPredictionMinBet(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="predictionMaxBet" className="text-xs">Prediction Max Bet ($)</Label>
+                    <Input id="predictionMaxBet" type="number" min={1} step={100} value={predictionMaxBet} onChange={(e) => setPredictionMaxBet(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositMinAmount" className="text-xs">Deposit Min ($)</Label>
+                    <Input id="depositMinAmount" type="number" min={0} step={1} value={depositMinAmount} onChange={(e) => setDepositMinAmount(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositMaxAmount" className="text-xs">Deposit Max ($)</Label>
+                    <Input id="depositMaxAmount" type="number" min={1} step={1000} value={depositMaxAmount} onChange={(e) => setDepositMaxAmount(e.target.value)} disabled={!canEdit} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositExpiryMinutes" className="text-xs">Deposit Expiry (min)</Label>
+                    <Input id="depositExpiryMinutes" type="number" min={5} step={5} value={depositExpiryMinutes} onChange={(e) => setDepositExpiryMinutes(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Payment window timeout</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="pushPromptCooldownDays" className="text-xs">Push Prompt Cooldown (days)</Label>
+                    <Input id="pushPromptCooldownDays" type="number" min={1} step={1} value={pushPromptCooldownDays} onChange={(e) => setPushPromptCooldownDays(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Days before re-prompting push notifications</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
