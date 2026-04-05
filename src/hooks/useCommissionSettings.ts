@@ -124,6 +124,12 @@ export const useCommissionSettings = () => {
         welcome_bonus_percent: Number(d.welcome_bonus_percent ?? 0),
         welcome_bonus_cap: Number(d.welcome_bonus_cap ?? 0),
         gift_fee_percent: Number(d.gift_fee_percent ?? 2),
+        prediction_min_bet: Number(d.prediction_min_bet ?? 1),
+        prediction_max_bet: Number(d.prediction_max_bet ?? 10000),
+        deposit_min_amount: Number(d.deposit_min_amount ?? 1),
+        deposit_max_amount: Number(d.deposit_max_amount ?? 50000),
+        push_prompt_cooldown_days: Number(d.push_prompt_cooldown_days ?? 14),
+        deposit_expiry_minutes: Number(d.deposit_expiry_minutes ?? 60),
       };
     },
     staleTime: 60_000,
