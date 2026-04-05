@@ -37,6 +37,11 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub;
     const { amount } = await req.json();
 
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     // Fetch dynamic limits
     const { data: limitsData } = await adminClient
       .from("commission_settings")
@@ -52,11 +57,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: corsHeaders }
       );
     }
-
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Check if user is blocked
     const { data: profile } = await adminClient
