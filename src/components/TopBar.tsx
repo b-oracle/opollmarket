@@ -99,7 +99,7 @@ const TopBar = () => {
           : "shadow-[0_1px_8px_-2px_hsl(var(--foreground)/0.08)]"
       }`}
       style={{
-        paddingTop: 'env(safe-area-inset-top)',
+        paddingTop: 'var(--safe-top)',
         background: scrolled ? 'hsl(var(--glass) / 0.9)' : 'hsl(var(--glass) / 0.8)',
         backdropFilter: scrolled ? 'blur(48px) saturate(1.4)' : 'blur(30px) saturate(1.2)',
         WebkitBackdropFilter: scrolled ? 'blur(48px) saturate(1.4)' : 'blur(30px) saturate(1.2)',

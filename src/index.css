@@ -229,6 +229,13 @@
   .gradient-overlay {
     background: linear-gradient(0deg, hsl(var(--background)) 0%, transparent 50%, transparent 70%, hsl(var(--background) / 0.5) 100%);
   }
+
+
+  .pt-safe { padding-top: var(--safe-top); }
+  .pb-safe { padding-bottom: var(--safe-bottom); }
+  .pt-content { padding-top: var(--content-top); }
+  .pb-content { padding-bottom: var(--content-bottom); }
+  .mt-content { margin-top: var(--content-top); }
 }
 
 @keyframes shake {
