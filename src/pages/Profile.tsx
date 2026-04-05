@@ -261,15 +261,10 @@ const WhatsAppNotifPrefs = ({ userId }: { userId?: string }) => {
         <div className="bg-muted/30 rounded-lg p-3 space-y-2">
           {NOTIF_PREFS_KEYS.map(({ key, label, desc }) => (
             <label key={key} className="flex items-center gap-3 cursor-pointer py-1">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={prefs[key]}
-                onClick={() => togglePref(key)}
-                className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${prefs[key] ? "bg-green-500" : "bg-muted-foreground/30"}`}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${prefs[key] ? "translate-x-4" : ""}`} />
-              </button>
+               <Switch
+                checked={prefs[key]}
+                onCheckedChange={() => togglePref(key)}
+              />
               <div className="min-w-0">
                 <span className="text-xs font-medium block">{label}</span>
                 <span className="text-[10px] text-muted-foreground">{desc}</span>
