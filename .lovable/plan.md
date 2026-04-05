@@ -1,68 +1,86 @@
 
 
-## Add Online Music Library to Live Spaces
+## Add Communities, Support, and Settings Features
 
 ### Overview
-Integrate the **Jamendo API** (free music platform with 600K+ tracks, all licensed for streaming) into the existing spaces music menu. Hosts/co-hosts will be able to search, browse by genre, and stream tracks directly — no file uploads needed.
+Add three new features accessible from the Messages screen as additional tabs (alongside Chats, Requests, Calls): **Communities**, **Support**, and **Settings**.
 
-### Why Jamendo
-- Free tier: 35,000 API requests/month, full catalog access
-- Provides direct MP3 streaming URLs (no DRM)
-- No cost to users; tracks are Creative Commons / royalty-free for non-commercial use
-- Simple REST API, no SDK required
+### 1. Communities
 
-### Setup
-- A Jamendo API key (free, from developer.jamendo.com) will be stored as a backend secret
-- A new backend function will proxy search/browse requests to Jamendo, keeping the key server-side
+**Concept**: Category-based group chats where users can join and discuss topics like Sports, Politics, Crypto, etc.
 
-### Architecture
+**Database changes (migration)**:
+- `community_memberships` table: `id`, `user_id`, `community_slug` (e.g. "sports", "politics"), `joined_at` — with RLS so users can join/leave freely
+- `community_messages` table: `id`, `community_slug`, `user_id`, `content`, `image_url`, `reply_to_id`, `created_at` — with RLS for authenticated read/write
+- Enable realtime on `community_messages`
 
-```text
-┌─────────────┐      ┌──────────────────┐      ┌──────────────┐
-│ SpaceRoom   │ ──►  │ jamendo-search   │ ──►  │ Jamendo API  │
-│ (frontend)  │      │ (edge function)  │      │ api.jamendo   │
-└─────────────┘      └──────────────────┘      └──────────────┘
-       │
-       ▼
-  Fetch MP3 URL → AudioContext → LiveKit publish
-  (same pipeline as device music)
-```
+**Communities list**: Derived from existing market categories (Crypto, Sports, Politics, Entertainment, Economy, AI & Tech, Science, etc.) — no admin config needed. Each shows member count and last message preview.
 
-### Code Changes
+**UI**:
+- New `CommunitiesTab.tsx` component shown as a tab in the Messages page
+- Tap a community → opens a group chat view (similar to space chat) with messages, @mentions, image uploads
+- Join/Leave button per community
+- Each community gets an icon from the existing `CategoryIcon` component
 
-**1. New edge function: `supabase/functions/jamendo-search/index.ts`**
-- Accepts `query` (search text) and optional `genre` filter
-- Calls `https://api.jamendo.com/v3.0/tracks/?client_id=...&search=...&limit=20&include=musicinfo`
-- Returns simplified track list: `{ id, name, artist, duration, audioUrl, imageUrl }`
+### 2. Support
 
-**2. New component: `src/components/social/JamendoMusicBrowser.tsx`**
-- Search input with debounced query
-- Genre quick-filter chips (Pop, Rock, Electronic, Jazz, Hip-Hop, Chill, etc.)
-- Track list with play-preview button (30s preview via `audiodownload` URL), artist name, duration
-- "Play in Space" button that triggers the existing device music pipeline using the full MP3 URL instead of a local file
+**Concept**: In-app support chat with ticket system.
 
-**3. Update `SpaceRoom.tsx`**
-- Add a new tab/option in the music menu: "Browse Music" alongside existing "Play from Device" and ambient sounds
-- New function `playOnlineTrack(url: string, name: string)` that:
-  - Fetches the MP3 via `fetch(url)` → `arrayBuffer`
-  - Feeds it into the existing `AudioContext` → `decodeAudioData` → gain → LiveKit publish pipeline
-  - Reuses all existing pause/resume/stop/volume controls
-- Wire the JamendoMusicBrowser's "Play in Space" callback to `playOnlineTrack`
+**Database changes (migration)**:
+- `support_tickets` table: `id`, `user_id`, `subject`, `status` (open/in_progress/resolved/closed), `created_at`, `updated_at`, `assigned_to` (nullable, for admin/support staff)
+- `support_messages` table: `id`, `ticket_id` (FK), `user_id`, `content`, `image_url`, `is_staff` (boolean), `created_at`
+- New role: `support` added to the `app_role` enum
+- RLS: users see only their own tickets; staff (support/moderator/admin/super_admin) see all
+- Enable realtime on `support_messages`
 
-**4. Secret: `JAMENDO_CLIENT_ID`**
-- Will prompt you to enter the Jamendo API client ID (free from developer.jamendo.com/v3.0)
+**UI**:
+- New `SupportTab.tsx` component as a tab in Messages page
+- Shows list of user's tickets with status badges
+- "New Ticket" button opens a form (subject + message + optional screenshot)
+- Tap ticket → opens real-time chat thread with staff
+- Staff online indicator (presence-based or last-seen)
+- Admin side: new `AdminSupport.tsx` page under admin layout to manage/respond to tickets
 
-### UI Flow
-1. Host taps 🎵 music icon → menu shows three options: **Browse Music** | Play from Device | Ambient Sounds
-2. "Browse Music" opens the Jamendo browser sheet
-3. Host searches or picks a genre → sees track results
-4. Taps a track to preview (plays locally only, 30s)
-5. Taps "Play in Space" → track streams to all participants via LiveKit
+### 3. Settings
+
+**Concept**: Privacy and preference controls.
+
+**Database changes (migration)**:
+- `user_settings` table: `id`, `user_id` (unique), `allow_calls` (default true), `allow_dms` (default true), `private_account` (default false), `show_online_status` (default true), `show_portfolio` (default true), `show_trade_history` (default true), `mute_notifications` (default false), `allow_copy_trading` (default true), `created_at`, `updated_at`
+- RLS: users can only read/update their own row
+
+**Settings options**:
+| Setting | Description |
+|---------|-------------|
+| Allow Calls | Toggle receiving voice calls |
+| Allow DMs | Toggle receiving new message requests |
+| Private Account | Hide profile from search/rankings |
+| Show Online Status | Show/hide green dot |
+| Show Portfolio | Allow others to see your portfolio |
+| Show Trade History | Allow others to see your trades |
+| Mute Notifications | Silence all push notifications |
+| Allow Copy Trading | Let others copy your trades |
+
+**UI**:
+- New `SettingsTab.tsx` component as a tab in Messages page
+- Clean toggle-based interface grouped by category (Privacy, Communication, Trading)
+- Settings auto-save on toggle change
+
+### Navigation Changes
+
+**Messages page (`ConversationList.tsx`)**: Add three new tabs to the existing tab bar — expanding from `Chats | Requests | Calls` to include `Communities`, `Support`, and `Settings` as a horizontally scrollable tab bar.
 
 ### Files Changed
+
 | File | Change |
 |------|--------|
-| `supabase/functions/jamendo-search/index.ts` | New edge function proxying Jamendo API |
-| `src/components/social/JamendoMusicBrowser.tsx` | New search/browse UI component |
-| `src/components/social/SpaceRoom.tsx` | Add "Browse Music" option, `playOnlineTrack` function |
+| New migration SQL | Create `community_memberships`, `community_messages`, `support_tickets`, `support_messages`, `user_settings` tables + RLS + realtime |
+| `src/components/chat/CommunitiesTab.tsx` | New — community list + group chat |
+| `src/components/chat/CommunityChat.tsx` | New — real-time group chat for a community |
+| `src/components/chat/SupportTab.tsx` | New — ticket list + new ticket form |
+| `src/components/chat/SupportChat.tsx` | New — real-time support ticket chat |
+| `src/components/chat/SettingsTab.tsx` | New — privacy/preference toggles |
+| `src/components/chat/ConversationList.tsx` | Add Communities, Support, Settings tabs |
+| `src/pages/admin/AdminSupport.tsx` | New — admin support ticket management |
+| `src/App.tsx` | Add admin support route |
 
