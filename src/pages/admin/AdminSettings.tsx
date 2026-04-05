@@ -355,8 +355,14 @@ const AdminSettings = () => {
                   osure_100_premium: osure100PremiumNum,
                    welcome_bonus_percent: welcomeBonusPercentNum,
                    welcome_bonus_cap: welcomeBonusCapNum,
-                   gift_fee_percent: giftFeePercentNum,
-            updated_at: new Date().toISOString(),
+                    gift_fee_percent: giftFeePercentNum,
+                    prediction_min_bet: predictionMinBetNum,
+                    prediction_max_bet: predictionMaxBetNum,
+                    deposit_min_amount: depositMinAmountNum,
+                    deposit_max_amount: depositMaxAmountNum,
+                    push_prompt_cooldown_days: pushPromptCooldownDaysNum,
+                    deposit_expiry_minutes: depositExpiryMinutesNum,
+             updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
         .eq("id", settingsId);
