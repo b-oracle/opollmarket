@@ -33,24 +33,65 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
 };
 
 const SupportTab = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [category, setCategory] = useState("");
   const [desc, setDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
+  const [isStaffTicket, setIsStaffTicket] = useState(false);
+
+  // Check if user has support role
+  const { data: hasSupport } = useQuery({
+    queryKey: ["has-support-role", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "support")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+  });
+
+  const isStaff = isAdmin || isSuperAdmin || !!hasSupport;
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ["support-tickets", user?.id],
+    queryKey: ["support-tickets", user?.id, isStaff],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
+      let q = supabase
         .from("support_tickets" as any)
         .select("*")
-        .eq("user_id", user.id)
         .order("created_at", { ascending: false }) as any;
-      return data || [];
+
+      // Staff see all tickets; regular users see only their own
+      if (!isStaff) {
+        q = q.eq("user_id", user.id);
+      }
+
+      const { data } = await q;
+      if (!data || data.length === 0) return [];
+
+      if (isStaff) {
+        // Enrich with profile info for staff view
+        const userIds = [...new Set(data.map((t: any) => t.user_id))] as string[];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", userIds);
+        const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+        return data.map((t: any) => ({
+          ...t,
+          profile: profileMap.get(t.user_id) || { display_name: "User", avatar_url: null },
+        }));
+      }
+
+      return data;
     },
     enabled: !!user,
   });
@@ -89,7 +130,7 @@ const SupportTab = () => {
   };
 
   if (activeTicket) {
-    return <SupportChat ticketId={activeTicket} onBack={() => { setActiveTicket(null); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }} />;
+    return <SupportChat ticketId={activeTicket} isStaff={isStaffTicket} onBack={() => { setActiveTicket(null); setIsStaffTicket(false); queryClient.invalidateQueries({ queryKey: ["support-tickets"] }); }} />;
   }
 
   return (
@@ -119,13 +160,13 @@ const SupportTab = () => {
             <Button size="sm" variant="ghost" onClick={() => setShowNew(false)}>Cancel</Button>
           </div>
         </div>
-      ) : (
+      ) : !isStaff ? (
         <div className="p-4 border-b border-border">
           <Button size="sm" onClick={() => setShowNew(true)} className="w-full gap-2">
             <Plus className="w-4 h-4" /> New Support Ticket
           </Button>
         </div>
-      )}
+      ) : null}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
@@ -144,14 +185,16 @@ const SupportTab = () => {
             return (
               <button
                 key={t.id}
-                onClick={() => setActiveTicket(t.id)}
+                onClick={() => { setActiveTicket(t.id); if (isStaff && t.user_id !== user?.id) setIsStaffTicket(true); }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${sc.color}`}>
                   <StatusIcon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold truncate block">{t.subject}</span>
+                  <span className="text-sm font-semibold truncate block">
+                    {isStaff && t.profile ? `${t.profile.display_name}: ` : ""}{t.subject}
+                  </span>
                   <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                     <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.color}`}>
                       {sc.label}
