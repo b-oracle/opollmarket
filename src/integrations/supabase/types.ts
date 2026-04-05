@@ -943,6 +943,9 @@ export type Database = {
           id: string
           reactions: Json
           read_at: string | null
+          reply_to_content: string | null
+          reply_to_id: string | null
+          reply_to_sender_name: string | null
           sender_id: string
         }
         Insert: {
@@ -953,6 +956,9 @@ export type Database = {
           id?: string
           reactions?: Json
           read_at?: string | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_sender_name?: string | null
           sender_id: string
         }
         Update: {
@@ -963,6 +969,9 @@ export type Database = {
           id?: string
           reactions?: Json
           read_at?: string | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_sender_name?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -971,6 +980,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "dm_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "dm_messages"
             referencedColumns: ["id"]
           },
         ]
