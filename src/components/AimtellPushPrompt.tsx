@@ -30,9 +30,10 @@ const supportsWebPush = () => {
   return true;
 };
 
-const setPromptCooldown = () => {
+const setPromptCooldown = (cooldownDays: number) => {
   try {
-    localStorage.setItem(STORAGE_KEY, String(Date.now() + COOLDOWN_MS));
+    const cooldownMs = cooldownDays * 24 * 60 * 60 * 1000;
+    localStorage.setItem(STORAGE_KEY, String(Date.now() + cooldownMs));
   } catch {
     // ignore storage failures
   }
