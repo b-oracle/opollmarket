@@ -259,7 +259,7 @@ Deno.serve(async (req) => {
     const dailyWithdrawalTotal = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
     const ANOMALY_THRESHOLD = 1000; // $1000 in 24h triggers alert
 
-    if (dailyTotal >= ANOMALY_THRESHOLD) {
+    if (dailyWithdrawalTotal >= ANOMALY_THRESHOLD) {
       const { data: adminUsers } = await adminClient
         .from("user_roles")
         .select("user_id")
@@ -270,11 +270,11 @@ Deno.serve(async (req) => {
         const alertNotifications = adminUsers.map((admin: any) => ({
           user_id: admin.user_id,
           title: "⚠️ Withdrawal Anomaly Detected",
-          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyTotal.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
+          message: `User ${userId.slice(0, 8)}… has withdrawn $${dailyWithdrawalTotal.toFixed(2)} in 24h (current request: $${amount}). IP: ${clientIp}`,
           type: "system",
         }));
         await adminClient.from("notifications").insert(alertNotifications);
-        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyTotal} ip=${clientIp}`);
+        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyWithdrawalTotal} ip=${clientIp}`);
       }
     }
 
