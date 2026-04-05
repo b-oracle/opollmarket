@@ -120,7 +120,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
       setCategory("");
       setDesc("");
       setShowNew(false);
-      setActiveTicket(ticket.id);
+      if (onOpenChat) { onOpenChat(ticket.id, false); } else { setActiveTicket(ticket.id); }
       toast.success("Ticket created");
     } catch {
       toast.error("Failed to create ticket");
