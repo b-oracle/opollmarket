@@ -686,6 +686,63 @@ export type Database = {
         }
         Relationships: []
       }
+      community_memberships: {
+        Row: {
+          community_slug: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          community_slug: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          community_slug?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_messages: {
+        Row: {
+          community_slug: string
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          reply_to_content: string | null
+          reply_to_id: string | null
+          reply_to_name: string | null
+          user_id: string
+        }
+        Insert: {
+          community_slug: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_name?: string | null
+          user_id: string
+        }
+        Update: {
+          community_slug?: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       copy_settings: {
         Row: {
           auto_copy: boolean
@@ -2958,6 +3015,74 @@ export type Database = {
           },
         ]
       }
+      support_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_staff: boolean
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_staff?: boolean
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_staff?: boolean
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       telegram_link_sessions: {
         Row: {
           chat_id: number
@@ -3225,6 +3350,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_settings: {
+        Row: {
+          allow_calls: boolean
+          allow_copy_trading: boolean
+          allow_dms: boolean
+          created_at: string
+          id: string
+          mute_notifications: boolean
+          private_account: boolean
+          show_online_status: boolean
+          show_portfolio: boolean
+          show_trade_history: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allow_calls?: boolean
+          allow_copy_trading?: boolean
+          allow_dms?: boolean
+          created_at?: string
+          id?: string
+          mute_notifications?: boolean
+          private_account?: boolean
+          show_online_status?: boolean
+          show_portfolio?: boolean
+          show_trade_history?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allow_calls?: boolean
+          allow_copy_trading?: boolean
+          allow_dms?: boolean
+          created_at?: string
+          id?: string
+          mute_notifications?: boolean
+          private_account?: boolean
+          show_online_status?: boolean
+          show_portfolio?: boolean
+          show_trade_history?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       webhook_events: {
         Row: {
