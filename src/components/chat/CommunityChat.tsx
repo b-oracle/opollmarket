@@ -30,6 +30,19 @@ interface CommunityChatProps {
   onBack: () => void;
 }
 
+const SLUG_TO_CATEGORY: Record<string, string> = {
+  crypto: "Crypto",
+  sports: "Sports",
+  politics: "Politics",
+  entertainment: "Entertainment",
+  economy: "Economy",
+  "ai-tech": "AI & Tech",
+  science: "Science",
+  forex: "Forex",
+  commodities: "Commodities",
+  "twitter-x": "Twitter/X",
+};
+
 interface CommunityMessage {
   id: string;
   community_slug: string;
@@ -40,6 +53,8 @@ interface CommunityMessage {
   reply_to_content: string | null;
   reply_to_name: string | null;
   reactions: Record<string, string[]>;
+  tagged_market_ids: string[];
+  tagged_markets?: MarketTag[];
   created_at: string;
   profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
