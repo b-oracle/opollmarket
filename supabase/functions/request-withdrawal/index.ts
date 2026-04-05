@@ -287,7 +287,7 @@ Deno.serve(async (req) => {
     // Cooldown: prevent rapid repeated withdrawals (configurable)
     const cooldownMinutes = settings?.withdrawal_cooldown_minutes ?? 5;
     const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-    const { data: recentWithdrawals } = await adminClient
+    const { data: recentWithdrawalsCooldown } = await adminClient
       .from("withdrawal_requests")
       .select("id, created_at")
       .eq("user_id", userId)
