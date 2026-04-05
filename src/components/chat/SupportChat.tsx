@@ -226,7 +226,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         </div>
       )}
       {isLocked && (
-        <div className="shrink-0 px-4 py-1.5 pb-0 text-center">
+        <div className="shrink-0 px-4 py-1.5 text-center" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
           <p className="text-xs text-muted-foreground">This ticket has been closed</p>
         </div>
       )}
