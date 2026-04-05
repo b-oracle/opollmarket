@@ -346,7 +346,7 @@ Deno.serve(async (req) => {
           type: "system",
         }));
         await adminClient.from("notifications").insert(alertNotifications);
-        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyTotal} ip=${clientIp}`);
+        console.warn(`[ANOMALY] user=${userId} daily_total=$${dailyTotalAnomaly} ip=${clientIp}`);
       }
     }
 
