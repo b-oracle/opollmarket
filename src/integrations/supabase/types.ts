@@ -736,6 +736,7 @@ export type Database = {
           reply_to_content: string | null
           reply_to_id: string | null
           reply_to_name: string | null
+          tagged_market_ids: string[] | null
           user_id: string
         }
         Insert: {
@@ -748,6 +749,7 @@ export type Database = {
           reply_to_content?: string | null
           reply_to_id?: string | null
           reply_to_name?: string | null
+          tagged_market_ids?: string[] | null
           user_id: string
         }
         Update: {
@@ -760,6 +762,7 @@ export type Database = {
           reply_to_content?: string | null
           reply_to_id?: string | null
           reply_to_name?: string | null
+          tagged_market_ids?: string[] | null
           user_id?: string
         }
         Relationships: []

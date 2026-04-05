@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp } from "lucide-react";
+import MarketTagSelector, { type MarketTag } from "@/components/social/MarketTagSelector";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +30,19 @@ interface CommunityChatProps {
   onBack: () => void;
 }
 
+const SLUG_TO_CATEGORY: Record<string, string> = {
+  crypto: "Crypto",
+  sports: "Sports",
+  politics: "Politics",
+  entertainment: "Entertainment",
+  economy: "Economy",
+  "ai-tech": "AI & Tech",
+  science: "Science",
+  forex: "Forex",
+  commodities: "Commodities",
+  "twitter-x": "Twitter/X",
+};
+
 interface CommunityMessage {
   id: string;
   community_slug: string;
@@ -38,6 +53,8 @@ interface CommunityMessage {
   reply_to_content: string | null;
   reply_to_name: string | null;
   reactions: Record<string, string[]>;
+  tagged_market_ids: string[];
+  tagged_markets?: MarketTag[];
   created_at: string;
   profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
@@ -51,8 +68,12 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
   const [flipReactions, setFlipReactions] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const categoryFilter = SLUG_TO_CATEGORY[slug] || undefined;
 
   const { data: isMember, refetch: refetchMembership } = useQuery({
     queryKey: ["community-membership", user?.id, slug],
@@ -89,9 +110,24 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
+      // Collect all tagged market IDs
+      const allTaggedIds = [...new Set(msgs.flatMap((m: any) => m.tagged_market_ids || []))].filter(Boolean) as string[];
+      let taggedMarketMap = new Map<string, MarketTag>();
+      if (allTaggedIds.length > 0) {
+        const { data: taggedData } = await supabase
+          .from("markets")
+          .select("id, title, yes_price, image_url")
+          .in("id", allTaggedIds);
+        if (taggedData) {
+          taggedData.forEach((tm) => taggedMarketMap.set(tm.id, { id: tm.id, title: tm.title, yes_price: tm.yes_price, image_url: tm.image_url }));
+        }
+      }
+
       return msgs.map((m: any) => ({
         ...m,
         reactions: m.reactions || {},
+        tagged_market_ids: m.tagged_market_ids || [],
+        tagged_markets: (m.tagged_market_ids || []).map((id: string) => taggedMarketMap.get(id)).filter(Boolean),
         profile: profileMap.get(m.user_id) || { display_name: "User", avatar_url: null },
       }));
     },
@@ -138,6 +174,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       payload.reply_to_content = (replyTo.content || "").slice(0, 100);
       payload.reply_to_name = replyTo.profile?.display_name || "User";
     }
+    if (taggedMarkets.length > 0) {
+      payload.tagged_market_ids = taggedMarkets.map((m) => m.id);
+    }
     const { error } = await supabase.from("community_messages" as any).insert(payload);
     if (error) {
       toast.error("Failed to send message");
@@ -145,7 +184,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     }
     setMessage("");
     setReplyTo(null);
-  }, [user, message, slug, replyTo]);
+    setTaggedMarkets([]);
+    setShowTagSelector(false);
+  }, [user, message, slug, replyTo, taggedMarkets]);
 
   const toggleReaction = useCallback(async (messageId: string, emoji: string, currentReactions: Record<string, string[]>) => {
     if (!user) return;
@@ -292,6 +333,30 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   <p className="text-sm break-words">{m.content}</p>
                   {m.image_url && (
                     <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover" alt="" />
+                   )}
+                  {/* Tagged markets */}
+                  {m.tagged_markets && m.tagged_markets.length > 0 && (
+                    <div className="flex flex-col gap-1 mt-1.5">
+                      {m.tagged_markets.map((tm: MarketTag) => (
+                        <button
+                          key={tm.id}
+                          onClick={() => navigate(`/market/${tm.id}`)}
+                          className="flex items-center gap-2 bg-muted/50 border border-border rounded-lg p-1.5 hover:bg-muted/80 transition-colors max-w-[220px]"
+                        >
+                          {tm.image_url ? (
+                            <img src={optimizedImageUrl(tm.image_url, "thumb")} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="text-[10px] font-semibold leading-tight truncate">{tm.title}</p>
+                            <p className="text-[10px] text-primary font-bold">{Math.round(tm.yes_price * 100)}% Yes</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   )}
                   {/* Reaction pills */}
                   {reactionEntries.length > 0 && (
@@ -335,8 +400,45 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
         </div>
       )}
 
+      {/* Tag selector panel */}
+      {showTagSelector && (
+        <div className="shrink-0 px-4 py-2 border-t border-border bg-muted/30">
+          <MarketTagSelector
+            selected={taggedMarkets}
+            onChange={setTaggedMarkets}
+            max={3}
+            categoryFilter={categoryFilter}
+          />
+          <button
+            onClick={() => setShowTagSelector(false)}
+            className="text-[10px] text-muted-foreground mt-1 hover:text-foreground"
+          >
+            Done
+          </button>
+        </div>
+      )}
+
+      {/* Tagged markets preview */}
+      {taggedMarkets.length > 0 && !showTagSelector && (
+        <div className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 border-t border-border bg-muted/30">
+          <TrendingUp className="w-3 h-3 text-primary shrink-0" />
+          <span className="text-[10px] text-muted-foreground">{taggedMarkets.length} market{taggedMarkets.length > 1 ? "s" : ""} tagged</span>
+          <button onClick={() => { setTaggedMarkets([]); }} className="ml-auto">
+            <X className="w-3 h-3 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+
       {/* Input */}
       <div className="shrink-0 px-4 py-1.5 flex gap-2" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
+        <button
+          onClick={() => isMember && setShowTagSelector(!showTagSelector)}
+          disabled={!isMember}
+          className="h-9 w-9 flex items-center justify-center shrink-0 text-muted-foreground hover:text-primary disabled:opacity-40 transition-colors"
+          title="Tag markets"
+        >
+          <TrendingUp className="w-4 h-4" />
+        </button>
         <Input
           placeholder={isMember ? "Type a message..." : "Join to chat"}
           value={message}
@@ -348,7 +450,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
         <Button
           size="sm"
           className="h-9 w-9 p-0"
-          disabled={!isMember || !message.trim()}
+          disabled={!isMember || (!message.trim() && taggedMarkets.length === 0)}
           onClick={sendMessage}
         >
           <Send className="w-4 h-4" />
