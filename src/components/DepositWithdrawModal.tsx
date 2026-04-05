@@ -12,6 +12,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import {
   X,
   ArrowDownToLine,
