@@ -17,6 +17,42 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Authentication: only allow service-role or admin callers
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      // Check if it's the service role key (internal calls)
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      if (token !== serviceKey) {
+        // Verify as a user JWT and check admin role
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_ANON_KEY")!,
+          { global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user }, error: userErr } = await userClient.auth.getUser();
+        if (userErr || !user) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
+        const { data: isSuperAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" });
+        if (!isAdmin && !isSuperAdmin) {
+          return new Response(JSON.stringify({ error: "Admin access required" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    } else {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { market_id } = await req.json();
 
     if (!market_id) {
@@ -56,6 +92,7 @@ Deno.serve(async (req) => {
     }
 
     let filledCount = 0;
+    const isMulti = market.market_type === "multi" || market.market_type === "range";
 
     for (const order of pendingOrders) {
       const currentPrice =
@@ -89,14 +126,14 @@ Deno.serve(async (req) => {
         status: "confirmed",
       });
 
-      // 3. Update market volume
-      await supabase
-        .from("markets")
-        .update({
-          volume: Number(market.volume) + Number(order.amount),
-          participants: market.participants + 1,
-        })
-        .eq("id", market_id);
+      // 3. Atomic market volume + price update via RPC (prevents stale accumulation)
+      await supabase.rpc("buy_update_market_prices", {
+        _market_id: market_id,
+        _side: order.side,
+        _pool_amount: Number(order.amount),
+        _bet_amount: Number(order.amount),
+        _is_multi: isMulti,
+      });
 
       // 4. Mark order as filled
       await supabase
@@ -104,7 +141,7 @@ Deno.serve(async (req) => {
         .update({ status: "filled", updated_at: new Date().toISOString() })
         .eq("id", order.id);
 
-      // 5. Notify user (in-app — DB trigger auto-sends push)
+      // 5. Notify user
       await supabase.from("notifications").insert({
         user_id: order.user_id,
         title: "Limit Order Filled! ✅",
