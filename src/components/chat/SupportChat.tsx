@@ -208,7 +208,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
       </div>
 
       {!isLocked && (
-        <div className="shrink-0 px-4 py-1.5 pb-0 flex gap-2">
+        <div className="shrink-0 px-4 py-1.5 flex gap-2" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground">
             <ImageIcon className="w-5 h-5" />
