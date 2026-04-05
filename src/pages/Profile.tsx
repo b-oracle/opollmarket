@@ -1480,11 +1480,13 @@ const Profile = () => {
           </button>
           <button onClick={openDeposit} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <ArrowDownToLine className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">Deposit Funds</span>
+            <span className="text-sm font-medium flex-1 text-left">Deposit Funds</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button onClick={openWithdraw} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <ArrowUpFromLine className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">Withdraw</span>
+            <span className="text-sm font-medium flex-1 text-left">Withdraw</span>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
           <button onClick={() => navigate("/rankings")} className="w-full glass rounded-xl p-4 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]">
             <Trophy className="w-5 h-5 text-primary" />
