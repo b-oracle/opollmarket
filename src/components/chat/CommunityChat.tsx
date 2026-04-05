@@ -221,7 +221,10 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     const target = e.currentTarget;
                     const timer = setTimeout(() => {
                       const rect = target.getBoundingClientRect();
-                      setFlipReactions(rect.top < 100);
+                      const scrollContainer = target.closest('[data-chat-scroll]');
+                      const containerTop = scrollContainer ? scrollContainer.getBoundingClientRect().top : 0;
+                      const trayHeight = 48;
+                      setFlipReactions(rect.top - containerTop < trayHeight + 8);
                       setActiveReactionId(m.id);
                       if (navigator.vibrate) navigator.vibrate(10);
                     }, 500);
