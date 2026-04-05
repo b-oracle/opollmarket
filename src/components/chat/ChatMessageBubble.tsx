@@ -48,6 +48,7 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
+  const [flipReactions, setFlipReactions] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const isMine = m.sender_id === user?.id;
