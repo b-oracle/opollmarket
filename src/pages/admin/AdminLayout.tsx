@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "rea
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle, Lock,
 } from "lucide-react";
 
 type NavItem = {
@@ -45,6 +45,7 @@ const navItems: NavItem[] = [
   { to: "/admin/api-keys", label: "API Keys", icon: FileCode2, roles: ["super_admin", "admin"] },
   { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin"] },
   { to: "/admin/support", label: "Support Tickets", icon: HelpCircle, roles: ["super_admin", "admin", "support"] },
+  { to: "/admin/escrows", label: "Escrows", icon: Lock, roles: ["super_admin"] },
 ];
 
 const AdminLayout = () => {
