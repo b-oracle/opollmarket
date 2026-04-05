@@ -33,24 +33,65 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
 };
 
 const SupportTab = () => {
-  const { user } = useAuth();
+  const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [category, setCategory] = useState("");
   const [desc, setDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
+  const [isStaffTicket, setIsStaffTicket] = useState(false);
+
+  // Check if user has support role
+  const { data: hasSupport } = useQuery({
+    queryKey: ["has-support-role", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "support")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+  });
+
+  const isStaff = isAdmin || isSuperAdmin || !!hasSupport;
 
   const { data: tickets = [], isLoading } = useQuery({
-    queryKey: ["support-tickets", user?.id],
+    queryKey: ["support-tickets", user?.id, isStaff],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
+      let q = supabase
         .from("support_tickets" as any)
         .select("*")
-        .eq("user_id", user.id)
         .order("created_at", { ascending: false }) as any;
-      return data || [];
+
+      // Staff see all tickets; regular users see only their own
+      if (!isStaff) {
+        q = q.eq("user_id", user.id);
+      }
+
+      const { data } = await q;
+      if (!data || data.length === 0) return [];
+
+      if (isStaff) {
+        // Enrich with profile info for staff view
+        const userIds = [...new Set(data.map((t: any) => t.user_id))] as string[];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", userIds);
+        const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+        return data.map((t: any) => ({
+          ...t,
+          profile: profileMap.get(t.user_id) || { display_name: "User", avatar_url: null },
+        }));
+      }
+
+      return data;
     },
     enabled: !!user,
   });
