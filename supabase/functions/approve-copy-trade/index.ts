@@ -114,7 +114,27 @@ Deno.serve(async (req) => {
       const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
       const totalFee = trade.amount * predictionFeePercent;
       const copyTradeCommissionPercent = Number(commData?.copy_trade_commission_percent ?? 10);
-      const tradePrice = trade.price || 50;
+
+      // Fetch live market price instead of trusting stored/client value
+      const { data: liveMarket } = await supabase
+        .from("markets")
+        .select("yes_price, no_price, market_type")
+        .eq("id", trade.market_id)
+        .single();
+      const isMulti = liveMarket?.market_type === "multi" || liveMarket?.market_type === "range";
+      const tradePrice = liveMarket
+        ? Math.round(Number(trade.side === "yes" ? liveMarket.yes_price : liveMarket.no_price) * 100)
+        : trade.price;
+      if (!tradePrice || tradePrice <= 0) {
+        await supabase
+          .from("pending_copy_trades")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", pending_trade_id);
+        return new Response(JSON.stringify({ error: "Could not determine market price" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+
       const finalShares = trade.shares || Math.max(0.01, Number(((trade.amount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
       // Atomic debit — prevents race conditions
@@ -169,6 +189,16 @@ Deno.serve(async (req) => {
         price: tradePrice / 100,
         status: "confirmed",
         is_copy_trade: true,
+      });
+
+      // Update AMM prices atomically so copied capital is reflected
+      const poolAmount = trade.amount - totalFee;
+      await supabase.rpc("buy_update_market_prices", {
+        _market_id: trade.market_id,
+        _side: trade.side,
+        _pool_amount: poolAmount,
+        _bet_amount: trade.amount,
+        _is_multi: isMulti,
       });
 
       // Record the copy trade earning entry

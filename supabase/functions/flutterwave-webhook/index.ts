@@ -292,10 +292,10 @@ Deno.serve(async (req) => {
       // Refund user balance
       const { data: txn } = await adminClient
         .from("transactions")
-        .select("user_id, amount")
+        .select("user_id, amount, status")
         .eq("nowpayments_payment_id", reference)
         .eq("type", "withdrawal")
-        .eq("status", "pending")
+        .in("status", ["pending", "processing"])
         .single();
 
       if (txn) {

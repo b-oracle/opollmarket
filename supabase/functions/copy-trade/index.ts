@@ -137,7 +137,22 @@ Deno.serve(async (req) => {
 
             const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
             const totalFee = copyAmount * predictionFeePercent;
-            const tradePrice = price || 50;
+
+            // Fetch live market price instead of trusting client value
+            const { data: liveMarket } = await supabase
+              .from("markets")
+              .select("yes_price, no_price, market_type")
+              .eq("id", market_id)
+              .single();
+            const isMulti = liveMarket?.market_type === "multi" || liveMarket?.market_type === "range";
+            const tradePrice = liveMarket
+              ? Math.round(Number(side === "yes" ? liveMarket.yes_price : liveMarket.no_price) * 100)
+              : price;
+            if (!tradePrice || tradePrice <= 0) {
+              console.warn(`Skipping copy for ${copier.user_id}: could not determine market price`);
+              continue;
+            }
+
             const finalShares = copyShares || Math.max(0.01, Number(((copyAmount - totalFee) / (tradePrice / 100)).toFixed(2)));
 
             // Create position
@@ -161,6 +176,16 @@ Deno.serve(async (req) => {
               price: tradePrice / 100,
               status: "confirmed",
               is_copy_trade: true,
+            });
+
+            // Update AMM prices atomically so copied capital is reflected
+            const poolAmount = copyAmount - totalFee;
+            await supabase.rpc("buy_update_market_prices", {
+              _market_id: market_id,
+              _side: side,
+              _pool_amount: poolAmount,
+              _bet_amount: copyAmount,
+              _is_multi: isMulti,
             });
 
             // Credit prediction fee to platform pool (same as place-bet)
