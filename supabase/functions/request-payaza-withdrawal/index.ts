@@ -217,15 +217,15 @@ Deno.serve(async (req) => {
     // ─── Cooldown ───
     const cooldownMinutes = settings?.withdrawal_cooldown_minutes ?? 5;
     const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-    const { data: recentWithdrawals } = await adminClient
+    const { data: cooldownWithdrawals } = await adminClient
       .from("withdrawal_requests")
       .select("id, created_at")
       .eq("user_id", userId)
       .gte("created_at", cooldownCutoff)
       .limit(1);
 
-    if (recentWithdrawals && recentWithdrawals.length > 0) {
-      const lastTime = new Date(recentWithdrawals[0].created_at);
+    if (cooldownWithdrawals && cooldownWithdrawals.length > 0) {
+      const lastTime = new Date(cooldownWithdrawals[0].created_at);
       const waitUntil = new Date(lastTime.getTime() + cooldownMinutes * 60 * 1000);
       const minsLeft = Math.ceil((waitUntil.getTime() - Date.now()) / 60000);
       return new Response(
