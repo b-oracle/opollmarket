@@ -213,7 +213,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       )}
 
       {/* Input */}
-      <div className="shrink-0 px-4 py-3 border-t border-border flex gap-2">
+      <div className="shrink-0 px-4 py-2 pb-1 border-t border-border flex gap-2">
         <Input
           placeholder={isMember ? "Type a message..." : "Join to chat"}
           value={message}
