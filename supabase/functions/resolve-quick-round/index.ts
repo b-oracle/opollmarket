@@ -291,6 +291,23 @@ Deno.serve(async (req) => {
           });
         }
         const verifiedUserId = deductUser.id;
+        const betAmount = Number(body.amount);
+
+        // Validate min/max bet from settings
+        const { data: qtSettings } = await supabase
+          .from("commission_settings")
+          .select("qt_min_bet, qt_max_bet")
+          .limit(1)
+          .single();
+        const qtMinBet = Number(qtSettings?.qt_min_bet) || 1;
+        const qtMaxBet = Number(qtSettings?.qt_max_bet) || 1000;
+
+        if (!betAmount || betAmount < qtMinBet || betAmount > qtMaxBet) {
+          return new Response(JSON.stringify({ error: `Bet must be between $${qtMinBet} and $${qtMaxBet}` }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
 
         // Rate limit: max 20 QT bets per minute per user
         const oneMinAgo = new Date(Date.now() - 60_000).toISOString();
@@ -309,7 +326,7 @@ Deno.serve(async (req) => {
 
         const { data: debitResult } = await supabase.rpc("debit_balance_atomic", {
           _user_id: verifiedUserId,
-          _main_deduct: Number(body.amount),
+          _main_deduct: betAmount,
         });
         if (!debitResult?.success) {
           return new Response(JSON.stringify({ error: debitResult?.error || "Insufficient balance" }), {
