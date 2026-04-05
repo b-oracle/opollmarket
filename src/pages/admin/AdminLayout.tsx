@@ -66,7 +66,7 @@ const AdminLayout = () => {
   }, [location.pathname]);
 
   // Determine current user's role for nav filtering
-  const userRole = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : "moderator";
+  const userRole = isSuperAdmin ? "super_admin" : isAdmin ? "admin" : isModerator ? "moderator" : "support";
 
   const filteredNavItems = navItems.filter((item) => {
     if (!item.roles) return true; // visible to all roles
