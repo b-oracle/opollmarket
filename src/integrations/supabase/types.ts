@@ -4148,6 +4148,7 @@ export type Database = {
         Args: { _amount: number; _user_id: string }
         Returns: Json
       }
+      increment_bc400_pool: { Args: { _amount: number }; Returns: undefined }
       is_mutual_follow: {
         Args: { user_a: string; user_b: string }
         Returns: boolean
