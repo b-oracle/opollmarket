@@ -330,7 +330,7 @@ Deno.serve(async (req) => {
     const dailyTotalAnomaly = (dailyWithdrawals || []).reduce((sum: number, r: any) => sum + Number(r.amount), 0) + amount;
     const ANOMALY_THRESHOLD = 1000; // $1000 in 24h triggers alert
 
-    if (dailyTotal >= ANOMALY_THRESHOLD) {
+    if (dailyTotalAnomaly >= ANOMALY_THRESHOLD) {
       // Fire-and-forget admin alert
       const { data: adminUsers } = await adminClient
         .from("user_roles")
