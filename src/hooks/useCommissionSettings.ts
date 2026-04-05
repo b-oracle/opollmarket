@@ -83,6 +83,12 @@ export const useCommissionSettings = () => {
            welcome_bonus_percent: 0,
            welcome_bonus_cap: 0,
            gift_fee_percent: 2,
+           prediction_min_bet: 1,
+           prediction_max_bet: 10000,
+           deposit_min_amount: 1,
+           deposit_max_amount: 50000,
+           push_prompt_cooldown_days: 14,
+           deposit_expiry_minutes: 60,
          };
       }
       const d = data as any;
