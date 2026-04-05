@@ -537,6 +537,7 @@ const App = () => {
                           <Route path="api-keys" element={<AdminApiKeys />} />
                           <Route path="kyc" element={<AdminKyc />} />
                           <Route path="support" element={<AdminSupport />} />
+                          <Route path="escrows" element={<AdminEscrows />} />
                         </Route>
                         <Route path="/developers" element={<Developers />} />
                         <Route path="/embed/market/:id" element={<EmbedMarket />} />

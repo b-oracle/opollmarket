@@ -45,6 +45,7 @@ const navItems: NavItem[] = [
   { to: "/admin/api-keys", label: "API Keys", icon: FileCode2, roles: ["super_admin", "admin"] },
   { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin"] },
   { to: "/admin/support", label: "Support Tickets", icon: HelpCircle, roles: ["super_admin", "admin", "support"] },
+  { to: "/admin/escrows", label: "Escrows", icon: Lock, roles: ["super_admin"] },
 ];
 
 const AdminLayout = () => {
