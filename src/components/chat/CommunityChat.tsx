@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, X, Reply, Copy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -28,11 +29,12 @@ interface CommunityMessage {
   reply_to_name: string | null;
   reactions: Record<string, string[]>;
   created_at: string;
-  profile?: { display_name: string; avatar_url: string | null };
+  profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
 
 const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [replyTo, setReplyTo] = useState<CommunityMessage | null>(null);
@@ -70,7 +72,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
       const userIds = [...new Set(msgs.map((m: any) => m.user_id))] as string[];
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", userIds);
 
       const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
@@ -182,7 +184,10 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
             const showBar = activeReactionId === m.id;
             return (
               <div key={m.id} className="group relative flex gap-2">
-                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5">
+                <button
+                  onClick={() => navigate(`/user/${m.user_id}`)}
+                  className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5"
+                >
                   {m.profile?.avatar_url ? (
                     <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
                   ) : (
@@ -190,7 +195,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                       {(m.profile?.display_name || "?").charAt(0).toUpperCase()}
                     </span>
                   )}
-                </div>
+                </button>
                 <div
                   className="flex-1 min-w-0 relative select-none touch-none"
                   onPointerDown={(e) => {
@@ -242,8 +247,14 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                       </div>
                     </>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className="text-xs font-semibold">{m.profile?.display_name || "User"}</span>
+                    {m.profile?.verification_level === "gold" && (
+                      <BadgeCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    )}
+                    {m.profile?.verification_level === "blue" && (
+                      <BadgeCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                    )}
                     <span className="text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                     </span>

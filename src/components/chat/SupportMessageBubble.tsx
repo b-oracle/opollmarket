@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Copy, Plus, Reply } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Copy, Plus, Reply, BadgeCheck } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +24,7 @@ interface SupportMessage {
   reply_to_id?: string | null;
   reply_to_content?: string | null;
   reply_to_sender_name?: string | null;
-  profile?: { display_name: string; avatar_url: string | null };
+  profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
 
 interface SupportMessageBubbleProps {
@@ -34,6 +35,7 @@ interface SupportMessageBubbleProps {
 
 const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: SupportMessageBubbleProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
@@ -179,7 +181,10 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
 
   return (
     <div className={`flex gap-2 ${isMe ? "flex-row-reverse" : ""}`} id={`support-msg-${m.id}`}>
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"}`}>
+      <button
+        onClick={() => navigate(`/user/${m.user_id}`)}
+        className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"}`}
+      >
         {m.profile?.avatar_url ? (
           <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
         ) : (
@@ -187,13 +192,19 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
             {m.is_staff ? "S" : (m.profile?.display_name || "?").charAt(0).toUpperCase()}
           </span>
         )}
-      </div>
+      </button>
       <div className="relative max-w-[75%] overflow-visible">
         <div className="space-y-0.5">
-          <div className="flex items-center gap-2 mb-0.5">
+          <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-xs font-semibold">
               {m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
             </span>
+            {!m.is_staff && m.profile?.verification_level === "gold" && (
+              <BadgeCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            )}
+            {!m.is_staff && m.profile?.verification_level === "blue" && (
+              <BadgeCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            )}
             <span className="text-[10px] text-muted-foreground">
               {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
             </span>
