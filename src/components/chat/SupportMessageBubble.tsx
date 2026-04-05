@@ -153,12 +153,13 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
     <>
       <div className="fixed inset-0 z-40" onClick={dismiss} />
       {!showFullPicker ? (
-        <div
-          className={cn(
-            "absolute bottom-full mb-1 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
-            isMe ? "right-0" : "left-0"
-          )}
-        >
+         <div
+           className={cn(
+             "absolute z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+             flipReactions ? "top-full mt-1" : "bottom-full mb-1",
+             isMe ? "right-0" : "left-0"
+           )}
+         >
           {REACTION_EMOJIS.map((emoji) => (
             <button key={emoji} onClick={() => toggleReaction(emoji)} className="text-base hover:scale-125 transition-transform active:scale-95 p-0.5">
               {emoji}

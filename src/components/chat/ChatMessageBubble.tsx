@@ -207,7 +207,8 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
       {!showFullPicker ? (
         <div
           className={cn(
-            "absolute bottom-full mb-1 z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+            "absolute z-50 flex items-center gap-0.5 bg-background/95 backdrop-blur-sm border border-border rounded-full px-1.5 py-1 shadow-xl",
+            flipReactions ? "top-full mt-1" : "bottom-full mb-1",
             isMine ? "right-0" : "left-0"
           )}
         >
