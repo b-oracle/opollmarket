@@ -586,11 +586,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             }
             const dest = recordingDestRef.current;
             if (dest) {
-              const recorder = new MediaRecorder(dest.stream, {
-                mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+              const recMime = MediaRecorder.isTypeSupported("audio/mp4")
+                ? "audio/mp4"
+                : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
                   ? "audio/webm;codecs=opus"
-                  : "audio/webm",
-              });
+                  : "audio/webm";
+              const recorder = new MediaRecorder(dest.stream, { mimeType: recMime });
               recorder.ondataavailable = (e) => {
                 if (e.data.size > 0) recordedChunksRef.current.push(e.data);
               };
