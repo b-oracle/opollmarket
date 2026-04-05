@@ -1532,7 +1532,7 @@ const Create = () => {
     return (
       <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
         <TopBar />
-        <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-20 flex flex-col items-center justify-center min-h-[70dvh]">
+        <div className="max-w-lg md:max-w-2xl mx-auto px-4 flex flex-col items-center justify-center min-h-[70dvh]" style={{ paddingTop: 'calc(var(--content-top) + 1rem)' }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
