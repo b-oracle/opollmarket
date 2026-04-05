@@ -208,7 +208,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
       </div>
 
       {!isLocked && (
-        <div className="shrink-0 px-4 py-3 border-t border-border flex gap-2">
+        <div className="shrink-0 px-4 py-1.5 pb-0 flex gap-2">
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground">
             <ImageIcon className="w-5 h-5" />
@@ -226,7 +226,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         </div>
       )}
       {isLocked && (
-        <div className="shrink-0 px-4 py-3 border-t border-border text-center">
+        <div className="shrink-0 px-4 py-1.5 pb-0 text-center">
           <p className="text-xs text-muted-foreground">This ticket has been closed</p>
         </div>
       )}
