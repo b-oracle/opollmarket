@@ -333,6 +333,30 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   <p className="text-sm break-words">{m.content}</p>
                   {m.image_url && (
                     <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover" alt="" />
+                   )}
+                  {/* Tagged markets */}
+                  {m.tagged_markets && m.tagged_markets.length > 0 && (
+                    <div className="flex flex-col gap-1 mt-1.5">
+                      {m.tagged_markets.map((tm: MarketTag) => (
+                        <button
+                          key={tm.id}
+                          onClick={() => navigate(`/market/${tm.id}`)}
+                          className="flex items-center gap-2 bg-muted/50 border border-border rounded-lg p-1.5 hover:bg-muted/80 transition-colors max-w-[220px]"
+                        >
+                          {tm.image_url ? (
+                            <img src={optimizedImageUrl(tm.image_url, "thumb")} alt="" className="w-8 h-8 rounded object-cover shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center shrink-0">
+                              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="text-[10px] font-semibold leading-tight truncate">{tm.title}</p>
+                            <p className="text-[10px] text-primary font-bold">{Math.round(tm.yes_price * 100)}% Yes</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   )}
                   {/* Reaction pills */}
                   {reactionEntries.length > 0 && (
