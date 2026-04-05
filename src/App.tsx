@@ -72,6 +72,7 @@ const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminTelegram = lazy(() => import("./pages/admin/AdminTelegram"));
 const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
+const AdminEscrows = lazy(() => import("./pages/admin/AdminEscrows"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
