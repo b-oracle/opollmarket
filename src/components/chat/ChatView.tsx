@@ -22,6 +22,15 @@ interface Message {
   created_at: string;
   read_at: string | null;
   reactions?: Record<string, string[]>;
+  reply_to_id?: string | null;
+  reply_to_content?: string | null;
+  reply_to_sender_name?: string | null;
+}
+
+interface ReplyTo {
+  id: string;
+  content: string;
+  senderName: string;
 }
 
 const ChatView = () => {
@@ -35,6 +44,7 @@ const ChatView = () => {
   const [showShare, setShowShare] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [calling, setCalling] = useState(false);
+  const [replyTo, setReplyTo] = useState<ReplyTo | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -63,8 +73,6 @@ const ChatView = () => {
   const otherName = (convo as any)?.other_user?.display_name || "User";
   const otherVerification = ((convo as any)?.other_user?.verification_level || "none") as VerificationLevel;
 
-  // Determine if current user is the recipient of a pending request
-  // user_a is always the initiator of the conversation
   const isInitiator = convo ? (convo as any).user_a === user?.id : false;
   const isRecipientOfRequest = convStatus === "pending" && !isInitiator && !!convo;
   const isSenderOfRequest = convStatus === "pending" && isInitiator && !!convo;
@@ -126,11 +134,24 @@ const ChatView = () => {
     if (!trimmed || sending || !conversationId || !user) return;
     setSending(true);
     try {
+      const payload: any = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: trimmed,
+      };
+      if (replyTo && !content) {
+        payload.reply_to_id = replyTo.id;
+        payload.reply_to_content = replyTo.content.slice(0, 200);
+        payload.reply_to_sender_name = replyTo.senderName;
+      }
       const { error } = await supabase
         .from("dm_messages" as any)
-        .insert({ conversation_id: conversationId, sender_id: user.id, content: trimmed });
+        .insert(payload);
       if (error) throw error;
-      if (!content) setText("");
+      if (!content) {
+        setText("");
+        setReplyTo(null);
+      }
       queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
       queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
     } catch (err: any) {
@@ -140,7 +161,7 @@ const ChatView = () => {
       setSending(false);
       inputRef.current?.focus();
     }
-  }, [text, sending, conversationId, user, queryClient]);
+  }, [text, sending, conversationId, user, queryClient, replyTo]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -152,6 +173,20 @@ const ChatView = () => {
   const handleShareLink = (url: string) => {
     sendMessage(url);
   };
+
+  const handleReply = useCallback((info: { id: string; content: string; senderName: string }) => {
+    setReplyTo(info);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("bg-primary/10");
+      setTimeout(() => el.classList.remove("bg-primary/10"), 1500);
+    }
+  }, []);
 
   const handleAccept = async () => {
     if (!conversationId) return;
@@ -196,7 +231,6 @@ const ChatView = () => {
     }
   };
 
-  // Can the user send messages?
   const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
   const isRejected = convStatus === "rejected";
 
@@ -226,7 +260,6 @@ const ChatView = () => {
 
       if (data?.error) throw new Error(data.error);
 
-      // Dispatch event to IncomingCallBanner (which manages the overlay)
       window.dispatchEvent(
         new CustomEvent("start-voice-call", {
           detail: {
@@ -336,13 +369,34 @@ const ChatView = () => {
           </div>
         )}
         {messages.map((m) => (
-          <ChatMessageBubble key={m.id} message={m} conversationId={conversationId!} />
+          <ChatMessageBubble
+            key={m.id}
+            message={m}
+            conversationId={conversationId!}
+            onReply={handleReply}
+            onScrollToMessage={handleScrollToMessage}
+          />
         ))}
       </div>
 
       {/* Input bar */}
       {canSendMessage && !isRejected ? (
         <div className="bg-background/95 backdrop-blur border-t border-border px-4 py-3 shrink-0" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+          {/* Reply context banner */}
+          {replyTo && (
+            <div className="max-w-lg mx-auto mb-2 flex items-center gap-2 bg-muted/60 rounded-lg px-3 py-2 border-l-2 border-primary">
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-primary">{replyTo.senderName}</p>
+                <p className="text-xs text-muted-foreground truncate">{replyTo.content.slice(0, 80)}</p>
+              </div>
+              <button
+                onClick={() => setReplyTo(null)}
+                className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full hover:bg-accent"
+              >
+                <X className="w-3 h-3 text-muted-foreground" />
+              </button>
+            </div>
+          )}
           <div className="max-w-lg mx-auto flex items-center gap-2">
             {convStatus === "active" && (
               <>
@@ -367,7 +421,7 @@ const ChatView = () => {
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={convStatus === "pending" ? "Send a message request..." : "Type a message..."}
+              placeholder={replyTo ? "Reply..." : convStatus === "pending" ? "Send a message request..." : "Type a message..."}
               className="flex-1 h-10 rounded-full"
               maxLength={2000}
             />
