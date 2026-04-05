@@ -3041,6 +3041,10 @@ export type Database = {
           id: string
           image_url: string | null
           is_staff: boolean
+          reactions: Json | null
+          reply_to_content: string | null
+          reply_to_id: string | null
+          reply_to_sender_name: string | null
           ticket_id: string
           user_id: string
         }
@@ -3050,6 +3054,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_staff?: boolean
+          reactions?: Json | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_sender_name?: string | null
           ticket_id: string
           user_id: string
         }
@@ -3059,10 +3067,21 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_staff?: boolean
+          reactions?: Json | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
+          reply_to_sender_name?: string | null
           ticket_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "support_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "support_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "support_messages_ticket_id_fkey"
             columns: ["ticket_id"]

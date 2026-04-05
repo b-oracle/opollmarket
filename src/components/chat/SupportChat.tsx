@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import SupportMessageBubble from "./SupportMessageBubble";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -23,7 +23,9 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [replyTo, setReplyTo] = useState<{ id: string; content: string; senderName: string } | null>(null);
 
   const { data: ticket } = useQuery({
     queryKey: ["support-ticket", ticketId],
@@ -66,7 +68,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   useEffect(() => {
     const channel = supabase
       .channel(`support-${ticketId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "support_messages", filter: `ticket_id=eq.${ticketId}` }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "support_messages", filter: `ticket_id=eq.${ticketId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ["support-messages", ticketId] });
       })
       .subscribe();
@@ -77,25 +79,43 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
     bottomRef.current?.scrollIntoView({ behavior: "instant" as any });
   }, [messages.length]);
 
+  const scrollToMessage = useCallback((messageId: string) => {
+    const el = document.getElementById(`support-msg-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("bg-primary/10");
+      setTimeout(() => el.classList.remove("bg-primary/10"), 1500);
+    }
+  }, []);
+
   const sendMessage = useCallback(async (content?: string, imageUrl?: string) => {
     if (!user) return;
     const text = content || message.trim();
     if (!text && !imageUrl) return;
 
-    const { error } = await supabase.from("support_messages" as any).insert({
+    const payload: any = {
       ticket_id: ticketId,
       user_id: user.id,
       content: text || "",
       image_url: imageUrl || null,
       is_staff: isStaff,
-    } as any);
+    };
+
+    if (replyTo) {
+      payload.reply_to_id = replyTo.id;
+      payload.reply_to_content = replyTo.content;
+      payload.reply_to_sender_name = replyTo.senderName;
+    }
+
+    const { error } = await supabase.from("support_messages" as any).insert(payload as any);
 
     if (error) {
       toast.error("Failed to send");
       return;
     }
     setMessage("");
-  }, [user, message, ticketId, isStaff]);
+    setReplyTo(null);
+  }, [user, message, ticketId, isStaff, replyTo]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -146,7 +166,6 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
           <h2 className="text-sm font-bold truncate">{ticket?.subject || "Support"}</h2>
           <span className={`text-[10px] capitalize ${statusColor}`}>{ticket?.status || "open"}</span>
         </div>
-        {/* Status actions */}
         {!isLocked && (
           <div className="flex gap-1.5 shrink-0">
             {isStaff && ticket?.status === "open" && (
@@ -173,56 +192,47 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-        {messages.map((m: any) => {
-          const isMe = m.user_id === user?.id;
-          return (
-            <div key={m.id} className={`flex gap-2 ${isMe ? "flex-row-reverse" : ""}`}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"}`}>
-                {m.profile?.avatar_url ? (
-                  <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
-                ) : (
-                  <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
-                    {m.is_staff ? "S" : (m.profile?.display_name || "?").charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <div className={`max-w-[75%] ${isMe ? "items-end" : ""}`}>
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs font-semibold">
-                    {m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                  </span>
-                </div>
-                {m.content && <p className="text-sm break-words">{m.content}</p>}
-                {m.image_url && (
-                  <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.image_url, "_blank")} alt="attachment" />
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {messages.map((m: any) => (
+          <SupportMessageBubble
+            key={m.id}
+            message={m}
+            onReply={!isLocked ? setReplyTo : undefined}
+            onScrollToMessage={scrollToMessage}
+          />
+        ))}
         <div ref={bottomRef} />
       </div>
 
       {!isLocked && (
-        <div className="shrink-0 px-4 py-1.5 flex gap-2" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground">
-            <ImageIcon className="w-5 h-5" />
-          </button>
-          <Input
-            placeholder="Type a message..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-            className="h-9 text-sm"
-          />
-          <Button size="sm" className="h-9 w-9 p-0" disabled={!message.trim()} onClick={() => sendMessage()}>
-            <Send className="w-4 h-4" />
-          </Button>
+        <div className="shrink-0" style={{ paddingBottom: "max(0.375rem, var(--safe-bottom))" }}>
+          {replyTo && (
+            <div className="px-4 py-1.5 flex items-center gap-2 bg-muted/50 border-t border-border">
+              <div className="flex-1 min-w-0">
+                <span className="text-[10px] font-semibold text-primary block">Replying to {replyTo.senderName}</span>
+                <span className="text-xs text-muted-foreground truncate block">{replyTo.content.slice(0, 60)}</span>
+              </div>
+              <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+          <div className="px-4 py-1.5 flex gap-2">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+            <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground">
+              <ImageIcon className="w-5 h-5" />
+            </button>
+            <Input
+              placeholder="Type a message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+              className="h-9 text-sm"
+            />
+            <Button size="sm" className="h-9 w-9 p-0" disabled={!message.trim()} onClick={() => sendMessage()}>
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       )}
       {isLocked && (
