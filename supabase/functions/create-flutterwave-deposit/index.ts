@@ -52,10 +52,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Check if user is blocked
 
     // Check if user is blocked
     const { data: profile } = await adminClient
