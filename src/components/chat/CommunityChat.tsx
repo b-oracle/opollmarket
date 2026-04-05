@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp } from "lucide-react";
+import MarketTagSelector, { type MarketTag } from "@/components/social/MarketTagSelector";
+import { optimizedImageUrl } from "@/lib/optimizedImage";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
