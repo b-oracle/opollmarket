@@ -35,6 +35,8 @@ const CallHistoryTab = lazy(() => import("./CallHistoryTab"));
 const CommunitiesTab = lazy(() => import("./CommunitiesTab"));
 const SupportTab = lazy(() => import("./SupportTab"));
 const SettingsTab = lazy(() => import("./SettingsTab"));
+import CommunityChat from "./CommunityChat";
+import SupportChat from "./SupportChat";
 
 interface ConversationRow {
   id: string;
