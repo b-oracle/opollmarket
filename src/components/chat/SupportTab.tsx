@@ -185,7 +185,7 @@ const SupportTab = () => {
             return (
               <button
                 key={t.id}
-                onClick={() => setActiveTicket(t.id)}
+                onClick={() => { setActiveTicket(t.id); if (isStaff && t.user_id !== user?.id) setIsStaffTicket(true); }}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${sc.color}`}>
