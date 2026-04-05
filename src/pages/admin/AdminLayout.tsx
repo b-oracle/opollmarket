@@ -12,7 +12,7 @@ type NavItem = {
   icon: any;
   end?: boolean;
   /** Which roles can see this nav item. super_admin sees everything. */
-  roles?: ("super_admin" | "admin" | "moderator")[];
+  roles?: ("super_admin" | "admin" | "moderator" | "support")[];
 };
 
 const navItems: NavItem[] = [
