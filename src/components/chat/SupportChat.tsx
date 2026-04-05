@@ -231,6 +231,26 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         </div>
       )}
     </div>
+
+      <AlertDialog open={!!statusConfirm} onOpenChange={(o) => !o && setStatusConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{statusConfirm?.label} Ticket</AlertDialogTitle>
+            <AlertDialogDescription>
+              {statusConfirm?.action === "resolved" && "This marks the ticket as resolved. The user can still reply."}
+              {statusConfirm?.action === "closed" && "This will permanently close the ticket. No further messages can be sent."}
+              {statusConfirm?.action === "open" && "This will reopen the ticket for further discussion."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={updatingStatus}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={updatingStatus} onClick={() => statusConfirm && updateTicketStatus(statusConfirm.action)}>
+              {statusConfirm?.label}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 
