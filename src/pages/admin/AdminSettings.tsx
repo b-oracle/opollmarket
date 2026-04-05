@@ -238,6 +238,12 @@ const AdminSettings = () => {
   const welcomeBonusPercentNum = parseFloat(welcomeBonusPercent) || 0;
   const welcomeBonusCapNum = parseFloat(welcomeBonusCap) || 0;
   const giftFeePercentNum = parseFloat(giftFeePercent) || 2;
+  const predictionMinBetNum = parseFloat(predictionMinBet) || 1;
+  const predictionMaxBetNum = parseFloat(predictionMaxBet) || 10000;
+  const depositMinAmountNum = parseFloat(depositMinAmount) || 1;
+  const depositMaxAmountNum = parseFloat(depositMaxAmount) || 50000;
+  const pushPromptCooldownDaysNum = parseInt(pushPromptCooldownDays) || 14;
+  const depositExpiryMinutesNum = parseInt(depositExpiryMinutes) || 60;
 
   // Splits must sum to ≤ 100 — platform keeps the remainder
   const splitTotalGold = creatorGoldNum + referrerCommissionNum + bc400PoolPercentNum;
