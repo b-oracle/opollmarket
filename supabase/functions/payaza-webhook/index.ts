@@ -12,6 +12,23 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // ── Webhook secret verification ──
+    const webhookSecret = Deno.env.get("PAYAZA_WEBHOOK_SECRET");
+    if (webhookSecret) {
+      const incomingToken =
+        req.headers.get("x-payaza-webhook-token") ||
+        req.headers.get("payaza-webhook-token") ||
+        req.headers.get("x-webhook-token") ||
+        new URL(req.url).searchParams.get("token");
+
+      if (incomingToken !== webhookSecret) {
+        console.error("Payaza webhook: invalid or missing webhook token");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // Log all incoming headers (names only) for debugging
     const headerNames = [...req.headers.keys()];
     console.log("Payaza webhook headers:", headerNames.join(", "));
