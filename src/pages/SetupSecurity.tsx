@@ -374,7 +374,7 @@ const SetupSecurity = () => {
     <>
       <SEOHead title="Security & KYC — oPoll" description="Manage your account security and identity verification" />
       <TopBar />
-      <div className="min-h-screen pt-[var(--content-top)] pb-[calc(2rem + var(--content-bottom))] px-4 flex flex-col items-center">
+      <div className="min-h-screen px-4 flex flex-col items-center" style={{ paddingTop: 'var(--content-top)', paddingBottom: 'calc(2rem + var(--content-bottom))' }}>
         <div className="w-full max-w-md space-y-6 mt-8">
           <div className="text-center space-y-2">
             <Shield className="w-12 h-12 text-primary mx-auto" />
