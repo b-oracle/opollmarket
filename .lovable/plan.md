@@ -1,48 +1,41 @@
 
 
-## Fix: Reaction Bar Visibility and Positioning in DM Chat
+## Add Reply-to-Message in DM Chat
 
-### Problems
-1. The **"+" button** (to open full emoji picker) is clipped/hidden on mobile — the reaction bar overflows or gets cut off on small screens.
-2. The reaction bar uses **fixed positioning** based on initial coordinates, so it **detaches from the bubble** when the user scrolls.
+### Overview
+Add the ability to reply to specific messages in DM chat, mirroring the existing space chat reply pattern. Users swipe or long-press a message to reply, and the reply preview appears above the input bar.
 
-### Solution
-
-**File: `src/components/chat/ChatMessageBubble.tsx`**
-
-1. **Sticky positioning instead of fixed**: Change the reaction bar from `fixed` with absolute `top/left` coordinates to being rendered **inside the bubble's relative container** using `absolute` positioning. This keeps it anchored to the message bubble regardless of scroll position.
-
-2. **Ensure "+" button visibility**: The current bar uses `rounded-full px-2` with 6 emojis + "+" + copy/delete buttons, which overflows on narrow screens. Fix by:
-   - Reducing emoji button padding slightly
-   - Adding `overflow-visible` and ensuring the bar doesn't get clipped by parent `overflow-hidden`
-   - Using `right-0` or `left-0` anchoring based on `isMine` to keep it within viewport
-
-3. **Positioning logic**: Remove the `pickerPos` state that calculates viewport-absolute coordinates. Instead, render the bar as an absolutely-positioned child above the bubble (`bottom-full mb-1`), aligned left for received messages and right for sent messages.
-
-4. **Backdrop stays fixed**: The dismiss overlay remains `fixed inset-0` as it should cover the whole screen.
-
-### Technical Details
-
-```text
-Before (fixed, detaches on scroll):
-  ┌─────────────────────────┐  ← fixed top/left
-  │ ❤️ 😂 👍 😮 😢 🔥 [+] │
-  └─────────────────────────┘
-         ... scroll ...
-  ┌───────────┐
-  │  message  │  ← bubble scrolled away
-  └───────────┘
-
-After (absolute, anchored to bubble):
-  ┌───────────┐
-  │ ❤️😂👍😮😢🔥[+]📋🗑│  ← absolute, bottom-full
-  ├───────────┤
-  │  message  │
-  └───────────┘
+### Database Migration
+Add three columns to `dm_messages`:
+```sql
+ALTER TABLE public.dm_messages
+ADD COLUMN reply_to_id uuid REFERENCES dm_messages(id) ON DELETE SET NULL,
+ADD COLUMN reply_to_content text,
+ADD COLUMN reply_to_sender_name text;
 ```
+Denormalized content/name fields avoid extra joins (same pattern as space_messages).
+
+### Changes
+
+**1. `src/components/chat/ChatMessageBubble.tsx`**
+- Add `onReply` callback prop
+- Add a "Reply" button (↩ icon) to the reaction bar alongside Copy/Delete
+- When tapped, calls `onReply({ id, content, senderName })`
+- Render a reply preview banner above the bubble when `message.reply_to_id` exists — small quoted box showing sender name + truncated content, tappable to scroll to original
+
+**2. `src/components/chat/ChatView.tsx`**
+- Add `replyTo` state: `{ id, content, senderName } | null`
+- Pass `onReply` handler to each `ChatMessageBubble`
+- Above the input bar, show a reply context banner (sender name + preview text + X to cancel) when `replyTo` is set
+- Include `reply_to_id`, `reply_to_content`, `reply_to_sender_name` in the insert payload when sending
+- Clear `replyTo` after send
+- Add `reply_to_id, reply_to_content, reply_to_sender_name` to the Message interface and query select
+- Add scroll-to-message: assign refs/ids to message elements, scroll into view when reply preview is tapped
 
 ### Files Changed
 | File | Change |
 |------|--------|
-| `src/components/chat/ChatMessageBubble.tsx` | Replace fixed-position reaction bar with absolute-positioned bar anchored to bubble; remove `pickerPos` state; adjust sizing for mobile |
+| Migration SQL | Add `reply_to_id`, `reply_to_content`, `reply_to_sender_name` to `dm_messages` |
+| `src/components/chat/ChatMessageBubble.tsx` | Add Reply button, `onReply` prop, render quoted reply preview |
+| `src/components/chat/ChatView.tsx` | Add reply state, reply banner above input, include reply fields in insert, scroll-to-message |
 
