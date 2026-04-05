@@ -76,29 +76,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (market.status === "cancelled") {
-      return new Response(JSON.stringify({ error: "Market already cancelled" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Atomically lock market row, validate status, and set to cancelled
+    const { data: cancelResult } = await adminClient.rpc("cancel_market_atomic", {
+      _market_id: market_id,
+    });
 
-    if (market.status === "resolved") {
-      return new Response(JSON.stringify({ error: "Cannot cancel a resolved market. Payouts have already been distributed." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Prevent re-cancellation
-    const { count: existingRefunds } = await adminClient
-      .from("transactions")
-      .select("id", { count: "exact", head: true })
-      .eq("market_id", market_id)
-      .in("type", ["refund", "payout"]);
-
-    if (existingRefunds && existingRefunds > 0) {
-      return new Response(JSON.stringify({ error: `Market already has ${existingRefunds} payout/refund transactions. Cannot cancel to avoid duplicate refunds.` }), {
+    if (!cancelResult?.success) {
+      return new Response(JSON.stringify({ error: cancelResult?.error || "Cannot cancel market" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -297,11 +281,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update market status
-    await adminClient
-      .from("markets")
-      .update({ status: "cancelled" })
-      .eq("id", market_id);
+    // Market status already set to 'cancelled' atomically by cancel_market_atomic RPC
 
     return new Response(
       JSON.stringify({

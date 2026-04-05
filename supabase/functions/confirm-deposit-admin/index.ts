@@ -88,9 +88,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Validate: admin cannot credit MORE than the original transaction amount
+    const originalAmount = Number(tx.amount);
+    if (Number(amount) > originalAmount) {
+      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds original transaction amount $${originalAmount.toFixed(2)}` }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Credit the user's balance atomically
     // If partial, only credit the difference (amount - already credited)
-    const alreadyCredited = tx.status === "partial" ? Number(tx.amount) : 0;
+    const alreadyCredited = tx.status === "partial" ? originalAmount : 0;
     const creditAmount = Number(amount) - alreadyCredited;
 
     if (creditAmount > 0) {

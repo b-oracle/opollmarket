@@ -3967,6 +3967,7 @@ export type Database = {
         Args: { _conversation_id: string; _sender_id: string }
         Returns: boolean
       }
+      cancel_market_atomic: { Args: { _market_id: string }; Returns: Json }
       claim_market_for_resolution: {
         Args: { _market_id: string }
         Returns: Json
