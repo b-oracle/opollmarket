@@ -714,6 +714,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          reactions: Json
           reply_to_content: string | null
           reply_to_id: string | null
           reply_to_name: string | null
@@ -725,6 +726,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          reactions?: Json
           reply_to_content?: string | null
           reply_to_id?: string | null
           reply_to_name?: string | null
@@ -736,6 +738,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          reactions?: Json
           reply_to_content?: string | null
           reply_to_id?: string | null
           reply_to_name?: string | null
