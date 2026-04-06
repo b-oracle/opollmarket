@@ -178,7 +178,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const payload = JSON.stringify({ title, body: body || "", url: url || "/" });
+    const payloadObj: Record<string, any> = { title, body: body || "", url: url || "/" };
+    if (is_call) { payloadObj.is_call = true; payloadObj.call_id = call_id; }
+    const payload = JSON.stringify(payloadObj);
 
     // Also insert a notification row so it appears in the notification bell
     try {
