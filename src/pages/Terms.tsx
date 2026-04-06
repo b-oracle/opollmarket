@@ -367,9 +367,11 @@ const Terms = () => {
             <li>Circumvent or attempt to circumvent content moderation, token-gating, verification badge requirements, or any other access control mechanism.</li>
             <li>Abuse the copy trading system to artificially generate commissions or manipulate trading patterns.</li>
             <li>Use direct messaging to send spam, solicit, harass, or send unsolicited commercial messages.</li>
-            <li>Exploit the gifting system for money laundering, structuring, or transferring funds to circumvent withdrawal controls.</li>
+            <li>Exploit the gifting or money transfer system for money laundering, structuring, or transferring funds to circumvent withdrawal controls.</li>
+            <li>Use DM money transfers to facilitate unauthorized financial activity or circumvent KYC/withdrawal limits.</li>
             <li>Submit falsified or fraudulent KYC documents, or use another person's identity documents.</li>
-            <li>Create or participate in Spaces for the purpose of harassment, hate speech, or promoting illegal activities.</li>
+            <li>Create or participate in Spaces or community chats for the purpose of harassment, hate speech, or promoting illegal activities.</li>
+            <li>Abuse the voice/video calling feature to harass, intimidate, or spam other users.</li>
           </ul>
         </section>
 
