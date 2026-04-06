@@ -10,6 +10,7 @@ const tocItems = [
   { id: "risk", label: "Risk of Loss" },
   { id: "quicktrade-risk", label: "Quick Trade Risks" },
   { id: "copytrade-risk", label: "Copy Trading Risks" },
+  { id: "dm-transfer-risk", label: "DM Money Transfer Risks" },
   { id: "verification-disclaimer", label: "Verification Badges" },
   { id: "crypto-risks", label: "Cryptocurrency & Blockchain Risks" },
   { id: "market-resolution", label: "Market Creation & Resolution" },
@@ -94,6 +95,18 @@ const Disclaimer = () => {
           </ul>
         </section>
 
+        <section id="dm-transfer-risk" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">DM Money Transfer Risks</h2>
+          <p>The Platform allows direct money transfers between users via DM. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Irreversible Transfers:</strong> All money transfers sent via DM are <strong>final and non-reversible</strong>. The Platform cannot reverse or refund completed transfers.</li>
+            <li><strong>Recipient Verification:</strong> You are solely responsible for verifying the identity of the recipient before sending money. The Platform is not liable for transfers sent to the wrong user.</li>
+            <li><strong>Platform Fee:</strong> A fee (percentage set by the System-Mod Engine) is deducted from each transfer. The fee and net amount are displayed before you confirm.</li>
+            <li><strong>No Guarantee:</strong> The Platform does not guarantee that the recipient will provide any goods, services, or reciprocal actions in exchange for your transfer.</li>
+            <li><strong>Fraud Risk:</strong> Be cautious of social engineering, impersonation, or scam attempts. Never send money to users you do not trust.</li>
+          </ul>
+        </section>
+
         <section id="verification-disclaimer" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Verification Badges</h2>
           <p>Blue Tick and Gold Tick verification badges indicate that a user holds qualifying BC400 tokens and/or NFTs at the time of verification. You should be aware that:</p>
@@ -157,11 +170,13 @@ const Disclaimer = () => {
           <h2 className="text-base font-semibold text-foreground">Third-Party Services & Content</h2>
           <p>The Platform may integrate with, link to, or reference third-party services, including but not limited to:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Cryptocurrency payment processors (NOWPayments).</li>
+            <li>Cryptocurrency payment processors (NOWPayments, Payaza, Flutterwave).</li>
             <li>Blockchain networks and wallet providers.</li>
+            <li>Real-time communication services (LiveKit) for voice/video calls and Spaces.</li>
             <li>Social media platforms (X/Twitter, Telegram, WhatsApp) for sharing functionality.</li>
             <li>Decentralized exchange interfaces (PancakeSwap) for token acquisition.</li>
             <li>YouTube for embedded video content in market descriptions.</li>
+            <li>AI services (Google Gemini) for content moderation and support chat auto-replies.</li>
           </ul>
           <p>We do not endorse, control, or assume responsibility for the content, privacy practices, security, or availability of any third-party services. Your use of third-party services is governed by their respective terms and policies.</p>
         </section>
@@ -177,7 +192,7 @@ const Disclaimer = () => {
           <p>To the fullest extent permitted by law, OPollMarket and its operators, affiliates, employees, and agents disclaim all liability for any direct, indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, digital assets, or goodwill — arising from your use of or inability to use the Platform, regardless of the cause of action or the theory of liability.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 6, 2026</p>
       </div>
       <BackToTop />
     </div>

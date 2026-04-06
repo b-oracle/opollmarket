@@ -140,8 +140,27 @@ const faqSections = [
       { question: "How do I send a direct message?", answer: "Tap the chat icon (💬) in the top bar to open your conversations. You can start a new conversation with any user you mutually follow." },
       { question: "Who can I message?", answer: "Direct messaging is available only between **mutual follows** — both you and the other user must follow each other. This prevents unsolicited messages." },
       { question: "Can I send gifts in chat?", answer: "Yes! Tap the gift icon next to the message input to send an emoji gift. Each emoji has a fixed dollar value (e.g., 💸 $1, 💰 $5, 👱🏼‍♀️ $50). The amount is deducted from your **gift balance** and credited to the recipient's **rewards balance**." },
+      { question: "Can I send money directly in chat?", answer: "Yes! In addition to emoji gifts, you can send a **custom dollar amount** directly from your main balance to another user. Tap the gift icon, switch to the 'Send Money' tab, enter the amount, and confirm with your Security PIN. A platform fee applies and is shown before you confirm. Minimum transfer is $0.50." },
+      { question: "Can I make voice or video calls?", answer: "Yes! You can make one-on-one **voice and video calls** directly from a DM conversation. Tap the phone or video icon in the chat header to initiate a call. The recipient will see an incoming call banner and can accept or decline." },
       { question: "Are messages encrypted?", answer: "Messages are encrypted in transit (TLS) and at rest in the database. The Platform does not offer client-side end-to-end encryption at this time." },
       { question: "Is there a message rate limit?", answer: "Yes. To prevent spam, you can send a maximum of 5 messages per 10 seconds in any conversation." },
+      { question: "Can I control who messages or calls me?", answer: "Yes. Go to Messages → Settings to manage your privacy preferences:\n\n• **Allow DMs** — toggle direct messages on/off\n• **Allow Calls** — toggle voice/video calls on/off\n• **Allow Money Transfers** — toggle incoming money transfers\n• **Allow Community Invites** — toggle community chat invites\n• **Message Notifications** — mute or unmute chat notifications" },
+    ],
+  },
+  {
+    title: "Community Chats",
+    items: [
+      { question: "What are Community Chats?", answer: "Community Chats are group conversations organized around topics. You can join existing communities or be invited by other members. Messages, images, reactions, and market tags are all supported." },
+      { question: "How do I join a Community?", answer: "Go to Messages → Communities tab to browse available communities. Tap a community to join and start chatting." },
+      { question: "Can I share markets in community chats?", answer: "Yes! When composing a message, you can tag prediction markets to share them with the community. Tagged markets appear as interactive cards in the chat." },
+    ],
+  },
+  {
+    title: "In-App Support",
+    items: [
+      { question: "How do I contact support?", answer: "Go to Messages → Support tab to open a chat with our support team. You can describe your issue and receive help directly in the app." },
+      { question: "Is there an AI assistant?", answer: "Yes. The support chat includes an AI auto-reply that can help answer common questions instantly. For complex issues, a human support agent will follow up." },
+      { question: "Can I search my support messages?", answer: "Yes. Use the search bar at the top of the support chat to filter through your previous messages and find past conversations." },
     ],
   },
   {
@@ -163,7 +182,7 @@ const faqSections = [
   {
     title: "KYC (Identity Verification)",
     items: [
-      { question: "What is KYC?", answer: "KYC (Know Your Customer) is an identity verification process required to unlock higher withdrawal limits. It helps us maintain platform security and comply with regulations." },
+      { question: "What is KYC?", answer: "KYC (Know Your Customer) is an identity verification process that helps maintain platform security and comply with regulations. It is **optional during registration** — you can skip it and complete it later from your Security & KYC hub." },
       { question: "What are the KYC tiers?", answer: "**Tier 1 (Basic):** Requires your name, date of birth, phone number, and a selfie with a verification note.\n\n**Tier 2 (Full):** Requires government-issued ID (front & back), address proof, and utility bills." },
       { question: "How do withdrawal limits work with KYC?", answer: "Without KYC, you have a lower daily withdrawal limit. Completing Tier 1 increases your limit, and Tier 2 unlocks the highest daily withdrawal allowance. Exact limits are set by the admin." },
       { question: "Is my KYC data secure?", answer: "Yes. KYC documents are stored in a private, access-controlled storage bucket. Device fingerprinting (IP, browser, screen size) is logged during submission for fraud prevention." },
@@ -172,11 +191,12 @@ const faqSections = [
   {
     title: "Security & Privacy",
     items: [
-      { question: "Is OPollMarket secure?", answer: "Yes. The platform implements secure wallet authentication, blockchain-based settlement, and standard cybersecurity measures." },
-      { question: "What is the Security PIN?", answer: "You can set up a 6-digit Security PIN to protect sensitive actions like login and withdrawals. Go to your Profile → Security Settings to enable it." },
+      { question: "Is OPollMarket secure?", answer: "Yes. The platform implements secure wallet authentication, blockchain-based settlement, row-level security policies, hardened database access controls, and standard cybersecurity measures." },
+      { question: "What is the Security PIN?", answer: "You can set up a 6-digit Security PIN to protect sensitive actions like login, withdrawals, and **money transfers in DMs**. Go to your Profile → Security Settings to enable it." },
       { question: "What is TOTP (2FA)?", answer: "TOTP (Time-based One-Time Password) adds two-factor authentication using apps like Google Authenticator. You can require it for login and/or withdrawals from Security Settings." },
       { question: "Are funds custodial?", answer: "No. Funds remain under the control of users via their wallets; OPollMarket does not hold custodial access." },
-      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, Row-Level Security policies, encrypted storage, and compliance with applicable privacy standards. See our Privacy Policy for full details." },
+      { question: "How is user data protected?", answer: "User data is safeguarded through authentication protocols, Row-Level Security policies, encrypted storage, hardened security settings that prevent client-side tampering, and compliance with applicable privacy standards. See our Privacy Policy for full details." },
+      { question: "What are Feature Toggles?", answer: "The platform uses feature toggles to enable or disable specific features (e.g., DM money transfers, voice calls, community chats, support chat). Admins can toggle features on/off without requiring a code deployment." },
     ],
   },
 ];

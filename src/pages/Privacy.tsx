@@ -9,7 +9,10 @@ const tocItems = [
   { id: "info-collect", label: "Information We Collect" },
   { id: "how-use", label: "How We Use Your Information" },
   { id: "ai-processing", label: "AI & Automated Processing" },
-  { id: "dm-messaging", label: "Direct Messaging" },
+  { id: "dm-messaging", label: "Direct Messaging & Money Transfers" },
+  { id: "dm-calls", label: "Voice & Video Calls" },
+  { id: "communities", label: "Community Chats" },
+  { id: "support-chat", label: "In-App Support" },
   { id: "spaces-social", label: "Spaces, Stories & Social" },
   { id: "kyc-data", label: "KYC & Identity Verification Data" },
   { id: "data-sharing", label: "Data Sharing & Disclosure" },
@@ -57,8 +60,11 @@ const Privacy = () => {
             <li><strong>Authentication Data:</strong> Credentials from third-party OAuth providers (Google, Apple) if you choose to sign in via social login. We receive only the data necessary for authentication (email, name, profile picture).</li>
             <li><strong>Wallet Information:</strong> Public blockchain wallet addresses you connect to the Platform (e.g., MetaMask, Trust Wallet, SafePal, Coinbase Wallet, Rabby, Binance Wallet, Bitget Wallet). We never request or store your private keys or seed phrases.</li>
             <li><strong>User-Generated Content:</strong> Market proposals, comments, display names, and uploaded images (market covers, profile avatars).</li>
-            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, exit fee records, Quick Trade round history, and copy trade settings.</li>
-            <li><strong>Direct Messages:</strong> Message content, gift emoji selections, gift amounts, and conversation metadata exchanged through the Platform's direct messaging feature.</li>
+            <li><strong>Financial Information:</strong> Transaction amounts, trade details, deposit/withdrawal data, referral information, bonus balance usage, limit order history, exit fee records, Quick Trade round history, copy trade settings, and DM money transfer records.</li>
+            <li><strong>Direct Messages:</strong> Message content, gift emoji selections, gift amounts, money transfer amounts, and conversation metadata exchanged through the Platform's direct messaging feature.</li>
+            <li><strong>Voice & Video Calls:</strong> Call metadata including caller/callee identifiers, call duration, timestamps, and call status. Audio/video streams are not recorded by the Platform.</li>
+            <li><strong>Community Chat Data:</strong> Messages, images, reactions, and tagged market references shared in community chat rooms.</li>
+            <li><strong>Support Chat Data:</strong> Messages exchanged with support, including AI auto-reply interactions and uploaded images for issue documentation.</li>
             <li><strong>KYC Documents:</strong> Full name, date of birth, phone number, selfie photographs, government-issued identification (front/back), proof of address, and utility bills submitted for identity verification.</li>
             <li><strong>Security Settings:</strong> Security PIN preferences and TOTP enrollment status (we never store plaintext PINs or TOTP secrets in reversible form).</li>
             <li><strong>Communication Data:</strong> Any information you provide when contacting support or submitting feedback.</li>
@@ -112,14 +118,45 @@ const Privacy = () => {
         </section>
 
         <section id="dm-messaging" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">5. Direct Messaging</h2>
+          <h2 className="text-base font-semibold text-foreground">5. Direct Messaging & Money Transfers</h2>
           <p>The Platform provides a direct messaging feature restricted to mutual follows. By using direct messaging, you acknowledge that:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Message Content:</strong> Message text, gift emojis, and gift amounts are stored in our database and associated with your user ID and conversation.</li>
+            <li><strong>Message Content:</strong> Message text, gift emojis, gift amounts, and money transfer amounts are stored in our database and associated with your user ID and conversation.</li>
+            <li><strong>Money Transfers:</strong> When you send money directly in a DM, the transfer amount, fee, sender, and recipient are logged as financial transactions for audit and regulatory compliance purposes.</li>
             <li><strong>Encryption:</strong> Messages are encrypted in transit via TLS and at rest in the database. The Platform does not currently implement client-side end-to-end encryption.</li>
             <li><strong>Access Control:</strong> Only the two participants of a conversation can read their messages. Row-Level Security policies enforce this at the database level.</li>
             <li><strong>Rate Limiting:</strong> Message sending is rate-limited (5 messages per 10 seconds per conversation) to prevent abuse. Rate limit data is processed server-side.</li>
-            <li><strong>Gift Transactions:</strong> In-chat gifts create financial transactions that are logged for audit purposes, including sender, recipient, emoji, and amount.</li>
+            <li><strong>Gift & Transfer Transactions:</strong> In-chat gifts and money transfers create financial transactions that are logged for audit purposes, including sender, recipient, emoji/amount, and fees.</li>
+          </ul>
+        </section>
+
+        <section id="dm-calls" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5b. Voice & Video Calls</h2>
+          <p>The Platform provides one-on-one voice and video calling between DM participants. By using this feature, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Call Metadata:</strong> Call records (caller, callee, start/end times, duration, status) are stored in our database for analytics and dispute resolution.</li>
+            <li><strong>Audio/Video Streams:</strong> Real-time audio and video are transmitted via encrypted WebRTC connections through a third-party service (LiveKit). The Platform does not record call audio or video content.</li>
+            <li><strong>Privacy Settings:</strong> You can disable incoming calls from the Messages → Settings privacy preferences.</li>
+          </ul>
+        </section>
+
+        <section id="communities" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5c. Community Chats</h2>
+          <p>The Platform provides group chat rooms ("Communities"). By participating, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Message Content:</strong> Community messages (text, images, reactions, tagged markets) are stored in our database and visible to all community members.</li>
+            <li><strong>Membership Data:</strong> Your community memberships and join dates are recorded.</li>
+            <li><strong>Privacy Settings:</strong> You can control whether you receive community invites from the Messages → Settings privacy preferences.</li>
+          </ul>
+        </section>
+
+        <section id="support-chat" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5d. In-App Support</h2>
+          <p>The Platform provides an in-app support chat. By using this feature, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Support Messages:</strong> All messages exchanged with support are stored and accessible to authorized support staff and administrators.</li>
+            <li><strong>AI Auto-Reply:</strong> An AI system may process your messages to generate automated responses. Your message content is sent to AI providers for this purpose.</li>
+            <li><strong>Support Images:</strong> Images uploaded in support conversations are stored in a secure storage bucket with access restricted to you and authorized staff.</li>
           </ul>
         </section>
 
@@ -279,7 +316,7 @@ const Privacy = () => {
           <p>If you have questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us through the Platform's support channels or via the contact information provided in the application. We aim to respond to all inquiries within 30 days.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 3, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 6, 2026</p>
       </div>
       <BackToTop />
     </div>
