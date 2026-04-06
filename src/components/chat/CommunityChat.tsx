@@ -207,7 +207,8 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   }, [user, slug, queryClient]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      <ChatDoodleBackground />
       {/* Header */}
       <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
         <button onClick={onBack} className="text-muted-foreground hover:text-foreground">
