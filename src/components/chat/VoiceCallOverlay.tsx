@@ -143,13 +143,18 @@ const VoiceCallOverlay = ({
         el.id = `remote-audio-${track.sid}`;
         document.body.appendChild(el);
         try {
-          const stream = (track as any).mediaStream as MediaStream | undefined;
-          if (stream) {
+          // Get the underlying MediaStreamTrack and build a stream for the analyser
+          const mediaTrack = track.mediaStreamTrack;
+          if (mediaTrack) {
+            const stream = new MediaStream([mediaTrack]);
             const ctx = new AudioContext();
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
             analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
             source.connect(analyser);
+            // Close previous analyser if any
+            try { remoteAnalyserRef.current?.ctx.close(); } catch {}
             remoteAnalyserRef.current = { ctx, analyser, source };
           }
         } catch {}
