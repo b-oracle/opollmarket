@@ -6,6 +6,19 @@ import CategoryIcon from "@/components/CategoryIcon";
 import { Users, ChevronRight } from "lucide-react";
 import CommunityChat from "./CommunityChat";
 
+const COMMUNITIES_LIST = [
+  { slug: "crypto", label: "Crypto" },
+  { slug: "sports", label: "Sports" },
+  { slug: "politics", label: "Politics" },
+  { slug: "entertainment", label: "Entertainment" },
+  { slug: "economy", label: "Economy" },
+  { slug: "ai-tech", label: "AI & Tech" },
+  { slug: "science", label: "Science" },
+  { slug: "forex", label: "Forex" },
+  { slug: "commodities", label: "Commodities" },
+  { slug: "twitter-x", label: "Twitter/X" },
+];
+
 const COMMUNITIES = [
   { slug: "crypto", label: "Crypto" },
   { slug: "sports", label: "Sports" },
