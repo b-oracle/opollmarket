@@ -425,21 +425,28 @@ const VoiceCallOverlay = ({
   };
 
   const toggleCamera = async () => {
-    if (!roomRef.current) return;
+    const room = roomRef.current;
+    if (!room) return;
     try {
       const newState = !cameraOn;
-      await roomRef.current.localParticipant.setCameraEnabled(newState);
+      await room.localParticipant.setCameraEnabled(newState);
       setCameraOn(newState);
-      // Re-attach track to ref after a tick
       if (newState) {
-        setTimeout(() => {
-          const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
-          if (camPub?.track && localVideoRef.current) {
-            camPub.track.attach(localVideoRef.current);
-          }
-        }, 200);
+        // Retry attachment up to 3 times with increasing delay
+        const attachLocal = (attempt: number) => {
+          setTimeout(() => {
+            const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+            if (camPub?.track && localVideoRef.current) {
+              camPub.track.attach(localVideoRef.current);
+            } else if (attempt < 3) {
+              attachLocal(attempt + 1);
+            }
+          }, 200 * (attempt + 1));
+        };
+        attachLocal(0);
       }
     } catch (err) {
+      console.error("Camera toggle error:", err);
       toast.error("Failed to toggle camera");
     }
   };
