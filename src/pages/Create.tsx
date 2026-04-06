@@ -1138,7 +1138,8 @@ const Create = () => {
         setEscrowId(null);
       }
       setSubmitStep("error");
-      toast.error("Failed to save market. Your balance has been refunded.");
+      const errorMsg = error?.message || "Unknown error";
+      toast.error(`Failed to save market: ${errorMsg}. Your balance has been refunded.`);
       return;
     }
 
