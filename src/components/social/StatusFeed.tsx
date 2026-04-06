@@ -22,7 +22,7 @@ interface FeedItem {
   ad?: any;
 }
 
-const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
+const StatusFeed = ({ userId, showComposer = false, onlyUserId }: StatusFeedProps) => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
