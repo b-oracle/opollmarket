@@ -675,7 +675,7 @@ const VoiceCallOverlay = ({
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden" style={{ background: "radial-gradient(ellipse at center, hsl(var(--background)) 0%, hsl(var(--background)) 70%)" }}>
       {/* Doodle pattern layer */}
-      <div className="absolute inset-0 opacity-[0.08] dark:opacity-[0.10]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
+      <div className="absolute inset-0 pointer-events-none opacity-[0.08] dark:opacity-[0.10]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
       {/* E2EE indicator + minimize */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 z-10" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
         <div className="flex items-center gap-1.5 text-xs text-emerald-500">
