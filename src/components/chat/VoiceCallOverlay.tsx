@@ -224,8 +224,13 @@ const VoiceCallOverlay = ({
 
     // Track local video publication to attach to ref
     room.on(RoomEvent.LocalTrackPublished, (pub) => {
-      if (pub.track?.kind === Track.Kind.Video && localVideoRef.current) {
-        pub.track.attach(localVideoRef.current);
+      if (pub.track?.kind === Track.Kind.Video) {
+        // Defer attachment so the video element renders first
+        setTimeout(() => {
+          if (localVideoRef.current && pub.track) {
+            pub.track.attach(localVideoRef.current);
+          }
+        }, 100);
       }
     });
 
