@@ -202,7 +202,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
                   <button
                     key={t.key}
                     onClick={() => {
-                      if (t.key === "posts" && activeTab === "posts" && isOwnProfile) {
+                      if (t.key === "posts" && activeTab === "posts" && isOwnProfile && isFeatureEnabled("my_posts_filter")) {
                         setMyPostsOnly((prev) => !prev);
                       } else {
                         setActiveTab(t.key);
