@@ -675,39 +675,65 @@ const VoiceCallOverlay = ({
   if (minimized) {
     return (
       <div
-        onClick={onMaximize}
-        className="fixed top-0 left-0 right-0 z-[9999] bg-emerald-600 text-white px-4 py-2 flex items-center gap-3 cursor-pointer animate-in slide-in-from-top active:bg-emerald-700 transition-colors"
-        style={{ paddingTop: "max(0.5rem, var(--safe-top))" }}
+        className="fixed bottom-20 lg:bottom-4 left-3 right-3 lg:left-auto lg:right-4 lg:w-80 z-[9999] rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-xl animate-in slide-in-from-bottom"
       >
-        <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div
-            className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
-            style={{
-              boxShadow: remoteAudioLevel > 0.05
-                ? `0 0 ${4 + remoteAudioLevel * 8}px ${1 + remoteAudioLevel * 3}px rgba(59,130,246,${0.4 + remoteAudioLevel * 0.5})`
-                : "none",
-            }}
-          >
-            {otherUserAvatar ? (
-              <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
-            ) : (
-              <span className="text-[10px] font-bold">{otherUserName.charAt(0).toUpperCase()}</span>
-            )}
+        <div className="flex items-center gap-3 px-4 py-3">
+          {/* Live indicator + info */}
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={onMaximize}>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                CALL
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                {status === "active" && (waitingReconnect || reconnecting) ? "Reconnecting..." : status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
+              </span>
+              {(cameraOn || hasRemoteVideo) && <Video className="w-2.5 h-2.5 text-primary" />}
+            </div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <div
+                className="w-5 h-5 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+                style={{
+                  boxShadow: remoteAudioLevel > 0.05
+                    ? `0 0 ${4 + remoteAudioLevel * 8}px ${1 + remoteAudioLevel * 3}px rgba(59,130,246,${0.4 + remoteAudioLevel * 0.5})`
+                    : "none",
+                }}
+              >
+                {otherUserAvatar ? (
+                  <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <span className="text-[8px] font-bold text-foreground">{otherUserName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+              <p className="text-xs font-semibold truncate">{otherUserName}</p>
+            </div>
           </div>
-          <span className="text-sm font-medium truncate">{otherUserName}</span>
-          <span className="text-xs opacity-80">
-            {status === "active" && (waitingReconnect || reconnecting) ? "Reconnecting..." : status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
-          </span>
-          {(cameraOn || hasRemoteVideo) && <Video className="w-3.5 h-3.5 opacity-70" />}
+
+          {/* Controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={onMaximize}
+              className="w-8 h-8 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              title="Expand"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                muted ? "bg-muted/80 text-muted-foreground" : "bg-primary/20 text-primary"
+              }`}
+            >
+              {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); status === "ringing" && isOutgoing ? handleCancel() : handleEnd(); }}
+              className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+            >
+              <PhoneOff className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
-        <span className="text-xs opacity-80">Tap to return</span>
-        <button
-          onClick={(e) => { e.stopPropagation(); status === "ringing" && isOutgoing ? handleCancel() : handleEnd(); }}
-          className="w-7 h-7 rounded-full bg-destructive flex items-center justify-center shrink-0"
-        >
-          <PhoneOff className="w-3.5 h-3.5" />
-        </button>
       </div>
     );
   }
