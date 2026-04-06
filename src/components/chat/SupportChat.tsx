@@ -27,6 +27,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   const fileRef = useRef<HTMLInputElement>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string; senderName: string } | null>(null);
   const [aiTyping, setAiTyping] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const { data: ticket } = useQuery({
     queryKey: ["support-ticket", ticketId],
