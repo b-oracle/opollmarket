@@ -18,6 +18,14 @@ interface GiftMessageBubbleProps {
 
 const PARTICLE_COUNT = 7;
 
+// Emoji gift prices — if a 💵 message has a different amount, it's a direct transfer
+const EMOJI_PRICES: Record<string, number> = {
+  "💵": 0.05,
+};
+
+const isDirectTransfer = (content: string, amount: number) =>
+  content === "💵" && amount !== 0.05;
+
 const GiftMessageBubble = ({
   content,
   giftAmount,
