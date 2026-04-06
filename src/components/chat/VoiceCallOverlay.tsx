@@ -23,7 +23,7 @@ interface VoiceCallOverlayProps {
 }
 
 type CallStatus = "connecting" | "ringing" | "active" | "ended";
-const GRACE_PERIOD_MS = 30_000;
+const GRACE_PERIOD_MS = 120_000;
 
 const VoiceCallOverlay = ({
   callId,
