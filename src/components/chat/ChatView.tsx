@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
@@ -39,6 +40,7 @@ const ChatView = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [showGift, setShowGift] = useState(false);
@@ -286,7 +288,7 @@ const ChatView = () => {
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
-      <ChatDoodleBackground />
+      {isFeatureEnabled("chat_doodle_bg") && <ChatDoodleBackground />}
       <SEOHead title={`Chat with ${otherName} | Pollmarket`} description="Direct message" />
       {/* Header */}
       <div className="bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
@@ -307,7 +309,7 @@ const ChatView = () => {
           <span className="text-sm font-semibold truncate">{otherName}</span>
           {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
-        {convStatus === "active" && (
+        {convStatus === "active" && isFeatureEnabled("voice_calls") && (
           <>
             <button
               onClick={() => handleStartCall(true)}

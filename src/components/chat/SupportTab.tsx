@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { Plus, HelpCircle, ChevronRight, Clock, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ const STATUS_FILTERS = [
 const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureToggles();
   const { supportPerTicket, markTicketRead } = useUnreadCounts();
   const [showNew, setShowNew] = useState(false);
   const [category, setCategory] = useState("");
@@ -226,7 +228,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
       ) : null}
 
       {/* Search bar */}
-      {tickets.length > 0 && (
+      {tickets.length > 0 && isFeatureEnabled("chat_search") && (
         <div className="px-4 py-2 border-b border-border">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />

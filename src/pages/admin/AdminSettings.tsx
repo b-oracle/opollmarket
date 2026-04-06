@@ -1915,15 +1915,15 @@ const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 const TOGGLE_CATEGORIES: Record<string, { label: string; keys: string[] }> = {
   core: {
     label: "🏠 Core Platform",
-    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading", "welcome_bonus"],
+    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading", "copy_trade_commissions", "welcome_bonus"],
   },
   communication: {
     label: "📨 Communication & Support",
-    keys: ["dm_chat", "communities", "support_tickets", "user_settings"],
+    keys: ["dm_chat", "voice_calls", "call_notifications", "chat_search", "chat_doodle_bg", "communities", "support_tickets", "user_settings"],
   },
   social: {
     label: "💬 Social Features",
-    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload", "live_streaming", "ai_social_generation"],
+    keys: ["social_profiles", "social_status_feed", "social_stories", "social_tutorial", "social_spaces", "allow_unverified_spaces", "private_spaces", "space_gifts", "space_recording", "space_chat", "status_image_upload", "live_streaming", "ai_social_generation", "my_posts_filter"],
   },
   charts: {
     label: "📊 Charts & Display",

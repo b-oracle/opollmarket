@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import FollowButton from "@/components/FollowButton";
 import ActivityFeed from "@/components/ActivityFeed";
 import StatusFeed from "@/components/social/StatusFeed";
@@ -24,6 +25,7 @@ interface SocialSectionProps {
 const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">(initialTab || "posts");
   const [searchQuery, setSearchQuery] = useState("");
@@ -200,7 +202,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
                   <button
                     key={t.key}
                     onClick={() => {
-                      if (t.key === "posts" && activeTab === "posts" && isOwnProfile) {
+                      if (t.key === "posts" && activeTab === "posts" && isOwnProfile && isFeatureEnabled("my_posts_filter")) {
                         setMyPostsOnly((prev) => !prev);
                       } else {
                         setActiveTab(t.key);

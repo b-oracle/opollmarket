@@ -3,6 +3,7 @@ import ChatDoodleBackground from "./ChatDoodleBackground";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp } from "lucide-react";
 import MarketTagSelector, { type MarketTag } from "@/components/social/MarketTagSelector";
@@ -62,6 +63,7 @@ interface CommunityMessage {
 
 const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
@@ -209,7 +211,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
 
   return (
     <div className="flex flex-col h-full relative">
-      <ChatDoodleBackground />
+      {isFeatureEnabled("chat_doodle_bg") && <ChatDoodleBackground />}
       {/* Header */}
       <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
         <button onClick={onBack} className="text-muted-foreground hover:text-foreground">

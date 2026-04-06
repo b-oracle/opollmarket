@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react"
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ const ACTIVE_CALL_STORAGE_KEY = "dm-active-call";
 
 const IncomingCallBanner = () => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
@@ -215,6 +217,8 @@ const IncomingCallBanner = () => {
     window.addEventListener("start-voice-call" as any, handler);
     return () => window.removeEventListener("start-voice-call" as any, handler);
   }, []);
+
+  if (!isFeatureEnabled("voice_calls")) return null;
 
   return (
     <>
