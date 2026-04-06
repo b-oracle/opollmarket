@@ -281,12 +281,12 @@ const AdminCreateMarket = () => {
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
+    if (!imageFile || !user) return null;
     setUploadingImage(true);
     const { compressImage, webpExtension } = await import("@/lib/imageCompression");
     const compressed = await compressImage(imageFile, "market-banner");
     const ext = webpExtension();
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage
       .from("market-images")
       .upload(fileName, compressed, { contentType: compressed.type });

@@ -610,11 +610,11 @@ const Create = () => {
   };
 
   const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
+    if (!imageFile || !user) return null;
     const { compressImage, webpExtension } = await import("@/lib/imageCompression");
     const compressed = await compressImage(imageFile, "market-banner");
     const ext = webpExtension();
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage
       .from("market-images")
       .upload(fileName, compressed, { contentType: compressed.type });
@@ -939,6 +939,29 @@ const Create = () => {
       console.error("Moderation check failed, proceeding:", modResult.reason);
     }
 
+    // CRITICAL: Check image upload result BEFORE any balance deduction
+    {
+      let earlyImageUrl: string | null = null;
+      if (imageUploadResult.status === "fulfilled") {
+        earlyImageUrl = imageUploadResult.value as string | null;
+      }
+      if (!earlyImageUrl && imagePreview && !imagePreview.startsWith("blob:")) {
+        earlyImageUrl = imagePreview; // AI-generated URL
+      }
+      if (imageFile && !earlyImageUrl) {
+        toast.error("Image upload failed. No charge was taken.");
+        setSubmitStep("error");
+        isSubmittingRef.current = false;
+        return;
+      }
+      if (!earlyImageUrl) {
+        toast.error("A cover image is required.");
+        setSubmitStep("error");
+        isSubmittingRef.current = false;
+        return;
+      }
+    }
+
     // Step 1: Check and deduct balance
     setSubmitStep("deploying");
     setCompletedSteps(prev => new Set([...prev, 1]));
@@ -1005,12 +1028,11 @@ const Create = () => {
     const needsReview = isSimilar || isFlagged || (feeBypass && !unlimitedMarkets);
     const marketStatus = needsReview ? "pending" : "active";
 
-    // Image was already uploaded in parallel — extract result, or use AI-generated URL
+    // Image was already validated before balance deduction — extract result
     let imageUrl: string | null = null;
     if (imageUploadResult.status === "fulfilled") {
       imageUrl = imageUploadResult.value as string | null;
     }
-    // If no file was uploaded but we have an AI-generated image URL, use that
     if (!imageUrl && imagePreview && !imagePreview.startsWith("blob:")) {
       imageUrl = imagePreview;
     }
@@ -1079,7 +1101,8 @@ const Create = () => {
     if (error) {
       console.error("Failed to save market:", error);
       // Refund via secure RPC (rollback the deduction)
-      const rollbackFeeAmount = ((feeBypass && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
+      // When escrowId exists, the creation fee was already held in escrow — don't include it in rollback
+      const rollbackFeeAmount = ((feeBypass && !escrowId && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
       const bonusForFeeRollback = Math.min(Number(bal.bonus_balance || 0), rollbackFeeAmount);
       await supabase.rpc("deduct_market_liquidity" as any, {
         _user_id: user.id,
@@ -1087,6 +1110,14 @@ const Create = () => {
         _fee_amount: -rollbackFeeAmount,
         _bonus_for_fee: -bonusForFeeRollback,
       });
+      // Release escrow as refunded on technical failure
+      if (escrowId) {
+        await supabase.rpc("release_creation_fee_escrow" as any, {
+          _escrow_id: escrowId,
+          _action: "refunded",
+        });
+        setEscrowId(null);
+      }
       setSubmitStep("error");
       toast.error("Failed to save market. Your balance has been refunded.");
       return;
