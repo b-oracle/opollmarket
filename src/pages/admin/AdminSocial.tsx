@@ -166,7 +166,7 @@ const AdminSocial = () => {
       let allRows: any[] = [];
       let p = 0;
       while (true) {
-        const { data } = await supabase.from(table).select("created_at").order("created_at", { ascending: true }).range(p * 1000, (p + 1) * 1000 - 1);
+        const { data } = await (supabase.from(table as any) as any).select("created_at").order("created_at", { ascending: true }).range(p * 1000, (p + 1) * 1000 - 1);
         if (!data || data.length === 0) break;
         allRows.push(...data);
         if (data.length < 1000) break;
