@@ -114,6 +114,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
 
     if (error) {
       toast.error("Failed to send");
+      setSending(false);
       return;
     }
     setMessage("");
