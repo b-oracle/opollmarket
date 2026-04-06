@@ -271,8 +271,8 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
               className="min-h-[36px] max-h-[120px] text-sm resize-none py-2"
               rows={1}
             />
-            <Button size="sm" className="h-9 w-9 p-0 shrink-0" disabled={!message.trim()} onClick={() => sendMessage()}>
-              <Send className="w-4 h-4" />
+            <Button size="sm" className="h-9 w-9 p-0 shrink-0" disabled={!message.trim() || sending} onClick={() => sendMessage()}>
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
         </div>
