@@ -25,6 +25,7 @@ const typeConfig: Record<string, { icon: typeof Bell; colorClass: string }> = {
   info: { icon: Info, colorClass: "text-muted-foreground bg-muted/50" },
   follow: { icon: UserPlus, colorClass: "text-primary bg-primary/10" },
   gift: { icon: Gift, colorClass: "text-primary bg-primary/10" },
+  call: { icon: Phone, colorClass: "text-primary bg-primary/10" },
 };
 
 const formatTimeAgo = (date: string) => {

@@ -189,14 +189,17 @@ Deno.serve(async (req) => {
         .eq("id", user.id)
         .single();
 
-      await admin.from("notifications").insert({
+      const notifPayload = {
         user_id: calleeId,
         title: "Incoming Call 📞",
         message: `${callerProfile?.display_name || "Someone"} is calling you`,
         type: "call",
         actor_id: user.id,
         market_id: conversation_id,
-      });
+      };
+      console.log("Inserting call notification:", JSON.stringify(notifPayload));
+      const { error: notifErr } = await admin.from("notifications").insert(notifPayload);
+      if (notifErr) console.error("Call notification insert error:", notifErr);
 
       // Also trigger an urgent push with call metadata
       try {
