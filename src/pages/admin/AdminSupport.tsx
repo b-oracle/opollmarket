@@ -120,7 +120,7 @@ const AdminSupport = () => {
         <p className="text-sm text-muted-foreground text-center py-10">No tickets found</p>
       ) : (
         <div className="space-y-2">
-          {tickets.map((t: any) => (
+          {filteredTickets.map((t: any) => (
             <div
               key={t.id}
               className="border border-border rounded-lg p-3 hover:bg-accent/20 transition-colors cursor-pointer"
