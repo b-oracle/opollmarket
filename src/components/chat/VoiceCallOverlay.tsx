@@ -394,8 +394,40 @@ const VoiceCallOverlay = ({
       const newState = !cameraOn;
       await roomRef.current.localParticipant.setCameraEnabled(newState);
       setCameraOn(newState);
+      // Re-attach track to ref after a tick
+      if (newState) {
+        setTimeout(() => {
+          const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (camPub?.track && localVideoRef.current) {
+            camPub.track.attach(localVideoRef.current);
+          }
+        }, 200);
+      }
     } catch (err) {
       toast.error("Failed to toggle camera");
+    }
+  };
+
+  const flipCamera = async () => {
+    if (!roomRef.current) return;
+    try {
+      const newFacing = facingMode === "user" ? "environment" : "user";
+      // Restart camera with new facing mode
+      await roomRef.current.localParticipant.setCameraEnabled(false);
+      await roomRef.current.localParticipant.setCameraEnabled(true, {
+        facingMode: newFacing,
+        resolution: { width: 640, height: 480, frameRate: 24 },
+      });
+      setFacingMode(newFacing);
+      // Re-attach
+      setTimeout(() => {
+        const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (camPub?.track && localVideoRef.current) {
+          camPub.track.attach(localVideoRef.current);
+        }
+      }, 200);
+    } catch (err) {
+      toast.error("Failed to flip camera");
     }
   };
 
