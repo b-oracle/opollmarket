@@ -82,7 +82,7 @@ const VoiceCallOverlay = ({
     statusRef.current = status;
   }, [status]);
 
-  const handleEnd = useCallback(async () => {
+  const handleEnd = useCallback(() => {
     // Allow re-entry: if a previous end attempt started but didn't close,
     // the user should still be able to force-end.
     if (endingRef.current) {
@@ -103,13 +103,13 @@ const VoiceCallOverlay = ({
     setShowRejoin(false);
     try { roomRef.current?.disconnect(); } catch {}
 
-    try {
-      await supabase.functions.invoke("dm-call-token", {
-        body: { action: "end", call_id: callId },
-      });
-    } catch { /* ignore */ }
+    // Fire-and-forget — don't block close on network
+    supabase.functions.invoke("dm-call-token", {
+      body: { action: "end", call_id: callId },
+    }).catch(() => {});
 
-    setTimeout(onClose, 1000);
+    // Close after brief delay, with hard failsafe
+    setTimeout(onClose, 800);
   }, [callId, onClose]);
 
   const handleCancel = useCallback(async () => {
