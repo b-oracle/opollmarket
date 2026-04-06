@@ -130,9 +130,12 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         console.error("AI reply failed:", e);
       } finally {
         setAiTyping(false);
+        setSending(false);
       }
+    } else {
+      setSending(false);
     }
-  }, [user, message, ticketId, isStaff, replyTo]);
+  }, [user, message, ticketId, isStaff, replyTo, sending]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
