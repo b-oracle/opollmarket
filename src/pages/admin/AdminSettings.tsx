@@ -106,6 +106,9 @@ const AdminSettings = () => {
   const [depositMaxAmount, setDepositMaxAmount] = useState("50000");
   const [pushPromptCooldownDays, setPushPromptCooldownDays] = useState("14");
   const [depositExpiryMinutes, setDepositExpiryMinutes] = useState("60");
+  const [maxDraftsNone, setMaxDraftsNone] = useState("2");
+  const [maxDraftsBlue, setMaxDraftsBlue] = useState("5");
+  const [maxDraftsGold, setMaxDraftsGold] = useState("10");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
