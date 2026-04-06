@@ -169,6 +169,9 @@ const IncomingCallBanner = () => {
   const handleAnswer = useCallback(async () => {
     if (!incomingCall || answering) return;
     setAnswering(true);
+    // Kill ringtone immediately — don't wait for async answer flow
+    if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
+    if (navigator.vibrate) navigator.vibrate(0);
 
     try {
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
