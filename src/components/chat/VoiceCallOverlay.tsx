@@ -375,18 +375,33 @@ const VoiceCallOverlay = ({
   }, [status]);
 
   // Attach pending remote video track once the <video> element renders
+  // Uses retry because the ref may not be set in the same render cycle
   useEffect(() => {
-    if (hasRemoteVideo && remoteVideoRef.current && pendingRemoteVideoTrackRef.current) {
-      pendingRemoteVideoTrackRef.current.attach(remoteVideoRef.current);
-    }
-  }, [hasRemoteVideo]);
+    if (!hasRemoteVideo || !pendingRemoteVideoTrackRef.current) return;
+    const track = pendingRemoteVideoTrackRef.current;
+    const tryAttach = (attempt: number) => {
+      if (remoteVideoRef.current) {
+        track.attach(remoteVideoRef.current);
+      } else if (attempt < 10) {
+        setTimeout(() => tryAttach(attempt + 1), 100);
+      }
+    };
+    tryAttach(0);
+  }, [hasRemoteVideo, status]);
 
   // Attach pending screen share track once the <video> element renders
   useEffect(() => {
-    if (hasRemoteScreenShare && screenShareRef.current && pendingScreenShareTrackRef.current) {
-      pendingScreenShareTrackRef.current.attach(screenShareRef.current);
-    }
-  }, [hasRemoteScreenShare]);
+    if (!hasRemoteScreenShare || !pendingScreenShareTrackRef.current) return;
+    const track = pendingScreenShareTrackRef.current;
+    const tryAttach = (attempt: number) => {
+      if (screenShareRef.current) {
+        track.attach(screenShareRef.current);
+      } else if (attempt < 10) {
+        setTimeout(() => tryAttach(attempt + 1), 100);
+      }
+    };
+    tryAttach(0);
+  }, [hasRemoteScreenShare, status]);
 
   // Ensure dial tone is killed the moment status leaves "ringing"
   useEffect(() => {
