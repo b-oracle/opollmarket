@@ -92,6 +92,9 @@ export const useCommissionSettings = () => {
            deposit_max_amount: 50000,
            push_prompt_cooldown_days: 14,
            deposit_expiry_minutes: 60,
+           max_drafts_none: 2,
+           max_drafts_blue: 5,
+           max_drafts_gold: 10,
          };
       }
       const d = data as any;
