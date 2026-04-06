@@ -39,6 +39,9 @@ export interface CommissionSettings {
   deposit_max_amount: number;
   push_prompt_cooldown_days: number;
   deposit_expiry_minutes: number;
+  max_drafts_none: number;
+  max_drafts_blue: number;
+  max_drafts_gold: number;
 }
 
 export const useCommissionSettings = () => {
