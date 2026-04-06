@@ -1015,6 +1015,14 @@ const Create = () => {
       imageUrl = imagePreview;
     }
 
+    // CRITICAL: If we have a file but upload failed, stop before any balance deduction
+    if (imageFile && !imageUrl) {
+      toast.error("Image upload failed. No charge was taken.");
+      setSubmitStep("error");
+      isSubmittingRef.current = false;
+      return;
+    }
+
     // Save to database
     const autoResolveDeadline = autoResolve && endDate && autoResolveTime
       ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
