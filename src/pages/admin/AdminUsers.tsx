@@ -32,7 +32,9 @@ const AdminUsers = () => {
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
-  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin"; hasRole: boolean } | null>(null);
+  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin" | "support"; hasRole: boolean } | null>(null);
+  const [blockConfirm, setBlockConfirm] = useState<{ userId: string; name: string; currentlyBlocked: boolean } | null>(null);
+  const [unlimitedConfirm, setUnlimitedConfirm] = useState<{ userId: string; name: string; current: boolean } | null>(null);
   const [activityDrawer, setActivityDrawer] = useState<{ userId: string; name: string } | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
