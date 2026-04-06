@@ -1,80 +1,62 @@
 
-What I found
 
-- This looks like a real code issue, not user error.
-- I found a direct mismatch between the market image upload code and the current storage rules:
-  - `src/pages/Create.tsx` uploads files with a plain filename
-  - but the storage policy now requires the file path to start with the signed-in user’s ID
-- Because of that, normal banner uploads fail first.
-- The create flow then keeps going anyway, deducts funds, and only fails later when saving the market because non-draft markets require `image_url`.
-- The missing $12 is likely a held market-creation escrow that was never released after the failure.
+## AI Auto-Responder for Support Tickets
 
-Root cause chain
+### What it does
+When a user submits a new support ticket or sends a message, an AI assistant automatically replies in the chat. The AI asks clarifying questions, provides relevant information, and helps the user — but never takes any action (no balance changes, no market edits, no account modifications). Staff can still join the conversation at any time.
 
-1. Image upload fails
-- `src/pages/Create.tsx` uploads to `market-images/<filename>`
-- current storage policy requires `market-images/<auth.uid()>/<filename>`
+### How it works
 
-2. Submission does not stop after upload failure
-- the upload result is treated as a fulfilled `null`
-- the flow continues into balance deduction
+**1. Create a new edge function `supabase/functions/support-ai-reply/index.ts`**
+- Receives `ticket_id`, the latest user message content, the ticket category, and full conversation history
+- Uses Lovable AI (`google/gemini-3-flash-preview`) with a carefully scoped system prompt:
+  - "You are a support assistant for Opoll Market, a prediction market platform"
+  - "Ask clarifying questions to understand the issue"
+  - "Provide helpful guidance based on the category (withdrawal, deposit, KYC, etc.)"
+  - "You CANNOT take any action — you cannot refund, credit, resolve, or modify anything"
+  - "If the issue requires manual intervention, tell the user a staff member will review it shortly"
+  - "Keep responses concise and friendly"
+- Inserts the AI reply into `support_messages` with `is_staff = true` and a dedicated AI service role user ID
+- Returns the response
 
-3. Market save then fails
-- `image_url` ends up empty
-- `validate_market_image_url` blocks non-draft market creation
+**2. Create a service-role AI user for support messages**
+- Database migration: insert a row into `profiles` with a fixed UUID for the AI bot (e.g., display_name: "AI Assistant", avatar_url: a bot icon)
+- AI messages use this user ID so they appear distinctly from human staff
 
-4. Refund handling is incomplete
-- if a creation fee escrow was already held, the flow does not reliably release it on technical failure
-- rollback math also mixes “escrow-held fee” with “freshly deducted fee”, so the refund path is not clean
+**3. Add `is_ai` column to `support_messages`**
+- Migration: `ALTER TABLE public.support_messages ADD COLUMN is_ai boolean NOT NULL DEFAULT false;`
+- AI replies are marked `is_ai = true` so the UI can style them differently
 
-Plan
+**4. Trigger AI reply from `SupportChat.tsx`**
+- After a non-staff user sends a message, call the edge function
+- Show a brief "AI is typing..." indicator while waiting
+- The AI reply arrives via realtime subscription like any other message
 
-1. Immediate user remediation
-- Check Mattolu’s current main balance, bonus balance, held escrow records, and market-creation transactions before adjusting anything
-- If the $12 is still sitting in `creation_fee_escrows` as `held`, release it as `refunded`
-- Verify there was no duplicate rollback before refunding, so we do not over-credit the account
+**5. Update `SupportMessageBubble.tsx`**
+- When `is_ai = true`, show a distinct bot avatar (sparkle/robot icon) and label "AI Assistant" instead of "Support Staff"
+- Optionally add a subtle "Automated response" badge
 
-2. Fix the upload bug
-- Update `src/pages/Create.tsx` to upload market images under a user-owned path like:
-  - `<user.id>/<timestamp-random>.webp`
-- Apply the same fix to `src/pages/admin/AdminCreateMarket.tsx` so admin market creation does not break for the same reason
+**6. Update `SupportTab.tsx` (ticket creation)**
+- After creating a ticket and the first message, immediately call the AI to send an initial response asking for more details
 
-3. Stop the create flow earlier
-- In `src/pages/Create.tsx`, if a local image upload fails or returns no URL, stop immediately
-- Do not continue to balance deduction
-- Show a clearer message like “Image upload failed. No charge was taken.”
+### AI prompt design (category-aware)
+The system prompt includes category-specific guidance:
+- **Withdrawal**: Ask for transaction ID, amount, date, payment method
+- **Deposit**: Ask for payment method, reference number, amount
+- **KYC**: Ask what stage they're stuck at, what error they see
+- **Quick Trade / Prediction**: Ask for the market name, what happened, expected vs actual
+- **Technical**: Ask for device, browser, steps to reproduce
+- **General**: Ask for a clear description of the issue
 
-4. Fix refund/escrow handling
-- Add one centralized cleanup path for technical failures during market creation
-- Refund only amounts actually deducted in that submit attempt
-- If a creation fee was already held in escrow, release that escrow as `refunded` on technical failure
-- Do not include `marketCreationFee` in rollback math when `escrowId` already exists
+### Database migration
+```sql
+ALTER TABLE public.support_messages ADD COLUMN is_ai boolean NOT NULL DEFAULT false;
+```
 
-5. Harden the flow so this cannot sit for days again
-- Add a stale-escrow recovery rule for abandoned/failed creations
-- Either auto-refund old held escrows after a safe timeout or surface them clearly for admin recovery
-- Tighten balance/escrow RPCs so only the owner or admin can act on them
+### Files to create/modify
+- `supabase/functions/support-ai-reply/index.ts` — new edge function
+- `src/components/chat/SupportChat.tsx` — trigger AI after user message, typing indicator
+- `src/components/chat/SupportMessageBubble.tsx` — bot avatar/label for AI messages
+- `src/components/chat/SupportTab.tsx` — trigger AI after ticket creation
+- Database migration for `is_ai` column
 
-Validation
-
-- Test market creation with a normal uploaded image
-- Test with forced image upload failure and confirm:
-  - no balance deduction
-  - no held escrow left behind
-- Test fee-bypass creation with a technical failure and confirm escrow is refunded
-- Test AI-generated image URL flow to ensure that still works
-- Re-check Mattolu’s final balance and escrow status after remediation
-
-Technical details
-
-- Files to update:
-  - `src/pages/Create.tsx`
-  - `src/pages/admin/AdminCreateMarket.tsx`
-- Database/backend pieces to adjust:
-  - `hold_creation_fee_escrow`
-  - `release_creation_fee_escrow`
-  - `deduct_market_liquidity`
-- Relevant current mismatch:
-  - upload code writes plain filenames
-  - storage policy requires first folder segment = authenticated user ID
-  - market insert/update is blocked when `image_url` is empty for non-draft markets
