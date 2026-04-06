@@ -1101,7 +1101,8 @@ const Create = () => {
     if (error) {
       console.error("Failed to save market:", error);
       // Refund via secure RPC (rollback the deduction)
-      const rollbackFeeAmount = ((feeBypass && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
+      // When escrowId exists, the creation fee was already held in escrow — don't include it in rollback
+      const rollbackFeeAmount = ((feeBypass && !escrowId && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
       const bonusForFeeRollback = Math.min(Number(bal.bonus_balance || 0), rollbackFeeAmount);
       await supabase.rpc("deduct_market_liquidity" as any, {
         _user_id: user.id,
@@ -1109,6 +1110,14 @@ const Create = () => {
         _fee_amount: -rollbackFeeAmount,
         _bonus_for_fee: -bonusForFeeRollback,
       });
+      // Release escrow as refunded on technical failure
+      if (escrowId) {
+        await supabase.rpc("release_creation_fee_escrow" as any, {
+          _escrow_id: escrowId,
+          _action: "refunded",
+        });
+        setEscrowId(null);
+      }
       setSubmitStep("error");
       toast.error("Failed to save market. Your balance has been refunded.");
       return;
