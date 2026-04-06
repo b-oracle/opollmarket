@@ -83,14 +83,25 @@ const VoiceCallOverlay = ({
   }, [status]);
 
   const handleEnd = useCallback(async () => {
-    if (endingRef.current) return;
+    // Allow re-entry: if a previous end attempt started but didn't close,
+    // the user should still be able to force-end.
+    if (endingRef.current) {
+      // Force close immediately on repeated tap
+      try { roomRef.current?.disconnect(); } catch {}
+      onClose();
+      return;
+    }
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (timerRef.current) clearInterval(timerRef.current);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-    roomRef.current?.disconnect();
+    setWaitingReconnect(false);
+    setReconnecting(false);
+    setShowRejoin(false);
+    try { roomRef.current?.disconnect(); } catch {}
 
     try {
       await supabase.functions.invoke("dm-call-token", {
