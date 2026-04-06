@@ -67,6 +67,14 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
     refetchInterval: 5000,
   });
 
+  // Mark ticket as read on mount and whenever new messages arrive
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`support_ticket_read_${user.id}_${ticketId}`, new Date().toISOString());
+      queryClient.invalidateQueries({ queryKey: ["unread-support"] });
+    }
+  }, [ticketId, user, messages.length, queryClient]);
+
   useEffect(() => {
     const channel = supabase
       .channel(`support-${ticketId}`)
