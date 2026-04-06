@@ -45,8 +45,18 @@ const StatusFeed = ({ userId, showComposer = false, onlyUserId }: StatusFeedProp
   });
 
   const { data: statuses = [], isLoading } = useQuery({
-    queryKey: ["status-feed", userId || "global", user?.id, socialCircleIds.length],
+    queryKey: ["status-feed", userId || "global", user?.id, socialCircleIds.length, onlyUserId || "all"],
     queryFn: async () => {
+      // "My Posts" filter — show only the specified user's posts
+      if (onlyUserId) {
+        const { data } = await supabase
+          .from("status_updates")
+          .select("*")
+          .eq("user_id", onlyUserId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        return data || [];
+      }
       if (userId && socialCircleIds.length > 0) {
         const { data } = await supabase
           .from("status_updates")
@@ -72,7 +82,7 @@ const StatusFeed = ({ userId, showComposer = false, onlyUserId }: StatusFeedProp
         .limit(50);
       return data || [];
     },
-    enabled: !userId || socialCircleIds.length > 0,
+    enabled: !!onlyUserId || !userId || socialCircleIds.length > 0,
   });
 
   // Fetch reposts from social circle
