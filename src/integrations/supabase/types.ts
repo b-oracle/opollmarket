@@ -4224,6 +4224,14 @@ export type Database = {
         }
         Returns: string
       }
+      send_dm_money: {
+        Args: {
+          p_amount: number
+          p_conversation_id: string
+          p_recipient_id: string
+        }
+        Returns: string
+      }
       send_space_gift: {
         Args: {
           _amount: number
