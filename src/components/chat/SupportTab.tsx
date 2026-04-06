@@ -32,6 +32,13 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
   closed: { icon: CheckCircle2, label: "Closed", color: "text-muted-foreground bg-muted" },
 };
 
+const STATUS_FILTERS = [
+  { key: "all", label: "All" },
+  { key: "open", label: "Open" },
+  { key: "resolved", label: "Resolved" },
+  { key: "closed", label: "Closed" },
+];
+
 const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -41,6 +48,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
   const [submitting, setSubmitting] = useState(false);
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
   const [isStaffTicket, setIsStaffTicket] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Check if user has support role
   const { data: hasSupport } = useQuery({
@@ -95,6 +103,10 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
     },
     enabled: !!user,
   });
+
+  const filteredTickets = statusFilter === "all"
+    ? tickets
+    : tickets.filter((t: any) => t.status === statusFilter);
 
   const createTicket = async () => {
     if (!user || !category || !desc.trim()) return;
@@ -181,18 +193,43 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
         </div>
       ) : null}
 
+      {/* Status filter tabs */}
+      <div className="flex border-b border-border px-2">
+        {STATUS_FILTERS.map((f) => {
+          const count = f.key === "all" ? tickets.length : tickets.filter((t: any) => t.status === f.key).length;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`flex-1 px-2 py-2 text-xs font-medium transition-colors relative whitespace-nowrap ${
+                statusFilter === f.key
+                  ? "text-primary border-b-2 border-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f.label}
+              {count > 0 && (
+                <span className="ml-1 text-[10px] opacity-60">({count})</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : tickets.length === 0 ? (
+      ) : filteredTickets.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
           <HelpCircle className="w-12 h-12 opacity-30" />
-          <p className="text-sm">No support tickets</p>
+          <p className="text-sm">
+            {statusFilter === "all" ? "No support tickets" : `No ${statusFilter} tickets`}
+          </p>
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {tickets.map((t: any) => {
+          {filteredTickets.map((t: any) => {
             const sc = statusConfig[t.status] || statusConfig.open;
             const StatusIcon = sc.icon;
             return (

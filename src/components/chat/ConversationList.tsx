@@ -1,9 +1,10 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { ArrowLeft, Plus, MessageCircle, Search, Inbox, Phone, Users, HelpCircle, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
@@ -53,12 +54,21 @@ const ConversationList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { supportUnread, communityUnread, markSupportRead, markCommunityRead } = useUnreadCounts();
   const { isFeatureEnabled } = useFeatureToggles();
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"chats" | "requests" | "calls" | "communities" | "support" | "settings">("chats");
   const [activeCommunityChat, setActiveCommunityChat] = useState<{ slug: string; label: string } | null>(null);
   const [activeSupportTicket, setActiveSupportTicket] = useState<{ ticketId: string; isStaff: boolean } | null>(null);
+
+  // Mark sections as read when user views them
+  useEffect(() => {
+    if (tab === "support") {
+      markSupportRead();
+      queryClient.invalidateQueries({ queryKey: ["unread-support"] });
+    }
+  }, [tab]);
 
   const topTabs = [
     { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
@@ -383,7 +393,11 @@ const ConversationList = () => {
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             }>
-              <CommunitiesTab onOpenChat={(slug, label) => setActiveCommunityChat({ slug, label })} />
+              <CommunitiesTab onOpenChat={(slug, label) => {
+                markCommunityRead(slug);
+                queryClient.invalidateQueries({ queryKey: ["unread-community"] });
+                setActiveCommunityChat({ slug, label });
+              }} />
             </Suspense>
           ) : tab === "support" ? (
             <Suspense fallback={
@@ -409,13 +423,21 @@ const ConversationList = () => {
           <div className="flex items-center justify-around h-14">
             {bottomTabs.map(({ key, label, icon: Icon }) => {
               const isActive = activeSection === key;
+              const badgeCount = key === "support" ? supportUnread : key === "communities" ? communityUnread : 0;
               return (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className="flex flex-col items-center gap-0.5 py-1 px-3 transition-colors"
+                  className="flex flex-col items-center gap-0.5 py-1 px-3 transition-colors relative"
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="relative">
+                    <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    {badgeCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold px-1">
+                        {badgeCount > 99 ? "99+" : badgeCount}
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                     {label}
                   </span>
