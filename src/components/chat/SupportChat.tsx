@@ -91,9 +91,10 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   }, []);
 
   const sendMessage = useCallback(async (content?: string, imageUrl?: string) => {
-    if (!user) return;
+    if (!user || sending) return;
     const text = content || message;
     if (!text.trim() && !imageUrl) return;
+    setSending(true);
 
     const payload: any = {
       ticket_id: ticketId,
