@@ -280,6 +280,7 @@ const AdminUsers = () => {
                 const isSA = u.roles.includes("super_admin");
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
+                const isSupport = u.roles.includes("support");
                 const isSelf = u.id === currentUser?.id;
                 return (
                   <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 ${u.is_blocked ? "opacity-60 bg-destructive/5" : ""}`}>
