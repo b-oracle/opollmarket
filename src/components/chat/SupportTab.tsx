@@ -285,7 +285,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
                   </div>
                   <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </button>
-                {(t.user_id === user?.id || isStaff) && (
+                {isSuperAdmin && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setDeleteTicketId(t.id); }}
                     className="px-3 py-3 text-muted-foreground hover:text-destructive transition-colors shrink-0"
