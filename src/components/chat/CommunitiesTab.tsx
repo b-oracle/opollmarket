@@ -67,11 +67,13 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
 
   if (!onOpenChat && activeCommunity) {
     return (
-      <CommunityChat
-        slug={activeCommunity.slug}
-        label={activeCommunity.label}
-        onBack={() => setActiveCommunity(null)}
-      />
+      <div className="h-[calc(100dvh-120px)]">
+        <CommunityChat
+          slug={activeCommunity.slug}
+          label={activeCommunity.label}
+          onBack={() => setActiveCommunity(null)}
+        />
+      </div>
     );
   }
 
