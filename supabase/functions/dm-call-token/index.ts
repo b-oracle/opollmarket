@@ -198,6 +198,29 @@ Deno.serve(async (req) => {
         market_id: conversation_id,
       });
 
+      // Also trigger an urgent push with call metadata
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        await fetch(`${supabaseUrl}/functions/v1/send-push`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            user_id: calleeId,
+            title: "Incoming Call 📞",
+            body: `${callerProfile?.display_name || "Someone"} is calling you`,
+            url: `/messages/${conversation_id}`,
+            is_call: true,
+            call_id: callData.id,
+          }),
+        });
+      } catch (pushErr) {
+        console.warn("Urgent push for call failed (non-fatal):", pushErr);
+      }
+
       // Generate token for caller
       const at = new AccessToken(apiKey, apiSecret, {
         identity: user.id,
