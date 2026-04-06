@@ -228,7 +228,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
       ) : null}
 
       {/* Search bar */}
-      {tickets.length > 0 && (
+      {tickets.length > 0 && isFeatureEnabled("chat_search") && (
         <div className="px-4 py-2 border-b border-border">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
