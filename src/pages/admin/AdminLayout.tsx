@@ -59,7 +59,11 @@ const AdminLayout = () => {
     if (!loading && rolesLoaded && (!user || !hasAdminAccess)) {
       navigate("/auth");
     }
-  }, [user, loading, rolesLoaded, hasAdminAccess, navigate]);
+    // Support-only users should only see /admin/support
+    if (!loading && rolesLoaded && user && hasAdminAccess && !isSuperAdmin && !isAdmin && !isModerator && isSupport && location.pathname === "/admin") {
+      navigate("/admin/support", { replace: true });
+    }
+  }, [user, loading, rolesLoaded, hasAdminAccess, isSuperAdmin, isAdmin, isModerator, isSupport, navigate, location.pathname]);
 
   // Close sidebar on route change (mobile)
   useEffect(() => {
