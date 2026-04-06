@@ -1,28 +1,27 @@
 
 
-## Plan: Add Tap-to-Animate on Gift Emoji Messages in DMs
+## Plan: Fix Double-Tap / Multiple-Send Issues in Support Chat & Call Initiation
 
-### What it does
-When a user taps on a gift emoji message in their DM conversation, it triggers a fun celebratory animation — the emoji bounces/pops with particle effects and the amount shimmers, making the gift feel exciting and interactive.
+### Problem
+1. **Support Chat**: The `sendMessage` function in `SupportChat.tsx` has no `sending` state guard. While the async insert runs (and the slow AI auto-reply awaits), nothing prevents the user from tapping Send again, causing duplicate messages.
+2. **Call Initiation**: The DM `ChatView.tsx` already has a `calling` guard, but the Send button and call buttons don't show any visual loading state, making users think nothing happened and tap again.
 
 ### Changes
 
-**File: `src/components/chat/ChatMessageBubble.tsx`**
+**File: `src/components/chat/SupportChat.tsx`**
+- Add a `sending` boolean state
+- Set it `true` at the start of `sendMessage`, check it as a guard (`if (sending) return`)
+- Set it `false` in a `finally` block after the AI reply completes
+- Disable the Send button when `sending` is true
+- Show a `Loader2` spinner on the Send button while sending
 
-1. Add a `giftTapped` state boolean, toggled on tap of the gift bubble
-2. On tap, trigger a sequence:
-   - The emoji scales up with a spring bounce (1 → 1.6 → 1) 
-   - The dollar amount does a gold shimmer/pulse
-   - Floating mini-emojis (matching the gift emoji) burst outward from the center and fade away — 6-8 copies at random angles
-   - A subtle confetti burst using `canvas-confetti` (already in the project via `useConfetti`)
-3. Use `framer-motion` `animate` controls to drive the emoji pop and `AnimatePresence` for the floating particles
-4. Add a 3-second cooldown so repeated taps don't spam animations
-5. The animation plays for both sender and recipient when tapped
+**File: `src/components/chat/ChatView.tsx`**
+- The `sending` guard already exists — just needs visual feedback
+- Disable the Send button and show `Loader2` spinner when `sending` is true
+- Disable the call buttons (Phone/Video) and show a spinner when `calling` is true, so users see immediate feedback
 
 ### Technical details
-- Use `useAnimation()` from framer-motion on the emoji `<motion.p>` to imperatively trigger the bounce sequence on tap
-- Create 6-8 `<motion.span>` particle clones of the emoji that animate outward with random x/y offsets, rotation, and opacity fade
-- Fire `fireSubtleConfetti()` from the existing `useConfetti` hook simultaneously
-- The gift container gets an `onClick` handler (in addition to existing long-press for reactions)
-- CSS keyframe `@keyframes shimmer` for the gold text glow on the amount
+- Both fixes use the same pattern: guard boolean + disabled button + spinner icon swap
+- Support chat clears `sending` only after the AI reply finishes (or fails), preventing any re-sends during that window
+- Call buttons get `disabled={calling}` and swap the icon to `Loader2` with `animate-spin`
 
