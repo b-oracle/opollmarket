@@ -111,8 +111,16 @@ Deno.serve(async (req) => {
         }
 
         if (blocked) {
+          // Find the blocking call ID so the client can rejoin
+          const blockingCall = existingCalls.find(
+            (ec) => ec.status === "ringing" || ec.status === "active"
+          );
           return json(
-            { error: "There is an ongoing call in this chat. Please end it first or wait." },
+            {
+              error: "There is an ongoing call in this chat. Please end it first or wait.",
+              active_call_id: blockingCall?.id || null,
+              can_rejoin: blockingCall?.status === "active",
+            },
             409
           );
         }
