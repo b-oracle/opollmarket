@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, HelpCircle, ChevronRight, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, HelpCircle, ChevronRight, Clock, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import SupportChat from "./SupportChat";
@@ -49,6 +50,8 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
   const [isStaffTicket, setIsStaffTicket] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Check if user has support role
   const { data: hasSupport } = useQuery({
@@ -150,6 +153,24 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
     }
   };
 
+  const handleDeleteTicket = async () => {
+    if (!deleteTicketId) return;
+    setDeleting(true);
+    try {
+      // Delete messages first, then the ticket
+      await supabase.from("support_messages").delete().eq("ticket_id", deleteTicketId);
+      const { error } = await supabase.from("support_tickets").delete().eq("id", deleteTicketId);
+      if (error) throw error;
+      toast.success("Ticket deleted");
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete ticket");
+    } finally {
+      setDeleting(false);
+      setDeleteTicketId(null);
+    }
+  };
+
   if (!onOpenChat && activeTicket) {
     return (
       <div className="h-[calc(100dvh-120px)]">
@@ -233,42 +254,69 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
             const sc = statusConfig[t.status] || statusConfig.open;
             const StatusIcon = sc.icon;
             return (
-              <button
-                key={t.id}
-                onClick={() => {
-                  const staffView = isStaff && t.user_id !== user?.id;
-                  if (onOpenChat) { onOpenChat(t.id, staffView); }
-                  else { setActiveTicket(t.id); if (staffView) setIsStaffTicket(true); }
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${sc.color}`}>
-                  <StatusIcon className="w-4 h-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm font-semibold truncate block">
-                    {isStaff && t.profile ? `${t.profile.display_name}: ` : ""}{t.subject}
-                  </span>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.color}`}>
-                      {sc.label}
-                    </span>
-                    {t.category && t.category !== "general" && (
-                      <Badge variant="outline" className="text-[10px] h-4 px-1.5">
-                        {categoryMap[t.category] || t.category}
-                      </Badge>
-                    )}
-                    <span className="text-[10px] text-muted-foreground">
-                      {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
-                    </span>
+              <div key={t.id} className="flex items-center gap-0 hover:bg-accent/30 transition-colors">
+                <button
+                  onClick={() => {
+                    const staffView = isStaff && t.user_id !== user?.id;
+                    if (onOpenChat) { onOpenChat(t.id, staffView); }
+                    else { setActiveTicket(t.id); if (staffView) setIsStaffTicket(true); }
+                  }}
+                  className="flex-1 flex items-center gap-3 px-4 py-3 text-left min-w-0"
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${sc.color}`}>
+                    <StatusIcon className="w-4 h-4" />
                   </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-              </button>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold truncate block">
+                      {isStaff && t.profile ? `${t.profile.display_name}: ` : ""}{t.subject}
+                    </span>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.color}`}>
+                        {sc.label}
+                      </span>
+                      {t.category && t.category !== "general" && (
+                        <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                          {categoryMap[t.category] || t.category}
+                        </Badge>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                </button>
+                {(t.user_id === user?.id || isStaff) && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setDeleteTicketId(t.id); }}
+                    className="px-3 py-3 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                    title="Delete ticket"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             );
           })}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTicketId} onOpenChange={(open) => !open && setDeleteTicketId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this support ticket and all its messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTicket} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
