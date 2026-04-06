@@ -14,7 +14,7 @@ import {
   ChevronRight, Copy, Undo2,
 } from "lucide-react";
 
-type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
+type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus" | "clawback";
 
 const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; colorClass: string }> = {
   buy: { icon: ArrowDownLeft, label: "Prediction", colorClass: "text-primary bg-primary/10" },
@@ -27,6 +27,7 @@ const txConfig: Record<TxType, { icon: typeof ArrowUpRight; label: string; color
   refund: { icon: Repeat, label: "Refund", colorClass: "text-blue-500 bg-blue-500/10" },
   initial_liquidity: { icon: Sparkles, label: "Market Liquidity", colorClass: "text-amber-500 bg-amber-500/10" },
   qt_one_sided_bonus: { icon: Zap, label: "Quick Trade Bonus", colorClass: "text-green-500 bg-green-500/10" },
+  clawback: { icon: Undo2, label: "Clawback", colorClass: "text-orange-500 bg-orange-500/10" },
 };
 
 const formatTimeAgo = (date: string) => {
