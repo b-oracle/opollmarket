@@ -122,6 +122,15 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
       setShowNew(false);
       if (onOpenChat) { onOpenChat(ticket.id, false); } else { setActiveTicket(ticket.id); }
       toast.success("Ticket created");
+
+      // Trigger AI auto-reply for the new ticket
+      try {
+        await supabase.functions.invoke("support-ai-reply", {
+          body: { ticket_id: ticket.id },
+        });
+      } catch (e) {
+        console.error("AI initial reply failed:", e);
+      }
     } catch {
       toast.error("Failed to create ticket");
     } finally {
