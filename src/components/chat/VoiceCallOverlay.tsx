@@ -243,6 +243,9 @@ const VoiceCallOverlay = ({
       if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
       if (gracePeriodRef.current) clearTimeout(gracePeriodRef.current);
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+      // Clean up audio analysers
+      try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
+      try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       // Ensure call is ended on unmount
       if (!endingRef.current && statusRef.current !== "ended") {
         const s = statusRef.current;
