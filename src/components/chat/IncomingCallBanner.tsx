@@ -32,6 +32,7 @@ const IncomingCallBanner = () => {
     otherName: string;
     otherAvatar?: string;
     isOutgoing: boolean;
+    startWithVideo?: boolean;
   } | null>(null);
   const [answering, setAnswering] = useState(false);
   const [callMinimized, setCallMinimized] = useState(false);
@@ -232,6 +233,7 @@ const IncomingCallBanner = () => {
             isOutgoing={activeCall.isOutgoing}
             otherUserName={activeCall.otherName}
             otherUserAvatar={activeCall.otherAvatar}
+            startWithVideo={activeCall.startWithVideo}
             minimized={callMinimized}
             onMinimize={() => setCallMinimized(true)}
             onMaximize={() => setCallMinimized(false)}

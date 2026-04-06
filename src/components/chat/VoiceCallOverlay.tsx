@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
-import { PhoneOff, Mic, MicOff, Volume2, Lock, X, Minimize2 } from "lucide-react";
+import { PhoneOff, Mic, MicOff, Volume2, Lock, X, Minimize2, Video, VideoOff, Monitor, MonitorOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceCallOverlayProps {
@@ -16,6 +16,7 @@ interface VoiceCallOverlayProps {
   otherUserName: string;
   otherUserAvatar?: string;
   minimized?: boolean;
+  startWithVideo?: boolean;
   onMinimize?: () => void;
   onMaximize?: () => void;
   onClose: () => void;
@@ -35,6 +36,7 @@ const VoiceCallOverlay = ({
   otherUserName,
   otherUserAvatar,
   minimized = false,
+  startWithVideo = false,
   onMinimize,
   onMaximize,
   onClose,
@@ -44,12 +46,21 @@ const VoiceCallOverlay = ({
   );
   const [muted, setMuted] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(false);
+  const [cameraOn, setCameraOn] = useState(startWithVideo);
+  const [screenShareOn, setScreenShareOn] = useState(false);
   const [duration, setDuration] = useState(0);
   const [remoteAudioLevel, setRemoteAudioLevel] = useState(0);
   const [localAudioLevel, setLocalAudioLevel] = useState(0);
   const remoteAnalyserRef = useRef<{ ctx: AudioContext; analyser: AnalyserNode; source: MediaStreamAudioSourceNode } | null>(null);
   const localAnalyserRef = useRef<{ ctx: AudioContext; analyser: AnalyserNode; source: MediaStreamAudioSourceNode } | null>(null);
   const audioLevelRafRef = useRef<number | null>(null);
+
+  // Video refs
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const screenShareRef = useRef<HTMLVideoElement>(null);
+  const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
+  const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
 
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -58,14 +69,13 @@ const VoiceCallOverlay = ({
   const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const stopToneRef = useRef<(() => void) | null>(null);
   const intentionalDisconnectRef = useRef(false);
-  const endingRef = useRef(false); // guard double-end
+  const endingRef = useRef(false);
   const statusRef = useRef<CallStatus>(isOutgoing ? "ringing" : "connecting");
   const remoteTrackReceivedRef = useRef(false);
   const gracePeriodRef = useRef<NodeJS.Timeout | null>(null);
   const [waitingReconnect, setWaitingReconnect] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
 
-  // Keep statusRef in sync
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
@@ -112,6 +122,7 @@ const VoiceCallOverlay = ({
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
+      videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
     });
     roomRef.current = room;
 
@@ -121,7 +132,6 @@ const VoiceCallOverlay = ({
         const el = track.attach();
         el.id = `remote-audio-${track.sid}`;
         document.body.appendChild(el);
-        // Set up remote audio analyser for glow
         try {
           const stream = (track as any).mediaStream as MediaStream | undefined;
           if (stream) {
@@ -138,9 +148,27 @@ const VoiceCallOverlay = ({
           inactivityTimeoutRef.current = null;
         }
       }
+      if (track.kind === Track.Kind.Video) {
+        const source = (track as any).source;
+        if (source === Track.Source.ScreenShare) {
+          setHasRemoteScreenShare(true);
+          if (screenShareRef.current) track.attach(screenShareRef.current);
+        } else {
+          setHasRemoteVideo(true);
+          if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
+        }
+      }
     });
 
     room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      if (track.kind === Track.Kind.Video) {
+        const source = (track as any).source;
+        if (source === Track.Source.ScreenShare) {
+          setHasRemoteScreenShare(false);
+        } else {
+          setHasRemoteVideo(false);
+        }
+      }
       track.detach().forEach((el) => el.remove());
     });
 
@@ -152,13 +180,11 @@ const VoiceCallOverlay = ({
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
       }
-      // Clear grace period — other party reconnected
       if (gracePeriodRef.current) {
         clearTimeout(gracePeriodRef.current);
         gracePeriodRef.current = null;
         setWaitingReconnect(false);
       }
-      // Start 60s inactivity timeout — auto-end if no remote audio received
       inactivityTimeoutRef.current = setTimeout(() => {
         if (statusRef.current === "active" && !remoteTrackReceivedRef.current) {
           handleEnd();
@@ -167,7 +193,6 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.ParticipantDisconnected, () => {
-      // Grace period: wait for the other party to reconnect
       if (statusRef.current === "active" && !endingRef.current) {
         setWaitingReconnect(true);
         gracePeriodRef.current = setTimeout(() => {
@@ -179,12 +204,12 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.Disconnected, () => {
-      // Self disconnected — attempt auto-reconnect if call was active
       if (!endingRef.current && !intentionalDisconnectRef.current && statusRef.current === "active") {
         setReconnecting(true);
         room.connect(livekitUrl, token)
           .then(async () => {
             await room.localParticipant.setMicrophoneEnabled(!muted);
+            if (cameraOn) await room.localParticipant.setCameraEnabled(true);
             setReconnecting(false);
           })
           .catch(() => {
@@ -196,11 +221,32 @@ const VoiceCallOverlay = ({
       }
     });
 
+    // Track local video publication to attach to ref
+    room.on(RoomEvent.LocalTrackPublished, (pub) => {
+      if (pub.track?.kind === Track.Kind.Video && localVideoRef.current) {
+        pub.track.attach(localVideoRef.current);
+      }
+    });
+
+    room.on(RoomEvent.LocalTrackUnpublished, (pub) => {
+      if (pub.track?.kind === Track.Kind.Video) {
+        pub.track.detach().forEach((el) => el.remove());
+      }
+    });
+
     room
       .connect(livekitUrl, token)
       .then(async () => {
         await room.localParticipant.setMicrophoneEnabled(true);
-        // Set up local audio analyser for glow
+        // Enable camera if starting with video
+        if (startWithVideo) {
+          try {
+            await room.localParticipant.setCameraEnabled(true);
+          } catch (e) {
+            console.warn("Failed to enable camera:", e);
+            setCameraOn(false);
+          }
+        }
         try {
           const localTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
           const stream = (localTrack as any)?.mediaStream as MediaStream | undefined;
@@ -228,7 +274,6 @@ const VoiceCallOverlay = ({
         }
       });
 
-    // Auto-timeout for unanswered outgoing calls (60s)
     if (isOutgoing) {
       autoTimeoutRef.current = setTimeout(() => {
         if (statusRef.current === "ringing") {
@@ -243,10 +288,8 @@ const VoiceCallOverlay = ({
       if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
       if (gracePeriodRef.current) clearTimeout(gracePeriodRef.current);
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-      // Clean up audio analysers
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
-      // Ensure call is ended on unmount
       if (!endingRef.current && statusRef.current !== "ended") {
         const s = statusRef.current;
         if (s === "ringing" && isOutgoing) {
@@ -318,7 +361,6 @@ const VoiceCallOverlay = ({
             roomRef.current?.disconnect();
             setTimeout(onClose, 1500);
           } else if (newStatus === "active") {
-            // Stop dial/ring tone when call becomes active
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
             setStatus("active");
@@ -340,6 +382,31 @@ const VoiceCallOverlay = ({
     setMuted(newMuted);
   };
 
+  const toggleCamera = async () => {
+    if (!roomRef.current) return;
+    try {
+      const newState = !cameraOn;
+      await roomRef.current.localParticipant.setCameraEnabled(newState);
+      setCameraOn(newState);
+    } catch (err) {
+      toast.error("Failed to toggle camera");
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!roomRef.current) return;
+    try {
+      const newState = !screenShareOn;
+      await roomRef.current.localParticipant.setScreenShareEnabled(newState);
+      setScreenShareOn(newState);
+    } catch (err: any) {
+      // User cancelled the screen share picker
+      if (err?.name !== "NotAllowedError") {
+        toast.error("Failed to share screen");
+      }
+    }
+  };
+
   const toggleSpeaker = useCallback(() => {
     const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
     const newSpeaker = !speakerOn;
@@ -356,6 +423,8 @@ const VoiceCallOverlay = ({
     const sec = s % 60;
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
+
+  const hasAnyVideo = cameraOn || hasRemoteVideo || hasRemoteScreenShare || screenShareOn;
 
   // ── Mini call bar ──
   if (minimized) {
@@ -385,6 +454,7 @@ const VoiceCallOverlay = ({
           <span className="text-xs opacity-80">
             {status === "active" && (waitingReconnect || reconnecting) ? "Reconnecting..." : status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
           </span>
+          {(cameraOn || hasRemoteVideo) && <Video className="w-3.5 h-3.5 opacity-70" />}
         </div>
         <span className="text-xs opacity-80">Tap to return</span>
         <button
@@ -399,9 +469,9 @@ const VoiceCallOverlay = ({
 
   // ── Full-screen overlay ──
   return (
-    <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col items-center justify-center">
+    <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col">
       {/* E2EE indicator + minimize */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 z-10" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
         <div className="flex items-center gap-1.5 text-xs text-emerald-500">
           <Lock className="w-3 h-3" />
           <span>End-to-end encrypted</span>
@@ -415,91 +485,179 @@ const VoiceCallOverlay = ({
 
       {/* Close / back */}
       {status === "ended" && (
-        <button onClick={onClose} className="absolute right-6 text-muted-foreground" style={{ top: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
+        <button onClick={onClose} className="absolute right-6 text-muted-foreground z-10" style={{ top: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
           <X className="w-5 h-5" />
         </button>
       )}
 
-      {/* Avatars with audio-reactive glow */}
-      <div className="flex items-center gap-6 mb-4">
-        {/* Self (small) */}
-        {status === "active" && (
-          <div
-            className="w-14 h-14 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
-            style={{
-              boxShadow: localAudioLevel > 0.05
-                ? `0 0 ${8 + localAudioLevel * 20}px ${2 + localAudioLevel * 6}px hsl(var(--primary) / ${0.3 + localAudioLevel * 0.5})`
-                : "none",
-            }}
-          >
-            <span className="text-lg font-bold text-muted-foreground">You</span>
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col items-center justify-center relative">
+        {/* Video feeds — shown when any video is active */}
+        {hasAnyVideo && status === "active" ? (
+          <div className="w-full h-full relative">
+            {/* Remote screen share — full screen */}
+            {hasRemoteScreenShare && (
+              <video
+                ref={screenShareRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain bg-black"
+              />
+            )}
+
+            {/* Remote camera — full screen or inset if screen share is active */}
+            {hasRemoteVideo && (
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className={hasRemoteScreenShare
+                  ? "absolute top-16 right-4 w-32 h-24 rounded-xl object-cover border-2 border-border shadow-lg z-10"
+                  : "w-full h-full object-cover"
+                }
+                style={!hasRemoteScreenShare ? {} : {}}
+              />
+            )}
+
+            {/* No remote video but we have local — show avatar centered */}
+            {!hasRemoteVideo && !hasRemoteScreenShare && (
+              <div className="w-full h-full flex items-center justify-center">
+                <div
+                  className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden transition-shadow duration-150"
+                  style={{
+                    boxShadow: remoteAudioLevel > 0.05
+                      ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
+                      : "none",
+                  }}
+                >
+                  {otherUserAvatar ? (
+                    <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
+                  ) : (
+                    <span className="text-3xl font-bold text-primary">{otherUserName.charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Local camera PiP — bottom right corner */}
+            {cameraOn && (
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="absolute bottom-28 right-4 w-28 h-36 rounded-xl object-cover border-2 border-border shadow-lg z-10"
+                style={{ transform: "scaleX(-1)" }}
+              />
+            )}
+
+            {/* Name + duration overlay */}
+            <div className="absolute bottom-20 left-0 right-0 text-center z-10">
+              <h2 className="text-lg font-semibold text-foreground drop-shadow-md">{otherUserName}</h2>
+              <p className="text-sm text-muted-foreground">
+                {reconnecting ? "Reconnecting..." : waitingReconnect ? `Waiting for ${otherUserName}...` : formatTime(duration)}
+              </p>
+            </div>
           </div>
+        ) : (
+          /* Audio-only view — avatars with glow */
+          <>
+            <div className="flex items-center gap-6 mb-4">
+              {status === "active" && (
+                <div
+                  className="w-14 h-14 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+                  style={{
+                    boxShadow: localAudioLevel > 0.05
+                      ? `0 0 ${8 + localAudioLevel * 20}px ${2 + localAudioLevel * 6}px hsl(var(--primary) / ${0.3 + localAudioLevel * 0.5})`
+                      : "none",
+                  }}
+                >
+                  <span className="text-lg font-bold text-muted-foreground">You</span>
+                </div>
+              )}
+              <div
+                className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+                style={{
+                  boxShadow: status === "active" && remoteAudioLevel > 0.05
+                    ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
+                    : "none",
+                }}
+              >
+                {otherUserAvatar ? (
+                  <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <span className="text-3xl font-bold text-primary">{otherUserName.charAt(0).toUpperCase()}</span>
+                )}
+              </div>
+            </div>
+
+            <h2 className="text-xl font-semibold text-foreground mb-1">{otherUserName}</h2>
+
+            <p className="text-sm text-muted-foreground mb-8">
+              {status === "ringing" && "Calling..."}
+              {status === "connecting" && "Connecting..."}
+              {status === "active" && reconnecting && "Reconnecting..."}
+              {status === "active" && !reconnecting && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
+              {status === "active" && !reconnecting && !waitingReconnect && formatTime(duration)}
+              {status === "ended" && "Call ended"}
+            </p>
+          </>
         )}
-        {/* Other party (large) */}
-        <div
-          className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
-          style={{
-            boxShadow: status === "active" && remoteAudioLevel > 0.05
-              ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
-              : "none",
-          }}
-        >
-          {otherUserAvatar ? (
-            <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
-          ) : (
-            <span className="text-3xl font-bold text-primary">
-              {otherUserName.charAt(0).toUpperCase()}
-            </span>
-          )}
-        </div>
       </div>
 
-      <h2 className="text-xl font-semibold text-foreground mb-1">{otherUserName}</h2>
-
-      <p className="text-sm text-muted-foreground mb-8">
-        {status === "ringing" && "Calling..."}
-        {status === "connecting" && "Connecting..."}
-        {status === "active" && reconnecting && "Reconnecting..."}
-        {status === "active" && !reconnecting && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
-        {status === "active" && !reconnecting && !waitingReconnect && formatTime(duration)}
-        {status === "ended" && "Call ended"}
-      </p>
-
       {/* Controls */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center justify-center gap-4 pb-8 px-4 shrink-0" style={{ paddingBottom: "max(2rem, calc(var(--safe-bottom) + 1rem))" }}>
         {status === "active" && (
-          <button
-            onClick={toggleMute}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-              muted
-                ? "bg-destructive/20 text-destructive"
-                : "bg-muted text-foreground"
-            }`}
-          >
-            {muted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-          </button>
+          <>
+            <button
+              onClick={toggleMute}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                muted ? "bg-destructive/20 text-destructive" : "bg-muted text-foreground"
+              }`}
+            >
+              {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+
+            <button
+              onClick={toggleCamera}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                cameraOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
+              }`}
+            >
+              {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            </button>
+          </>
         )}
 
         {(status === "ringing" || status === "connecting" || status === "active") && (
           <button
             onClick={status === "ringing" && isOutgoing ? handleCancel : handleEnd}
-            className="w-16 h-16 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground active:scale-95 transition-transform"
+            className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground active:scale-95 transition-transform"
           >
-            <PhoneOff className="w-7 h-7" />
+            <PhoneOff className="w-6 h-6" />
           </button>
         )}
 
         {status === "active" && (
-          <button
-            onClick={toggleSpeaker}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition-colors ${
-              speakerOn
-                ? "bg-primary/20 text-primary ring-2 ring-primary"
-                : "bg-muted text-foreground"
-            }`}
-          >
-            <Volume2 className="w-6 h-6" />
-          </button>
+          <>
+            <button
+              onClick={toggleScreenShare}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                screenShareOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
+              }`}
+            >
+              {screenShareOn ? <Monitor className="w-5 h-5" /> : <MonitorOff className="w-5 h-5" />}
+            </button>
+
+            <button
+              onClick={toggleSpeaker}
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                speakerOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
+              }`}
+            >
+              <Volume2 className="w-5 h-5" />
+            </button>
+          </>
         )}
       </div>
     </div>

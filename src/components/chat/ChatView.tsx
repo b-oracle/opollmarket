@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -234,7 +234,7 @@ const ChatView = () => {
   const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
   const isRejected = convStatus === "rejected";
 
-  const handleStartCall = useCallback(async () => {
+  const handleStartCall = useCallback(async (withVideo = false) => {
     if (calling || !conversationId || !user) return;
     setCalling(true);
     try {
@@ -272,6 +272,7 @@ const ChatView = () => {
             otherName,
             otherAvatar: (convo as any)?.other_user?.avatar_url,
             isOutgoing: true,
+            startWithVideo: withVideo,
           },
         })
       );
@@ -305,14 +306,24 @@ const ChatView = () => {
           {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
         {convStatus === "active" && (
-          <button
-            onClick={handleStartCall}
-            disabled={calling}
-            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
-            aria-label="Voice call"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
+          <>
+            <button
+              onClick={() => handleStartCall(true)}
+              disabled={calling}
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              aria-label="Video call"
+            >
+              <Video className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleStartCall(false)}
+              disabled={calling}
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              aria-label="Voice call"
+            >
+              <Phone className="w-4 h-4" />
+            </button>
+          </>
         )}
       </div>
 
