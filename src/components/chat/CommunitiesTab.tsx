@@ -6,19 +6,6 @@ import CategoryIcon from "@/components/CategoryIcon";
 import { Users, ChevronRight } from "lucide-react";
 import CommunityChat from "./CommunityChat";
 
-const COMMUNITIES_LIST = [
-  { slug: "crypto", label: "Crypto" },
-  { slug: "sports", label: "Sports" },
-  { slug: "politics", label: "Politics" },
-  { slug: "entertainment", label: "Entertainment" },
-  { slug: "economy", label: "Economy" },
-  { slug: "ai-tech", label: "AI & Tech" },
-  { slug: "science", label: "Science" },
-  { slug: "forex", label: "Forex" },
-  { slug: "commodities", label: "Commodities" },
-  { slug: "twitter-x", label: "Twitter/X" },
-];
-
 const COMMUNITIES = [
   { slug: "crypto", label: "Crypto" },
   { slug: "sports", label: "Sports" },
@@ -78,6 +65,29 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
     staleTime: 30_000,
   });
 
+  const { data: unreadCounts = {} } = useQuery({
+    queryKey: ["community-unread-per-slug", user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      const counts: Record<string, number> = {};
+      for (const c of COMMUNITIES) {
+        const lastRead = localStorage.getItem(`community_last_read_${user.id}_${c.slug}`);
+        const since = lastRead || "2000-01-01T00:00:00Z";
+        const { count } = await supabase
+          .from("community_messages" as any)
+          .select("id", { count: "exact", head: true })
+          .eq("community_slug", c.slug)
+          .neq("user_id", user.id)
+          .gt("created_at", since) as any;
+        if (count && count > 0) counts[c.slug] = count;
+      }
+      return counts;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+
   if (!onOpenChat && activeCommunity) {
     return (
       <div className="h-[calc(100dvh-120px)]">
@@ -94,30 +104,38 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
 
   return (
     <div className="divide-y divide-border">
-      {COMMUNITIES.map((c) => (
-        <button
-          key={c.slug}
-          onClick={() => onOpenChat ? onOpenChat(c.slug, c.label) : setActiveCommunity(c)}
-          className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors text-left"
-        >
-          <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <CategoryIcon category={categoryMap[c.slug] || "Other"} className="w-5 h-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <span className="text-sm font-semibold">{c.label}</span>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <Users className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">{memberCounts[c.slug] || 0} members</span>
-              {membershipSet.has(c.slug) && (
-                <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
-                  Joined
+      {COMMUNITIES.map((c) => {
+        const unread = unreadCounts[c.slug] || 0;
+        return (
+          <button
+            key={c.slug}
+            onClick={() => onOpenChat ? onOpenChat(c.slug, c.label) : setActiveCommunity(c)}
+            className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-accent/30 transition-colors text-left"
+          >
+            <div className="relative w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <CategoryIcon category={categoryMap[c.slug] || "Other"} className="w-5 h-5 text-primary" />
+              {unread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {unread > 99 ? "99+" : unread}
                 </span>
               )}
             </div>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-        </button>
-      ))}
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-semibold">{c.label}</span>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <Users className="w-3 h-3 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">{memberCounts[c.slug] || 0} members</span>
+                {membershipSet.has(c.slug) && (
+                  <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-full">
+                    Joined
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        );
+      })}
     </div>
   );
 };
