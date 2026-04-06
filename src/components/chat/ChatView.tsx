@@ -40,6 +40,7 @@ const ChatView = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [showGift, setShowGift] = useState(false);
