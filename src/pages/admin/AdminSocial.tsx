@@ -226,7 +226,7 @@ const AdminSocial = () => {
       const map = new Map<string, number>();
       let from = 0;
       while (true) {
-        const { data } = await supabase.from("follows").select(column).in(column, ids).range(from, from + 999);
+        const { data } = await (supabase.from("follows") as any).select(column).in(column, ids).range(from, from + 999);
         if (!data || data.length === 0) break;
         data.forEach((f: any) => map.set(f[column], (map.get(f[column]) || 0) + 1));
         if (data.length < 1000) break;
@@ -249,12 +249,43 @@ const AdminSocial = () => {
     setLoading(false);
   }, [page, debouncedSearch]);
 
+  // Fetch global top followed users (not just current page)
+  const [topFollowed, setTopFollowed] = useState<ProfileRow[]>([]);
+  const fetchTopFollowed = useCallback(async () => {
+    // Get all follows, count by following_id
+    const countMap = new Map<string, number>();
+    let from = 0;
+    while (true) {
+      const { data } = await (supabase.from("follows") as any).select("following_id").range(from, from + 999);
+      if (!data || data.length === 0) break;
+      data.forEach((f: any) => countMap.set(f.following_id, (countMap.get(f.following_id) || 0) + 1));
+      if (data.length < 1000) break;
+      from += 1000;
+    }
+    // Sort and take top 10
+    const topIds = [...countMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    if (topIds.length === 0) { setTopFollowed([]); return; }
+
+    const { data: topProfiles } = await supabase.from("profiles").select("id, display_name, avatar_url, is_public, created_at").in("id", topIds.map(t => t[0]));
+
+    const result: ProfileRow[] = topIds.map(([uid, count]) => {
+      const p = (topProfiles || []).find((pr: any) => pr.id === uid);
+      return {
+        id: uid,
+        display_name: p?.display_name || "Anonymous",
+        avatar_url: p?.avatar_url || null,
+        is_public: p?.is_public ?? true,
+        created_at: p?.created_at || "",
+        followers_count: count,
+        following_count: 0,
+      } as ProfileRow;
+    });
+    setTopFollowed(result);
+  }, []);
+
   useEffect(() => { fetchStats(); }, [fetchStats]);
   useEffect(() => { fetchProfiles(); }, [fetchProfiles]);
-
-  const topFollowed = useMemo(() => {
-    return [...profiles].sort((a, b) => b.followers_count - a.followers_count).slice(0, 10);
-  }, [profiles]);
+  useEffect(() => { fetchTopFollowed(); }, [fetchTopFollowed]);
 
   if (loading && profiles.length === 0) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
