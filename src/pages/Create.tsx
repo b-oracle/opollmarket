@@ -939,6 +939,29 @@ const Create = () => {
       console.error("Moderation check failed, proceeding:", modResult.reason);
     }
 
+    // CRITICAL: Check image upload result BEFORE any balance deduction
+    {
+      let earlyImageUrl: string | null = null;
+      if (imageUploadResult.status === "fulfilled") {
+        earlyImageUrl = imageUploadResult.value as string | null;
+      }
+      if (!earlyImageUrl && imagePreview && !imagePreview.startsWith("blob:")) {
+        earlyImageUrl = imagePreview; // AI-generated URL
+      }
+      if (imageFile && !earlyImageUrl) {
+        toast.error("Image upload failed. No charge was taken.");
+        setSubmitStep("error");
+        isSubmittingRef.current = false;
+        return;
+      }
+      if (!earlyImageUrl) {
+        toast.error("A cover image is required.");
+        setSubmitStep("error");
+        isSubmittingRef.current = false;
+        return;
+      }
+    }
+
     // Step 1: Check and deduct balance
     setSubmitStep("deploying");
     setCompletedSteps(prev => new Set([...prev, 1]));
