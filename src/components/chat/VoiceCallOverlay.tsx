@@ -307,14 +307,6 @@ const VoiceCallOverlay = ({
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
-      if (!endingRef.current && statusRef.current !== "ended") {
-        const s = statusRef.current;
-        if (s === "ringing" && isOutgoing) {
-          handleCancel();
-        } else if (s === "active" || s === "connecting") {
-          handleEnd();
-        }
-      }
       room.disconnect();
       roomRef.current = null;
     };
