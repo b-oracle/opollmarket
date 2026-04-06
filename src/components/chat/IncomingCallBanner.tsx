@@ -36,6 +36,7 @@ const ACTIVE_CALL_STORAGE_KEY = "dm-active-call";
 
 const IncomingCallBanner = () => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
