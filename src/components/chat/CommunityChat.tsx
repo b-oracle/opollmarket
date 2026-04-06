@@ -3,6 +3,7 @@ import ChatDoodleBackground from "./ChatDoodleBackground";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp } from "lucide-react";
 import MarketTagSelector, { type MarketTag } from "@/components/social/MarketTagSelector";
