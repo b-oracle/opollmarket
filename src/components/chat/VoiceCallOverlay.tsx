@@ -474,6 +474,10 @@ const VoiceCallOverlay = ({
           remoteTrackReceivedRef.current = true;
           const el = track.attach();
           el.id = `remote-audio-${track.sid}`;
+          el.volume = 0.4;
+          if (typeof (el as any).setSinkId === "function") {
+            (el as any).setSinkId("communications").catch(() => {});
+          }
           document.body.appendChild(el);
         }
         if (track.kind === Track.Kind.Video) {
