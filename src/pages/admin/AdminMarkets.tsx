@@ -120,6 +120,7 @@ const AdminMarkets = () => {
   const [endedCount, setEndedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [generatingAiImage, setGeneratingAiImage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Global stats (fetched once, independent of filter)
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
