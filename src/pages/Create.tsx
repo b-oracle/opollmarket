@@ -674,14 +674,17 @@ const Create = () => {
         const { error } = await supabase.from("markets").update(draftData).eq("id", draftId);
         if (error) throw error;
       } else {
-        // Check draft limit before creating a new one
-        const { count: existingDrafts } = await supabase
-          .from("markets")
-          .select("id", { count: "exact", head: true })
-          .eq("creator_wallet", user.id)
-          .eq("status", "draft");
-        if ((existingDrafts ?? 0) >= 2) {
-          toast.error("You can only have up to 2 drafts at a time. Please delete or submit an existing draft first.");
+        // Check draft limit based on verification level
+        const [{ count: existingDrafts }, { data: profileData }, { data: settingsData }] = await Promise.all([
+          supabase.from("markets").select("id", { count: "exact", head: true }).eq("creator_wallet", user.id).eq("status", "draft"),
+          supabase.from("profiles").select("verification_level").eq("id", user.id).maybeSingle(),
+          supabase.from("commission_settings" as any).select("max_drafts_none, max_drafts_blue, max_drafts_gold").limit(1).maybeSingle(),
+        ]);
+        const vLevel = (profileData as any)?.verification_level || "none";
+        const s = settingsData as any;
+        const maxDrafts = vLevel === "gold" ? (s?.max_drafts_gold ?? 10) : vLevel === "blue" ? (s?.max_drafts_blue ?? 5) : (s?.max_drafts_none ?? 2);
+        if ((existingDrafts ?? 0) >= maxDrafts) {
+          toast.error(`You can only have up to ${maxDrafts} drafts at a time. Please delete or submit an existing draft first.`);
           return;
         }
         const { data, error } = await supabase.from("markets").insert(draftData).select("id").maybeSingle();
