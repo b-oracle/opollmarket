@@ -323,17 +323,22 @@ const VoiceCallOverlay = ({
   // Audio level polling
   useEffect(() => {
     if (status !== "active") return;
-    const buf = new Uint8Array(128);
+    const remoteBuf = new Uint8Array(128);
+    const localBuf = new Uint8Array(128);
     const poll = () => {
       if (remoteAnalyserRef.current) {
-        remoteAnalyserRef.current.analyser.getByteFrequencyData(buf);
-        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
-        setRemoteAudioLevel(Math.min(avg / 80, 1));
+        remoteAnalyserRef.current.analyser.getByteFrequencyData(remoteBuf);
+        const avg = remoteBuf.reduce((s, v) => s + v, 0) / remoteBuf.length;
+        setRemoteAudioLevel(Math.min(avg / 60, 1));
+      } else {
+        setRemoteAudioLevel(0);
       }
       if (localAnalyserRef.current) {
-        localAnalyserRef.current.analyser.getByteFrequencyData(buf);
-        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
-        setLocalAudioLevel(Math.min(avg / 80, 1));
+        localAnalyserRef.current.analyser.getByteFrequencyData(localBuf);
+        const avg = localBuf.reduce((s, v) => s + v, 0) / localBuf.length;
+        setLocalAudioLevel(Math.min(avg / 60, 1));
+      } else {
+        setLocalAudioLevel(0);
       }
       audioLevelRafRef.current = requestAnimationFrame(poll);
     };
