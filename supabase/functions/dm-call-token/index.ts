@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
             ? Date.now() - new Date(ec.created_at).getTime()
             : 0;
 
-          const isStaleRinging = ec.status === "ringing" && ageMs > 60_000;
+          const isStaleRinging = ec.status === "ringing" && ageMs > 90_000;
           const isStaleActive = ec.status === "active" && ec.started_at
             ? Date.now() - new Date(ec.started_at).getTime() > 2 * 60 * 60 * 1000
             : ec.status === "active" && ageMs > 2 * 60 * 60 * 1000;
