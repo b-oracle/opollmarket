@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy } from "lucide-react";
+import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserSettings {
@@ -16,6 +16,9 @@ interface UserSettings {
   show_trade_history: boolean;
   mute_notifications: boolean;
   allow_copy_trading: boolean;
+  allow_dm_gifts: boolean;
+  allow_dm_money: boolean;
+  enable_gift_animations: boolean;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -27,6 +30,9 @@ const DEFAULT_SETTINGS: UserSettings = {
   show_trade_history: true,
   mute_notifications: false,
   allow_copy_trading: true,
+  allow_dm_gifts: true,
+  allow_dm_money: true,
+  enable_gift_animations: true,
 };
 
 const SETTING_GROUPS = [
@@ -35,6 +41,8 @@ const SETTING_GROUPS = [
     items: [
       { key: "allow_calls" as const, label: "Allow Calls", desc: "Let others call you via DMs", icon: Phone },
       { key: "allow_dms" as const, label: "Allow Message Requests", desc: "Receive new message requests", icon: MessageCircle },
+      { key: "allow_dm_gifts" as const, label: "Allow DM Gifts", desc: "Let others send you emoji gifts", icon: Gift },
+      { key: "allow_dm_money" as const, label: "Allow Money Transfers", desc: "Let others send you money via DMs", icon: DollarSign },
     ],
   },
   {
@@ -51,10 +59,10 @@ const SETTING_GROUPS = [
     items: [
       { key: "mute_notifications" as const, label: "Mute Notifications", desc: "Silence all push notifications", icon: BellOff },
       { key: "allow_copy_trading" as const, label: "Allow Copy Trading", desc: "Let others copy your trades", icon: Copy },
+      { key: "enable_gift_animations" as const, label: "Gift Animations", desc: "Show fun animations on gift taps", icon: Sparkles },
     ],
   },
 ];
-
 const SettingsTab = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
