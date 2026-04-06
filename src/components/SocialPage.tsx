@@ -302,7 +302,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
-                  { key: "posts", label: "Posts", icon: FileText, badge: 0 },
+                  { key: "posts", label: myPostsOnly ? "My Posts ✓" : "Posts", icon: FileText, badge: 0 },
                   { key: "activity", label: "Activity", icon: Heart, badge: 0 },
                   { key: "spaces", label: "Spaces", icon: Radio, badge: liveSpacesCount },
                   { key: "followers", label: `${followers.length}`, icon: Users, badge: 0 },
