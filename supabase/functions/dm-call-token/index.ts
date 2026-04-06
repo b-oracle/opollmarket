@@ -118,6 +118,42 @@ Deno.serve(async (req) => {
         }
       }
 
+      // Clean up any leftover "active" calls that have no participants in LiveKit
+      // This catches calls that ended but weren't cleaned up properly
+      try {
+        const svc2 = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+        const { data: activeCalls } = await admin
+          .from("dm_calls")
+          .select("id, room_name, status")
+          .eq("conversation_id", conversation_id)
+          .eq("status", "active");
+
+        if (activeCalls && activeCalls.length > 0) {
+          for (const ac of activeCalls) {
+            try {
+              const participants = await svc2.listParticipants(ac.room_name);
+              if (!participants || participants.length === 0) {
+                console.warn("Cleaning up orphaned active call with no participants:", ac.id);
+                await admin
+                  .from("dm_calls")
+                  .update({ status: "ended", ended_at: new Date().toISOString() })
+                  .eq("id", ac.id);
+                try { await svc2.deleteRoom(ac.room_name); } catch { /* room may be gone */ }
+              }
+            } catch {
+              // Room doesn't exist in LiveKit — mark as ended
+              console.warn("Cleaning up active call with missing LiveKit room:", ac.id);
+              await admin
+                .from("dm_calls")
+                .update({ status: "ended", ended_at: new Date().toISOString() })
+                .eq("id", ac.id);
+            }
+          }
+        }
+      } catch (cleanupErr) {
+        console.warn("Orphan cleanup failed (non-fatal):", cleanupErr);
+      }
+
       const roomName = `dm-call-${conversation_id}-${Date.now()}`;
 
       // Create LiveKit room with reduced emptyTimeout
@@ -394,6 +430,76 @@ Deno.serve(async (req) => {
       } catch { /* ignore */ }
 
       return json({ success: true, duration_seconds: duration });
+    }
+
+    // ─── REJOIN CALL ───
+    if (action === "rejoin") {
+      if (!call_id) return json({ error: "call_id required" }, 400);
+
+      const { data: call, error: callErr } = await admin
+        .from("dm_calls")
+        .select("*")
+        .eq("id", call_id)
+        .single();
+
+      if (callErr || !call) return json({ error: "Call not found" }, 404);
+
+      const isParticipant = call.caller_id === user.id || call.callee_id === user.id;
+      if (!isParticipant) return json({ error: "Not a participant" }, 403);
+
+      if (call.status !== "active") {
+        return json({ error: "Call is no longer active" }, 400);
+      }
+
+      // Check the call isn't too old (max 2h)
+      const callAge = call.started_at
+        ? Date.now() - new Date(call.started_at).getTime()
+        : 0;
+      if (callAge > 2 * 60 * 60 * 1000) {
+        return json({ error: "Call has expired" }, 400);
+      }
+
+      // Verify room still exists in LiveKit
+      const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      try {
+        const participants = await svc.listParticipants(call.room_name);
+        // Room exists — generate a new token for the rejoining user
+        console.log("Rejoin: room has", participants?.length || 0, "participants");
+      } catch {
+        // Room is gone — cannot rejoin
+        await admin
+          .from("dm_calls")
+          .update({ status: "ended", ended_at: new Date().toISOString() })
+          .eq("id", call_id);
+        return json({ error: "Call room no longer exists" }, 410);
+      }
+
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .single();
+
+      const at = new AccessToken(apiKey, apiSecret, {
+        identity: user.id,
+        name: profile?.display_name || "Anonymous",
+        ttl: "2h",
+      });
+      at.addGrant({
+        room: call.room_name,
+        roomJoin: true,
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true,
+      });
+
+      return json({
+        token: await at.toJwt(),
+        url: livekitUrl,
+        room: call.room_name,
+        call_id: call.id,
+        e2ee_passphrase: `e2ee-${call.conversation_id}-${call.id}`,
+      });
     }
 
     return json({ error: "Unknown action" }, 400);
