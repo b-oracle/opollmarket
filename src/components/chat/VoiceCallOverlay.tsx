@@ -121,7 +121,18 @@ const VoiceCallOverlay = ({
         const el = track.attach();
         el.id = `remote-audio-${track.sid}`;
         document.body.appendChild(el);
-        // Clear inactivity timeout once we receive audio
+        // Set up remote audio analyser for glow
+        try {
+          const stream = (track as any).mediaStream as MediaStream | undefined;
+          if (stream) {
+            const ctx = new AudioContext();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            remoteAnalyserRef.current = { ctx, analyser, source };
+          }
+        } catch {}
         if (inactivityTimeoutRef.current) {
           clearTimeout(inactivityTimeoutRef.current);
           inactivityTimeoutRef.current = null;
