@@ -419,13 +419,21 @@ const ConversationList = () => {
           <div className="flex items-center justify-around h-14">
             {bottomTabs.map(({ key, label, icon: Icon }) => {
               const isActive = activeSection === key;
+              const badgeCount = key === "support" ? supportUnread : key === "communities" ? communityUnread : 0;
               return (
                 <button
                   key={key}
                   onClick={() => setTab(key)}
-                  className="flex flex-col items-center gap-0.5 py-1 px-3 transition-colors"
+                  className="flex flex-col items-center gap-0.5 py-1 px-3 transition-colors relative"
                 >
-                  <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                  <div className="relative">
+                    <Icon className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
+                    {badgeCount > 0 && (
+                      <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold px-1">
+                        {badgeCount > 99 ? "99+" : badgeCount}
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-[10px] font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                     {label}
                   </span>
