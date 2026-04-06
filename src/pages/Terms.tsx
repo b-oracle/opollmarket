@@ -212,15 +212,49 @@ const Terms = () => {
         </section>
 
         <section id="dm" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">8d. Direct Messaging</h2>
+          <h2 className="text-base font-semibold text-foreground">8d. Direct Messaging & Money Transfers</h2>
           <p>The Platform provides a direct messaging feature for mutual follows. By using this feature, you agree that:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Direct messaging is available only between users who mutually follow each other. The Platform enforces this restriction to prevent unsolicited messages.</li>
             <li>Messages are limited to 2,000 characters in length.</li>
             <li>A rate limit of 5 messages per 10 seconds per conversation is enforced to prevent spam. Violations may result in temporary messaging restrictions.</li>
             <li><strong>In-Chat Gifting:</strong> Users may send emoji gifts within conversations. Each emoji has a fixed dollar value. Gift amounts are deducted from the sender's gift balance and credited to the recipient's rewards balance. Gift transactions are final and non-reversible.</li>
+            <li><strong>Direct Money Transfers:</strong> Users may send custom dollar amounts directly from their <strong>main balance</strong> to another user via the gift modal's "Send Money" tab. A platform fee (percentage set by the System-Mod Engine) is deducted from the transfer amount. The recipient receives the net amount in their main balance. Minimum transfer is $0.50. A Security PIN is required to confirm each transfer. Transfers are final and non-reversible.</li>
             <li>Messages are not end-to-end encrypted. They are encrypted in transit (TLS) and at rest in the database. The Platform reserves the right to access message content for moderation, legal compliance, or fraud investigation purposes.</li>
             <li>The Platform is not responsible for the content of messages exchanged between users. You are solely responsible for the messages you send.</li>
+          </ul>
+        </section>
+
+        <section id="dm-calls" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8d-ii. Voice & Video Calls</h2>
+          <p>The Platform provides one-on-one voice and video calling between DM participants. By using this feature, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Calls are available only between users in an existing DM conversation (mutual follows).</li>
+            <li>Call sessions are facilitated through third-party real-time communication services (LiveKit). Call metadata (caller, callee, duration, timestamps) is logged for platform analytics.</li>
+            <li>Audio and video streams are transmitted via encrypted WebRTC connections. The Platform does not record call content.</li>
+            <li>You can enable or disable incoming calls from the Messages → Settings privacy preferences.</li>
+            <li>The Platform is not responsible for call quality issues caused by network conditions, device capabilities, or third-party service disruptions.</li>
+          </ul>
+        </section>
+
+        <section id="communities" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8d-iii. Community Chats</h2>
+          <p>The Platform offers group chat rooms ("Communities") where users can discuss topics, share markets, and interact. By using community chats, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Community messages (text, images, reactions, tagged markets) are visible to all members of the community.</li>
+            <li>All community content is subject to the Platform's content moderation policies and community guidelines.</li>
+            <li>You can control whether you receive community invites from the Messages → Settings privacy preferences.</li>
+            <li>The Platform reserves the right to moderate, remove content from, or shut down any community at its sole discretion.</li>
+          </ul>
+        </section>
+
+        <section id="support-chat" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">8d-iv. In-App Support</h2>
+          <p>The Platform provides an in-app support chat feature. By using this feature, you agree that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Support messages are stored and accessible to authorized support staff and administrators.</li>
+            <li>An AI auto-reply system may respond to your initial messages with suggested answers. AI responses are informational only and do not constitute binding Platform decisions.</li>
+            <li>Support conversations may be reviewed for quality assurance, training, and fraud investigation purposes.</li>
           </ul>
         </section>
 
