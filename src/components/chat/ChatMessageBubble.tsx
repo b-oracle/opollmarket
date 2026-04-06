@@ -318,7 +318,7 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 18 }}
-            className={`w-fit rounded-2xl select-none touch-none ${
+            className={`w-fit rounded-2xl select-none touch-manipulation ${
               isMine
                 ? "bg-primary/15 rounded-br-md"
                 : "bg-accent/20 rounded-bl-md"
@@ -357,7 +357,7 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
       <div className="relative max-w-[75%] overflow-visible" ref={bubbleRef}>
         <div className="space-y-1">
           <div
-            className={`rounded-2xl px-3.5 py-2 select-none touch-none ${
+            className={`rounded-2xl px-3.5 py-2 select-none touch-manipulation ${
               isMine
                 ? "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-muted text-foreground rounded-bl-md"
