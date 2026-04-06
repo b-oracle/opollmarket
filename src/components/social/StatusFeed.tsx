@@ -11,6 +11,7 @@ import { useMemo } from "react";
 interface StatusFeedProps {
   userId?: string;
   showComposer?: boolean;
+  onlyUserId?: string;
 }
 
 interface FeedItem {
@@ -21,7 +22,7 @@ interface FeedItem {
   ad?: any;
 }
 
-const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
+const StatusFeed = ({ userId, showComposer = false, onlyUserId }: StatusFeedProps) => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
 
@@ -44,8 +45,18 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
   });
 
   const { data: statuses = [], isLoading } = useQuery({
-    queryKey: ["status-feed", userId || "global", user?.id, socialCircleIds.length],
+    queryKey: ["status-feed", userId || "global", user?.id, socialCircleIds.length, onlyUserId || "all"],
     queryFn: async () => {
+      // "My Posts" filter — show only the specified user's posts
+      if (onlyUserId) {
+        const { data } = await supabase
+          .from("status_updates")
+          .select("*")
+          .eq("user_id", onlyUserId)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        return data || [];
+      }
       if (userId && socialCircleIds.length > 0) {
         const { data } = await supabase
           .from("status_updates")
@@ -71,7 +82,7 @@ const StatusFeed = ({ userId, showComposer = false }: StatusFeedProps) => {
         .limit(50);
       return data || [];
     },
-    enabled: !userId || socialCircleIds.length > 0,
+    enabled: !!onlyUserId || !userId || socialCircleIds.length > 0,
   });
 
   // Fetch reposts from social circle

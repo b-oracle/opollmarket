@@ -31,6 +31,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
   const followCounts = useFollowCounts(user?.id);
   const { data: liveSpacesCount = 0 } = useLiveSpacesCount();
   const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">("posts");
+  const [myPostsOnly, setMyPostsOnly] = useState(false);
   const [followersPage, setFollowersPage] = useState(1);
   const [followingPage, setFollowingPage] = useState(1);
   const [suggestionsPage, setSuggestionsPage] = useState(1);
@@ -301,7 +302,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
-                  { key: "posts", label: "Posts", icon: FileText, badge: 0 },
+                  { key: "posts", label: myPostsOnly ? "My Posts ✓" : "Posts", icon: FileText, badge: 0 },
                   { key: "activity", label: "Activity", icon: Heart, badge: 0 },
                   { key: "spaces", label: "Spaces", icon: Radio, badge: liveSpacesCount },
                   { key: "followers", label: `${followers.length}`, icon: Users, badge: 0 },
@@ -310,7 +311,14 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                 ] as const).map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => setActiveTab(t.key)}
+                    onClick={() => {
+                      if (t.key === "posts" && activeTab === "posts") {
+                        setMyPostsOnly((prev) => !prev);
+                      } else {
+                        setActiveTab(t.key);
+                        if (t.key !== "posts") setMyPostsOnly(false);
+                      }
+                    }}
                     className={`relative flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[52px] ${
                       activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
@@ -328,7 +336,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
               {/* Content */}
               {activeTab === "posts" && (
-                <StatusFeed showComposer />
+                <StatusFeed showComposer onlyUserId={myPostsOnly ? user.id : undefined} />
               )}
 
               {activeTab === "activity" && (
