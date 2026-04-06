@@ -300,6 +300,23 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
           })}
         </div>
       )}
+
+      <AlertDialog open={!!deleteTicketId} onOpenChange={(open) => !open && setDeleteTicketId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Ticket</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this support ticket and all its messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTicket} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
