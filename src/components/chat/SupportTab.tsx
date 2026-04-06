@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Search } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +53,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
   const [isStaffTicket, setIsStaffTicket] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [ticketSearch, setTicketSearch] = useState("");
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -109,9 +111,17 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
     enabled: !!user,
   });
 
-  const filteredTickets = statusFilter === "all"
-    ? tickets
-    : tickets.filter((t: any) => t.status === statusFilter);
+  const filteredTickets = tickets.filter((t: any) => {
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    if (ticketSearch.trim()) {
+      const q = ticketSearch.toLowerCase();
+      const subject = (t.subject || "").toLowerCase();
+      const cat = (categoryMap[t.category] || t.category || "").toLowerCase();
+      const name = (t.profile?.display_name || "").toLowerCase();
+      if (!subject.includes(q) && !cat.includes(q) && !name.includes(q)) return false;
+    }
+    return true;
+  });
 
   const createTicket = async () => {
     if (!user || !category || !desc.trim()) return;
@@ -214,6 +224,22 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
           </Button>
         </div>
       ) : null}
+
+      {/* Search bar */}
+      {tickets.length > 0 && (
+        <div className="px-4 py-2 border-b border-border">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search tickets..."
+              value={ticketSearch}
+              onChange={(e) => setTicketSearch(e.target.value)}
+              className="w-full h-8 pl-8 pr-3 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Status filter tabs */}
       <div className="flex border-b border-border px-2">
