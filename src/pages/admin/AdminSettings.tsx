@@ -186,6 +186,9 @@ const AdminSettings = () => {
         setDepositMaxAmount(String(d.deposit_max_amount ?? 50000));
         setPushPromptCooldownDays(String(d.push_prompt_cooldown_days ?? 14));
         setDepositExpiryMinutes(String(d.deposit_expiry_minutes ?? 60));
+        setMaxDraftsNone(String((d as any).max_drafts_none ?? 2));
+        setMaxDraftsBlue(String((d as any).max_drafts_blue ?? 5));
+        setMaxDraftsGold(String((d as any).max_drafts_gold ?? 10));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
