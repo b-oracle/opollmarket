@@ -552,19 +552,24 @@ const VoiceCallOverlay = ({
         if (track.kind === Track.Kind.Video) {
           const src = (track as any).source;
           if (src === Track.Source.ScreenShare) {
+            pendingScreenShareTrackRef.current = track;
             setHasRemoteScreenShare(true);
-            if (screenShareRef.current) track.attach(screenShareRef.current);
           } else {
+            pendingRemoteVideoTrackRef.current = track;
             setHasRemoteVideo(true);
-            if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
           }
         }
       });
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
         if (track.kind === Track.Kind.Video) {
           const src = (track as any).source;
-          if (src === Track.Source.ScreenShare) setHasRemoteScreenShare(false);
-          else setHasRemoteVideo(false);
+          if (src === Track.Source.ScreenShare) {
+            pendingScreenShareTrackRef.current = null;
+            setHasRemoteScreenShare(false);
+          } else {
+            pendingRemoteVideoTrackRef.current = null;
+            setHasRemoteVideo(false);
+          }
         }
         track.detach().forEach((el) => el.remove());
       });
