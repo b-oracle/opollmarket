@@ -261,6 +261,29 @@ const VoiceCallOverlay = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Audio level polling
+  useEffect(() => {
+    if (status !== "active") return;
+    const buf = new Uint8Array(128);
+    const poll = () => {
+      if (remoteAnalyserRef.current) {
+        remoteAnalyserRef.current.analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
+        setRemoteAudioLevel(Math.min(avg / 80, 1));
+      }
+      if (localAnalyserRef.current) {
+        localAnalyserRef.current.analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
+        setLocalAudioLevel(Math.min(avg / 80, 1));
+      }
+      audioLevelRafRef.current = requestAnimationFrame(poll);
+    };
+    audioLevelRafRef.current = requestAnimationFrame(poll);
+    return () => {
+      if (audioLevelRafRef.current) cancelAnimationFrame(audioLevelRafRef.current);
+    };
+  }, [status]);
+
   // Duration timer
   useEffect(() => {
     if (status === "active") {
