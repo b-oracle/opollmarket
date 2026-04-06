@@ -287,7 +287,13 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {(supportPerTicket[t.id] || 0) > 0 ? (
+                    <span className="min-w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1 shrink-0">
+                      {supportPerTicket[t.id]}
+                    </span>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
                 </button>
                 {isSuperAdmin && (
                   <button
