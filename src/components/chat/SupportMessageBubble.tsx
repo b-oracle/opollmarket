@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Copy, Plus, Reply, BadgeCheck } from "lucide-react";
+import { Copy, Plus, Reply, BadgeCheck, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,6 +19,7 @@ interface SupportMessage {
   content: string;
   image_url?: string | null;
   is_staff: boolean;
+  is_ai?: boolean;
   created_at: string;
   reactions?: Record<string, string[]>;
   reply_to_id?: string | null;
@@ -193,9 +194,13 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
     <div className={`flex gap-2 ${isMe ? "flex-row-reverse" : ""}`} id={`support-msg-${m.id}`}>
       <button
         onClick={() => navigate(`/user/${m.user_id}`)}
-        className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"}`}
+        className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${
+          m.is_ai ? "bg-violet-500/20" : m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"
+        }`}
       >
-        {m.profile?.avatar_url ? (
+        {m.is_ai ? (
+          <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+        ) : m.profile?.avatar_url ? (
           <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
         ) : (
           <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
@@ -207,12 +212,15 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
         <div className="space-y-0.5">
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="text-xs font-semibold">
-              {m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
+              {m.is_ai ? "AI Assistant" : m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
             </span>
-            {!m.is_staff && m.profile?.verification_level === "gold" && (
+            {m.is_ai && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">Auto</span>
+            )}
+            {!m.is_staff && !m.is_ai && m.profile?.verification_level === "gold" && (
               <BadgeCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             )}
-            {!m.is_staff && m.profile?.verification_level === "blue" && (
+            {!m.is_staff && !m.is_ai && m.profile?.verification_level === "blue" && (
               <BadgeCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
             )}
             <span className="text-[10px] text-muted-foreground">

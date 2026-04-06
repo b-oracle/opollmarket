@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw, X } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw, X, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string; senderName: string } | null>(null);
+  const [aiTyping, setAiTyping] = useState(false);
 
   const { data: ticket } = useQuery({
     queryKey: ["support-ticket", ticketId],
@@ -115,6 +116,20 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
     }
     setMessage("");
     setReplyTo(null);
+
+    // Trigger AI auto-reply for non-staff messages
+    if (!isStaff) {
+      setAiTyping(true);
+      try {
+        await supabase.functions.invoke("support-ai-reply", {
+          body: { ticket_id: ticketId },
+        });
+      } catch (e) {
+        console.error("AI reply failed:", e);
+      } finally {
+        setAiTyping(false);
+      }
+    }
   }, [user, message, ticketId, isStaff, replyTo]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,6 +216,21 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
             onScrollToMessage={scrollToMessage}
           />
         ))}
+        {aiTyping && (
+          <div className="flex items-center gap-2 px-2 py-1.5">
+            <div className="w-7 h-7 rounded-full bg-violet-500/20 flex items-center justify-center shrink-0">
+              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+            </div>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>AI Assistant is typing</span>
+              <span className="inline-flex gap-0.5">
+                <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "300ms" }} />
+              </span>
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
