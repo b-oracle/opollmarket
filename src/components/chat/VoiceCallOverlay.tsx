@@ -947,7 +947,7 @@ const VoiceCallOverlay = ({
                 speakerOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
               }`}
             >
-              <Volume2 className="w-5 h-5" />
+              {speakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
             </button>
           </>
         )}
