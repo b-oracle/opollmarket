@@ -808,7 +808,17 @@ const AdminMarkets = () => {
                 const isExpanded = expandedId === m.id;
                 return (
                   <React.Fragment key={m.id}>
-                    <tr className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                    <tr className={`border-b border-border/50 ${selectedIds.has(m.id) ? "bg-primary/5" : isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                      {isSuperAdmin && (
+                        <td className="p-3 w-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(m.id)}
+                            onChange={() => toggleSelect(m.id)}
+                            className="rounded border-border"
+                          />
+                        </td>
+                      )}
                       {/* Title + expand toggle */}
                       <td className="p-3 max-w-[220px]">
                         {isEditing ? (
