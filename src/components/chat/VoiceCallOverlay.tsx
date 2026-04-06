@@ -63,6 +63,10 @@ const VoiceCallOverlay = ({
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
+  // Store pending remote tracks so we can attach after video element renders
+  const pendingRemoteVideoTrackRef = useRef<any>(null);
+  const pendingScreenShareTrackRef = useRef<any>(null);
+
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -186,11 +190,11 @@ const VoiceCallOverlay = ({
       if (track.kind === Track.Kind.Video) {
         const source = (track as any).source;
         if (source === Track.Source.ScreenShare) {
+          pendingScreenShareTrackRef.current = track;
           setHasRemoteScreenShare(true);
-          if (screenShareRef.current) track.attach(screenShareRef.current);
         } else {
+          pendingRemoteVideoTrackRef.current = track;
           setHasRemoteVideo(true);
-          if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
         }
       }
     });
@@ -199,8 +203,10 @@ const VoiceCallOverlay = ({
       if (track.kind === Track.Kind.Video) {
         const source = (track as any).source;
         if (source === Track.Source.ScreenShare) {
+          pendingScreenShareTrackRef.current = null;
           setHasRemoteScreenShare(false);
         } else {
+          pendingRemoteVideoTrackRef.current = null;
           setHasRemoteVideo(false);
         }
       }
@@ -368,6 +374,20 @@ const VoiceCallOverlay = ({
     };
   }, [status]);
 
+  // Attach pending remote video track once the <video> element renders
+  useEffect(() => {
+    if (hasRemoteVideo && remoteVideoRef.current && pendingRemoteVideoTrackRef.current) {
+      pendingRemoteVideoTrackRef.current.attach(remoteVideoRef.current);
+    }
+  }, [hasRemoteVideo]);
+
+  // Attach pending screen share track once the <video> element renders
+  useEffect(() => {
+    if (hasRemoteScreenShare && screenShareRef.current && pendingScreenShareTrackRef.current) {
+      pendingScreenShareTrackRef.current.attach(screenShareRef.current);
+    }
+  }, [hasRemoteScreenShare]);
+
   // Ensure dial tone is killed the moment status leaves "ringing"
   useEffect(() => {
     if (status !== "ringing" && stopToneRef.current) {
@@ -459,24 +479,43 @@ const VoiceCallOverlay = ({
   };
 
   const flipCamera = async () => {
-    if (!roomRef.current) return;
+    const room = roomRef.current;
+    if (!room) return;
     try {
       const newFacing = facingMode === "user" ? "environment" : "user";
-      // Restart camera with new facing mode
-      await roomRef.current.localParticipant.setCameraEnabled(false);
-      await roomRef.current.localParticipant.setCameraEnabled(true, {
-        facingMode: newFacing,
-        resolution: { width: 640, height: 480, frameRate: 24 },
-      });
-      setFacingMode(newFacing);
-      // Re-attach
-      setTimeout(() => {
-        const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
-        if (camPub?.track && localVideoRef.current) {
-          camPub.track.attach(localVideoRef.current);
-        }
-      }, 200);
+      
+      // Get the current camera track and use restartTrack with new constraints
+      const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+      if (camPub?.track) {
+        // restartTrack applies new constraints to the existing track
+        await (camPub.track as any).restartTrack({
+          facingMode: newFacing,
+          resolution: { width: 640, height: 480, frameRate: 24 },
+        });
+        setFacingMode(newFacing);
+        // Re-attach after restart
+        setTimeout(() => {
+          if (localVideoRef.current && camPub.track) {
+            camPub.track.attach(localVideoRef.current);
+          }
+        }, 100);
+      } else {
+        // Fallback: disable then re-enable with new facing mode
+        await room.localParticipant.setCameraEnabled(false);
+        await room.localParticipant.setCameraEnabled(true, {
+          facingMode: newFacing,
+          resolution: { width: 640, height: 480, frameRate: 24 },
+        });
+        setFacingMode(newFacing);
+        setTimeout(() => {
+          const pub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (pub?.track && localVideoRef.current) {
+            pub.track.attach(localVideoRef.current);
+          }
+        }, 200);
+      }
     } catch (err) {
+      console.error("Flip camera error:", err);
       toast.error("Failed to flip camera");
     }
   };
@@ -513,19 +552,24 @@ const VoiceCallOverlay = ({
         if (track.kind === Track.Kind.Video) {
           const src = (track as any).source;
           if (src === Track.Source.ScreenShare) {
+            pendingScreenShareTrackRef.current = track;
             setHasRemoteScreenShare(true);
-            if (screenShareRef.current) track.attach(screenShareRef.current);
           } else {
+            pendingRemoteVideoTrackRef.current = track;
             setHasRemoteVideo(true);
-            if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
           }
         }
       });
       room.on(RoomEvent.TrackUnsubscribed, (track) => {
         if (track.kind === Track.Kind.Video) {
           const src = (track as any).source;
-          if (src === Track.Source.ScreenShare) setHasRemoteScreenShare(false);
-          else setHasRemoteVideo(false);
+          if (src === Track.Source.ScreenShare) {
+            pendingScreenShareTrackRef.current = null;
+            setHasRemoteScreenShare(false);
+          } else {
+            pendingRemoteVideoTrackRef.current = null;
+            setHasRemoteVideo(false);
+          }
         }
         track.detach().forEach((el) => el.remove());
       });
