@@ -54,6 +54,7 @@ const ConversationList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { supportUnread, communityUnread, markSupportRead, markCommunityRead } = useUnreadCounts();
   const { isFeatureEnabled } = useFeatureToggles();
   const [showNewChat, setShowNewChat] = useState(false);
   const [search, setSearch] = useState("");
