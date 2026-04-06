@@ -116,6 +116,20 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
     }
     setMessage("");
     setReplyTo(null);
+
+    // Trigger AI auto-reply for non-staff messages
+    if (!isStaff) {
+      setAiTyping(true);
+      try {
+        await supabase.functions.invoke("support-ai-reply", {
+          body: { ticket_id: ticketId },
+        });
+      } catch (e) {
+        console.error("AI reply failed:", e);
+      } finally {
+        setAiTyping(false);
+      }
+    }
   }, [user, message, ticketId, isStaff, replyTo]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
