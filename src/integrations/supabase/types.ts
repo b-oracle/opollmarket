@@ -4212,6 +4212,10 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      mark_dm_messages_read: {
+        Args: { _conversation_id: string }
+        Returns: number
+      }
       normalize_email: { Args: { _email: string }; Returns: string }
       reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       release_creation_fee_escrow: {

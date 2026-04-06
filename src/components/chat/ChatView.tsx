@@ -103,16 +103,15 @@ const ChatView = () => {
 
   useEffect(() => {
     if (!user || !conversationId || messages.length === 0) return;
-    const unreadIds = messages
-      .filter((m) => m.sender_id !== user.id && !m.read_at)
-      .map((m) => m.id);
-    if (unreadIds.length === 0) return;
+    const hasUnread = messages.some((m) => m.sender_id !== user.id && !m.read_at);
+    if (!hasUnread) return;
     supabase
-      .from("dm_messages" as any)
-      .update({ read_at: new Date().toISOString() } as any)
-      .in("id", unreadIds)
-      .then(() => {
+      .rpc("mark_dm_messages_read", { _conversation_id: conversationId })
+      .then(({ error }) => {
+        if (error) console.error("mark_dm_messages_read error:", error);
         queryClient.invalidateQueries({ queryKey: ["dm-unread-count"] });
+        queryClient.invalidateQueries({ queryKey: ["dm-messages", conversationId] });
+        queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
       });
   }, [messages, user, conversationId, queryClient]);
 

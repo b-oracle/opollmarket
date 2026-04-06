@@ -149,6 +149,14 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [slug, queryClient]);
 
+  // Mark community as read on mount and whenever new messages arrive
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`community_last_read_${user.id}_${slug}`, new Date().toISOString());
+      queryClient.invalidateQueries({ queryKey: ["unread-community"] });
+    }
+  }, [slug, user, messages.length, queryClient]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "instant" as any });
   }, [messages.length]);

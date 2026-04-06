@@ -14,11 +14,19 @@ const ChatIcon = () => {
     queryKey: ["dm-unread-count", user?.id],
     queryFn: async () => {
       if (!user) return 0;
+      // Get conversations where user is a participant
+      const { data: convos } = await supabase
+        .from("dm_conversations" as any)
+        .select("id")
+        .or(`user_a.eq.${user.id},user_b.eq.${user.id}`) as any;
+      if (!convos || convos.length === 0) return 0;
+      const convoIds = convos.map((c: any) => c.id);
       const { count } = await supabase
         .from("dm_messages" as any)
         .select("id", { count: "exact", head: true })
+        .in("conversation_id", convoIds)
         .neq("sender_id", user.id)
-        .is("read_at", null);
+        .is("read_at", null) as any;
       return count || 0;
     },
     enabled: !!user && isFeatureEnabled("dm_chat"),
