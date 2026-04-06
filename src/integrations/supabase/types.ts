@@ -3732,6 +3732,9 @@ export type Database = {
           gift_fee_percent: number | null
           gold_max_free_markets: number | null
           market_creation_fee: number | null
+          max_drafts_blue: number | null
+          max_drafts_gold: number | null
+          max_drafts_none: number | null
           min_gold_token_balance: number | null
           min_liquidity: number | null
           min_nft_balance: number | null
