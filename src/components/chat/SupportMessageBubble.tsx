@@ -106,7 +106,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
     onReply({
       id: m.id,
       content: m.content || (m.image_url ? "📷 Image" : ""),
-      senderName: m.is_staff ? "Support Staff" : m.profile?.display_name || "User",
+      senderName: m.profile?.display_name || (m.is_staff ? "Support Staff" : "User"),
     });
     setShowReactions(false);
     setShowFullPicker(false);
