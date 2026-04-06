@@ -203,8 +203,10 @@ const VoiceCallOverlay = ({
       if (track.kind === Track.Kind.Video) {
         const source = (track as any).source;
         if (source === Track.Source.ScreenShare) {
+          pendingScreenShareTrackRef.current = null;
           setHasRemoteScreenShare(false);
         } else {
+          pendingRemoteVideoTrackRef.current = null;
           setHasRemoteVideo(false);
         }
       }
