@@ -1,29 +1,28 @@
 
 
-## Plan: Add Decorative Watermark Background to Call Interface
+## Plan: Add Tap-to-Animate on Gift Emoji Messages in DMs
 
 ### What it does
-Replaces the plain dark background of the call overlay with a visually appealing design featuring subtle OPoll watermark logos and fun doodle-style icons (phone, mic, headphones, chat bubbles, waveforms, etc.) — similar to how WhatsApp and Telegram style their call screens.
+When a user taps on a gift emoji message in their DM conversation, it triggers a fun celebratory animation — the emoji bounces/pops with particle effects and the amount shimmers, making the gift feel exciting and interactive.
 
-### Approach
-Create an SVG-based background pattern rendered directly in the component (no external assets needed for the doodle icons). The OPoll watermark logo will be layered on top using the existing `watermark-logo.png` asset. Everything will be very low opacity so it doesn't distract from the call UI.
+### Changes
 
-### Files to change
+**File: `src/components/chat/ChatMessageBubble.tsx`**
 
-**1. `src/components/chat/VoiceCallOverlay.tsx`**
+1. Add a `giftTapped` state boolean, toggled on tap of the gift bubble
+2. On tap, trigger a sequence:
+   - The emoji scales up with a spring bounce (1 → 1.6 → 1) 
+   - The dollar amount does a gold shimmer/pulse
+   - Floating mini-emojis (matching the gift emoji) burst outward from the center and fade away — 6-8 copies at random angles
+   - A subtle confetti burst using `canvas-confetti` (already in the project via `useConfetti`)
+3. Use `framer-motion` `animate` controls to drive the emoji pop and `AnimatePresence` for the floating particles
+4. Add a 3-second cooldown so repeated taps don't spam animations
+5. The animation plays for both sender and recipient when tapped
 
-- Replace the plain `bg-background/95` full-screen container with a layered background:
-  - Base: dark gradient (subtle radial gradient from center)
-  - Layer 1: Repeating SVG pattern of fun communication icons (phone, mic, headphones, chat bubbles, music notes, signal waves, hearts, thumbs-up) drawn as simple line art, rotated at various angles, at ~4-5% opacity
-  - Layer 2: Large centered OPoll watermark logo (`watermark-logo.png`) at ~6-8% opacity with a slight blur
-- The pattern will be a CSS `background-image` using an inline SVG data URI for the icon grid
-- The watermark logo will be an absolutely positioned `<img>` element
-- Both audio-only and video call views get the background; video feeds naturally cover it when active
-- Light mode uses `blue-opoll-logo.png` watermark instead
-
-### Visual result
-- Subtle tiled pattern of ~12 different communication-themed line icons at random rotations
-- Large faded OPoll logo centered behind the avatar
-- Dark radial gradient giving depth (darker edges, slightly lighter center)
-- All decorative elements stay behind the call UI via z-indexing
+### Technical details
+- Use `useAnimation()` from framer-motion on the emoji `<motion.p>` to imperatively trigger the bounce sequence on tap
+- Create 6-8 `<motion.span>` particle clones of the emoji that animate outward with random x/y offsets, rotation, and opacity fade
+- Fire `fireSubtleConfetti()` from the existing `useConfetti` hook simultaneously
+- The gift container gets an `onClick` handler (in addition to existing long-press for reactions)
+- CSS keyframe `@keyframes shimmer` for the gold text glow on the amount
 
