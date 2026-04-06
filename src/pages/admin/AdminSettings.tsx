@@ -1915,7 +1915,7 @@ const SportsImportPresetsSection = ({ canEdit }: { canEdit: boolean }) => {
 const TOGGLE_CATEGORIES: Record<string, { label: string; keys: string[] }> = {
   core: {
     label: "🏠 Core Platform",
-    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading", "welcome_bonus"],
+    keys: ["create_market", "portfolio", "feed", "rankings", "referrals", "faq", "sales_deck", "quick_trade", "copy_trading", "copy_trade_commissions", "welcome_bonus"],
   },
   communication: {
     label: "📨 Communication & Support",
