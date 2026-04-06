@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import SupportChat from "@/components/chat/SupportChat";
@@ -25,6 +26,7 @@ const AdminSupport = () => {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["admin-support-tickets", statusFilter],
@@ -79,6 +81,12 @@ const AdminSupport = () => {
     closed: "bg-muted text-muted-foreground",
   };
 
+  const filteredTickets = useMemo(() => {
+    if (!searchQuery.trim()) return tickets;
+    const q = searchQuery.toLowerCase();
+    return tickets.filter((t: any) => t.subject?.toLowerCase().includes(q) || t.profile?.display_name?.toLowerCase().includes(q) || t.category?.toLowerCase().includes(q) || t.id?.toLowerCase().includes(q));
+  }, [tickets, searchQuery]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -97,15 +105,22 @@ const AdminSupport = () => {
         </Select>
       </div>
 
+      <Input
+        placeholder="Search by subject, user, or category…"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="h-9 text-sm"
+      />
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : tickets.length === 0 ? (
+      ) : filteredTickets.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-10">No tickets found</p>
       ) : (
         <div className="space-y-2">
-          {tickets.map((t: any) => (
+          {filteredTickets.map((t: any) => (
             <div
               key={t.id}
               className="border border-border rounded-lg p-3 hover:bg-accent/20 transition-colors cursor-pointer"

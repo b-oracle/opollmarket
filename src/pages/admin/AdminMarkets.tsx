@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2, Trash2, CheckCircle, XCircle, Gavel, Plus, Pencil, Check, X, ChevronDown, ChevronUp, TrendingUp, Pin, ShieldAlert, ShieldCheck, Ban, BarChart3, Users, DollarSign, Layers, Clock, Archive, Flame, Eye, EyeOff, Download, ImagePlus, Sparkles } from "lucide-react";
 import { compressImage } from "@/lib/imageCompression";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import RecordOnChainButton from "@/components/admin/RecordOnChainButton";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
@@ -120,6 +121,7 @@ const AdminMarkets = () => {
   const [endedCount, setEndedCount] = useState(0);
   const [pendingCount, setPendingCount] = useState(0);
   const [generatingAiImage, setGeneratingAiImage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Global stats (fetched once, independent of filter)
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
@@ -234,7 +236,13 @@ const AdminMarkets = () => {
 
   useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
 
-  const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
+  const searchedMarkets = useMemo(() => {
+    if (!searchQuery.trim()) return markets;
+    const q = searchQuery.toLowerCase();
+    return markets.filter(m => m.title.toLowerCase().includes(q) || m.description.toLowerCase().includes(q) || m.category.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+  }, [markets, searchQuery]);
+
+  const paginatedMarkets = useMemo(() => searchedMarkets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [searchedMarkets, mktPage]);
   // Moderator: recommend approve/reject (does NOT change market status)
   const handleModeratorReview = async (id: string, decision: "approve" | "reject") => {
     setModeratorReviewingId(id);
@@ -479,7 +487,7 @@ const AdminMarkets = () => {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-xl sm:text-2xl font-bold">Markets ({markets.length})</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">Markets ({searchedMarkets.length})</h2>
         <div className="flex items-center gap-2 flex-wrap">
           {isSuperAdmin && resolvedMarkets.length > 0 && (
             <DropdownMenu>
@@ -508,6 +516,13 @@ const AdminMarkets = () => {
           )}
         </div>
       </div>
+
+      <Input
+        placeholder="Search markets by title, category, or ID…"
+        value={searchQuery}
+        onChange={(e) => { setSearchQuery(e.target.value); setMktPage(1); }}
+        className="h-9 text-sm"
+      />
 
       {/* Analytics Summary Cards */}
       {globalStats && (
@@ -1142,7 +1157,7 @@ const AdminMarkets = () => {
           </table>
         </div>
       </div>
-      <AdminPagination page={mktPage} totalItems={markets.length} pageSize={MKT_PAGE_SIZE} onPageChange={setMktPage} />
+      <AdminPagination page={mktPage} totalItems={searchedMarkets.length} pageSize={MKT_PAGE_SIZE} onPageChange={setMktPage} />
 
       {/* Resolution Modal */}
       <AnimatePresence>
