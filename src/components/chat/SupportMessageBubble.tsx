@@ -2,13 +2,17 @@ import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { Copy, Plus, Reply, BadgeCheck, Sparkles } from "lucide-react";
+import { Copy, Plus, Reply, BadgeCheck, Sparkles, Pencil, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 
@@ -41,6 +45,9 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   const [showReactions, setShowReactions] = useState(false);
   const [showFullPicker, setShowFullPicker] = useState(false);
   const [flipReactions, setFlipReactions] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout>>();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const isMe = m.user_id === user?.id;
@@ -104,6 +111,46 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
     setShowReactions(false);
     setShowFullPicker(false);
   }, [onReply, m]);
+
+  const handleEdit = useCallback(() => {
+    setEditText(m.content || "");
+    setEditing(true);
+    setShowReactions(false);
+    setShowFullPicker(false);
+  }, [m.content]);
+
+  const saveEdit = useCallback(async () => {
+    const trimmed = editText.trim();
+    if (!trimmed || trimmed === m.content) {
+      setEditing(false);
+      return;
+    }
+    const { error } = await supabase
+      .from("support_messages" as any)
+      .update({ content: trimmed } as any)
+      .eq("id", m.id);
+    if (error) {
+      toast.error("Failed to edit message");
+    } else {
+      toast.success("Message edited");
+      queryClient.invalidateQueries({ queryKey: ["support-messages", m.ticket_id] });
+    }
+    setEditing(false);
+  }, [editText, m.content, m.id, m.ticket_id, queryClient]);
+
+  const handleDelete = useCallback(async () => {
+    const { error } = await supabase
+      .from("support_messages" as any)
+      .delete()
+      .eq("id", m.id);
+    if (error) {
+      toast.error("Failed to delete message");
+    } else {
+      toast.success("Message deleted");
+      queryClient.invalidateQueries({ queryKey: ["support-messages", m.ticket_id] });
+    }
+    setDeleteConfirm(false);
+  }, [m.id, m.ticket_id, queryClient]);
 
   const dismiss = useCallback(() => {
     setShowReactions(false);
@@ -179,6 +226,16 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
           <button onClick={handleCopy} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0" title="Copy">
             <Copy className="w-3 h-3 text-muted-foreground" />
           </button>
+          {isMe && !m.is_ai && (
+            <>
+              <button onClick={handleEdit} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0" title="Edit">
+                <Pencil className="w-3 h-3 text-muted-foreground" />
+              </button>
+              <button onClick={() => { setDeleteConfirm(true); setShowReactions(false); }} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/20 transition-colors flex-shrink-0" title="Delete">
+                <Trash2 className="w-3 h-3 text-destructive" />
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <AnimatePresence>
@@ -191,61 +248,97 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   );
 
   return (
-    <div className={`flex gap-2 ${isMe ? "flex-row-reverse" : ""}`} id={`support-msg-${m.id}`}>
-      <button
-        onClick={() => navigate(`/user/${m.user_id}`)}
-        className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${
-          m.is_ai ? "bg-violet-500/20" : m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"
-        }`}
-      >
-        {m.is_ai ? (
-          <Sparkles className="w-3.5 h-3.5 text-violet-500" />
-        ) : m.profile?.avatar_url ? (
-          <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
-        ) : (
-          <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
-            {m.is_staff ? "S" : (m.profile?.display_name || "?").charAt(0).toUpperCase()}
-          </span>
-        )}
-      </button>
-      <div className="relative max-w-[75%] overflow-visible">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <span className="text-xs font-semibold">
-              {m.is_ai ? "OPoll AI" : m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
+    <>
+      <div className={`flex gap-2 ${isMe ? "flex-row-reverse" : ""}`} id={`support-msg-${m.id}`}>
+        <button
+          onClick={() => navigate(`/user/${m.user_id}`)}
+          className={`w-7 h-7 rounded-full flex items-center justify-center overflow-hidden shrink-0 mt-0.5 ${
+            m.is_ai ? "bg-violet-500/20" : m.is_staff ? "bg-emerald-500/20" : "bg-primary/20"
+          }`}
+        >
+          {m.is_ai ? (
+            <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+          ) : m.profile?.avatar_url ? (
+            <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
+              {m.is_staff ? "S" : (m.profile?.display_name || "?").charAt(0).toUpperCase()}
             </span>
-            {m.is_ai && (
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">Auto</span>
-            )}
-            {!m.is_staff && !m.is_ai && m.profile?.verification_level === "gold" && (
-              <BadgeCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            )}
-            {!m.is_staff && !m.is_ai && m.profile?.verification_level === "blue" && (
-              <BadgeCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-            )}
-            <span className="text-[10px] text-muted-foreground">
-              {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-            </span>
+          )}
+        </button>
+        <div className="relative max-w-[75%] overflow-visible">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className="text-xs font-semibold">
+                {m.is_ai ? "OPoll AI" : m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
+              </span>
+              {m.is_ai && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">Auto</span>
+              )}
+              {!m.is_staff && !m.is_ai && m.profile?.verification_level === "gold" && (
+                <BadgeCheck className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              )}
+              {!m.is_staff && !m.is_ai && m.profile?.verification_level === "blue" && (
+                <BadgeCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+              )}
+              <span className="text-[10px] text-muted-foreground">
+                {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+              </span>
+            </div>
+            <div
+              ref={bubbleRef}
+              className={cn(
+                "rounded-2xl px-3.5 py-2 select-none touch-none",
+                isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"
+              )}
+              {...pointerProps}
+            >
+              {replyPreview}
+              {editing ? (
+                <div className="space-y-1.5">
+                  <textarea
+                    autoFocus
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    className="w-full text-sm bg-transparent border border-primary-foreground/30 rounded-lg px-2 py-1 resize-none focus:outline-none min-h-[60px]"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEdit(); }
+                      if (e.key === "Escape") setEditing(false);
+                    }}
+                  />
+                  <div className="flex gap-1.5 justify-end">
+                    <button onClick={() => setEditing(false)} className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground/20 hover:bg-primary-foreground/30">Cancel</button>
+                    <button onClick={saveEdit} className="text-[10px] px-2 py-0.5 rounded bg-primary-foreground/30 hover:bg-primary-foreground/40 font-semibold">Save</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {m.content && <p className="text-sm break-words whitespace-pre-wrap">{m.content}</p>}
+                  {m.image_url && (
+                    <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.image_url!, "_blank")} alt="attachment" />
+                  )}
+                </>
+              )}
+            </div>
+            {reactionBadges}
           </div>
-          <div
-            ref={bubbleRef}
-            className={cn(
-              "rounded-2xl px-3.5 py-2 select-none touch-none",
-              isMe ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"
-            )}
-            {...pointerProps}
-          >
-            {replyPreview}
-            {m.content && <p className="text-sm break-words whitespace-pre-wrap">{m.content}</p>}
-            {m.image_url && (
-              <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover cursor-pointer" onClick={() => window.open(m.image_url!, "_blank")} alt="attachment" />
-            )}
-          </div>
-          {reactionBadges}
+          {reactionBar}
         </div>
-        {reactionBar}
       </div>
-    </div>
+
+      <AlertDialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogDescription>This message will be permanently deleted. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
