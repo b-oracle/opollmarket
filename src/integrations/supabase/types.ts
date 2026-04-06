@@ -4008,6 +4008,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_withdrawal_for_processing: {
+        Args: { _action: string; _withdrawal_id: string }
+        Returns: Json
+      }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
