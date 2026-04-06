@@ -757,11 +757,42 @@ const AdminMarkets = () => {
         </div>
       )}
 
+      {/* Batch actions bar */}
+      {isSuperAdmin && selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-2.5">
+          <span className="text-sm font-semibold text-destructive">{selectedIds.size} selected</span>
+          <button
+            onClick={handleBatchDelete}
+            disabled={batchDeleting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {batchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Delete Selected
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                {isSuperAdmin && (
+                  <th className="p-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedMarkets.length > 0 && selectedIds.size === paginatedMarkets.length}
+                      onChange={toggleSelectAll}
+                      className="rounded border-border"
+                    />
+                  </th>
+                )}
                 <th className="p-3">Title</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Type</th>
