@@ -112,7 +112,7 @@ const VoiceCallOverlay = ({
     setTimeout(onClose, 800);
   }, [callId, onClose]);
 
-  const handleCancel = useCallback(async () => {
+  const handleCancel = useCallback(() => {
     if (endingRef.current) {
       try { roomRef.current?.disconnect(); } catch {}
       onClose();
@@ -126,11 +126,10 @@ const VoiceCallOverlay = ({
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
     try { roomRef.current?.disconnect(); } catch {}
 
-    try {
-      await supabase.functions.invoke("dm-call-token", {
-        body: { action: "cancel", call_id: callId },
-      });
-    } catch { /* ignore */ }
+    // Fire-and-forget
+    supabase.functions.invoke("dm-call-token", {
+      body: { action: "cancel", call_id: callId },
+    }).catch(() => {});
 
     setTimeout(onClose, 500);
   }, [callId, onClose]);
