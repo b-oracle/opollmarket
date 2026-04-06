@@ -1153,6 +1153,23 @@ const AdminSettings = () => {
                     <p className="text-[10px] text-muted-foreground">Days before re-prompting push notifications</p>
                   </div>
                 </div>
+                <div className="border-t border-border pt-3 mt-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Max Drafts by Verification Level</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Unverified</Label>
+                      <Input type="number" min={1} max={50} step={1} value={maxDraftsNone} onChange={(e) => setMaxDraftsNone(e.target.value)} disabled={!canEdit} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Blue ✓</Label>
+                      <Input type="number" min={1} max={50} step={1} value={maxDraftsBlue} onChange={(e) => setMaxDraftsBlue(e.target.value)} disabled={!canEdit} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Gold ✓</Label>
+                      <Input type="number" min={1} max={50} step={1} value={maxDraftsGold} onChange={(e) => setMaxDraftsGold(e.target.value)} disabled={!canEdit} />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
