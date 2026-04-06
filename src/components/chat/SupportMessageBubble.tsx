@@ -270,7 +270,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-xs font-semibold">
-                {m.is_ai ? "OPoll AI" : m.is_staff ? "Support Staff" : m.profile?.display_name || "You"}
+                {m.is_ai ? "OPoll AI" : m.profile?.display_name || (m.is_staff ? "Support Staff" : "You")}
               </span>
               {m.is_ai && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-500/10 text-violet-500 font-medium">Auto</span>
