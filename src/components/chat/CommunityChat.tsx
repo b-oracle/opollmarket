@@ -193,18 +193,11 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
 
   const toggleReaction = useCallback(async (messageId: string, emoji: string, currentReactions: Record<string, string[]>) => {
     if (!user) return;
-    const updated = { ...currentReactions };
-    const users = updated[emoji] || [];
-    if (users.includes(user.id)) {
-      updated[emoji] = users.filter((u) => u !== user.id);
-      if (updated[emoji].length === 0) delete updated[emoji];
-    } else {
-      updated[emoji] = [...users, user.id];
-    }
-    await supabase
-      .from("community_messages" as any)
-      .update({ reactions: updated } as any)
-      .eq("id", messageId);
+    await supabase.rpc("toggle_message_reaction" as any, {
+      _table: "community_messages",
+      _message_id: messageId,
+      _emoji: emoji,
+    });
     queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
     setActiveReactionId(null);
   }, [user, slug, queryClient]);
