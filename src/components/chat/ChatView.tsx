@@ -308,7 +308,7 @@ const ChatView = () => {
           <span className="text-sm font-semibold truncate">{otherName}</span>
           {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
-        {convStatus === "active" && (
+        {convStatus === "active" && isFeatureEnabled("voice_calls") && (
           <>
             <button
               onClick={() => handleStartCall(true)}
