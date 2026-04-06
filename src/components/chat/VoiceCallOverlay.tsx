@@ -207,6 +207,7 @@ const VoiceCallOverlay = ({
     room.on(RoomEvent.Disconnected, () => {
       if (!endingRef.current && !intentionalDisconnectRef.current && statusRef.current === "active") {
         setReconnecting(true);
+        // Try auto-reconnect once
         room.connect(livekitUrl, token)
           .then(async () => {
             await room.localParticipant.setMicrophoneEnabled(!muted);
@@ -214,8 +215,9 @@ const VoiceCallOverlay = ({
             setReconnecting(false);
           })
           .catch(() => {
+            // Auto-reconnect failed — show manual rejoin button instead of ending
             setReconnecting(false);
-            if (!endingRef.current) handleEnd();
+            setShowRejoin(true);
           });
       } else if (!endingRef.current) {
         handleEnd();
