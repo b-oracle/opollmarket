@@ -136,7 +136,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
     const file = e.target.files?.[0];
     if (!file || !user) return;
     const ext = file.name.split(".").pop();
-    const path = `support/${ticketId}/${Date.now()}.${ext}`;
+    const path = `${user.id}/support-${ticketId}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("market-images").upload(path, file);
     if (error) {
       toast.error("Upload failed");
