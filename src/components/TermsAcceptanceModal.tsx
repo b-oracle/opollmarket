@@ -13,7 +13,7 @@ interface TermsAcceptanceModalProps {
  * Update this date string whenever Terms / Disclaimer / Privacy policies change.
  * Users will be re-prompted to accept on their next prediction.
  */
-export const LATEST_POLICY_DATE = "2026-03-06";
+export const LATEST_POLICY_DATE = "2026-04-06";
 
 const TERMS_ACCEPTED_KEY = "opoll_terms_accepted_date";
 

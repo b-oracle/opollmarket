@@ -428,7 +428,7 @@ const Terms = () => {
           <p>For questions, concerns, or requests relating to these Terms, please contact us through the Platform's support channels or via the contact information provided in the application.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 3, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 6, 2026</p>
       </div>
       <BackToTop />
     </div>
