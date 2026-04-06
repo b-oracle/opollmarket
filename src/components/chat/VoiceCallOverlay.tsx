@@ -129,6 +129,14 @@ const VoiceCallOverlay = ({
     roomRef.current = room;
 
     room.on(RoomEvent.TrackSubscribed, (track) => {
+      // Any remote track means the other party joined — stop ringing
+      if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+      if (statusRef.current === "ringing") {
+        setStatus("active");
+        if (!startTimeRef.current) startTimeRef.current = Date.now();
+        if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
+      }
+
       if (track.kind === Track.Kind.Audio) {
         remoteTrackReceivedRef.current = true;
         const el = track.attach();
