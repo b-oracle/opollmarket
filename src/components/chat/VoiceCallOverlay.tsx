@@ -45,6 +45,11 @@ const VoiceCallOverlay = ({
   const [muted, setMuted] = useState(false);
   const [speakerOn, setSpeakerOn] = useState(false);
   const [duration, setDuration] = useState(0);
+  const [remoteAudioLevel, setRemoteAudioLevel] = useState(0);
+  const [localAudioLevel, setLocalAudioLevel] = useState(0);
+  const remoteAnalyserRef = useRef<{ ctx: AudioContext; analyser: AnalyserNode; source: MediaStreamAudioSourceNode } | null>(null);
+  const localAnalyserRef = useRef<{ ctx: AudioContext; analyser: AnalyserNode; source: MediaStreamAudioSourceNode } | null>(null);
+  const audioLevelRafRef = useRef<number | null>(null);
 
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -116,7 +121,18 @@ const VoiceCallOverlay = ({
         const el = track.attach();
         el.id = `remote-audio-${track.sid}`;
         document.body.appendChild(el);
-        // Clear inactivity timeout once we receive audio
+        // Set up remote audio analyser for glow
+        try {
+          const stream = (track as any).mediaStream as MediaStream | undefined;
+          if (stream) {
+            const ctx = new AudioContext();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            remoteAnalyserRef.current = { ctx, analyser, source };
+          }
+        } catch {}
         if (inactivityTimeoutRef.current) {
           clearTimeout(inactivityTimeoutRef.current);
           inactivityTimeoutRef.current = null;
@@ -184,6 +200,19 @@ const VoiceCallOverlay = ({
       .connect(livekitUrl, token)
       .then(async () => {
         await room.localParticipant.setMicrophoneEnabled(true);
+        // Set up local audio analyser for glow
+        try {
+          const localTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+          const stream = (localTrack as any)?.mediaStream as MediaStream | undefined;
+          if (stream) {
+            const ctx = new AudioContext();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            localAnalyserRef.current = { ctx, analyser, source };
+          }
+        } catch {}
         if (!isOutgoing) {
           setStatus("active");
           startTimeRef.current = Date.now();
@@ -214,6 +243,9 @@ const VoiceCallOverlay = ({
       if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
       if (gracePeriodRef.current) clearTimeout(gracePeriodRef.current);
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+      // Clean up audio analysers
+      try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
+      try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       // Ensure call is ended on unmount
       if (!endingRef.current && statusRef.current !== "ended") {
         const s = statusRef.current;
@@ -228,6 +260,29 @@ const VoiceCallOverlay = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Audio level polling
+  useEffect(() => {
+    if (status !== "active") return;
+    const buf = new Uint8Array(128);
+    const poll = () => {
+      if (remoteAnalyserRef.current) {
+        remoteAnalyserRef.current.analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
+        setRemoteAudioLevel(Math.min(avg / 80, 1));
+      }
+      if (localAnalyserRef.current) {
+        localAnalyserRef.current.analyser.getByteFrequencyData(buf);
+        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
+        setLocalAudioLevel(Math.min(avg / 80, 1));
+      }
+      audioLevelRafRef.current = requestAnimationFrame(poll);
+    };
+    audioLevelRafRef.current = requestAnimationFrame(poll);
+    return () => {
+      if (audioLevelRafRef.current) cancelAnimationFrame(audioLevelRafRef.current);
+    };
+  }, [status]);
 
   // Duration timer
   useEffect(() => {
@@ -312,7 +367,14 @@ const VoiceCallOverlay = ({
       >
         <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+          <div
+            className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+            style={{
+              boxShadow: remoteAudioLevel > 0.05
+                ? `0 0 ${4 + remoteAudioLevel * 8}px ${1 + remoteAudioLevel * 3}px rgba(59,130,246,${0.4 + remoteAudioLevel * 0.5})`
+                : "none",
+            }}
+          >
             {otherUserAvatar ? (
               <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
             ) : (
@@ -358,15 +420,38 @@ const VoiceCallOverlay = ({
         </button>
       )}
 
-      {/* Avatar */}
-      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden mb-4">
-        {otherUserAvatar ? (
-          <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
-        ) : (
-          <span className="text-3xl font-bold text-primary">
-            {otherUserName.charAt(0).toUpperCase()}
-          </span>
+      {/* Avatars with audio-reactive glow */}
+      <div className="flex items-center gap-6 mb-4">
+        {/* Self (small) */}
+        {status === "active" && (
+          <div
+            className="w-14 h-14 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+            style={{
+              boxShadow: localAudioLevel > 0.05
+                ? `0 0 ${8 + localAudioLevel * 20}px ${2 + localAudioLevel * 6}px hsl(var(--primary) / ${0.3 + localAudioLevel * 0.5})`
+                : "none",
+            }}
+          >
+            <span className="text-lg font-bold text-muted-foreground">You</span>
+          </div>
         )}
+        {/* Other party (large) */}
+        <div
+          className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+          style={{
+            boxShadow: status === "active" && remoteAudioLevel > 0.05
+              ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
+              : "none",
+          }}
+        >
+          {otherUserAvatar ? (
+            <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <span className="text-3xl font-bold text-primary">
+              {otherUserName.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
       </div>
 
       <h2 className="text-xl font-semibold text-foreground mb-1">{otherUserName}</h2>
