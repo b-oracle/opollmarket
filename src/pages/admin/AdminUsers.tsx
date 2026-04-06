@@ -543,6 +543,128 @@ const AdminUsers = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Block/Unblock Confirmation Dialog */}
+      <AnimatePresence>
+        {blockConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setBlockConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 z-10"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {blockConfirm.currentlyBlocked
+                  ? <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                  : <Ban className="w-5 h-5 text-destructive" />}
+                <h3 className="text-lg font-bold">
+                  {blockConfirm.currentlyBlocked ? "Unban" : "Ban"} User
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to {blockConfirm.currentlyBlocked ? "unban" : "ban"} <strong className="text-foreground">{blockConfirm.name}</strong>?
+                {!blockConfirm.currentlyBlocked && (
+                  <span className="block mt-2 text-xs text-destructive font-medium">⚠️ This will prevent the user from accessing the platform.</span>
+                )}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBlockConfirm(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-muted text-sm font-semibold hover:bg-muted/80 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await toggleBlock(blockConfirm.userId, blockConfirm.name, blockConfirm.currentlyBlocked);
+                    setBlockConfirm(null);
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    blockConfirm.currentlyBlocked
+                      ? "bg-emerald-500 text-white hover:bg-emerald-500/90"
+                      : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  }`}
+                >
+                  {blockConfirm.currentlyBlocked ? "Unban" : "Ban"} User
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Unlimited Markets Confirmation Dialog */}
+      <AnimatePresence>
+        {unlimitedConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setUnlimitedConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 z-10"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Infinity className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-bold">
+                  {unlimitedConfirm.current ? "Remove" : "Grant"} Unlimited Markets
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to {unlimitedConfirm.current ? "remove unlimited markets from" : "grant unlimited markets to"} <strong className="text-foreground">{unlimitedConfirm.name}</strong>?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setUnlimitedConfirm(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-muted text-sm font-semibold hover:bg-muted/80 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const newVal = !unlimitedConfirm.current;
+                    const { error } = await supabase.rpc("admin_update_profile", {
+                      _target_user_id: unlimitedConfirm.userId,
+                      _unlimited_markets: newVal,
+                    } as any);
+                    if (error) { toast.error("Failed to update"); return; }
+                    logAuditEvent({
+                      action: "settings_updated",
+                      targetId: unlimitedConfirm.userId,
+                      targetType: "user",
+                      details: { unlimited_markets: newVal, user_name: unlimitedConfirm.name },
+                    });
+                    toast.success(`${unlimitedConfirm.name} ${newVal ? "whitelisted for unlimited markets" : "removed from unlimited markets whitelist"}`);
+                    setUnlimitedConfirm(null);
+                    fetchUsers();
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    unlimitedConfirm.current
+                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  }`}
+                >
+                  {unlimitedConfirm.current ? "Remove" : "Grant"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
