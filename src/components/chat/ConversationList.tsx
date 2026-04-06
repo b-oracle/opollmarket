@@ -255,7 +255,9 @@ const ConversationList = () => {
           <button onClick={() => navigate("/feed")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-bold flex-1">Messages</h1>
+          <h1 className="text-lg font-bold flex-1">
+            {tab === "communities" ? "Communities" : tab === "support" ? "Support" : tab === "settings" ? "Settings" : tab === "calls" ? "Calls" : "Messages"}
+          </h1>
           {tab === "chats" && (
             <button
               onClick={() => setShowNewChat(!showNewChat)}
