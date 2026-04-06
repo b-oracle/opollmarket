@@ -11,7 +11,7 @@ import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import {
   ArrowLeft, ArrowUpRight, ArrowDownLeft, ArrowUpFromLine, ArrowDownToLine,
   Gift, Repeat, BarChart3, Sparkles, Zap, ArrowUp, ArrowDown, ChevronDown,
-  ChevronRight, Copy,
+  ChevronRight, Copy, Undo2,
 } from "lucide-react";
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";
