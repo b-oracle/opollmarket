@@ -368,6 +368,9 @@ const AdminSettings = () => {
                     deposit_max_amount: depositMaxAmountNum,
                     push_prompt_cooldown_days: pushPromptCooldownDaysNum,
                     deposit_expiry_minutes: depositExpiryMinutesNum,
+                    max_drafts_none: parseInt(maxDraftsNone) || 2,
+                    max_drafts_blue: parseInt(maxDraftsBlue) || 5,
+                    max_drafts_gold: parseInt(maxDraftsGold) || 10,
              updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
