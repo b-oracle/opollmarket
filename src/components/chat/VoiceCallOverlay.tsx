@@ -367,7 +367,14 @@ const VoiceCallOverlay = ({
       >
         <div className="w-2 h-2 rounded-full bg-white animate-pulse shrink-0" />
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0">
+          <div
+            className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+            style={{
+              boxShadow: remoteAudioLevel > 0.05
+                ? `0 0 ${4 + remoteAudioLevel * 8}px ${1 + remoteAudioLevel * 3}px rgba(59,130,246,${0.4 + remoteAudioLevel * 0.5})`
+                : "none",
+            }}
+          >
             {otherUserAvatar ? (
               <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
             ) : (
