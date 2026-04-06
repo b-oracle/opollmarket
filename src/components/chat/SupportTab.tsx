@@ -111,9 +111,17 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
     enabled: !!user,
   });
 
-  const filteredTickets = statusFilter === "all"
-    ? tickets
-    : tickets.filter((t: any) => t.status === statusFilter);
+  const filteredTickets = tickets.filter((t: any) => {
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+    if (ticketSearch.trim()) {
+      const q = ticketSearch.toLowerCase();
+      const subject = (t.subject || "").toLowerCase();
+      const cat = (categoryMap[t.category] || t.category || "").toLowerCase();
+      const name = (t.profile?.display_name || "").toLowerCase();
+      if (!subject.includes(q) && !cat.includes(q) && !name.includes(q)) return false;
+    }
+    return true;
+  });
 
   const createTicket = async () => {
     if (!user || !category || !desc.trim()) return;
