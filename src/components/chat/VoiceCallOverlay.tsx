@@ -374,6 +374,20 @@ const VoiceCallOverlay = ({
     };
   }, [status]);
 
+  // Attach pending remote video track once the <video> element renders
+  useEffect(() => {
+    if (hasRemoteVideo && remoteVideoRef.current && pendingRemoteVideoTrackRef.current) {
+      pendingRemoteVideoTrackRef.current.attach(remoteVideoRef.current);
+    }
+  }, [hasRemoteVideo]);
+
+  // Attach pending screen share track once the <video> element renders
+  useEffect(() => {
+    if (hasRemoteScreenShare && screenShareRef.current && pendingScreenShareTrackRef.current) {
+      pendingScreenShareTrackRef.current.attach(screenShareRef.current);
+    }
+  }, [hasRemoteScreenShare]);
+
   // Ensure dial tone is killed the moment status leaves "ringing"
   useEffect(() => {
     if (status !== "ringing" && stopToneRef.current) {
