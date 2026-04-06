@@ -413,15 +413,38 @@ const VoiceCallOverlay = ({
         </button>
       )}
 
-      {/* Avatar */}
-      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden mb-4">
-        {otherUserAvatar ? (
-          <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
-        ) : (
-          <span className="text-3xl font-bold text-primary">
-            {otherUserName.charAt(0).toUpperCase()}
-          </span>
+      {/* Avatars with audio-reactive glow */}
+      <div className="flex items-center gap-6 mb-4">
+        {/* Self (small) */}
+        {status === "active" && (
+          <div
+            className="w-14 h-14 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+            style={{
+              boxShadow: localAudioLevel > 0.05
+                ? `0 0 ${8 + localAudioLevel * 20}px ${2 + localAudioLevel * 6}px hsl(var(--primary) / ${0.3 + localAudioLevel * 0.5})`
+                : "none",
+            }}
+          >
+            <span className="text-lg font-bold text-muted-foreground">You</span>
+          </div>
         )}
+        {/* Other party (large) */}
+        <div
+          className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+          style={{
+            boxShadow: status === "active" && remoteAudioLevel > 0.05
+              ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
+              : "none",
+          }}
+        >
+          {otherUserAvatar ? (
+            <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
+          ) : (
+            <span className="text-3xl font-bold text-primary">
+              {otherUserName.charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
       </div>
 
       <h2 className="text-xl font-semibold text-foreground mb-1">{otherUserName}</h2>
