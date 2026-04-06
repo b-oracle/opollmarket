@@ -259,6 +259,8 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
                 <button
                   onClick={() => {
                     const staffView = isStaff && t.user_id !== user?.id;
+                    markTicketRead(t.id);
+                    queryClient.invalidateQueries({ queryKey: ["unread-support"] });
                     if (onOpenChat) { onOpenChat(t.id, staffView); }
                     else { setActiveTicket(t.id); if (staffView) setIsStaffTicket(true); }
                   }}
