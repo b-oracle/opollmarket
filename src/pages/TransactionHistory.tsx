@@ -301,8 +301,8 @@ const TransactionHistory = () => {
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-sm font-bold ${["sell", "deposit", "payout", "refund", "commission", "qt_one_sided_bonus"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
-                          {["sell", "deposit", "payout", "refund", "commission", "qt_one_sided_bonus"].includes(tx.type) ? "+" : "-"}${Number(tx.amount).toFixed(2)}
+                        <span className={`text-sm font-bold ${tx.type === "clawback" ? "text-orange-500" : ["sell", "deposit", "payout", "refund", "commission", "qt_one_sided_bonus"].includes(tx.type) ? "text-green-500" : "text-destructive"}`}>
+                          {tx.type === "clawback" ? "" : ["sell", "deposit", "payout", "refund", "commission", "qt_one_sided_bonus"].includes(tx.type) ? "+" : "-"}${Math.abs(Number(tx.amount)).toFixed(2)}
                         </span>
                         {isPendingDeposit ? (
                           <ChevronRight className="w-3.5 h-3.5 text-primary" />
