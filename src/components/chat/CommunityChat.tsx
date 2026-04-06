@@ -63,6 +63,7 @@ interface CommunityMessage {
 
 const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
