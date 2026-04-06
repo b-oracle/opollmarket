@@ -62,6 +62,14 @@ const ConversationList = () => {
   const [activeCommunityChat, setActiveCommunityChat] = useState<{ slug: string; label: string } | null>(null);
   const [activeSupportTicket, setActiveSupportTicket] = useState<{ ticketId: string; isStaff: boolean } | null>(null);
 
+  // Mark sections as read when user views them
+  useEffect(() => {
+    if (tab === "support") {
+      markSupportRead();
+      queryClient.invalidateQueries({ queryKey: ["unread-support"] });
+    }
+  }, [tab]);
+
   const topTabs = [
     { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
     { key: "requests" as const, label: "Requests", badge: 0, featureKey: null },
