@@ -272,7 +272,7 @@ const AdminMarkets = () => {
     }
   };
 
-  useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); setSelectedIds(new Set()); }, [filter]);
 
   const searchedMarkets = useMemo(() => {
     if (!searchQuery.trim()) return markets;
