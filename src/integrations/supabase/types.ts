@@ -4217,6 +4217,10 @@ export type Database = {
         Returns: number
       }
       normalize_email: { Args: { _email: string }; Returns: string }
+      publish_draft_market: {
+        Args: { _market_data: Json; _market_id: string }
+        Returns: Json
+      }
       reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }

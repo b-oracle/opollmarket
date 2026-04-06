@@ -1089,17 +1089,23 @@ const Create = () => {
     let error: any = null;
 
     if (draftId) {
-      // Update the existing draft to active/pending
-      const { error: updateError } = await supabase
-        .from("markets")
-        .update(marketData as any)
-        .eq("id", draftId);
-      error = updateError;
-      if (!updateError) data = { id: draftId };
-
-      // Clear draft options if they exist (will be re-inserted below)
-      if (!updateError && marketType !== "binary") {
-        await supabase.from("market_options").delete().eq("market_id", draftId);
+      // Use secure RPC to publish draft (RLS blocks status changes via direct update)
+      const { data: publishResult, error: publishError } = await supabase.rpc(
+        "publish_draft_market" as any,
+        {
+          _market_id: draftId,
+          _market_data: marketData,
+        }
+      );
+      if (publishError) {
+        error = publishError;
+      } else {
+        const parsed = typeof publishResult === "string" ? JSON.parse(publishResult) : publishResult;
+        if (!parsed?.success) {
+          error = { message: parsed?.error || "Failed to publish draft" };
+        } else {
+          data = { id: draftId };
+        }
       }
     } else {
       const result = await supabase
@@ -1132,7 +1138,8 @@ const Create = () => {
         setEscrowId(null);
       }
       setSubmitStep("error");
-      toast.error("Failed to save market. Your balance has been refunded.");
+      const errorMsg = error?.message || "Unknown error";
+      toast.error(`Failed to save market: ${errorMsg}. Your balance has been refunded.`);
       return;
     }
 
