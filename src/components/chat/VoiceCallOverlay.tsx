@@ -622,15 +622,44 @@ const VoiceCallOverlay = ({
   };
 
   const toggleSpeaker = useCallback(() => {
-    const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
     const newSpeaker = !speakerOn;
+    const room = roomRef.current;
+
+    // Approach 1: setSinkId (works on desktop Chrome, some Android Chrome)
+    const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
+    let sinkIdWorked = false;
     audioEls.forEach((el) => {
-      // Volume fallback: earpiece = 0.4, speaker = 1.0
       el.volume = newSpeaker ? 1.0 : 0.4;
       if (typeof (el as any).setSinkId === "function") {
-        (el as any).setSinkId(newSpeaker ? "default" : "communications").catch(() => {});
+        try {
+          (el as any).setSinkId(newSpeaker ? "default" : "communications").catch(() => {});
+          sinkIdWorked = true;
+        } catch {}
       }
     });
+
+    // Approach 2: Detach and re-attach remote audio tracks to force new audio routing
+    // This helps on mobile where setSinkId is unsupported
+    if (!sinkIdWorked && room) {
+      room.remoteParticipants.forEach((p) => {
+        p.audioTrackPublications.forEach((pub) => {
+          const track = pub.track;
+          if (!track) return;
+          // Remove old audio elements
+          const oldEls = track.detach();
+          oldEls.forEach((el) => el.remove());
+          // Re-attach with fresh element
+          const newEl = track.attach();
+          newEl.id = `remote-audio-${track.sid}`;
+          newEl.volume = newSpeaker ? 1.0 : 0.4;
+          // On mobile, autoplay with different volume hints at routing
+          newEl.setAttribute("playsinline", "true");
+          document.body.appendChild(newEl);
+          newEl.play().catch(() => {});
+        });
+      });
+    }
+
     setSpeakerOn(newSpeaker);
   }, [speakerOn]);
 
