@@ -674,6 +674,16 @@ const Create = () => {
         const { error } = await supabase.from("markets").update(draftData).eq("id", draftId);
         if (error) throw error;
       } else {
+        // Check draft limit before creating a new one
+        const { count: existingDrafts } = await supabase
+          .from("markets")
+          .select("id", { count: "exact", head: true })
+          .eq("creator_wallet", user.id)
+          .eq("status", "draft");
+        if ((existingDrafts ?? 0) >= 2) {
+          toast.error("You can only have up to 2 drafts at a time. Please delete or submit an existing draft first.");
+          return;
+        }
         const { data, error } = await supabase.from("markets").insert(draftData).select("id").maybeSingle();
         if (error) throw error;
         savedId = data?.id || null;
