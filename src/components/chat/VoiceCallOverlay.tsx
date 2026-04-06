@@ -666,7 +666,7 @@ const VoiceCallOverlay = ({
                 playsInline
                 muted
                 className="absolute bottom-28 right-4 w-28 h-36 rounded-xl object-cover border-2 border-border shadow-lg z-10"
-                style={{ transform: "scaleX(-1)" }}
+                style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
               />
             )}
 
