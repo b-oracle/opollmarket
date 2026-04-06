@@ -350,7 +350,7 @@ const ConversationList = () => {
             </div>
           ) : tab === "chats" ? (
             <>
-              {conversations.length > 0 && (
+              {conversations.length > 0 && isFeatureEnabled("chat_search") && (
                 <div className="px-4 py-2 border-b border-border">
                   <Input
                     placeholder="Search chats..."
