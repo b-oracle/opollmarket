@@ -19,7 +19,7 @@ const doodleBgUrl = `url("data:image/svg+xml,${encodeURIComponent(doodlePatternS
 
 const ChatDoodleBackground = () => (
   <div
-    className="absolute inset-0 pointer-events-none opacity-[0.06] dark:opacity-[0.08]"
+    className="absolute inset-0 pointer-events-none z-[1] opacity-[0.12] dark:opacity-[0.15]"
     style={{
       backgroundImage: doodleBgUrl,
       backgroundSize: "200px 200px",
