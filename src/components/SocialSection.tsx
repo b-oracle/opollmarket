@@ -25,6 +25,7 @@ interface SocialSectionProps {
 const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSectionProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">(initialTab || "posts");
   const [searchQuery, setSearchQuery] = useState("");
