@@ -306,14 +306,24 @@ const ChatView = () => {
           {otherVerification !== "none" && <NftBadge level={otherVerification} size={16} />}
         </div>
         {convStatus === "active" && (
-          <button
-            onClick={handleStartCall}
-            disabled={calling}
-            className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
-            aria-label="Voice call"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
+          <>
+            <button
+              onClick={() => handleStartCall(true)}
+              disabled={calling}
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              aria-label="Video call"
+            >
+              <Video className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleStartCall(false)}
+              disabled={calling}
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              aria-label="Voice call"
+            >
+              <Phone className="w-4 h-4" />
+            </button>
+          </>
         )}
       </div>
 
