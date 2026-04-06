@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user_id, title, body, url } = await req.json();
+    const { user_id, title, body, url, is_call, call_id } = await req.json();
 
     if (!user_id || !title) {
       return new Response(JSON.stringify({ error: "user_id and title required" }), {
