@@ -484,6 +484,9 @@ export type Database = {
           liquidity_return_fee_percent: number
           market_creation_fee: number | null
           max_daily_withdrawals: number
+          max_drafts_blue: number
+          max_drafts_gold: number
+          max_drafts_none: number
           min_gold_token_balance: number
           min_liquidity: number
           min_nft_balance: number
@@ -562,6 +565,9 @@ export type Database = {
           liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
           max_daily_withdrawals?: number
+          max_drafts_blue?: number
+          max_drafts_gold?: number
+          max_drafts_none?: number
           min_gold_token_balance?: number
           min_liquidity?: number
           min_nft_balance?: number
@@ -640,6 +646,9 @@ export type Database = {
           liquidity_return_fee_percent?: number
           market_creation_fee?: number | null
           max_daily_withdrawals?: number
+          max_drafts_blue?: number
+          max_drafts_gold?: number
+          max_drafts_none?: number
           min_gold_token_balance?: number
           min_liquidity?: number
           min_nft_balance?: number
