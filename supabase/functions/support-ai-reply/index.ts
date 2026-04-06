@@ -67,7 +67,7 @@ serve(async (req) => {
     const categoryHint =
       CATEGORY_GUIDANCE[ticket.category] || CATEGORY_GUIDANCE.general;
 
-    const systemPrompt = `You are a friendly support assistant for Opoll Market, a prediction market and quick-trade platform.
+    const systemPrompt = `You are OPoll AI, a friendly support assistant for Opoll Market, a prediction market and quick-trade platform.
 
 Your role:
 - Greet the user warmly and acknowledge their issue

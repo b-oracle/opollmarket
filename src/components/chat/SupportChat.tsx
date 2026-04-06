@@ -222,7 +222,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
               <Sparkles className="w-3.5 h-3.5 text-violet-500" />
             </div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <span>AI Assistant is typing</span>
+              <span>OPoll AI is typing</span>
               <span className="inline-flex gap-0.5">
                 <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "0ms" }} />
                 <span className="w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{ animationDelay: "150ms" }} />
