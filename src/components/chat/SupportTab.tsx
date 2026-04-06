@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { Plus, HelpCircle, ChevronRight, Clock, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const STATUS_FILTERS = [
 const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const { supportPerTicket, markTicketRead } = useUnreadCounts();
   const [showNew, setShowNew] = useState(false);
   const [category, setCategory] = useState("");
   const [desc, setDesc] = useState("");
@@ -257,6 +259,8 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
                 <button
                   onClick={() => {
                     const staffView = isStaff && t.user_id !== user?.id;
+                    markTicketRead(t.id);
+                    queryClient.invalidateQueries({ queryKey: ["unread-support"] });
                     if (onOpenChat) { onOpenChat(t.id, staffView); }
                     else { setActiveTicket(t.id); if (staffView) setIsStaffTicket(true); }
                   }}
@@ -283,7 +287,13 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {(supportPerTicket[t.id] || 0) > 0 ? (
+                    <span className="min-w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1 shrink-0">
+                      {supportPerTicket[t.id]}
+                    </span>
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
                 </button>
                 {isSuperAdmin && (
                   <button
