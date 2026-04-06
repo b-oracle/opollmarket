@@ -37,6 +37,7 @@ const AdminKyc = () => {
   const [processing, setProcessing] = useState(false);
   const [viewingImage, setViewingImage] = useState<string | null>(null);
   const [deviceLogs, setDeviceLogs] = useState<Record<string, any>>({}); // keyed by submission id
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchDeviceLog = async (submissionId: string) => {
     if (deviceLogs[submissionId]) return; // already loaded

@@ -235,7 +235,13 @@ const AdminMarkets = () => {
 
   useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
 
-  const paginatedMarkets = useMemo(() => markets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [markets, mktPage]);
+  const searchedMarkets = useMemo(() => {
+    if (!searchQuery.trim()) return markets;
+    const q = searchQuery.toLowerCase();
+    return markets.filter(m => m.title.toLowerCase().includes(q) || m.description.toLowerCase().includes(q) || m.category.toLowerCase().includes(q) || m.id.toLowerCase().includes(q));
+  }, [markets, searchQuery]);
+
+  const paginatedMarkets = useMemo(() => searchedMarkets.slice((mktPage - 1) * MKT_PAGE_SIZE, mktPage * MKT_PAGE_SIZE), [searchedMarkets, mktPage]);
   // Moderator: recommend approve/reject (does NOT change market status)
   const handleModeratorReview = async (id: string, decision: "approve" | "reject") => {
     setModeratorReviewingId(id);

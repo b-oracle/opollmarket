@@ -25,6 +25,7 @@ const AdminSupport = () => {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: tickets = [], isLoading } = useQuery({
     queryKey: ["admin-support-tickets", statusFilter],
