@@ -704,8 +704,9 @@ const VoiceCallOverlay = ({
               {status === "ringing" && "Calling..."}
               {status === "connecting" && "Connecting..."}
               {status === "active" && reconnecting && "Reconnecting..."}
-              {status === "active" && !reconnecting && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
-              {status === "active" && !reconnecting && !waitingReconnect && formatTime(duration)}
+              {status === "active" && !reconnecting && showRejoin && "Disconnected — tap Rejoin"}
+              {status === "active" && !reconnecting && !showRejoin && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
+              {status === "active" && !reconnecting && !showRejoin && !waitingReconnect && formatTime(duration)}
               {status === "ended" && "Call ended"}
             </p>
           </>
