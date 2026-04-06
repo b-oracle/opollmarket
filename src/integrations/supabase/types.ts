@@ -4260,6 +4260,10 @@ export type Database = {
         Args: { _other_user_id: string }
         Returns: string
       }
+      toggle_message_reaction: {
+        Args: { _emoji: string; _message_id: string; _table: string }
+        Returns: Json
+      }
       topup_gift_balance: {
         Args: { _amount: number; _user_id: string }
         Returns: Json
