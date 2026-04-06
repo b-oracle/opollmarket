@@ -122,6 +122,44 @@ const AdminMarkets = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [generatingAiImage, setGeneratingAiImage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedMarkets.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedMarkets.map(m => m.id)));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Permanently delete ${selectedIds.size} selected market(s) and all related data? This cannot be undone.`)) return;
+    setBatchDeleting(true);
+    let deleted = 0;
+    for (const id of selectedIds) {
+      const { error } = await supabase.from("markets").delete().eq("id", id);
+      if (!error) {
+        deleted++;
+        const market = markets.find(m => m.id === id);
+        logAuditEvent({ action: "market_deleted", targetId: id, targetType: "market", details: { title: market?.title, batch: true } });
+      }
+    }
+    toast.success(`${deleted} market(s) deleted`);
+    setSelectedIds(new Set());
+    setBatchDeleting(false);
+    fetchMarkets();
+    fetchGlobalStats();
+  };
 
   // Global stats (fetched once, independent of filter)
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
