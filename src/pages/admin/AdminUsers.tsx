@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle, Infinity } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle, Infinity, Headset } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,7 +32,9 @@ const AdminUsers = () => {
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
-  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin"; hasRole: boolean } | null>(null);
+  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin" | "support"; hasRole: boolean } | null>(null);
+  const [blockConfirm, setBlockConfirm] = useState<{ userId: string; name: string; currentlyBlocked: boolean } | null>(null);
+  const [unlimitedConfirm, setUnlimitedConfirm] = useState<{ userId: string; name: string; current: boolean } | null>(null);
   const [activityDrawer, setActivityDrawer] = useState<{ userId: string; name: string } | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -105,7 +107,7 @@ const AdminUsers = () => {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin", hasRole: boolean) => {
+  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin" | "support", hasRole: boolean) => {
     if (hasRole) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) { toast.error(`Failed to remove ${role} role`); return; }
@@ -189,6 +191,7 @@ const AdminUsers = () => {
       case "super_admin": return { label: "Super Admin", cls: "bg-primary/15 text-primary" };
       case "admin": return { label: "Admin", cls: "bg-blue-500/10 text-blue-500" };
       case "moderator": return { label: "Moderator", cls: "bg-amber-500/10 text-amber-500" };
+      case "support": return { label: "Support", cls: "bg-emerald-500/10 text-emerald-500" };
       default: return { label: r, cls: "bg-muted text-muted-foreground" };
     }
   };
@@ -277,6 +280,7 @@ const AdminUsers = () => {
                 const isSA = u.roles.includes("super_admin");
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
+                const isSupport = u.roles.includes("support");
                 const isSelf = u.id === currentUser?.id;
                 return (
                   <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 ${u.is_blocked ? "opacity-60 bg-destructive/5" : ""}`}>
@@ -355,6 +359,15 @@ const AdminUsers = () => {
                               {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                             </button>
                             <button
+                              onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "support", hasRole: isSupport })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isSupport ? "hover:bg-destructive/10 text-emerald-500" : "hover:bg-emerald-500/10 text-muted-foreground"
+                              }`}
+                              title={isSupport ? "Remove Support" : "Make Support"}
+                            >
+                              <Headset className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
                               className={`p-1.5 rounded-lg transition-colors ${
                                 isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
@@ -364,22 +377,7 @@ const AdminUsers = () => {
                               <Crown className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={async () => {
-                                const newVal = !u.unlimited_markets;
-                                const { error } = await supabase.rpc("admin_update_profile", {
-                                  _target_user_id: u.id,
-                                  _unlimited_markets: newVal,
-                                } as any);
-                                if (error) { toast.error("Failed to update"); return; }
-                                logAuditEvent({
-                                  action: "settings_updated",
-                                  targetId: u.id,
-                                  targetType: "user",
-                                  details: { unlimited_markets: newVal, user_name: u.display_name || u.email },
-                                });
-                                toast.success(`${u.display_name || "User"} ${newVal ? "whitelisted for unlimited markets" : "removed from unlimited markets whitelist"}`);
-                                fetchUsers();
-                              }}
+                              onClick={() => setUnlimitedConfirm({ userId: u.id, name: u.display_name || u.email || "User", current: u.unlimited_markets })}
                               className={`p-1.5 rounded-lg transition-colors ${
                                 u.unlimited_markets ? "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25" : "hover:bg-muted text-muted-foreground"
                               }`}
@@ -388,7 +386,7 @@ const AdminUsers = () => {
                               <Infinity className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
+                              onClick={() => setBlockConfirm({ userId: u.id, name: u.display_name || u.email || "User", currentlyBlocked: u.is_blocked })}
                               className={`p-1.5 rounded-lg transition-all duration-200 ${
                                 u.is_blocked
                                   ? "bg-destructive/20 text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30"
@@ -539,6 +537,128 @@ const AdminUsers = () => {
                   }`}
                 >
                   {roleConfirm.hasRole ? "Remove Role" : "Assign Role"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Block/Unblock Confirmation Dialog */}
+      <AnimatePresence>
+        {blockConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setBlockConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 z-10"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {blockConfirm.currentlyBlocked
+                  ? <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                  : <Ban className="w-5 h-5 text-destructive" />}
+                <h3 className="text-lg font-bold">
+                  {blockConfirm.currentlyBlocked ? "Unban" : "Ban"} User
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to {blockConfirm.currentlyBlocked ? "unban" : "ban"} <strong className="text-foreground">{blockConfirm.name}</strong>?
+                {!blockConfirm.currentlyBlocked && (
+                  <span className="block mt-2 text-xs text-destructive font-medium">⚠️ This will prevent the user from accessing the platform.</span>
+                )}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBlockConfirm(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-muted text-sm font-semibold hover:bg-muted/80 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await toggleBlock(blockConfirm.userId, blockConfirm.name, blockConfirm.currentlyBlocked);
+                    setBlockConfirm(null);
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    blockConfirm.currentlyBlocked
+                      ? "bg-emerald-500 text-white hover:bg-emerald-500/90"
+                      : "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  }`}
+                >
+                  {blockConfirm.currentlyBlocked ? "Unban" : "Ban"} User
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Unlimited Markets Confirmation Dialog */}
+      <AnimatePresence>
+        {unlimitedConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setUnlimitedConfirm(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 z-10"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Infinity className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-bold">
+                  {unlimitedConfirm.current ? "Remove" : "Grant"} Unlimited Markets
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to {unlimitedConfirm.current ? "remove unlimited markets from" : "grant unlimited markets to"} <strong className="text-foreground">{unlimitedConfirm.name}</strong>?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setUnlimitedConfirm(null)}
+                  className="flex-1 py-2.5 rounded-xl bg-muted text-sm font-semibold hover:bg-muted/80 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const newVal = !unlimitedConfirm.current;
+                    const { error } = await supabase.rpc("admin_update_profile", {
+                      _target_user_id: unlimitedConfirm.userId,
+                      _unlimited_markets: newVal,
+                    } as any);
+                    if (error) { toast.error("Failed to update"); return; }
+                    logAuditEvent({
+                      action: "settings_updated",
+                      targetId: unlimitedConfirm.userId,
+                      targetType: "user",
+                      details: { unlimited_markets: newVal, user_name: unlimitedConfirm.name },
+                    });
+                    toast.success(`${unlimitedConfirm.name} ${newVal ? "whitelisted for unlimited markets" : "removed from unlimited markets whitelist"}`);
+                    setUnlimitedConfirm(null);
+                    fetchUsers();
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    unlimitedConfirm.current
+                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  }`}
+                >
+                  {unlimitedConfirm.current ? "Remove" : "Grant"}
                 </button>
               </div>
             </motion.div>
