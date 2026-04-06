@@ -218,6 +218,8 @@ const IncomingCallBanner = () => {
     return () => window.removeEventListener("start-voice-call" as any, handler);
   }, []);
 
+  if (!isFeatureEnabled("voice_calls")) return null;
+
   return (
     <>
       {/* Incoming call banner */}
