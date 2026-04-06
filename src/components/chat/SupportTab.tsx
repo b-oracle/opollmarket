@@ -153,6 +153,24 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
     }
   };
 
+  const handleDeleteTicket = async () => {
+    if (!deleteTicketId) return;
+    setDeleting(true);
+    try {
+      // Delete messages first, then the ticket
+      await supabase.from("support_messages").delete().eq("ticket_id", deleteTicketId);
+      const { error } = await supabase.from("support_tickets").delete().eq("id", deleteTicketId);
+      if (error) throw error;
+      toast.success("Ticket deleted");
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete ticket");
+    } finally {
+      setDeleting(false);
+      setDeleteTicketId(null);
+    }
+  };
+
   if (!onOpenChat && activeTicket) {
     return (
       <div className="h-[calc(100dvh-120px)]">
