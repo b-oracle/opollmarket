@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw, X, Sparkles } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import SupportMessageBubble from "./SupportMessageBubble";
@@ -91,8 +91,8 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
 
   const sendMessage = useCallback(async (content?: string, imageUrl?: string) => {
     if (!user) return;
-    const text = content || message.trim();
-    if (!text && !imageUrl) return;
+    const text = content || message;
+    if (!text.trim() && !imageUrl) return;
 
     const payload: any = {
       ticket_id: ticketId,
@@ -247,19 +247,25 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
               </button>
             </div>
           )}
-          <div className="px-4 py-1.5 flex gap-2">
+          <div className="px-4 py-1.5 flex gap-2 items-end">
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground">
+            <button onClick={() => fileRef.current?.click()} className="text-muted-foreground hover:text-foreground pb-2">
               <ImageIcon className="w-5 h-5" />
             </button>
-            <Input
+            <Textarea
               placeholder="Type a message..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-              className="h-9 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              className="min-h-[36px] max-h-[120px] text-sm resize-none py-2"
+              rows={1}
             />
-            <Button size="sm" className="h-9 w-9 p-0" disabled={!message.trim()} onClick={() => sendMessage()}>
+            <Button size="sm" className="h-9 w-9 p-0 shrink-0" disabled={!message.trim()} onClick={() => sendMessage()}>
               <Send className="w-4 h-4" />
             </Button>
           </div>

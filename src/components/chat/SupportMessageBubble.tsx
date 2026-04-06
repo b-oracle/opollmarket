@@ -120,14 +120,17 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
   }, [m.content]);
 
   const saveEdit = useCallback(async () => {
-    const trimmed = editText.trim();
-    if (!trimmed || trimmed === m.content) {
+    if (!editText.trim()) {
+      setEditing(false);
+      return;
+    }
+    if (editText === m.content) {
       setEditing(false);
       return;
     }
     const { error } = await supabase
       .from("support_messages" as any)
-      .update({ content: trimmed } as any)
+      .update({ content: editText } as any)
       .eq("id", m.id);
     if (error) {
       toast.error("Failed to edit message");
