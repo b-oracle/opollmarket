@@ -191,6 +191,7 @@ const AdminUsers = () => {
       case "super_admin": return { label: "Super Admin", cls: "bg-primary/15 text-primary" };
       case "admin": return { label: "Admin", cls: "bg-blue-500/10 text-blue-500" };
       case "moderator": return { label: "Moderator", cls: "bg-amber-500/10 text-amber-500" };
+      case "support": return { label: "Support", cls: "bg-emerald-500/10 text-emerald-500" };
       default: return { label: r, cls: "bg-muted text-muted-foreground" };
     }
   };
