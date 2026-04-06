@@ -4,6 +4,8 @@ import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { PhoneOff, Phone, Mic, MicOff, Volume2, Lock, X, Minimize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
+import watermarkLogoDark from "@/assets/watermark-logo.png";
+import watermarkLogoLight from "@/assets/blue-opoll-logo.png";
 
 interface VoiceCallOverlayProps {
   callId: string;
