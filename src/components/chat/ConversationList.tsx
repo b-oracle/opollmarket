@@ -349,24 +349,46 @@ const ConversationList = () => {
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
           ) : tab === "chats" ? (
-            conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
-                <MessageCircle className="w-12 h-12 opacity-30" />
-                <p className="text-sm">No messages yet</p>
-                <button
-                  onClick={() => setShowNewChat(true)}
-                  className="text-sm text-primary font-medium hover:underline"
-                >
-                  Start a conversation
-                </button>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {conversations.map((c) => (
-                  <ConversationItem key={c.id} c={c} navigate={navigate} />
-                ))}
-              </div>
-            )
+            <>
+              {conversations.length > 0 && (
+                <div className="px-4 py-2 border-b border-border">
+                  <Input
+                    placeholder="Search chats..."
+                    value={chatSearch}
+                    onChange={(e) => setChatSearch(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              )}
+              {(() => {
+                const filtered = chatSearch.trim()
+                  ? conversations.filter((c) =>
+                      (c.other_user?.display_name || "").toLowerCase().includes(chatSearch.toLowerCase())
+                    )
+                  : conversations;
+                return filtered.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+                    <MessageCircle className="w-12 h-12 opacity-30" />
+                    <p className="text-sm">{chatSearch ? "No matching chats" : "No messages yet"}</p>
+                    {!chatSearch && (
+                      <button
+                        onClick={() => setShowNewChat(true)}
+                        className="text-sm text-primary font-medium hover:underline"
+                      >
+                        Start a conversation
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {filtered.map((c) => (
+                      <ConversationItem key={c.id} c={c} navigate={navigate} />
+                    ))}
+                  </div>
+                );
+              })()}
+            </>
+
           ) : tab === "requests" ? (
             pendingRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
