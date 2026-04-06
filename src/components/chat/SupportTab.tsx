@@ -44,6 +44,7 @@ const STATUS_FILTERS = [
 const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
   const { user, isAdmin, isSuperAdmin } = useAuth();
   const queryClient = useQueryClient();
+  const { supportPerTicket, markTicketRead } = useUnreadCounts();
   const [showNew, setShowNew] = useState(false);
   const [category, setCategory] = useState("");
   const [desc, setDesc] = useState("");
