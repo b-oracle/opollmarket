@@ -3429,8 +3429,11 @@ export type Database = {
         Row: {
           allow_calls: boolean
           allow_copy_trading: boolean
+          allow_dm_gifts: boolean
+          allow_dm_money: boolean
           allow_dms: boolean
           created_at: string
+          enable_gift_animations: boolean
           id: string
           mute_notifications: boolean
           private_account: boolean
@@ -3443,8 +3446,11 @@ export type Database = {
         Insert: {
           allow_calls?: boolean
           allow_copy_trading?: boolean
+          allow_dm_gifts?: boolean
+          allow_dm_money?: boolean
           allow_dms?: boolean
           created_at?: string
+          enable_gift_animations?: boolean
           id?: string
           mute_notifications?: boolean
           private_account?: boolean
@@ -3457,8 +3463,11 @@ export type Database = {
         Update: {
           allow_calls?: boolean
           allow_copy_trading?: boolean
+          allow_dm_gifts?: boolean
+          allow_dm_money?: boolean
           allow_dms?: boolean
           created_at?: string
+          enable_gift_animations?: boolean
           id?: string
           mute_notifications?: boolean
           private_account?: boolean
