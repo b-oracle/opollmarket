@@ -113,13 +113,18 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   const handleCancel = useCallback(async () => {
-    if (endingRef.current) return;
+    if (endingRef.current) {
+      try { roomRef.current?.disconnect(); } catch {}
+      onClose();
+      return;
+    }
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-    roomRef.current?.disconnect();
+    try { roomRef.current?.disconnect(); } catch {}
 
     try {
       await supabase.functions.invoke("dm-call-token", {
