@@ -219,7 +219,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
 
               {/* Content */}
               {activeTab === "posts" && (
-                <StatusFeed userId={userId} showComposer={isOwnProfile} />
+                <StatusFeed userId={userId} showComposer={isOwnProfile} onlyUserId={isOwnProfile && myPostsOnly ? userId : undefined} />
               )}
 
               {activeTab === "activity" && (
