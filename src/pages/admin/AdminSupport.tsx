@@ -81,6 +81,12 @@ const AdminSupport = () => {
     closed: "bg-muted text-muted-foreground",
   };
 
+  const filteredTickets = useMemo(() => {
+    if (!searchQuery.trim()) return tickets;
+    const q = searchQuery.toLowerCase();
+    return tickets.filter((t: any) => t.subject?.toLowerCase().includes(q) || t.profile?.display_name?.toLowerCase().includes(q) || t.category?.toLowerCase().includes(q) || t.id?.toLowerCase().includes(q));
+  }, [tickets, searchQuery]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -98,6 +104,13 @@ const AdminSupport = () => {
           </SelectContent>
         </Select>
       </div>
+
+      <Input
+        placeholder="Search by subject, user, or category…"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="h-9 text-sm"
+      />
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
