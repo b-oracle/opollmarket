@@ -10,6 +10,7 @@ const tocItems = [
   { id: "risk", label: "Risk of Loss" },
   { id: "quicktrade-risk", label: "Quick Trade Risks" },
   { id: "copytrade-risk", label: "Copy Trading Risks" },
+  { id: "dm-transfer-risk", label: "DM Money Transfer Risks" },
   { id: "verification-disclaimer", label: "Verification Badges" },
   { id: "crypto-risks", label: "Cryptocurrency & Blockchain Risks" },
   { id: "market-resolution", label: "Market Creation & Resolution" },
