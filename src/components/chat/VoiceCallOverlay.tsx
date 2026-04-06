@@ -646,11 +646,6 @@ const VoiceCallOverlay = ({
     <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden" style={{ background: "radial-gradient(ellipse at center, hsl(var(--background) / 0.97) 0%, hsl(var(--background)) 70%)" }}>
       {/* Doodle pattern layer */}
       <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.05]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
-      {/* Watermark logo */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <img src={watermarkLogoDark} alt="" className="w-48 h-48 object-contain opacity-[0.06] dark:opacity-[0.07] blur-[1px] hidden dark:block select-none" draggable={false} />
-        <img src={watermarkLogoLight} alt="" className="w-48 h-48 object-contain opacity-[0.06] blur-[1px] dark:hidden select-none" draggable={false} />
-      </div>
       {/* E2EE indicator + minimize */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 z-10" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
         <div className="flex items-center gap-1.5 text-xs text-emerald-500">
