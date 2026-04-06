@@ -93,7 +93,7 @@ const AdminSocial = () => {
       supabase.from("follows").select("id", { count: "exact", head: true }),
       supabase.from("market_likes").select("id", { count: "exact", head: true }),
       supabase.from("comments").select("id", { count: "exact", head: true }),
-      supabase.from("status_views").select("id", { count: "exact", head: true }),
+      supabase.from("status_views" as any).select("id", { count: "exact", head: true }),
       supabase.from("dm_conversations").select("id", { count: "exact", head: true }),
       supabase.from("dm_messages").select("id", { count: "exact", head: true }),
       supabase.from("dm_calls").select("id", { count: "exact", head: true }),
