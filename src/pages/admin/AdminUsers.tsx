@@ -359,6 +359,15 @@ const AdminUsers = () => {
                               {isAdmin ? <ShieldOff className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
                             </button>
                             <button
+                              onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "support", hasRole: isSupport })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isSupport ? "hover:bg-destructive/10 text-emerald-500" : "hover:bg-emerald-500/10 text-muted-foreground"
+                              }`}
+                              title={isSupport ? "Remove Support" : "Make Support"}
+                            >
+                              <Headset className="w-4 h-4" />
+                            </button>
+                            <button
                               onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
                               className={`p-1.5 rounded-lg transition-colors ${
                                 isSA ? "hover:bg-destructive/10 text-primary" : "hover:bg-primary/10 text-muted-foreground"
@@ -368,22 +377,7 @@ const AdminUsers = () => {
                               <Crown className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={async () => {
-                                const newVal = !u.unlimited_markets;
-                                const { error } = await supabase.rpc("admin_update_profile", {
-                                  _target_user_id: u.id,
-                                  _unlimited_markets: newVal,
-                                } as any);
-                                if (error) { toast.error("Failed to update"); return; }
-                                logAuditEvent({
-                                  action: "settings_updated",
-                                  targetId: u.id,
-                                  targetType: "user",
-                                  details: { unlimited_markets: newVal, user_name: u.display_name || u.email },
-                                });
-                                toast.success(`${u.display_name || "User"} ${newVal ? "whitelisted for unlimited markets" : "removed from unlimited markets whitelist"}`);
-                                fetchUsers();
-                              }}
+                              onClick={() => setUnlimitedConfirm({ userId: u.id, name: u.display_name || u.email || "User", current: u.unlimited_markets })}
                               className={`p-1.5 rounded-lg transition-colors ${
                                 u.unlimited_markets ? "bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25" : "hover:bg-muted text-muted-foreground"
                               }`}
@@ -392,7 +386,7 @@ const AdminUsers = () => {
                               <Infinity className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => toggleBlock(u.id, u.display_name || u.email || "User", u.is_blocked)}
+                              onClick={() => setBlockConfirm({ userId: u.id, name: u.display_name || u.email || "User", currentlyBlocked: u.is_blocked })}
                               className={`p-1.5 rounded-lg transition-all duration-200 ${
                                 u.is_blocked
                                   ? "bg-destructive/20 text-destructive ring-1 ring-destructive/40 hover:bg-destructive/30"
