@@ -53,6 +53,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
   const [isStaffTicket, setIsStaffTicket] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [ticketSearch, setTicketSearch] = useState("");
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
