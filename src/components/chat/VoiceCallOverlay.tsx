@@ -609,9 +609,48 @@ const VoiceCallOverlay = ({
     );
   }
 
+  // ── SVG doodle pattern for call background ──
+  const doodlePatternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'>
+    <g fill='none' stroke='white' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.35'>
+      <!-- Phone -->
+      <g transform='translate(20,25) rotate(-15,12,12)'><rect x='2' y='0' width='20' height='24' rx='3'/><circle cx='12' cy='18' r='2'/><line x1='8' y1='4' x2='16' y2='4'/></g>
+      <!-- Mic -->
+      <g transform='translate(80,15) rotate(10,8,14)'><rect x='3' y='0' width='10' height='16' rx='5'/><path d='M0,12 Q0,22 8,22 Q16,22 16,12'/><line x1='8' y1='22' x2='8' y2='28'/><line x1='4' y1='28' x2='12' y2='28'/></g>
+      <!-- Chat bubble -->
+      <g transform='translate(140,20) rotate(5,14,12)'><path d='M2,2 h20 a2,2 0 0 1 2,2 v12 a2,2 0 0 1 -2,2 h-12 l-6,6 v-6 h-2 a2,2 0 0 1 -2,-2 v-12 a2,2 0 0 1 2,-2z'/><line x1='7' y1='8' x2='19' y2='8'/><line x1='7' y1='12' x2='15' y2='12'/></g>
+      <!-- Headphones -->
+      <g transform='translate(30,80) rotate(-8,12,14)'><path d='M4,16 v-4 a8,8 0 0 1 16,0 v4'/><rect x='2' y='14' width='5' height='8' rx='2'/><rect x='17' y='14' width='5' height='8' rx='2'/></g>
+      <!-- Music note -->
+      <g transform='translate(100,75) rotate(12,8,14)'><circle cx='4' cy='22' r='4'/><circle cx='16' cy='18' r='4'/><line x1='8' y1='22' x2='8' y2='4'/><line x1='20' y1='18' x2='20' y2='0'/><line x1='8' y1='4' x2='20' y2='0'/></g>
+      <!-- Signal wave -->
+      <g transform='translate(155,80) rotate(-5,12,12)'><path d='M0,12 Q3,6 6,12 Q9,18 12,12 Q15,6 18,12 Q21,18 24,12'/></g>
+      <!-- Heart -->
+      <g transform='translate(25,145) rotate(8,10,10)'><path d='M10,18 Q0,12 0,6 A4,4 0 0 1 10,4 A4,4 0 0 1 20,6 Q20,12 10,18z'/></g>
+      <!-- Thumbs up -->
+      <g transform='translate(85,140) rotate(-10,10,12)'><path d='M6,24 v-10 h-4 v10z'/><path d='M6,14 Q8,6 12,4 Q14,6 13,10 h6 a2,2 0 0 1 2,2 v8 a2,2 0 0 1 -2,2 h-13'/></g>
+      <!-- Video camera -->
+      <g transform='translate(145,140) rotate(6,14,10)'><rect x='0' y='2' width='18' height='14' rx='2'/><polygon points='18,6 26,2 26,18 18,14'/></g>
+      <!-- Star -->
+      <g transform='translate(55,50) rotate(-12,8,8)'><polygon points='8,0 10,6 16,6 11,10 13,16 8,12 3,16 5,10 0,6 6,6'/></g>
+      <!-- Globe -->
+      <g transform='translate(170,50) rotate(3,10,10)'><circle cx='10' cy='10' r='10'/><ellipse cx='10' cy='10' rx='4' ry='10'/><line x1='0' y1='10' x2='20' y2='10'/></g>
+      <!-- Lightning bolt -->
+      <g transform='translate(120,110) rotate(-6,6,12)'><polyline points='6,0 2,10 7,10 4,24 10,12 5,12 8,0'/></g>
+    </g>
+  </svg>`;
+
+  const doodleBgUrl = `url("data:image/svg+xml,${encodeURIComponent(doodlePatternSvg)}")`;
+
   // ── Full-screen overlay ──
   return (
-    <div className="fixed inset-0 z-[9999] bg-background/95 backdrop-blur-xl flex flex-col">
+    <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden" style={{ background: "radial-gradient(ellipse at center, hsl(var(--background) / 0.97) 0%, hsl(var(--background)) 70%)" }}>
+      {/* Doodle pattern layer */}
+      <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.05]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
+      {/* Watermark logo */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <img src="/watermark-logo.png" alt="" className="w-48 h-48 object-contain opacity-[0.06] dark:opacity-[0.07] blur-[1px] hidden dark:block select-none" draggable={false} />
+        <img src="/blue-opoll-logo.png" alt="" className="w-48 h-48 object-contain opacity-[0.06] blur-[1px] dark:hidden select-none" draggable={false} />
+      </div>
       {/* E2EE indicator + minimize */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 z-10" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
         <div className="flex items-center gap-1.5 text-xs text-emerald-500">
