@@ -172,7 +172,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   const statusColor = ticket?.status === "resolved" ? "text-emerald-500" : ticket?.status === "closed" ? "text-muted-foreground" : "text-amber-500";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
         <button onClick={onBack} className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-5 h-5" />
@@ -207,7 +207,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         )}
       </div>
 
-      <div ref={scrollContainerRef} data-chat-scroll className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div ref={scrollContainerRef} data-chat-scroll className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
         {messages.map((m: any) => (
           <SupportMessageBubble
             key={m.id}
