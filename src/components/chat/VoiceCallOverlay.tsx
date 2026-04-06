@@ -76,6 +76,7 @@ const VoiceCallOverlay = ({
   const gracePeriodRef = useRef<NodeJS.Timeout | null>(null);
   const [waitingReconnect, setWaitingReconnect] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [showRejoin, setShowRejoin] = useState(false);
 
   useEffect(() => {
     statusRef.current = status;
