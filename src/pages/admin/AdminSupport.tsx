@@ -116,7 +116,7 @@ const AdminSupport = () => {
         <div className="flex items-center justify-center py-20">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : tickets.length === 0 ? (
+      ) : filteredTickets.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-10">No tickets found</p>
       ) : (
         <div className="space-y-2">

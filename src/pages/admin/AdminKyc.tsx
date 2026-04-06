@@ -138,11 +138,24 @@ const AdminKyc = () => {
         </div>
       </div>
 
+      <Input
+        placeholder="Search by name, user ID, or phone…"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="h-9 text-sm"
+      />
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-      ) : submissions.length === 0 ? (
+      ) : (() => {
+        const filtered = submissions.filter((sub) => {
+          if (!searchQuery.trim()) return true;
+          const q = searchQuery.toLowerCase();
+          return (sub.full_name?.toLowerCase().includes(q) || sub.user_id?.toLowerCase().includes(q) || sub.phone_number?.toLowerCase().includes(q) || sub.address?.toLowerCase().includes(q));
+        });
+        return filtered.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-sm text-muted-foreground">No {filter !== "all" ? filter : ""} submissions</p>
@@ -150,7 +163,7 @@ const AdminKyc = () => {
         </Card>
       ) : (
         <div className="space-y-3">
-          {submissions.map((sub) => (
+          {filtered.map((sub) => (
             <Card key={sub.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
