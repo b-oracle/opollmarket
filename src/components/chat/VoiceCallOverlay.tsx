@@ -434,7 +434,85 @@ const VoiceCallOverlay = ({
     }
   };
 
-  const toggleScreenShare = async () => {
+  const handleRejoin = useCallback(async () => {
+    if (!conversationId || !callId) return;
+    setShowRejoin(false);
+    setReconnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dm-call-token", {
+        body: { action: "rejoin", call_id: callId },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Failed to rejoin");
+      // Reconnect room with fresh token
+      const room = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+        videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
+      });
+      roomRef.current?.disconnect();
+      roomRef.current = room;
+      // Re-bind events
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === Track.Kind.Audio) {
+          remoteTrackReceivedRef.current = true;
+          const el = track.attach();
+          el.id = `remote-audio-${track.sid}`;
+          document.body.appendChild(el);
+        }
+        if (track.kind === Track.Kind.Video) {
+          const src = (track as any).source;
+          if (src === Track.Source.ScreenShare) {
+            setHasRemoteScreenShare(true);
+            if (screenShareRef.current) track.attach(screenShareRef.current);
+          } else {
+            setHasRemoteVideo(true);
+            if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
+          }
+        }
+      });
+      room.on(RoomEvent.TrackUnsubscribed, (track) => {
+        if (track.kind === Track.Kind.Video) {
+          const src = (track as any).source;
+          if (src === Track.Source.ScreenShare) setHasRemoteScreenShare(false);
+          else setHasRemoteVideo(false);
+        }
+        track.detach().forEach((el) => el.remove());
+      });
+      room.on(RoomEvent.ParticipantDisconnected, () => {
+        if (!endingRef.current) {
+          setWaitingReconnect(true);
+          gracePeriodRef.current = setTimeout(() => {
+            if (!endingRef.current) handleEnd();
+          }, GRACE_PERIOD_MS);
+        }
+      });
+      room.on(RoomEvent.ParticipantConnected, () => {
+        setWaitingReconnect(false);
+        if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
+      });
+
+      await room.connect(data.url, data.token);
+      await room.localParticipant.setMicrophoneEnabled(!muted);
+      if (cameraOn) {
+        await room.localParticipant.setCameraEnabled(true);
+        setTimeout(() => {
+          const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (camPub?.track && localVideoRef.current) camPub.track.attach(localVideoRef.current);
+        }, 200);
+      }
+      setReconnecting(false);
+      setStatus("active");
+      if (!startTimeRef.current) startTimeRef.current = Date.now();
+      endingRef.current = false;
+      intentionalDisconnectRef.current = false;
+    } catch (err: any) {
+      setReconnecting(false);
+      toast.error(err.message || "Failed to rejoin call");
+      handleEnd();
+    }
+  }, [callId, conversationId, muted, cameraOn, handleEnd]);
+
+
     if (!roomRef.current) return;
     try {
       const newState = !screenShareOn;
