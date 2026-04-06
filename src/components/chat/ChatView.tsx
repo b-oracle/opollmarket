@@ -234,7 +234,7 @@ const ChatView = () => {
   const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
   const isRejected = convStatus === "rejected";
 
-  const handleStartCall = useCallback(async () => {
+  const handleStartCall = useCallback(async (withVideo = false) => {
     if (calling || !conversationId || !user) return;
     setCalling(true);
     try {
@@ -272,6 +272,7 @@ const ChatView = () => {
             otherName,
             otherAvatar: (convo as any)?.other_user?.avatar_url,
             isOutgoing: true,
+            startWithVideo: withVideo,
           },
         })
       );
