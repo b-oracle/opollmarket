@@ -135,17 +135,16 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
       setCategory("");
       setDesc("");
       setShowNew(false);
-      if (onOpenChat) { onOpenChat(ticket.id, false); } else { setActiveTicket(ticket.id); }
       toast.success("Ticket created");
 
-      // Trigger AI auto-reply for the new ticket
-      try {
-        await supabase.functions.invoke("support-ai-reply", {
-          body: { ticket_id: ticket.id },
-        });
-      } catch (e) {
-        console.error("AI initial reply failed:", e);
-      }
+      // Trigger AI auto-reply BEFORE navigating (fire-and-forget)
+      const ticketIdForAi = ticket.id;
+      supabase.functions.invoke("support-ai-reply", {
+        body: { ticket_id: ticketIdForAi },
+      }).catch((e) => console.error("AI initial reply failed:", e));
+
+      // Navigate to chat after triggering AI
+      if (onOpenChat) { onOpenChat(ticket.id, false); } else { setActiveTicket(ticket.id); }
     } catch {
       toast.error("Failed to create ticket");
     } finally {
