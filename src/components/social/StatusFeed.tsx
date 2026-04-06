@@ -11,6 +11,7 @@ import { useMemo } from "react";
 interface StatusFeedProps {
   userId?: string;
   showComposer?: boolean;
+  onlyUserId?: string;
 }
 
 interface FeedItem {
