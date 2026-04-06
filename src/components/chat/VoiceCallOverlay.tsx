@@ -368,6 +368,14 @@ const VoiceCallOverlay = ({
     };
   }, [status]);
 
+  // Ensure dial tone is killed the moment status leaves "ringing"
+  useEffect(() => {
+    if (status !== "ringing" && stopToneRef.current) {
+      stopToneRef.current();
+      stopToneRef.current = null;
+    }
+  }, [status]);
+
   // Duration timer
   useEffect(() => {
     if (status === "active") {
