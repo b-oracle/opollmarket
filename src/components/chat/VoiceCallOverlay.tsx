@@ -859,16 +859,44 @@ const VoiceCallOverlay = ({
               </div>
             )}
 
-            {/* Local camera PiP — bottom right corner */}
+            {/* Local camera PiP — draggable */}
             {cameraOn && (
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="absolute bottom-28 right-4 w-28 h-36 rounded-xl object-cover border-2 border-border shadow-lg z-10"
-                style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
-              />
+              <div
+                className="absolute w-28 h-36 rounded-xl overflow-hidden border-2 border-border shadow-lg z-10 touch-none cursor-grab active:cursor-grabbing"
+                style={{
+                  bottom: `${pipPos.y}px`,
+                  right: `${pipPos.x}px`,
+                  transition: pipDragging ? "none" : "bottom 0.2s, right 0.2s",
+                }}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  (e.target as HTMLElement).setPointerCapture(e.pointerId);
+                  setPipDragging(true);
+                  pipDragStart.current = { x: e.clientX, y: e.clientY, startX: pipPos.x, startY: pipPos.y };
+                }}
+                onPointerMove={(e) => {
+                  if (!pipDragging || !pipDragStart.current) return;
+                  const dx = pipDragStart.current.x - e.clientX;
+                  const dy = pipDragStart.current.y - e.clientY;
+                  const maxX = window.innerWidth - 128;
+                  const maxY = window.innerHeight - 160;
+                  setPipPos({
+                    x: Math.max(4, Math.min(maxX, pipDragStart.current.startX + dx)),
+                    y: Math.max(4, Math.min(maxY, pipDragStart.current.startY + dy)),
+                  });
+                }}
+                onPointerUp={() => setPipDragging(false)}
+                onPointerCancel={() => setPipDragging(false)}
+              >
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover"
+                  style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
+                />
+              </div>
             )}
 
             {/* Name + duration overlay */}
