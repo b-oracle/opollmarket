@@ -311,7 +311,14 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                 ] as const).map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => setActiveTab(t.key)}
+                    onClick={() => {
+                      if (t.key === "posts" && activeTab === "posts") {
+                        setMyPostsOnly((prev) => !prev);
+                      } else {
+                        setActiveTab(t.key);
+                        if (t.key !== "posts") setMyPostsOnly(false);
+                      }
+                    }}
                     className={`relative flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[52px] ${
                       activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
