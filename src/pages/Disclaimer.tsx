@@ -170,11 +170,13 @@ const Disclaimer = () => {
           <h2 className="text-base font-semibold text-foreground">Third-Party Services & Content</h2>
           <p>The Platform may integrate with, link to, or reference third-party services, including but not limited to:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Cryptocurrency payment processors (NOWPayments).</li>
+            <li>Cryptocurrency payment processors (NOWPayments, Payaza, Flutterwave).</li>
             <li>Blockchain networks and wallet providers.</li>
+            <li>Real-time communication services (LiveKit) for voice/video calls and Spaces.</li>
             <li>Social media platforms (X/Twitter, Telegram, WhatsApp) for sharing functionality.</li>
             <li>Decentralized exchange interfaces (PancakeSwap) for token acquisition.</li>
             <li>YouTube for embedded video content in market descriptions.</li>
+            <li>AI services (Google Gemini) for content moderation and support chat auto-replies.</li>
           </ul>
           <p>We do not endorse, control, or assume responsibility for the content, privacy practices, security, or availability of any third-party services. Your use of third-party services is governed by their respective terms and policies.</p>
         </section>
