@@ -183,15 +183,18 @@ Deno.serve(async (req) => {
     const payload = JSON.stringify(payloadObj);
 
     // Also insert a notification row so it appears in the notification bell
-    try {
-      await supabase.from("notifications").insert({
-        user_id,
-        title,
-        message: body || "",
-        type: "info",
-      });
-    } catch (notifErr) {
-      console.warn("Failed to insert notification row:", notifErr);
+    // Skip if this is a call push — the dm-call-token function already inserts a call notification
+    if (!is_call) {
+      try {
+        await supabase.from("notifications").insert({
+          user_id,
+          title,
+          message: body || "",
+          type: "info",
+        });
+      } catch (notifErr) {
+        console.warn("Failed to insert notification row:", notifErr);
+      }
     }
 
     const { privateKey } = await importVapidKeys(vapidPublicKey, vapidPrivateKeyPem);
