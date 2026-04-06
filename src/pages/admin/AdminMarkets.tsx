@@ -1156,7 +1156,7 @@ const AdminMarkets = () => {
           </table>
         </div>
       </div>
-      <AdminPagination page={mktPage} totalItems={markets.length} pageSize={MKT_PAGE_SIZE} onPageChange={setMktPage} />
+      <AdminPagination page={mktPage} totalItems={searchedMarkets.length} pageSize={MKT_PAGE_SIZE} onPageChange={setMktPage} />
 
       {/* Resolution Modal */}
       <AnimatePresence>
