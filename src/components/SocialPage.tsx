@@ -336,7 +336,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
               {/* Content */}
               {activeTab === "posts" && (
-                <StatusFeed showComposer />
+                <StatusFeed showComposer onlyUserId={myPostsOnly ? user.id : undefined} />
               )}
 
               {activeTab === "activity" && (
