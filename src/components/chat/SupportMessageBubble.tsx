@@ -19,6 +19,7 @@ interface SupportMessage {
   content: string;
   image_url?: string | null;
   is_staff: boolean;
+  is_ai?: boolean;
   created_at: string;
   reactions?: Record<string, string[]>;
   reply_to_id?: string | null;
