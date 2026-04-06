@@ -294,7 +294,8 @@ const AdminKyc = () => {
             </Card>
           ))}
         </div>
-      )}
+      );
+      })()}
 
       {/* Image viewer overlay */}
       {viewingImage && (
