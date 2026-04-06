@@ -27,6 +27,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">(initialTab || "posts");
   const [searchQuery, setSearchQuery] = useState("");
+  const [myPostsOnly, setMyPostsOnly] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
