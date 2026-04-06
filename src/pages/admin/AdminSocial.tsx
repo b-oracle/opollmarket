@@ -221,16 +221,24 @@ const AdminSocial = () => {
 
     const userIds = profileData.map(p => p.id);
 
-    const [{ data: followerCounts }, { data: followingCounts }] = await Promise.all([
-      supabase.from("follows").select("following_id").in("following_id", userIds),
-      supabase.from("follows").select("follower_id").in("follower_id", userIds),
+    // Batch fetch follower/following counts to handle >1000 rows
+    const batchFetchFollows = async (column: string, ids: string[]) => {
+      const map = new Map<string, number>();
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from("follows").select(column).in(column, ids).range(from, from + 999);
+        if (!data || data.length === 0) break;
+        data.forEach((f: any) => map.set(f[column], (map.get(f[column]) || 0) + 1));
+        if (data.length < 1000) break;
+        from += 1000;
+      }
+      return map;
+    };
+
+    const [followerMap, followingMap] = await Promise.all([
+      batchFetchFollows("following_id", userIds),
+      batchFetchFollows("follower_id", userIds),
     ]);
-
-    const followerMap = new Map<string, number>();
-    (followerCounts || []).forEach(f => followerMap.set(f.following_id, (followerMap.get(f.following_id) || 0) + 1));
-
-    const followingMap = new Map<string, number>();
-    (followingCounts || []).forEach(f => followingMap.set(f.follower_id, (followingMap.get(f.follower_id) || 0) + 1));
 
     setProfiles(profileData.map(p => ({
       ...p,
