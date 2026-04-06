@@ -3061,6 +3061,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          is_ai: boolean
           is_staff: boolean
           reactions: Json | null
           reply_to_content: string | null
@@ -3074,6 +3075,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_ai?: boolean
           is_staff?: boolean
           reactions?: Json | null
           reply_to_content?: string | null
@@ -3087,6 +3089,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          is_ai?: boolean
           is_staff?: boolean
           reactions?: Json | null
           reply_to_content?: string | null

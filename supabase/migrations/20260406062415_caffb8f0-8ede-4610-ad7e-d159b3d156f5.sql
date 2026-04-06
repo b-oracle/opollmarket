@@ -1,0 +1,1 @@
+ALTER TABLE public.support_messages ADD COLUMN is_ai boolean NOT NULL DEFAULT false;
