@@ -22,6 +22,7 @@ interface VoiceCallOverlayProps {
 }
 
 type CallStatus = "connecting" | "ringing" | "active" | "ended";
+const GRACE_PERIOD_MS = 30_000;
 
 const VoiceCallOverlay = ({
   callId,
@@ -55,6 +56,9 @@ const VoiceCallOverlay = ({
   const endingRef = useRef(false); // guard double-end
   const statusRef = useRef<CallStatus>(isOutgoing ? "ringing" : "connecting");
   const remoteTrackReceivedRef = useRef(false);
+  const gracePeriodRef = useRef<NodeJS.Timeout | null>(null);
+  const [waitingReconnect, setWaitingReconnect] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
 
   // Keep statusRef in sync
   useEffect(() => {
@@ -126,11 +130,17 @@ const VoiceCallOverlay = ({
 
     room.on(RoomEvent.ParticipantConnected, () => {
       setStatus("active");
-      startTimeRef.current = Date.now();
+      if (!startTimeRef.current) startTimeRef.current = Date.now();
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       if (autoTimeoutRef.current) {
         clearTimeout(autoTimeoutRef.current);
         autoTimeoutRef.current = null;
+      }
+      // Clear grace period — other party reconnected
+      if (gracePeriodRef.current) {
+        clearTimeout(gracePeriodRef.current);
+        gracePeriodRef.current = null;
+        setWaitingReconnect(false);
       }
       // Start 60s inactivity timeout — auto-end if no remote audio received
       inactivityTimeoutRef.current = setTimeout(() => {
@@ -141,11 +151,33 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.ParticipantDisconnected, () => {
-      handleEnd();
+      // Grace period: wait for the other party to reconnect
+      if (statusRef.current === "active" && !endingRef.current) {
+        setWaitingReconnect(true);
+        gracePeriodRef.current = setTimeout(() => {
+          if (!endingRef.current) handleEnd();
+        }, GRACE_PERIOD_MS);
+      } else {
+        handleEnd();
+      }
     });
 
     room.on(RoomEvent.Disconnected, () => {
-      if (!endingRef.current) handleEnd();
+      // Self disconnected — attempt auto-reconnect if call was active
+      if (!endingRef.current && !intentionalDisconnectRef.current && statusRef.current === "active") {
+        setReconnecting(true);
+        room.connect(livekitUrl, token)
+          .then(async () => {
+            await room.localParticipant.setMicrophoneEnabled(!muted);
+            setReconnecting(false);
+          })
+          .catch(() => {
+            setReconnecting(false);
+            if (!endingRef.current) handleEnd();
+          });
+      } else if (!endingRef.current) {
+        handleEnd();
+      }
     });
 
     room
@@ -180,6 +212,7 @@ const VoiceCallOverlay = ({
       if (autoTimeoutRef.current) clearTimeout(autoTimeoutRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
       if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
+      if (gracePeriodRef.current) clearTimeout(gracePeriodRef.current);
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       // Ensure call is ended on unmount
       if (!endingRef.current && statusRef.current !== "ended") {
@@ -288,7 +321,7 @@ const VoiceCallOverlay = ({
           </div>
           <span className="text-sm font-medium truncate">{otherUserName}</span>
           <span className="text-xs opacity-80">
-            {status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
+            {status === "active" && (waitingReconnect || reconnecting) ? "Reconnecting..." : status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
           </span>
         </div>
         <span className="text-xs opacity-80">Tap to return</span>
@@ -341,7 +374,9 @@ const VoiceCallOverlay = ({
       <p className="text-sm text-muted-foreground mb-8">
         {status === "ringing" && "Calling..."}
         {status === "connecting" && "Connecting..."}
-        {status === "active" && formatTime(duration)}
+        {status === "active" && reconnecting && "Reconnecting..."}
+        {status === "active" && !reconnecting && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
+        {status === "active" && !reconnecting && !waitingReconnect && formatTime(duration)}
         {status === "ended" && "Call ended"}
       </p>
 
