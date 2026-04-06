@@ -479,24 +479,43 @@ const VoiceCallOverlay = ({
   };
 
   const flipCamera = async () => {
-    if (!roomRef.current) return;
+    const room = roomRef.current;
+    if (!room) return;
     try {
       const newFacing = facingMode === "user" ? "environment" : "user";
-      // Restart camera with new facing mode
-      await roomRef.current.localParticipant.setCameraEnabled(false);
-      await roomRef.current.localParticipant.setCameraEnabled(true, {
-        facingMode: newFacing,
-        resolution: { width: 640, height: 480, frameRate: 24 },
-      });
-      setFacingMode(newFacing);
-      // Re-attach
-      setTimeout(() => {
-        const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
-        if (camPub?.track && localVideoRef.current) {
-          camPub.track.attach(localVideoRef.current);
-        }
-      }, 200);
+      
+      // Get the current camera track and use restartTrack with new constraints
+      const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+      if (camPub?.track) {
+        // restartTrack applies new constraints to the existing track
+        await (camPub.track as any).restartTrack({
+          facingMode: newFacing,
+          resolution: { width: 640, height: 480, frameRate: 24 },
+        });
+        setFacingMode(newFacing);
+        // Re-attach after restart
+        setTimeout(() => {
+          if (localVideoRef.current && camPub.track) {
+            camPub.track.attach(localVideoRef.current);
+          }
+        }, 100);
+      } else {
+        // Fallback: disable then re-enable with new facing mode
+        await room.localParticipant.setCameraEnabled(false);
+        await room.localParticipant.setCameraEnabled(true, {
+          facingMode: newFacing,
+          resolution: { width: 640, height: 480, frameRate: 24 },
+        });
+        setFacingMode(newFacing);
+        setTimeout(() => {
+          const pub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (pub?.track && localVideoRef.current) {
+            pub.track.attach(localVideoRef.current);
+          }
+        }, 200);
+      }
     } catch (err) {
+      console.error("Flip camera error:", err);
       toast.error("Failed to flip camera");
     }
   };
