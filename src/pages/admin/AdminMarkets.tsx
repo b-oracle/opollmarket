@@ -122,6 +122,44 @@ const AdminMarkets = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [generatingAiImage, setGeneratingAiImage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleting, setBatchDeleting] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedMarkets.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedMarkets.map(m => m.id)));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`Permanently delete ${selectedIds.size} selected market(s) and all related data? This cannot be undone.`)) return;
+    setBatchDeleting(true);
+    let deleted = 0;
+    for (const id of selectedIds) {
+      const { error } = await supabase.from("markets").delete().eq("id", id);
+      if (!error) {
+        deleted++;
+        const market = markets.find(m => m.id === id);
+        logAuditEvent({ action: "market_deleted", targetId: id, targetType: "market", details: { title: market?.title, batch: true } });
+      }
+    }
+    toast.success(`${deleted} market(s) deleted`);
+    setSelectedIds(new Set());
+    setBatchDeleting(false);
+    fetchMarkets();
+    fetchGlobalStats();
+  };
 
   // Global stats (fetched once, independent of filter)
   const [globalStats, setGlobalStats] = useState<MarketStatsData | null>(null);
@@ -234,7 +272,7 @@ const AdminMarkets = () => {
     }
   };
 
-  useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); }, [filter]);
+  useEffect(() => { fetchMarkets(); fetchTrendingScores(); fetchPendingMarkets(); setMktPage(1); setSelectedIds(new Set()); }, [filter]);
 
   const searchedMarkets = useMemo(() => {
     if (!searchQuery.trim()) return markets;
@@ -719,11 +757,42 @@ const AdminMarkets = () => {
         </div>
       )}
 
+      {/* Batch actions bar */}
+      {isSuperAdmin && selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-2.5">
+          <span className="text-sm font-semibold text-destructive">{selectedIds.size} selected</span>
+          <button
+            onClick={handleBatchDelete}
+            disabled={batchDeleting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-semibold hover:bg-destructive/90 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {batchDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            Delete Selected
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                {isSuperAdmin && (
+                  <th className="p-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedMarkets.length > 0 && selectedIds.size === paginatedMarkets.length}
+                      onChange={toggleSelectAll}
+                      className="rounded border-border"
+                    />
+                  </th>
+                )}
                 <th className="p-3">Title</th>
                 <th className="p-3">Category</th>
                 <th className="p-3">Type</th>
@@ -739,7 +808,17 @@ const AdminMarkets = () => {
                 const isExpanded = expandedId === m.id;
                 return (
                   <React.Fragment key={m.id}>
-                    <tr className={`border-b border-border/50 ${isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                    <tr className={`border-b border-border/50 ${selectedIds.has(m.id) ? "bg-primary/5" : isEditing ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                      {isSuperAdmin && (
+                        <td className="p-3 w-10">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(m.id)}
+                            onChange={() => toggleSelect(m.id)}
+                            className="rounded border-border"
+                          />
+                        </td>
+                      )}
                       {/* Title + expand toggle */}
                       <td className="p-3 max-w-[220px]">
                         {isEditing ? (
