@@ -300,9 +300,8 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
                     autoFocus
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
-                    className="w-full text-sm bg-transparent border border-primary-foreground/30 rounded-lg px-2 py-1 resize-none focus:outline-none min-h-[60px]"
+                    className="w-full text-sm bg-transparent border border-primary-foreground/30 rounded-lg px-2 py-1.5 resize-y focus:outline-none min-h-[100px]"
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEdit(); }
                       if (e.key === "Escape") setEditing(false);
                     }}
                   />
