@@ -27,6 +27,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
   const [expanded, setExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<"posts" | "activity" | "spaces" | "followers" | "following" | "suggestions">(initialTab || "posts");
   const [searchQuery, setSearchQuery] = useState("");
+  const [myPostsOnly, setMyPostsOnly] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
@@ -191,14 +192,21 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
               {/* Tabs */}
               <div className="flex gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto scrollbar-hide">
                 {([
-                  { key: "posts" as const, label: `Posts (${postsCount})`, icon: FileText },
+                  { key: "posts" as const, label: isOwnProfile && myPostsOnly ? "My Posts ✓" : `Posts (${postsCount})`, icon: FileText },
                   { key: "activity" as const, label: "Activity", icon: Heart },
                   { key: "spaces" as const, label: "Spaces", icon: Radio },
                   { key: "suggestions" as const, label: "For You", icon: Sparkles },
                 ]).map((t) => (
                   <button
                     key={t.key}
-                    onClick={() => setActiveTab(t.key)}
+                    onClick={() => {
+                      if (t.key === "posts" && activeTab === "posts" && isOwnProfile) {
+                        setMyPostsOnly((prev) => !prev);
+                      } else {
+                        setActiveTab(t.key);
+                        if (t.key !== "posts") setMyPostsOnly(false);
+                      }
+                    }}
                     className={`flex-1 py-2 rounded-lg text-[10px] font-semibold transition-all flex flex-col items-center gap-0.5 shrink-0 min-w-[48px] ${
                       activeTab === t.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
                     }`}
@@ -211,7 +219,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
 
               {/* Content */}
               {activeTab === "posts" && (
-                <StatusFeed userId={userId} showComposer={isOwnProfile} />
+                <StatusFeed userId={userId} showComposer={isOwnProfile} onlyUserId={isOwnProfile && myPostsOnly ? userId : undefined} />
               )}
 
               {activeTab === "activity" && (
