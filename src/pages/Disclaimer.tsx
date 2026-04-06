@@ -95,6 +95,18 @@ const Disclaimer = () => {
           </ul>
         </section>
 
+        <section id="dm-transfer-risk" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">DM Money Transfer Risks</h2>
+          <p>The Platform allows direct money transfers between users via DM. You should be aware that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Irreversible Transfers:</strong> All money transfers sent via DM are <strong>final and non-reversible</strong>. The Platform cannot reverse or refund completed transfers.</li>
+            <li><strong>Recipient Verification:</strong> You are solely responsible for verifying the identity of the recipient before sending money. The Platform is not liable for transfers sent to the wrong user.</li>
+            <li><strong>Platform Fee:</strong> A fee (percentage set by the System-Mod Engine) is deducted from each transfer. The fee and net amount are displayed before you confirm.</li>
+            <li><strong>No Guarantee:</strong> The Platform does not guarantee that the recipient will provide any goods, services, or reciprocal actions in exchange for your transfer.</li>
+            <li><strong>Fraud Risk:</strong> Be cautious of social engineering, impersonation, or scam attempts. Never send money to users you do not trust.</li>
+          </ul>
+        </section>
+
         <section id="verification-disclaimer" className="space-y-2 scroll-mt-20">
           <h2 className="text-base font-semibold text-foreground">Verification Badges</h2>
           <p>Blue Tick and Gold Tick verification badges indicate that a user holds qualifying BC400 tokens and/or NFTs at the time of verification. You should be aware that:</p>
