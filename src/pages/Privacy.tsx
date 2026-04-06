@@ -118,14 +118,45 @@ const Privacy = () => {
         </section>
 
         <section id="dm-messaging" className="space-y-2 scroll-mt-20">
-          <h2 className="text-base font-semibold text-foreground">5. Direct Messaging</h2>
+          <h2 className="text-base font-semibold text-foreground">5. Direct Messaging & Money Transfers</h2>
           <p>The Platform provides a direct messaging feature restricted to mutual follows. By using direct messaging, you acknowledge that:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Message Content:</strong> Message text, gift emojis, and gift amounts are stored in our database and associated with your user ID and conversation.</li>
+            <li><strong>Message Content:</strong> Message text, gift emojis, gift amounts, and money transfer amounts are stored in our database and associated with your user ID and conversation.</li>
+            <li><strong>Money Transfers:</strong> When you send money directly in a DM, the transfer amount, fee, sender, and recipient are logged as financial transactions for audit and regulatory compliance purposes.</li>
             <li><strong>Encryption:</strong> Messages are encrypted in transit via TLS and at rest in the database. The Platform does not currently implement client-side end-to-end encryption.</li>
             <li><strong>Access Control:</strong> Only the two participants of a conversation can read their messages. Row-Level Security policies enforce this at the database level.</li>
             <li><strong>Rate Limiting:</strong> Message sending is rate-limited (5 messages per 10 seconds per conversation) to prevent abuse. Rate limit data is processed server-side.</li>
-            <li><strong>Gift Transactions:</strong> In-chat gifts create financial transactions that are logged for audit purposes, including sender, recipient, emoji, and amount.</li>
+            <li><strong>Gift & Transfer Transactions:</strong> In-chat gifts and money transfers create financial transactions that are logged for audit purposes, including sender, recipient, emoji/amount, and fees.</li>
+          </ul>
+        </section>
+
+        <section id="dm-calls" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5b. Voice & Video Calls</h2>
+          <p>The Platform provides one-on-one voice and video calling between DM participants. By using this feature, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Call Metadata:</strong> Call records (caller, callee, start/end times, duration, status) are stored in our database for analytics and dispute resolution.</li>
+            <li><strong>Audio/Video Streams:</strong> Real-time audio and video are transmitted via encrypted WebRTC connections through a third-party service (LiveKit). The Platform does not record call audio or video content.</li>
+            <li><strong>Privacy Settings:</strong> You can disable incoming calls from the Messages → Settings privacy preferences.</li>
+          </ul>
+        </section>
+
+        <section id="communities" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5c. Community Chats</h2>
+          <p>The Platform provides group chat rooms ("Communities"). By participating, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Message Content:</strong> Community messages (text, images, reactions, tagged markets) are stored in our database and visible to all community members.</li>
+            <li><strong>Membership Data:</strong> Your community memberships and join dates are recorded.</li>
+            <li><strong>Privacy Settings:</strong> You can control whether you receive community invites from the Messages → Settings privacy preferences.</li>
+          </ul>
+        </section>
+
+        <section id="support-chat" className="space-y-2 scroll-mt-20">
+          <h2 className="text-base font-semibold text-foreground">5d. In-App Support</h2>
+          <p>The Platform provides an in-app support chat. By using this feature, you acknowledge that:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Support Messages:</strong> All messages exchanged with support are stored and accessible to authorized support staff and administrators.</li>
+            <li><strong>AI Auto-Reply:</strong> An AI system may process your messages to generate automated responses. Your message content is sent to AI providers for this purpose.</li>
+            <li><strong>Support Images:</strong> Images uploaded in support conversations are stored in a secure storage bucket with access restricted to you and authorized staff.</li>
           </ul>
         </section>
 
