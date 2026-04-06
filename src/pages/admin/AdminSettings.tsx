@@ -106,6 +106,9 @@ const AdminSettings = () => {
   const [depositMaxAmount, setDepositMaxAmount] = useState("50000");
   const [pushPromptCooldownDays, setPushPromptCooldownDays] = useState("14");
   const [depositExpiryMinutes, setDepositExpiryMinutes] = useState("60");
+  const [maxDraftsNone, setMaxDraftsNone] = useState("2");
+  const [maxDraftsBlue, setMaxDraftsBlue] = useState("5");
+  const [maxDraftsGold, setMaxDraftsGold] = useState("10");
   const [payazaMode, setPayazaMode] = useState<"checkout_sdk" | "direct_api">("direct_api"); // kept for save compatibility
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -183,6 +186,9 @@ const AdminSettings = () => {
         setDepositMaxAmount(String(d.deposit_max_amount ?? 50000));
         setPushPromptCooldownDays(String(d.push_prompt_cooldown_days ?? 14));
         setDepositExpiryMinutes(String(d.deposit_expiry_minutes ?? 60));
+        setMaxDraftsNone(String((d as any).max_drafts_none ?? 2));
+        setMaxDraftsBlue(String((d as any).max_drafts_blue ?? 5));
+        setMaxDraftsGold(String((d as any).max_drafts_gold ?? 10));
         setSettingsId(d.id);
       }
       if (error) console.error(error);
@@ -362,6 +368,9 @@ const AdminSettings = () => {
                     deposit_max_amount: depositMaxAmountNum,
                     push_prompt_cooldown_days: pushPromptCooldownDaysNum,
                     deposit_expiry_minutes: depositExpiryMinutesNum,
+                    max_drafts_none: parseInt(maxDraftsNone) || 2,
+                    max_drafts_blue: parseInt(maxDraftsBlue) || 5,
+                    max_drafts_gold: parseInt(maxDraftsGold) || 10,
              updated_at: new Date().toISOString(),
           updated_by: user?.id || null,
         } as any)
@@ -1142,6 +1151,23 @@ const AdminSettings = () => {
                     <Label htmlFor="pushPromptCooldownDays" className="text-xs">Push Prompt Cooldown (days)</Label>
                     <Input id="pushPromptCooldownDays" type="number" min={1} step={1} value={pushPromptCooldownDays} onChange={(e) => setPushPromptCooldownDays(e.target.value)} disabled={!canEdit} />
                     <p className="text-[10px] text-muted-foreground">Days before re-prompting push notifications</p>
+                  </div>
+                </div>
+                <div className="border-t border-border pt-3 mt-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Max Drafts by Verification Level</p>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Unverified</Label>
+                      <Input type="number" min={1} max={50} step={1} value={maxDraftsNone} onChange={(e) => setMaxDraftsNone(e.target.value)} disabled={!canEdit} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Blue ✓</Label>
+                      <Input type="number" min={1} max={50} step={1} value={maxDraftsBlue} onChange={(e) => setMaxDraftsBlue(e.target.value)} disabled={!canEdit} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Gold ✓</Label>
+                      <Input type="number" min={1} max={50} step={1} value={maxDraftsGold} onChange={(e) => setMaxDraftsGold(e.target.value)} disabled={!canEdit} />
+                    </div>
                   </div>
                 </div>
               </CardContent>
