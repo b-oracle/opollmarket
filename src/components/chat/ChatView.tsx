@@ -236,6 +236,39 @@ const ChatView = () => {
   const canSendMessage = convStatus === "active" || (isSenderOfRequest && messages.length === 0);
   const isRejected = convStatus === "rejected";
 
+  const handleRejoinCall = useCallback(async (callId: string, withVideo = false) => {
+    if (!conversationId || !user) return;
+    setCalling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dm-call-token", {
+        body: { action: "rejoin", call_id: callId },
+      });
+
+      if (error || data?.error) throw new Error(data?.error || "Failed to rejoin call");
+
+      window.dispatchEvent(
+        new CustomEvent("start-voice-call", {
+          detail: {
+            callId: data.call_id,
+            conversationId,
+            token: data.token,
+            url: data.url,
+            room: data.room,
+            passphrase: data.e2ee_passphrase,
+            otherName,
+            otherAvatar: (convo as any)?.other_user?.avatar_url,
+            isOutgoing: true,
+            startWithVideo: withVideo,
+          },
+        })
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to rejoin call");
+    } finally {
+      setCalling(false);
+    }
+  }, [conversationId, user, otherName, convo]);
+
   const handleStartCall = useCallback(async (withVideo = false) => {
     if (calling || !conversationId || !user) return;
     setCalling(true);
@@ -246,15 +279,32 @@ const ChatView = () => {
 
       if (error) {
         let message = error.message || "Failed to start call";
+        let activeCallId: string | null = null;
+        let canRejoin = false;
         const errorContext = (error as any)?.context;
 
         if (errorContext instanceof Response) {
           try {
             const payload = await errorContext.json();
             if (payload?.error) message = payload.error;
+            activeCallId = payload?.active_call_id || null;
+            canRejoin = payload?.can_rejoin === true;
           } catch {
-            // Keep the default message when the response body isn't JSON
+            // Keep the default message
           }
+        }
+
+        if (canRejoin && activeCallId) {
+          toast("Ongoing call found", {
+            description: "Tap Rejoin to reconnect to the active call.",
+            action: {
+              label: "Rejoin",
+              onClick: () => handleRejoinCall(activeCallId!, withVideo),
+            },
+            duration: 15000,
+          });
+          setCalling(false);
+          return;
         }
 
         throw new Error(message);
@@ -283,7 +333,7 @@ const ChatView = () => {
     } finally {
       setCalling(false);
     }
-  }, [calling, conversationId, user, otherName, convo]);
+  }, [calling, conversationId, user, otherName, convo, handleRejoinCall]);
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
