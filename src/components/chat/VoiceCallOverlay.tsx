@@ -279,7 +279,7 @@ const VoiceCallOverlay = ({
         if (statusRef.current === "ringing") {
           handleCancel();
         }
-      }, 60000);
+      }, 90_000);
     }
 
     return () => {

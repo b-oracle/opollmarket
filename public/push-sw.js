@@ -20,13 +20,25 @@ self.addEventListener("push", (event) => {
     // fallback to defaults
   }
 
+  const isCall = data.is_call === true || (data.title && data.title.includes("Incoming Call"));
+
   const options = {
     body: data.body,
     icon: "/logo.png",
     badge: "/logo.png",
-    vibrate: [200, 100, 200],
-    data: { url: data.url },
-    actions: [{ action: "open", title: "View" }],
+    data: { url: data.url, is_call: isCall, call_id: data.call_id },
+    tag: isCall ? "incoming-call" : undefined,
+    renotify: isCall,
+    requireInteraction: isCall,
+    vibrate: isCall
+      ? [300, 200, 300, 200, 300, 200, 300, 200, 300, 200, 300]
+      : [200, 100, 200],
+    actions: isCall
+      ? [
+          { action: "answer", title: "Answer" },
+          { action: "decline", title: "Decline" },
+        ]
+      : [{ action: "open", title: "View" }],
   };
 
   event.waitUntil(self.registration.showNotification(data.title, options));
@@ -35,7 +47,14 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
+  const action = event.action;
+  const isCall = event.notification.data?.is_call;
   const url = event.notification.data?.url || "/";
+
+  // For decline action, just close the notification
+  if (action === "decline") {
+    return;
+  }
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
