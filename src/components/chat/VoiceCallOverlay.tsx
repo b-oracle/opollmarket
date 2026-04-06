@@ -271,12 +271,14 @@ const VoiceCallOverlay = ({
         }
         try {
           const localTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
-          const stream = (localTrack as any)?.mediaStream as MediaStream | undefined;
-          if (stream) {
+          const mediaTrack = localTrack?.mediaStreamTrack;
+          if (mediaTrack) {
+            const stream = new MediaStream([mediaTrack]);
             const ctx = new AudioContext();
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
             analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
             source.connect(analyser);
             localAnalyserRef.current = { ctx, analyser, source };
           }
