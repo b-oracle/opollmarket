@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import ChatDoodleBackground from "./ChatDoodleBackground";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -284,7 +285,8 @@ const ChatView = () => {
   }, [calling, conversationId, user, otherName, convo]);
 
   return (
-    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden">
+    <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
+      <ChatDoodleBackground />
       <SEOHead title={`Chat with ${otherName} | Pollmarket`} description="Direct message" />
       {/* Header */}
       <div className="bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 shrink-0" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
