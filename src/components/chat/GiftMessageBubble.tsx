@@ -81,6 +81,8 @@ const GiftMessageBubble = ({
     fireSubtleConfetti();
   }, [emojiControls, fireSubtleConfetti, particleOffsets]);
 
+  const isDirect = isDirectTransfer(content, giftAmount);
+
   return (
     <div className="relative" ref={bubbleRef}>
       <motion.div
@@ -88,7 +90,9 @@ const GiftMessageBubble = ({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 18 }}
         className={`w-fit rounded-2xl select-none touch-manipulation cursor-pointer ${
-          isMine ? "bg-primary/15 rounded-br-md" : "bg-accent/20 rounded-bl-md"
+          isDirect
+            ? isMine ? "bg-emerald-500/15 rounded-br-md" : "bg-emerald-500/10 rounded-bl-md"
+            : isMine ? "bg-primary/15 rounded-br-md" : "bg-accent/20 rounded-bl-md"
         }`}
         onClick={handleGiftTap}
         {...pointerProps}
@@ -96,7 +100,7 @@ const GiftMessageBubble = ({
         <div className="px-4 py-3 text-center relative overflow-visible">
           {/* Emoji with bounce animation */}
           <motion.p className="text-2xl mb-1" animate={emojiControls}>
-            {content}
+            {isDirect ? "💰" : content}
           </motion.p>
 
           {/* Floating emoji particles */}
@@ -110,16 +114,16 @@ const GiftMessageBubble = ({
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="absolute left-1/2 top-4 text-lg pointer-events-none -translate-x-1/2"
               >
-                {content}
+                {isDirect ? "💰" : content}
               </motion.span>
             ))}
           </AnimatePresence>
 
           {/* Gift amount with shimmer */}
           <motion.p
-            className={`text-lg font-bold text-primary transition-all duration-300 ${
-              shimmer ? "gift-shimmer" : ""
-            }`}
+            className={`text-lg font-bold transition-all duration-300 ${
+              isDirect ? "text-emerald-500" : "text-primary"
+            } ${shimmer ? "gift-shimmer" : ""}`}
             initial={{ scale: 0.7 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.1 }}
@@ -128,8 +132,10 @@ const GiftMessageBubble = ({
           </motion.p>
 
           <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
-            {isMine ? "Gift sent" : "Gift received"} ·{" "}
-            {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+            {isDirect
+              ? isMine ? "Direct transfer" : "Money received"
+              : isMine ? "Gift sent" : "Gift received"}{" "}
+            · {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
             {isMine &&
               (readAt ? (
                 <CheckCheck className="w-3 h-3 text-blue-500" />
