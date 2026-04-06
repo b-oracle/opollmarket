@@ -563,18 +563,6 @@ const VoiceCallOverlay = ({
           /* Audio-only view — avatars with glow */
           <>
             <div className="flex items-center gap-6 mb-4">
-              {status === "active" && (
-                <div
-                  className="w-14 h-14 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
-                  style={{
-                    boxShadow: localAudioLevel > 0.05
-                      ? `0 0 ${8 + localAudioLevel * 20}px ${2 + localAudioLevel * 6}px hsl(var(--primary) / ${0.3 + localAudioLevel * 0.5})`
-                      : "none",
-                  }}
-                >
-                  <span className="text-lg font-bold text-muted-foreground">You</span>
-                </div>
-              )}
               <div
                 className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
                 style={{
