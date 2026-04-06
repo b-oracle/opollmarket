@@ -63,26 +63,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch withdrawal request
-    const { data: withdrawal, error: wErr } = await adminClient
-      .from("withdrawal_requests")
-      .select("*")
-      .eq("id", withdrawal_id)
-      .single();
+    // Atomically claim the withdrawal to prevent double-approve race condition
+    const { data: claimResult } = await adminClient.rpc("claim_withdrawal_for_processing", {
+      _withdrawal_id: withdrawal_id,
+      _action: action,
+    });
 
-    if (wErr || !withdrawal) {
+    if (!claimResult?.success) {
       return new Response(
-        JSON.stringify({ error: "Withdrawal not found" }),
-        { status: 404, headers: corsHeaders }
+        JSON.stringify({ error: claimResult?.error || "Withdrawal not found or already processed" }),
+        { status: 409, headers: corsHeaders }
       );
     }
 
-    if (withdrawal.status !== "pending") {
-      return new Response(
-        JSON.stringify({ error: "Withdrawal already processed" }),
-        { status: 400, headers: corsHeaders }
-      );
-    }
+    const withdrawal = {
+      user_id: claimResult.user_id,
+      amount: claimResult.amount,
+      wallet_address: claimResult.wallet_address,
+      crypto_currency: claimResult.crypto_currency,
+    };
 
     if (action === "approve") {
       await adminClient

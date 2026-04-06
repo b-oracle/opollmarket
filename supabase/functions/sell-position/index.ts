@@ -121,6 +121,13 @@ Deno.serve(async (req) => {
     const exitFee = Math.round(grossProceeds * exitFeePercent * 100) / 100;
     const netProceeds = Math.round((grossProceeds - exitFee) * 100) / 100;
 
+    // Guard: prevent selling for zero or negative proceeds
+    if (netProceeds <= 0) {
+      return new Response(JSON.stringify({ error: "Position value too low to sell after fees" }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
     // 6. Zero out position shares — verify it actually took effect
     const { data: updatedRows, error: updatePosError } = await supabase
       .from("positions")
