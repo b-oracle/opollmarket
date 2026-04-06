@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw, X, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Image as ImageIcon, CheckCircle2, XCircle, RotateCcw, X, Sparkles, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   const fileRef = useRef<HTMLInputElement>(null);
   const [replyTo, setReplyTo] = useState<{ id: string; content: string; senderName: string } | null>(null);
   const [aiTyping, setAiTyping] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const { data: ticket } = useQuery({
     queryKey: ["support-ticket", ticketId],
@@ -90,9 +91,10 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   }, []);
 
   const sendMessage = useCallback(async (content?: string, imageUrl?: string) => {
-    if (!user) return;
+    if (!user || sending) return;
     const text = content || message;
     if (!text.trim() && !imageUrl) return;
+    setSending(true);
 
     const payload: any = {
       ticket_id: ticketId,
@@ -112,6 +114,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
 
     if (error) {
       toast.error("Failed to send");
+      setSending(false);
       return;
     }
     setMessage("");
@@ -128,9 +131,12 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         console.error("AI reply failed:", e);
       } finally {
         setAiTyping(false);
+        setSending(false);
       }
+    } else {
+      setSending(false);
     }
-  }, [user, message, ticketId, isStaff, replyTo]);
+  }, [user, message, ticketId, isStaff, replyTo, sending]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -265,8 +271,8 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
               className="min-h-[36px] max-h-[120px] text-sm resize-none py-2"
               rows={1}
             />
-            <Button size="sm" className="h-9 w-9 p-0 shrink-0" disabled={!message.trim()} onClick={() => sendMessage()}>
-              <Send className="w-4 h-4" />
+            <Button size="sm" className="h-9 w-9 p-0 shrink-0" disabled={!message.trim() || sending} onClick={() => sendMessage()}>
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
           </div>
         </div>

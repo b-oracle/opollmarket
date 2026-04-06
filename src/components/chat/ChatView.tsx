@@ -314,18 +314,18 @@ const ChatView = () => {
             <button
               onClick={() => handleStartCall(true)}
               disabled={calling}
-              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0 disabled:opacity-50"
               aria-label="Video call"
             >
-              <Video className="w-4 h-4" />
+              {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
             </button>
             <button
               onClick={() => handleStartCall(false)}
               disabled={calling}
-              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0"
+              className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors shrink-0 disabled:opacity-50"
               aria-label="Voice call"
             >
-              <Phone className="w-4 h-4" />
+              {calling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Phone className="w-4 h-4" />}
             </button>
           </>
         )}
