@@ -63,6 +63,10 @@ const VoiceCallOverlay = ({
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
+  // Store pending remote tracks so we can attach after video element renders
+  const pendingRemoteVideoTrackRef = useRef<any>(null);
+  const pendingScreenShareTrackRef = useRef<any>(null);
+
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
