@@ -516,6 +516,13 @@ const AdminMarkets = () => {
         </div>
       </div>
 
+      <Input
+        placeholder="Search markets by title, category, or ID…"
+        value={searchQuery}
+        onChange={(e) => { setSearchQuery(e.target.value); setMktPage(1); }}
+        className="h-9 text-sm"
+      />
+
       {/* Analytics Summary Cards */}
       {globalStats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
