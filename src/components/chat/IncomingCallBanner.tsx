@@ -18,25 +18,58 @@ interface IncomingCall {
   callerAvatar?: string;
 }
 
+interface ActiveCallState {
+  callId: string;
+  conversationId: string;
+  token: string;
+  url: string;
+  room: string;
+  passphrase: string;
+  otherName: string;
+  otherAvatar?: string;
+  isOutgoing: boolean;
+  startWithVideo?: boolean;
+}
+
+const ACTIVE_CALL_STORAGE_KEY = "dm-active-call";
+
 const IncomingCallBanner = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
-  const [activeCall, setActiveCall] = useState<{
-    callId: string;
-    conversationId: string;
-    token: string;
-    url: string;
-    room: string;
-    passphrase: string;
-    otherName: string;
-    otherAvatar?: string;
-    isOutgoing: boolean;
-    startWithVideo?: boolean;
-  } | null>(null);
+  const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [answering, setAnswering] = useState(false);
   const [callMinimized, setCallMinimized] = useState(false);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = window.sessionStorage.getItem(ACTIVE_CALL_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved) as { activeCall?: ActiveCallState | null; callMinimized?: boolean };
+      if (parsed?.activeCall) {
+        setActiveCall(parsed.activeCall);
+        setCallMinimized(Boolean(parsed.callMinimized));
+      }
+    } catch {
+      // ignore restore issues
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (!activeCall) {
+        window.sessionStorage.removeItem(ACTIVE_CALL_STORAGE_KEY);
+        return;
+      }
+      window.sessionStorage.setItem(
+        ACTIVE_CALL_STORAGE_KEY,
+        JSON.stringify({ activeCall, callMinimized })
+      );
+    } catch {
+      // ignore persistence issues
+    }
+  }, [activeCall, callMinimized]);
 
   // Play ringtone when incoming call appears
   useEffect(() => {
