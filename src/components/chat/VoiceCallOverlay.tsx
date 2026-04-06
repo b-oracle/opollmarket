@@ -551,6 +551,8 @@ const VoiceCallOverlay = ({
     const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
     const newSpeaker = !speakerOn;
     audioEls.forEach((el) => {
+      // Volume fallback: earpiece = 0.4, speaker = 1.0
+      el.volume = newSpeaker ? 1.0 : 0.4;
       if (typeof (el as any).setSinkId === "function") {
         (el as any).setSinkId(newSpeaker ? "default" : "communications").catch(() => {});
       }
