@@ -141,6 +141,11 @@ const VoiceCallOverlay = ({
         remoteTrackReceivedRef.current = true;
         const el = track.attach();
         el.id = `remote-audio-${track.sid}`;
+        // Default to earpiece mode (lower volume, communications sink)
+        el.volume = 0.4;
+        if (typeof (el as any).setSinkId === "function") {
+          (el as any).setSinkId("communications").catch(() => {});
+        }
         document.body.appendChild(el);
         try {
           // Get the underlying MediaStreamTrack and build a stream for the analyser
