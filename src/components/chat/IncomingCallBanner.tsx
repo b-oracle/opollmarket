@@ -44,17 +44,14 @@ const IncomingCallBanner = () => {
   const [callMinimized, setCallMinimized] = useState(false);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
 
+  // On mount, check for a stored active call — but DON'T restore it.
+  // Restored tokens are almost certainly expired, leading to silent failures.
+  // Instead, just clear the stale session data.
   useEffect(() => {
     try {
-      const saved = window.sessionStorage.getItem(ACTIVE_CALL_STORAGE_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved) as { activeCall?: ActiveCallState | null; callMinimized?: boolean };
-      if (parsed?.activeCall) {
-        setActiveCall(parsed.activeCall);
-        setCallMinimized(Boolean(parsed.callMinimized));
-      }
+      window.sessionStorage.removeItem(ACTIVE_CALL_STORAGE_KEY);
     } catch {
-      // ignore restore issues
+      // ignore
     }
   }, []);
 
@@ -138,9 +135,14 @@ const IncomingCallBanner = () => {
     };
   }, [user]);
 
-  // Listen for call status changes (e.g., caller cancels)
+  // Listen for call status changes (e.g., caller cancels) + auto-dismiss after 90s
   useEffect(() => {
     if (!incomingCall) return;
+
+    // Auto-dismiss after 90 seconds (matches caller's auto-cancel timeout)
+    const dismissTimer = setTimeout(() => {
+      setIncomingCall(null);
+    }, 90_000);
 
     const channel = supabase
       .channel(`incoming-call-status-${incomingCall.id}`)
@@ -162,6 +164,7 @@ const IncomingCallBanner = () => {
       .subscribe();
 
     return () => {
+      clearTimeout(dismissTimer);
       supabase.removeChannel(channel);
     };
   }, [incomingCall?.id]);

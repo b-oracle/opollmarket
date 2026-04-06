@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
       const at = new AccessToken(apiKey, apiSecret, {
         identity: user.id,
         name: callerProfile?.display_name || "Anonymous",
-        ttl: "5m",
+        ttl: "2h",
       });
       at.addGrant({
         room: roomName,
