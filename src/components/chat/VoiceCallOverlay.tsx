@@ -512,7 +512,7 @@ const VoiceCallOverlay = ({
     }
   }, [callId, conversationId, muted, cameraOn, handleEnd]);
 
-
+  const toggleScreenShare = async () => {
     if (!roomRef.current) return;
     try {
       const newState = !screenShareOn;
