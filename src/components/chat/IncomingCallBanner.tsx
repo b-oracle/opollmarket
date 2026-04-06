@@ -44,17 +44,14 @@ const IncomingCallBanner = () => {
   const [callMinimized, setCallMinimized] = useState(false);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
 
+  // On mount, check for a stored active call — but DON'T restore it.
+  // Restored tokens are almost certainly expired, leading to silent failures.
+  // Instead, just clear the stale session data.
   useEffect(() => {
     try {
-      const saved = window.sessionStorage.getItem(ACTIVE_CALL_STORAGE_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved) as { activeCall?: ActiveCallState | null; callMinimized?: boolean };
-      if (parsed?.activeCall) {
-        setActiveCall(parsed.activeCall);
-        setCallMinimized(Boolean(parsed.callMinimized));
-      }
+      window.sessionStorage.removeItem(ACTIVE_CALL_STORAGE_KEY);
     } catch {
-      // ignore restore issues
+      // ignore
     }
   }, []);
 
