@@ -143,13 +143,18 @@ const VoiceCallOverlay = ({
         el.id = `remote-audio-${track.sid}`;
         document.body.appendChild(el);
         try {
-          const stream = (track as any).mediaStream as MediaStream | undefined;
-          if (stream) {
+          // Get the underlying MediaStreamTrack and build a stream for the analyser
+          const mediaTrack = track.mediaStreamTrack;
+          if (mediaTrack) {
+            const stream = new MediaStream([mediaTrack]);
             const ctx = new AudioContext();
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
             analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
             source.connect(analyser);
+            // Close previous analyser if any
+            try { remoteAnalyserRef.current?.ctx.close(); } catch {}
             remoteAnalyserRef.current = { ctx, analyser, source };
           }
         } catch {}
@@ -266,12 +271,14 @@ const VoiceCallOverlay = ({
         }
         try {
           const localTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
-          const stream = (localTrack as any)?.mediaStream as MediaStream | undefined;
-          if (stream) {
+          const mediaTrack = localTrack?.mediaStreamTrack;
+          if (mediaTrack) {
+            const stream = new MediaStream([mediaTrack]);
             const ctx = new AudioContext();
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
             analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
             source.connect(analyser);
             localAnalyserRef.current = { ctx, analyser, source };
           }
@@ -316,17 +323,22 @@ const VoiceCallOverlay = ({
   // Audio level polling
   useEffect(() => {
     if (status !== "active") return;
-    const buf = new Uint8Array(128);
+    const remoteBuf = new Uint8Array(128);
+    const localBuf = new Uint8Array(128);
     const poll = () => {
       if (remoteAnalyserRef.current) {
-        remoteAnalyserRef.current.analyser.getByteFrequencyData(buf);
-        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
-        setRemoteAudioLevel(Math.min(avg / 80, 1));
+        remoteAnalyserRef.current.analyser.getByteFrequencyData(remoteBuf);
+        const avg = remoteBuf.reduce((s, v) => s + v, 0) / remoteBuf.length;
+        setRemoteAudioLevel(Math.min(avg / 60, 1));
+      } else {
+        setRemoteAudioLevel(0);
       }
       if (localAnalyserRef.current) {
-        localAnalyserRef.current.analyser.getByteFrequencyData(buf);
-        const avg = buf.reduce((s, v) => s + v, 0) / buf.length;
-        setLocalAudioLevel(Math.min(avg / 80, 1));
+        localAnalyserRef.current.analyser.getByteFrequencyData(localBuf);
+        const avg = localBuf.reduce((s, v) => s + v, 0) / localBuf.length;
+        setLocalAudioLevel(Math.min(avg / 60, 1));
+      } else {
+        setLocalAudioLevel(0);
       }
       audioLevelRafRef.current = requestAnimationFrame(poll);
     };
