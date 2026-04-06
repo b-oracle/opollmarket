@@ -62,6 +62,9 @@ const VoiceCallOverlay = ({
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [pipPos, setPipPos] = useState({ x: 16, y: 112 });
+  const [pipDragging, setPipDragging] = useState(false);
+  const pipDragStart = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null);
 
   // Store pending remote tracks so we can attach after video element renders
   const pendingRemoteVideoTrackRef = useRef<any>(null);
