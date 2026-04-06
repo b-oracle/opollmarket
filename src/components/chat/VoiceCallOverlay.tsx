@@ -83,14 +83,25 @@ const VoiceCallOverlay = ({
   }, [status]);
 
   const handleEnd = useCallback(async () => {
-    if (endingRef.current) return;
+    // Allow re-entry: if a previous end attempt started but didn't close,
+    // the user should still be able to force-end.
+    if (endingRef.current) {
+      // Force close immediately on repeated tap
+      try { roomRef.current?.disconnect(); } catch {}
+      onClose();
+      return;
+    }
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (timerRef.current) clearInterval(timerRef.current);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-    roomRef.current?.disconnect();
+    setWaitingReconnect(false);
+    setReconnecting(false);
+    setShowRejoin(false);
+    try { roomRef.current?.disconnect(); } catch {}
 
     try {
       await supabase.functions.invoke("dm-call-token", {
@@ -102,13 +113,18 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   const handleCancel = useCallback(async () => {
-    if (endingRef.current) return;
+    if (endingRef.current) {
+      try { roomRef.current?.disconnect(); } catch {}
+      onClose();
+      return;
+    }
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
-    roomRef.current?.disconnect();
+    try { roomRef.current?.disconnect(); } catch {}
 
     try {
       await supabase.functions.invoke("dm-call-token", {
@@ -409,21 +425,28 @@ const VoiceCallOverlay = ({
   };
 
   const toggleCamera = async () => {
-    if (!roomRef.current) return;
+    const room = roomRef.current;
+    if (!room) return;
     try {
       const newState = !cameraOn;
-      await roomRef.current.localParticipant.setCameraEnabled(newState);
+      await room.localParticipant.setCameraEnabled(newState);
       setCameraOn(newState);
-      // Re-attach track to ref after a tick
       if (newState) {
-        setTimeout(() => {
-          const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
-          if (camPub?.track && localVideoRef.current) {
-            camPub.track.attach(localVideoRef.current);
-          }
-        }, 200);
+        // Retry attachment up to 3 times with increasing delay
+        const attachLocal = (attempt: number) => {
+          setTimeout(() => {
+            const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+            if (camPub?.track && localVideoRef.current) {
+              camPub.track.attach(localVideoRef.current);
+            } else if (attempt < 3) {
+              attachLocal(attempt + 1);
+            }
+          }, 200 * (attempt + 1));
+        };
+        attachLocal(0);
       }
     } catch (err) {
+      console.error("Camera toggle error:", err);
       toast.error("Failed to toggle camera");
     }
   };
