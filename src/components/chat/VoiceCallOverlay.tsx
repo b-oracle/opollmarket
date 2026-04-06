@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
-import { PhoneOff, Mic, MicOff, Volume2, Lock, X, Minimize2, Video, VideoOff, Monitor, MonitorOff } from "lucide-react";
+import { PhoneOff, Phone, Mic, MicOff, Volume2, Lock, X, Minimize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceCallOverlayProps {
@@ -61,6 +61,7 @@ const VoiceCallOverlay = ({
   const screenShareRef = useRef<HTMLVideoElement>(null);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -75,6 +76,7 @@ const VoiceCallOverlay = ({
   const gracePeriodRef = useRef<NodeJS.Timeout | null>(null);
   const [waitingReconnect, setWaitingReconnect] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [showRejoin, setShowRejoin] = useState(false);
 
   useEffect(() => {
     statusRef.current = status;
@@ -206,6 +208,7 @@ const VoiceCallOverlay = ({
     room.on(RoomEvent.Disconnected, () => {
       if (!endingRef.current && !intentionalDisconnectRef.current && statusRef.current === "active") {
         setReconnecting(true);
+        // Try auto-reconnect once
         room.connect(livekitUrl, token)
           .then(async () => {
             await room.localParticipant.setMicrophoneEnabled(!muted);
@@ -213,8 +216,9 @@ const VoiceCallOverlay = ({
             setReconnecting(false);
           })
           .catch(() => {
+            // Auto-reconnect failed — show manual rejoin button instead of ending
             setReconnecting(false);
-            if (!endingRef.current) handleEnd();
+            setShowRejoin(true);
           });
       } else if (!endingRef.current) {
         handleEnd();
@@ -223,8 +227,13 @@ const VoiceCallOverlay = ({
 
     // Track local video publication to attach to ref
     room.on(RoomEvent.LocalTrackPublished, (pub) => {
-      if (pub.track?.kind === Track.Kind.Video && localVideoRef.current) {
-        pub.track.attach(localVideoRef.current);
+      if (pub.track?.kind === Track.Kind.Video) {
+        // Defer attachment so the video element renders first
+        setTimeout(() => {
+          if (localVideoRef.current && pub.track) {
+            pub.track.attach(localVideoRef.current);
+          }
+        }, 100);
       }
     });
 
@@ -388,10 +397,120 @@ const VoiceCallOverlay = ({
       const newState = !cameraOn;
       await roomRef.current.localParticipant.setCameraEnabled(newState);
       setCameraOn(newState);
+      // Re-attach track to ref after a tick
+      if (newState) {
+        setTimeout(() => {
+          const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (camPub?.track && localVideoRef.current) {
+            camPub.track.attach(localVideoRef.current);
+          }
+        }, 200);
+      }
     } catch (err) {
       toast.error("Failed to toggle camera");
     }
   };
+
+  const flipCamera = async () => {
+    if (!roomRef.current) return;
+    try {
+      const newFacing = facingMode === "user" ? "environment" : "user";
+      // Restart camera with new facing mode
+      await roomRef.current.localParticipant.setCameraEnabled(false);
+      await roomRef.current.localParticipant.setCameraEnabled(true, {
+        facingMode: newFacing,
+        resolution: { width: 640, height: 480, frameRate: 24 },
+      });
+      setFacingMode(newFacing);
+      // Re-attach
+      setTimeout(() => {
+        const camPub = roomRef.current?.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (camPub?.track && localVideoRef.current) {
+          camPub.track.attach(localVideoRef.current);
+        }
+      }, 200);
+    } catch (err) {
+      toast.error("Failed to flip camera");
+    }
+  };
+
+  const handleRejoin = useCallback(async () => {
+    if (!conversationId || !callId) return;
+    setShowRejoin(false);
+    setReconnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("dm-call-token", {
+        body: { action: "rejoin", call_id: callId },
+      });
+      if (error || data?.error) throw new Error(data?.error || "Failed to rejoin");
+      // Reconnect room with fresh token
+      const room = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+        videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
+      });
+      roomRef.current?.disconnect();
+      roomRef.current = room;
+      // Re-bind events
+      room.on(RoomEvent.TrackSubscribed, (track) => {
+        if (track.kind === Track.Kind.Audio) {
+          remoteTrackReceivedRef.current = true;
+          const el = track.attach();
+          el.id = `remote-audio-${track.sid}`;
+          document.body.appendChild(el);
+        }
+        if (track.kind === Track.Kind.Video) {
+          const src = (track as any).source;
+          if (src === Track.Source.ScreenShare) {
+            setHasRemoteScreenShare(true);
+            if (screenShareRef.current) track.attach(screenShareRef.current);
+          } else {
+            setHasRemoteVideo(true);
+            if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
+          }
+        }
+      });
+      room.on(RoomEvent.TrackUnsubscribed, (track) => {
+        if (track.kind === Track.Kind.Video) {
+          const src = (track as any).source;
+          if (src === Track.Source.ScreenShare) setHasRemoteScreenShare(false);
+          else setHasRemoteVideo(false);
+        }
+        track.detach().forEach((el) => el.remove());
+      });
+      room.on(RoomEvent.ParticipantDisconnected, () => {
+        if (!endingRef.current) {
+          setWaitingReconnect(true);
+          gracePeriodRef.current = setTimeout(() => {
+            if (!endingRef.current) handleEnd();
+          }, GRACE_PERIOD_MS);
+        }
+      });
+      room.on(RoomEvent.ParticipantConnected, () => {
+        setWaitingReconnect(false);
+        if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
+      });
+
+      await room.connect(data.url, data.token);
+      await room.localParticipant.setMicrophoneEnabled(!muted);
+      if (cameraOn) {
+        await room.localParticipant.setCameraEnabled(true);
+        setTimeout(() => {
+          const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+          if (camPub?.track && localVideoRef.current) camPub.track.attach(localVideoRef.current);
+        }, 200);
+      }
+      setReconnecting(false);
+      setStatus("active");
+      if (!startTimeRef.current) startTimeRef.current = Date.now();
+      endingRef.current = false;
+      intentionalDisconnectRef.current = false;
+    } catch (err: any) {
+      setReconnecting(false);
+      toast.error(err.message || "Failed to rejoin call");
+      handleEnd();
+    }
+  }, [callId, conversationId, muted, cameraOn, handleEnd]);
 
   const toggleScreenShare = async () => {
     if (!roomRef.current) return;
@@ -547,7 +666,7 @@ const VoiceCallOverlay = ({
                 playsInline
                 muted
                 className="absolute bottom-28 right-4 w-28 h-36 rounded-xl object-cover border-2 border-border shadow-lg z-10"
-                style={{ transform: "scaleX(-1)" }}
+                style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
               />
             )}
 
@@ -585,17 +704,32 @@ const VoiceCallOverlay = ({
               {status === "ringing" && "Calling..."}
               {status === "connecting" && "Connecting..."}
               {status === "active" && reconnecting && "Reconnecting..."}
-              {status === "active" && !reconnecting && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
-              {status === "active" && !reconnecting && !waitingReconnect && formatTime(duration)}
+              {status === "active" && !reconnecting && showRejoin && "Disconnected — tap Rejoin"}
+              {status === "active" && !reconnecting && !showRejoin && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
+              {status === "active" && !reconnecting && !showRejoin && !waitingReconnect && formatTime(duration)}
               {status === "ended" && "Call ended"}
             </p>
           </>
         )}
       </div>
 
+      {/* Rejoin banner */}
+      {showRejoin && (
+        <div className="shrink-0 px-4 py-3 flex items-center justify-center gap-3">
+          <p className="text-sm text-muted-foreground">Call disconnected</p>
+          <button
+            onClick={handleRejoin}
+            className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium active:scale-95 transition-transform"
+          >
+            <Phone className="w-4 h-4 inline mr-1.5" />
+            Rejoin Call
+          </button>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="flex items-center justify-center gap-4 pb-8 px-4 shrink-0" style={{ paddingBottom: "max(2rem, calc(var(--safe-bottom) + 1rem))" }}>
-        {status === "active" && (
+      <div className="flex items-center justify-center gap-3 pb-8 px-4 shrink-0 flex-wrap" style={{ paddingBottom: "max(2rem, calc(var(--safe-bottom) + 1rem))" }}>
+        {status === "active" && !showRejoin && (
           <>
             <button
               onClick={toggleMute}
@@ -614,10 +748,20 @@ const VoiceCallOverlay = ({
             >
               {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
             </button>
+
+            {cameraOn && (
+              <button
+                onClick={flipCamera}
+                className="w-12 h-12 rounded-full flex items-center justify-center bg-muted text-foreground transition-colors"
+                aria-label="Flip camera"
+              >
+                <SwitchCamera className="w-5 h-5" />
+              </button>
+            )}
           </>
         )}
 
-        {(status === "ringing" || status === "connecting" || status === "active") && (
+        {(status === "ringing" || status === "connecting" || status === "active") && !showRejoin && (
           <button
             onClick={status === "ringing" && isOutgoing ? handleCancel : handleEnd}
             className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground active:scale-95 transition-transform"
@@ -626,7 +770,7 @@ const VoiceCallOverlay = ({
           </button>
         )}
 
-        {status === "active" && (
+        {status === "active" && !showRejoin && (
           <>
             <button
               onClick={toggleScreenShare}
@@ -646,6 +790,15 @@ const VoiceCallOverlay = ({
               <Volume2 className="w-5 h-5" />
             </button>
           </>
+        )}
+
+        {showRejoin && (
+          <button
+            onClick={handleEnd}
+            className="w-12 h-12 rounded-full bg-destructive/20 text-destructive flex items-center justify-center"
+          >
+            <PhoneOff className="w-5 h-5" />
+          </button>
         )}
       </div>
     </div>
