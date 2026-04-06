@@ -1,5 +1,5 @@
-const doodlePatternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'>
-  <g fill='none' stroke='currentColor' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.35'>
+const makeDoodleSvg = (stroke: string) => `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'>
+  <g fill='none' stroke='${stroke}' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round' opacity='0.35'>
     <g transform='translate(20,20) rotate(-15,12,12)'><rect x='2' y='4' width='20' height='16' rx='3'/><circle cx='12' cy='12' r='4'/><line x1='16' y1='5' x2='16' y2='5.5'/></g>
     <g transform='translate(80,15) rotate(10,10,14)'><rect x='2' y='0' width='16' height='28' rx='3'/><line x1='8' y1='24' x2='12' y2='24'/></g>
     <g transform='translate(150,25) rotate(-8,10,10)'><path d='M4 16 C4 8, 10 2, 16 8 L16 20' /><circle cx='16' cy='22' r='2'/><line x1='4' y1='18' x2='4' y2='22'/></g>
@@ -15,18 +15,21 @@ const doodlePatternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' he
   </g>
 </svg>`;
 
-const doodleBgUrl = `url("data:image/svg+xml,${encodeURIComponent(doodlePatternSvg)}")`;
+const lightBgUrl = `url("data:image/svg+xml,${encodeURIComponent(makeDoodleSvg('#222222'))}")`;
+const darkBgUrl = `url("data:image/svg+xml,${encodeURIComponent(makeDoodleSvg('#ffffff'))}")`;
 
 const ChatDoodleBackground = () => (
-  <div
-    className="absolute inset-0 pointer-events-none z-[1] opacity-[0.12] dark:opacity-[0.15]"
-    style={{
-      backgroundImage: doodleBgUrl,
-      backgroundSize: "200px 200px",
-      backgroundRepeat: "repeat",
-    }}
-  />
+  <>
+    <div
+      className="absolute inset-0 pointer-events-none z-[1] opacity-[0.12] dark:opacity-0"
+      style={{ backgroundImage: lightBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }}
+    />
+    <div
+      className="absolute inset-0 pointer-events-none z-[1] opacity-0 dark:opacity-[0.15]"
+      style={{ backgroundImage: darkBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }}
+    />
+  </>
 );
 
 export default ChatDoodleBackground;
-export { doodleBgUrl, doodlePatternSvg };
+export { lightBgUrl as doodleBgUrl, makeDoodleSvg as doodlePatternSvg };
