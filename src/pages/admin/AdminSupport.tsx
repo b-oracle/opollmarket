@@ -66,14 +66,6 @@ const AdminSupport = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] });
   };
 
-  if (activeTicket) {
-    return (
-      <div className="h-[80vh]">
-        <SupportChat ticketId={activeTicket} isStaff={true} onBack={() => { setActiveTicket(null); queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] }); }} />
-      </div>
-    );
-  }
-
   const statusColors: Record<string, string> = {
     open: "bg-amber-500/10 text-amber-500",
     in_progress: "bg-blue-500/10 text-blue-500",
@@ -86,6 +78,14 @@ const AdminSupport = () => {
     const q = searchQuery.toLowerCase();
     return tickets.filter((t: any) => t.subject?.toLowerCase().includes(q) || t.profile?.display_name?.toLowerCase().includes(q) || t.category?.toLowerCase().includes(q) || t.id?.toLowerCase().includes(q));
   }, [tickets, searchQuery]);
+
+  if (activeTicket) {
+    return (
+      <div className="h-[80vh]">
+        <SupportChat ticketId={activeTicket} isStaff={true} onBack={() => { setActiveTicket(null); queryClient.invalidateQueries({ queryKey: ["admin-support-tickets"] }); }} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
