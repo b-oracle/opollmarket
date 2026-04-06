@@ -318,7 +318,7 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 300, damping: 18 }}
-            className={`w-fit rounded-2xl select-none touch-none ${
+            className={`w-fit rounded-2xl select-none touch-manipulation ${
               isMine
                 ? "bg-primary/15 rounded-br-md"
                 : "bg-accent/20 rounded-bl-md"
