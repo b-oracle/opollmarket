@@ -256,7 +256,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   )}
                 </button>
                 <div
-                  className="flex-1 min-w-0 relative select-none touch-none"
+                  className="flex-1 min-w-0 relative select-none touch-manipulation"
                   onPointerDown={(e) => {
                     if (e.button !== 0) return;
                     const target = e.currentTarget;

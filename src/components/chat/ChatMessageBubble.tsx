@@ -357,7 +357,7 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
       <div className="relative max-w-[75%] overflow-visible" ref={bubbleRef}>
         <div className="space-y-1">
           <div
-            className={`rounded-2xl px-3.5 py-2 select-none touch-none ${
+            className={`rounded-2xl px-3.5 py-2 select-none touch-manipulation ${
               isMine
                 ? "bg-primary text-primary-foreground rounded-br-md"
                 : "bg-muted text-foreground rounded-bl-md"
