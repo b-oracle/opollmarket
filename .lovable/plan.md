@@ -1,17 +1,29 @@
 
 
-## Fix: Support Chat Messages Blocking Touch Scroll
+## Plan: Add Decorative Watermark Background to Call Interface
 
-### Problem
-The message bubble in `SupportMessageBubble.tsx` has `touch-none` CSS class applied, which tells the browser to ignore all touch gestures (including scrolling) on that element. Since messages fill most of the chat area, scrolling only works when touching the small gaps between messages (the "sides").
+### What it does
+Replaces the plain dark background of the call overlay with a visually appealing design featuring subtle OPoll watermark logos and fun doodle-style icons (phone, mic, headphones, chat bubbles, waveforms, etc.) — similar to how WhatsApp and Telegram style their call screens.
 
-### Fix
-**File: `src/components/chat/SupportMessageBubble.tsx`**
+### Approach
+Create an SVG-based background pattern rendered directly in the component (no external assets needed for the doodle icons). The OPoll watermark logo will be layered on top using the existing `watermark-logo.png` asset. Everything will be very low opacity so it doesn't distract from the call UI.
 
-Remove `touch-none` from the bubble's className (line 291). Replace it with `touch-manipulation`, which allows normal scrolling while still supporting the long-press gesture for reactions.
+### Files to change
 
-The long-press logic already uses `pointerDown`/`pointerUp` with a 500ms timer and cancels on `pointerCancel`/`pointerLeave`, so scrolling gestures will naturally cancel the timer when the browser starts scrolling — no additional logic needed.
+**1. `src/components/chat/VoiceCallOverlay.tsx`**
 
-### Summary of change
-- One line change in `SupportMessageBubble.tsx`: swap `touch-none` → `touch-manipulation`
+- Replace the plain `bg-background/95` full-screen container with a layered background:
+  - Base: dark gradient (subtle radial gradient from center)
+  - Layer 1: Repeating SVG pattern of fun communication icons (phone, mic, headphones, chat bubbles, music notes, signal waves, hearts, thumbs-up) drawn as simple line art, rotated at various angles, at ~4-5% opacity
+  - Layer 2: Large centered OPoll watermark logo (`watermark-logo.png`) at ~6-8% opacity with a slight blur
+- The pattern will be a CSS `background-image` using an inline SVG data URI for the icon grid
+- The watermark logo will be an absolutely positioned `<img>` element
+- Both audio-only and video call views get the background; video feeds naturally cover it when active
+- Light mode uses `blue-opoll-logo.png` watermark instead
+
+### Visual result
+- Subtle tiled pattern of ~12 different communication-themed line icons at random rotations
+- Large faded OPoll logo centered behind the avatar
+- Dark radial gradient giving depth (darker edges, slightly lighter center)
+- All decorative elements stay behind the call UI via z-indexing
 
