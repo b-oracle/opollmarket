@@ -1005,15 +1005,6 @@ const VoiceCallOverlay = ({
         {status === "active" && !showRejoin && (
           <>
             <button
-              onClick={toggleScreenShare}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                screenShareOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
-              }`}
-            >
-              {screenShareOn ? <Monitor className="w-5 h-5" /> : <MonitorOff className="w-5 h-5" />}
-            </button>
-
-            <button
               onClick={toggleSpeaker}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
                 speakerOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
