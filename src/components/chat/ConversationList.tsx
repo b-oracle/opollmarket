@@ -393,7 +393,11 @@ const ConversationList = () => {
                 <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             }>
-              <CommunitiesTab onOpenChat={(slug, label) => setActiveCommunityChat({ slug, label })} />
+              <CommunitiesTab onOpenChat={(slug, label) => {
+                markCommunityRead(slug);
+                queryClient.invalidateQueries({ queryKey: ["unread-community"] });
+                setActiveCommunityChat({ slug, label });
+              }} />
             </Suspense>
           ) : tab === "support" ? (
             <Suspense fallback={
