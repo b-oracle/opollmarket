@@ -1,27 +1,37 @@
 
 
-## Plan: Fix Double-Tap / Multiple-Send Issues in Support Chat & Call Initiation
+## Plan: Fix Emoji Reactions Across All Chat Types
 
 ### Problem
-1. **Support Chat**: The `sendMessage` function in `SupportChat.tsx` has no `sending` state guard. While the async insert runs (and the slow AI auto-reply awaits), nothing prevents the user from tapping Send again, causing duplicate messages.
-2. **Call Initiation**: The DM `ChatView.tsx` already has a `calling` guard, but the Send button and call buttons don't show any visual loading state, making users think nothing happened and tap again.
+Emoji reactions fail silently on DM, support, community, and space messages. The root cause is the self-referencing subqueries in the UPDATE RLS `WITH CHECK` clauses — these subqueries read from the same table under RLS, creating evaluation conflicts during UPDATE operations.
+
+### Solution
+Replace direct `.update()` calls with a single **SECURITY DEFINER** RPC function that handles reaction toggling for all four message types. This bypasses RLS safely while enforcing membership checks server-side.
 
 ### Changes
 
-**File: `src/components/chat/SupportChat.tsx`**
-- Add a `sending` boolean state
-- Set it `true` at the start of `sendMessage`, check it as a guard (`if (sending) return`)
-- Set it `false` in a `finally` block after the AI reply completes
-- Disable the Send button when `sending` is true
-- Show a `Loader2` spinner on the Send button while sending
+**1. Database Migration — Create `toggle_message_reaction` RPC**
 
-**File: `src/components/chat/ChatView.tsx`**
-- The `sending` guard already exists — just needs visual feedback
-- Disable the Send button and show `Loader2` spinner when `sending` is true
-- Disable the call buttons (Phone/Video) and show a spinner when `calling` is true, so users see immediate feedback
+A `SECURITY DEFINER` function that:
+- Accepts `_table` (enum: `dm_messages`, `community_messages`, `support_messages`, `space_messages`), `_message_id`, `_emoji`
+- Validates the caller's membership (conversation participant, ticket owner/staff, community member, space participant)
+- Toggles the user's ID in the `reactions` JSONB field atomically
+- Returns the updated reactions object
 
-### Technical details
-- Both fixes use the same pattern: guard boolean + disabled button + spinner icon swap
-- Support chat clears `sending` only after the AI reply finishes (or fails), preventing any re-sends during that window
-- Call buttons get `disabled={calling}` and swap the icon to `Loader2` with `animate-spin`
+This completely avoids the self-referencing RLS subquery problem.
+
+**2. Frontend Updates (4 files)**
+
+- `src/components/chat/ChatMessageBubble.tsx` — Replace `.from("dm_messages").update({reactions})` with `.rpc("toggle_message_reaction", {_table: "dm_messages", _message_id, _emoji})`
+- `src/components/chat/SupportMessageBubble.tsx` — Same pattern for `support_messages`
+- `src/components/chat/CommunityChat.tsx` — Same pattern for `community_messages`
+- `src/components/social/SpaceRoom.tsx` — Same pattern for `space_messages`
+
+**3. Add `dm_messages` DELETE policy (bonus fix)**
+
+The delete button in DMs silently fails because there is no DELETE policy. Add one for sender-only deletion.
+
+### Technical Details
+
+The RPC uses dynamic column reads with `EXECUTE` to fetch and update the reactions JSONB column on the correct table, while the membership validation uses static queries for each table type. The function runs as `SECURITY DEFINER` with `search_path = public`, matching the existing pattern used by `is_space_participant` and `send_dm_gift`.
 
