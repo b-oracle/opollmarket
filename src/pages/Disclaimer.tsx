@@ -192,7 +192,7 @@ const Disclaimer = () => {
           <p>To the fullest extent permitted by law, OPollMarket and its operators, affiliates, employees, and agents disclaim all liability for any direct, indirect, incidental, special, consequential, or punitive damages — including loss of profits, data, digital assets, or goodwill — arising from your use of or inability to use the Platform, regardless of the cause of action or the theory of liability.</p>
         </section>
 
-        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: March 10, 2026</p>
+        <p className="text-xs text-muted-foreground/60 pt-4 pb-8">Last updated: April 6, 2026</p>
       </div>
       <BackToTop />
     </div>
