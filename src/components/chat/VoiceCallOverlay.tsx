@@ -61,6 +61,7 @@ const VoiceCallOverlay = ({
   const screenShareRef = useRef<HTMLVideoElement>(null);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
 
   const roomRef = useRef<Room | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
