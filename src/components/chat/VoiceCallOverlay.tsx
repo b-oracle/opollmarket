@@ -141,6 +141,11 @@ const VoiceCallOverlay = ({
         remoteTrackReceivedRef.current = true;
         const el = track.attach();
         el.id = `remote-audio-${track.sid}`;
+        // Default to earpiece mode (lower volume, communications sink)
+        el.volume = 0.4;
+        if (typeof (el as any).setSinkId === "function") {
+          (el as any).setSinkId("communications").catch(() => {});
+        }
         document.body.appendChild(el);
         try {
           // Get the underlying MediaStreamTrack and build a stream for the analyser
@@ -469,6 +474,10 @@ const VoiceCallOverlay = ({
           remoteTrackReceivedRef.current = true;
           const el = track.attach();
           el.id = `remote-audio-${track.sid}`;
+          el.volume = 0.4;
+          if (typeof (el as any).setSinkId === "function") {
+            (el as any).setSinkId("communications").catch(() => {});
+          }
           document.body.appendChild(el);
         }
         if (track.kind === Track.Kind.Video) {
@@ -542,6 +551,8 @@ const VoiceCallOverlay = ({
     const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
     const newSpeaker = !speakerOn;
     audioEls.forEach((el) => {
+      // Volume fallback: earpiece = 0.4, speaker = 1.0
+      el.volume = newSpeaker ? 1.0 : 0.4;
       if (typeof (el as any).setSinkId === "function") {
         (el as any).setSinkId(newSpeaker ? "default" : "communications").catch(() => {});
       }
