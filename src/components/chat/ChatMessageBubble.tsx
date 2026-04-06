@@ -2,7 +2,8 @@ import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Gift, Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2, Check, CheckCheck, Reply } from "lucide-react";
+import { Plus, Phone, PhoneMissed, PhoneOff, Copy, Trash2, Check, CheckCheck, Reply } from "lucide-react";
+import GiftMessageBubble from "./GiftMessageBubble";
 import { formatDistanceToNow } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -313,41 +314,17 @@ const ChatMessageBubble = ({ message: m, conversationId, onReply, onScrollToMess
   if (isGift) {
     return (
       <div className={`flex ${isMine ? "justify-end" : "justify-start"} group`} id={`msg-${m.id}`}>
-        <div className="relative" ref={bubbleRef}>
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 18 }}
-            className={`w-fit rounded-2xl select-none touch-manipulation ${
-              isMine
-                ? "bg-primary/15 rounded-br-md"
-                : "bg-accent/20 rounded-bl-md"
-            }`}
-            {...pointerProps}
-          >
-            <div className="px-4 py-3 text-center">
-              <p className="text-2xl mb-1">{m.content}</p>
-              <motion.p
-                className="text-lg font-bold text-primary"
-                initial={{ scale: 0.7 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 12, delay: 0.1 }}
-              >
-                ${m.gift_amount}
-              </motion.p>
-              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
-                {isMine ? "Gift sent" : "Gift received"} · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
-                {isMine && (
-                  m.read_at
-                    ? <CheckCheck className="w-3 h-3 text-blue-500" />
-                    : <Check className="w-3 h-3 text-muted-foreground" />
-                )}
-              </p>
-              {reactionBadges}
-            </div>
-          </motion.div>
-          {reactionBar}
-        </div>
+        <GiftMessageBubble
+          content={m.content}
+          giftAmount={m.gift_amount!}
+          isMine={isMine}
+          createdAt={m.created_at}
+          readAt={m.read_at}
+          reactionBadges={reactionBadges}
+          reactionBar={reactionBar}
+          bubbleRef={bubbleRef as React.RefObject<HTMLDivElement>}
+          pointerProps={pointerProps}
+        />
       </div>
     );
   }
