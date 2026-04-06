@@ -2000,13 +2000,13 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
     // Persist reaction to DB (only for DB-persisted messages, not data-channel dedup keys)
     if (!messageId.startsWith("dc-") && !messageId.endsWith("-local")) {
-      supabase
-        .from("space_messages")
-        .update({ reactions: updatedReactions } as any)
-        .eq("id", messageId)
-        .then(({ error }) => {
-          if (error) console.error("[SpaceRoom] Failed to persist reaction:", error.message);
-        });
+      supabase.rpc("toggle_message_reaction" as any, {
+        _table: "space_messages",
+        _message_id: messageId,
+        _emoji: emoji,
+      }).then(({ error }: any) => {
+        if (error) console.error("[SpaceRoom] Failed to persist reaction:", error.message);
+      });
     }
   };
 

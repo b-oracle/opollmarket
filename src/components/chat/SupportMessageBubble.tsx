@@ -55,18 +55,11 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
 
   const toggleReaction = useCallback(async (emoji: string) => {
     if (!user) return;
-    const current = { ...reactions };
-    const users = current[emoji] || [];
-    if (users.includes(user.id)) {
-      current[emoji] = users.filter((u) => u !== user.id);
-      if (current[emoji].length === 0) delete current[emoji];
-    } else {
-      current[emoji] = [...users, user.id];
-    }
-    await supabase
-      .from("support_messages" as any)
-      .update({ reactions: current } as any)
-      .eq("id", m.id);
+    await supabase.rpc("toggle_message_reaction" as any, {
+      _table: "support_messages",
+      _message_id: m.id,
+      _emoji: emoji,
+    });
     queryClient.invalidateQueries({ queryKey: ["support-messages", m.ticket_id] });
     setShowReactions(false);
     setShowFullPicker(false);
