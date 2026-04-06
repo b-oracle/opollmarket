@@ -712,9 +712,23 @@ const VoiceCallOverlay = ({
         )}
       </div>
 
+      {/* Rejoin banner */}
+      {showRejoin && (
+        <div className="shrink-0 px-4 py-3 flex items-center justify-center gap-3">
+          <p className="text-sm text-muted-foreground">Call disconnected</p>
+          <button
+            onClick={handleRejoin}
+            className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium active:scale-95 transition-transform"
+          >
+            <Phone className="w-4 h-4 inline mr-1.5" />
+            Rejoin Call
+          </button>
+        </div>
+      )}
+
       {/* Controls */}
-      <div className="flex items-center justify-center gap-4 pb-8 px-4 shrink-0" style={{ paddingBottom: "max(2rem, calc(var(--safe-bottom) + 1rem))" }}>
-        {status === "active" && (
+      <div className="flex items-center justify-center gap-3 pb-8 px-4 shrink-0 flex-wrap" style={{ paddingBottom: "max(2rem, calc(var(--safe-bottom) + 1rem))" }}>
+        {status === "active" && !showRejoin && (
           <>
             <button
               onClick={toggleMute}
@@ -733,10 +747,20 @@ const VoiceCallOverlay = ({
             >
               {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
             </button>
+
+            {cameraOn && (
+              <button
+                onClick={flipCamera}
+                className="w-12 h-12 rounded-full flex items-center justify-center bg-muted text-foreground transition-colors"
+                aria-label="Flip camera"
+              >
+                <SwitchCamera className="w-5 h-5" />
+              </button>
+            )}
           </>
         )}
 
-        {(status === "ringing" || status === "connecting" || status === "active") && (
+        {(status === "ringing" || status === "connecting" || status === "active") && !showRejoin && (
           <button
             onClick={status === "ringing" && isOutgoing ? handleCancel : handleEnd}
             className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground active:scale-95 transition-transform"
@@ -745,7 +769,7 @@ const VoiceCallOverlay = ({
           </button>
         )}
 
-        {status === "active" && (
+        {status === "active" && !showRejoin && (
           <>
             <button
               onClick={toggleScreenShare}
@@ -765,6 +789,15 @@ const VoiceCallOverlay = ({
               <Volume2 className="w-5 h-5" />
             </button>
           </>
+        )}
+
+        {showRejoin && (
+          <button
+            onClick={handleEnd}
+            className="w-12 h-12 rounded-full bg-destructive/20 text-destructive flex items-center justify-center"
+          >
+            <PhoneOff className="w-5 h-5" />
+          </button>
         )}
       </div>
     </div>
