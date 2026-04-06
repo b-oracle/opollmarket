@@ -200,6 +200,19 @@ const VoiceCallOverlay = ({
       .connect(livekitUrl, token)
       .then(async () => {
         await room.localParticipant.setMicrophoneEnabled(true);
+        // Set up local audio analyser for glow
+        try {
+          const localTrack = room.localParticipant.getTrackPublication(Track.Source.Microphone)?.track;
+          const stream = (localTrack as any)?.mediaStream as MediaStream | undefined;
+          if (stream) {
+            const ctx = new AudioContext();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+            localAnalyserRef.current = { ctx, analyser, source };
+          }
+        } catch {}
         if (!isOutgoing) {
           setStatus("active");
           startTimeRef.current = Date.now();
