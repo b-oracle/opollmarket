@@ -190,11 +190,11 @@ const VoiceCallOverlay = ({
       if (track.kind === Track.Kind.Video) {
         const source = (track as any).source;
         if (source === Track.Source.ScreenShare) {
+          pendingScreenShareTrackRef.current = track;
           setHasRemoteScreenShare(true);
-          if (screenShareRef.current) track.attach(screenShareRef.current);
         } else {
+          pendingRemoteVideoTrackRef.current = track;
           setHasRemoteVideo(true);
-          if (remoteVideoRef.current) track.attach(remoteVideoRef.current);
         }
       }
     });
