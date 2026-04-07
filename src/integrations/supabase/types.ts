@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notification_broadcasts: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          message: string
+          recipients_count: number | null
+          scheduled_at: string | null
+          send_push: boolean
+          sent_at: string | null
+          status: string
+          target_filter: Json | null
+          target_type: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          message: string
+          recipients_count?: number | null
+          scheduled_at?: string | null
+          send_push?: boolean
+          sent_at?: string | null
+          status?: string
+          target_filter?: Json | null
+          target_type?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          message?: string
+          recipients_count?: number | null
+          scheduled_at?: string | null
+          send_push?: boolean
+          sent_at?: string | null
+          status?: string
+          target_filter?: Json | null
+          target_type?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       affiliate_earnings: {
         Row: {
           api_key_id: string
