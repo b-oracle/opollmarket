@@ -260,11 +260,6 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
     }, {} as Record<string, any>)
   ).sort((a: any, b: any) => (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9));
 
-  if (!open) return null;
-
-  const hostName = hostProfile?.display_name || "Anonymous";
-  const playbackMs = spaceStartMs + currentTime * 1000;
-
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/feed?space=${space.id}`;
     if (navigator.share) {
@@ -274,6 +269,11 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
       toast.success("Link copied!");
     }
   }, [space.id, space.title]);
+
+  if (!open) return null;
+
+  const hostName = hostProfile?.display_name || "Anonymous";
+  const playbackMs = spaceStartMs + currentTime * 1000;
 
   return (
     <AnimatePresence>
