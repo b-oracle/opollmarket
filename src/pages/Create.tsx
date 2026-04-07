@@ -775,7 +775,7 @@ const Create = () => {
     description: description.trim().length === 0 ? "Description is required" : description.trim().length < 20 ? "Must be at least 20 characters" : null,
     details: details.trim().length === 0 ? "More details are required" : details.trim().length < 20 ? "Must be at least 20 characters" : null,
     category: !category ? "Select a category" : null,
-    endDate: !endDate ? "Resolution date is required" : null,
+    endDate: !endDate ? "Resolution date is required" : (autoResolve && category === "Twitter/X" && new Date(endDate) > new Date(Date.now() + 5 * 86400000)) ? "Twitter/X markets must resolve within 5 days" : null,
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
     initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < minLiquidity ? `Minimum ${minLiquidity} USDT` : null,
     options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
@@ -2557,10 +2557,14 @@ const Create = () => {
                   value={endDate}
                   onChange={(e) => { setEndDate(e.target.value); markTouched("endDate"); }}
                   min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                  max={autoResolve && category === "Twitter/X" ? new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0] : undefined}
                   className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${
                     touched.endDate && errors.endDate ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
                   }`}
                 />
+                {autoResolve && category === "Twitter/X" && (
+                  <p className="text-[10px] text-amber-500 mt-1">⚠️ Twitter/X auto-resolve markets are limited to 5 days max to manage API costs</p>
+                )}
                 {touched.endDate && errors.endDate && (
                   <p className="text-[10px] text-destructive mt-1.5">{errors.endDate}</p>
                 )}
