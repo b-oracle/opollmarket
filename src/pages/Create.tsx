@@ -611,16 +611,17 @@ const Create = () => {
 
   const uploadImage = async (): Promise<string | null> => {
     if (!imageFile || !user) return null;
-    const { compressImage, webpExtension } = await import("@/lib/imageCompression");
+    const { compressImage } = await import("@/lib/imageCompression");
     const compressed = await compressImage(imageFile, "market-banner");
-    const ext = webpExtension();
+    // Derive extension from the actual compressed file type
+    const ext = compressed.type === "image/webp" ? "webp" : compressed.type === "image/jpeg" ? "jpg" : compressed.name.split(".").pop() || "jpg";
     const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
     const { error } = await supabase.storage
       .from("market-images")
       .upload(fileName, compressed, { contentType: compressed.type });
     if (error) {
       console.error("Image upload error:", error);
-      toast.error("Failed to upload image");
+      toast.error("Failed to upload image. Please try a different image format (JPG or PNG).");
       return null;
     }
     const { data: urlData } = supabase.storage.from("market-images").getPublicUrl(fileName);

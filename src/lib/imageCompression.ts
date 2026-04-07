@@ -15,17 +15,37 @@ const PRESETS: Record<ImagePreset, { maxWidthOrHeight: number; initialQuality: n
 export async function compressImage(file: File, preset: ImagePreset): Promise<File> {
   try {
     const opts = PRESETS[preset];
+    // Try WebP first
     const compressed = await imageCompression(file, {
       maxWidthOrHeight: opts.maxWidthOrHeight,
       initialQuality: opts.initialQuality,
       fileType: "image/webp",
       useWebWorker: true,
     });
-    // Return as File with .webp extension
-    const name = file.name.replace(/\.[^.]+$/, ".webp");
-    return new File([compressed], name, { type: "image/webp" });
+    // Verify it actually produced something
+    if (compressed && compressed.size > 0) {
+      const name = file.name.replace(/\.[^.]+$/, ".webp");
+      return new File([compressed], name, { type: "image/webp" });
+    }
+    throw new Error("Compression produced empty file");
   } catch (err) {
-    console.warn("Image compression failed, using original:", err);
+    console.warn("WebP compression failed, trying JPEG fallback:", err);
+    try {
+      // Fallback to JPEG which has wider device support
+      const opts = PRESETS[preset];
+      const compressed = await imageCompression(file, {
+        maxWidthOrHeight: opts.maxWidthOrHeight,
+        initialQuality: opts.initialQuality,
+        fileType: "image/jpeg",
+        useWebWorker: true,
+      });
+      if (compressed && compressed.size > 0) {
+        const name = file.name.replace(/\.[^.]+$/, ".jpg");
+        return new File([compressed], name, { type: "image/jpeg" });
+      }
+    } catch (err2) {
+      console.warn("JPEG compression also failed:", err2);
+    }
     return file;
   }
 }
