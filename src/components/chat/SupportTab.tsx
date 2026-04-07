@@ -37,10 +37,10 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
 };
 
 const STATUS_FILTERS = [
-  { key: "all", label: "All" },
   { key: "open", label: "Open" },
   { key: "resolved", label: "Resolved" },
   { key: "closed", label: "Closed" },
+  { key: "all", label: "All" },
 ];
 
 const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
