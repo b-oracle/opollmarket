@@ -872,7 +872,7 @@ const Create = () => {
     }
   }, [user, isConnected, address]);
 
-  const handleCreateMarket = useCallback(async () => {
+  const handleCreateMarket = async () => {
     if (!user || !address) return;
 
     // Block auto-save and stop timer to prevent duplicate option inserts during submission
@@ -1286,7 +1286,7 @@ const Create = () => {
       setSubmitStep("first_prediction");
       toast.success("Market created! Now place your first prediction to make it official.");
     }
-  }, [user, address, title, description, category, endDate, resolutionSource, initialLiquidity, marketType, options, feeBypass, marketCreationFee, videoUrl, draftId, creationBoost, creationBoostTier, creationBroadcast, escrowId]);
+  };
 
   // Token-gate verification using wallet NFTs
   const runGateCheck = async () => {
