@@ -73,6 +73,17 @@ const ConversationList = () => {
     }
   }, [tab]);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["dm-conversations"] }),
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] }),
+      queryClient.invalidateQueries({ queryKey: ["unread-support"] }),
+      queryClient.invalidateQueries({ queryKey: ["unread-community"] }),
+    ]);
+  }, [queryClient]);
+  const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers } = usePullToRefresh({ onRefresh: handleRefresh, scrollRef });
+
   const topTabs = [
     { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
     { key: "requests" as const, label: "Requests", badge: 0, featureKey: null },
