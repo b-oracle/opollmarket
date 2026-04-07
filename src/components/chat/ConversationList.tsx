@@ -316,8 +316,8 @@ const ConversationList = () => {
           </div>
         )}
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0" {...handlers}>
           {/* New chat picker */}
           {showNewChat && isTopTab(tab) && (
             <div className="border-b border-border p-4 space-y-3">
