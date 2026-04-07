@@ -200,7 +200,7 @@ const Referrals = () => {
           </button>
           <div>
             <h1 className="text-xl font-bold">Referral Program</h1>
-            <p className="text-xs text-muted-foreground">Earn ${rewardAmount} for each referral's first prediction</p>
+            <p className="text-xs text-muted-foreground">Earn ${rewardAmount} instantly for each referral signup</p>
           </div>
         </div>
 
@@ -325,7 +325,7 @@ const Referrals = () => {
             </button>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            Share this link. When someone signs up and makes their first prediction, you earn <span className="text-primary font-bold">${rewardAmount}</span> in bonus balance.
+            Share this link. When someone signs up, you instantly earn <span className="text-primary font-bold">${rewardAmount}</span> in bonus balance.
           </p>
         </div>
 
@@ -336,7 +336,7 @@ const Referrals = () => {
             {[
               { step: "1", text: "Share your referral link or username code with friends" },
               { step: "2", text: "Your friend signs up — they appear instantly in your referral list as 'Pending'" },
-              { step: "3", text: `When they place their first prediction, you earn a $${rewardAmount} bonus credit` },
+              { step: "3", text: `When they sign up, you instantly earn a $${rewardAmount} bonus credit` },
               { step: "4", text: "You also earn a commission on every prediction your referral makes" },
               { step: "5", text: "Bonus credits cover prediction fees, market creation, AI content, boosts, and more" },
             ].map((item) => (
