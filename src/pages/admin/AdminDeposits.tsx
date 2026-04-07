@@ -35,6 +35,8 @@ const AdminDeposits = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-deposits", page, statusFilter, search],
