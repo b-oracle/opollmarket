@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Play, Pause, RotateCcw, RotateCw, Users, MessageCircle, Headphones, Mic, Crown, Shield, Trash2, Loader2 } from "lucide-react";
+import { X, Play, Pause, RotateCcw, RotateCw, Users, MessageCircle, Headphones, Mic, Crown, Shield, Trash2, Loader2, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -260,6 +260,16 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
     }, {} as Record<string, any>)
   ).sort((a: any, b: any) => (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9));
 
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/feed?space=${space.id}`;
+    if (navigator.share) {
+      try { await navigator.share({ title: space.title, url }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied!");
+    }
+  }, [space.id, space.title]);
+
   if (!open) return null;
 
   const hostName = hostProfile?.display_name || "Anonymous";
@@ -272,6 +282,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col"
+        style={{ paddingTop: "var(--safe-top, 0px)", paddingBottom: "var(--safe-bottom, 0px)" }}
       >
         {/* Floating reactions */}
         <AnimatePresence>
@@ -283,7 +294,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
               exit={{ opacity: 0 }}
               transition={{ duration: 2 }}
               className="fixed text-2xl pointer-events-none z-[60]"
-              style={{ bottom: "120px", left: `${r.x}%` }}
+              style={{ bottom: "160px", left: `${r.x}%` }}
             >
               {r.emoji}
             </motion.span>
@@ -291,8 +302,8 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         </AnimatePresence>
 
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b border-border shrink-0">
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
+        <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border shrink-0">
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors shrink-0">
             <X className="w-4 h-4" />
           </button>
           <div className="flex-1 min-w-0">
@@ -307,19 +318,33 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
             <h3 className="text-sm font-bold mt-0.5 line-clamp-1">{space.title}</h3>
             <p className="text-[10px] text-muted-foreground">Hosted by {hostName}</p>
           </div>
-          <Avatar className="w-9 h-9 border border-primary/30">
-            {hostProfile?.avatar_url ? (
-              <AvatarImage src={hostProfile.avatar_url} />
-            ) : null}
-            <AvatarFallback className="text-xs bg-primary/20 text-primary">
-              {hostName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={handleShare} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+            {isHost && (
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-8 h-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors"
+              >
+                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              </button>
+            )}
+            <Avatar className="w-8 h-8 border border-primary/30">
+              {hostProfile?.avatar_url ? (
+                <AvatarImage src={hostProfile.avatar_url} />
+              ) : null}
+              <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                {hostName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </div>
         </div>
 
         {/* Tabbed content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="mx-4 mt-2 shrink-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <TabsList className="mx-3 mt-2 shrink-0">
             <TabsTrigger value="chat" className="text-xs gap-1">
               <MessageCircle className="w-3 h-3" /> Chat ({messages.length})
             </TabsTrigger>
@@ -328,9 +353,9 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="chat" className="flex-1 overflow-hidden m-0 p-0">
+          <TabsContent value="chat" className="flex-1 overflow-hidden m-0 p-0 min-h-0">
             <ScrollArea className="h-full">
-              <div ref={chatScrollRef} className="p-4 space-y-2">
+              <div ref={chatScrollRef} className="px-3 py-2 space-y-1.5">
                 {messages.length === 0 ? (
                   <p className="text-center text-muted-foreground text-xs py-8">No chat messages in this space</p>
                 ) : (
@@ -377,17 +402,17 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
             </ScrollArea>
           </TabsContent>
 
-          <TabsContent value="participants" className="flex-1 overflow-hidden m-0 p-0">
+          <TabsContent value="participants" className="flex-1 overflow-hidden m-0 p-0 min-h-0">
             <ScrollArea className="h-full">
-              <div className="p-4 space-y-1.5">
+              <div className="px-3 py-2 space-y-1">
                 {uniqueParticipants.map((p: any) => {
                   const profile = p.profile;
                   const name = profile?.display_name || "Anonymous";
                   return (
-                    <div key={p.user_id} className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-accent/30 transition-colors">
-                      <Avatar className="w-8 h-8">
+                    <div key={p.user_id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-accent/30 transition-colors">
+                      <Avatar className="w-7 h-7">
                         {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : null}
-                        <AvatarFallback className="text-xs">{name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="text-[10px]">{name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold truncate">{name}</p>
@@ -409,23 +434,23 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
           </TabsContent>
         </Tabs>
 
-        {/* Audio Player - sticky bottom */}
-        <div className="border-t border-border bg-card p-3 space-y-2 shrink-0">
+        {/* Audio Player - sticky bottom, safe-area aware */}
+        <div className="border-t border-border bg-card px-3 py-2 shrink-0" style={{ paddingBottom: "max(0.5rem, var(--safe-bottom, 0px))" }}>
           {/* Seek bar */}
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-            <span className="w-10 text-right tabular-nums">{formatTime(currentTime)}</span>
-            <div className="flex-1 h-2 rounded-full bg-muted cursor-pointer relative group" onClick={handleSeek}>
+            <span className="w-9 text-right tabular-nums">{formatTime(currentTime)}</span>
+            <div className="flex-1 h-1.5 rounded-full bg-muted cursor-pointer relative group" onClick={handleSeek}>
               <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary border-2 border-background shadow opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-primary border-2 border-background shadow opacity-0 group-hover:opacity-100 transition-opacity"
                 style={{ left: `${progress}%`, transform: `translate(-50%, -50%)` }}
               />
             </div>
-            <span className="w-10 tabular-nums">{formatTime(duration)}</span>
+            <span className="w-9 tabular-nums">{formatTime(duration)}</span>
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-4 mt-1.5">
             <button
               onClick={cycleSpeed}
               className="w-8 h-8 rounded-full bg-muted text-foreground text-[10px] font-bold flex items-center justify-center hover:bg-accent transition-colors"
@@ -437,22 +462,19 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
             </button>
             <button
               onClick={togglePlay}
-              className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity"
+              className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity"
             >
               {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
             </button>
             <button onClick={() => skip(15)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
               <RotateCw className="w-4 h-4" />
             </button>
-            {isHost && (
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="w-8 h-8 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors"
-              >
-                {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-              </button>
-            )}
+            <button
+              onClick={cycleSpeed}
+              className="w-8 h-8 rounded-full bg-muted text-foreground text-[10px] font-bold flex items-center justify-center opacity-0 pointer-events-none"
+            >
+              {/* spacer for symmetry */}
+            </button>
           </div>
         </div>
       </motion.div>
