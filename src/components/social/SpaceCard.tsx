@@ -413,58 +413,11 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
         </div>
       </div>
 
-      {/* Replay audio player */}
+      {/* Recorded badge - tap to expand */}
       {isRecorded && (
-        <div className="pt-1 space-y-1">
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={handlePlayPause}
-              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                isPlaying ? "bg-primary text-primary-foreground" : "bg-primary/20 text-primary"
-              }`}
-            >
-              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); if (audioRef.current) { audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10); } }}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title="Rewind 10s"
-            >
-              <RotateCcw className="w-3 h-3" />
-            </button>
-            <div
-              className="flex-1 h-1.5 rounded-full bg-muted cursor-pointer relative"
-              onClick={handleSeek}
-            >
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-200"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); if (audioRef.current) { audioRef.current.currentTime = Math.min(audioRef.current.duration || 0, audioRef.current.currentTime + 10); } }}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              title="Forward 10s"
-            >
-              <RotateCw className="w-3 h-3" />
-            </button>
-            {isHost && (
-              <button
-                onClick={handleDeleteRecording}
-                disabled={deleting}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shrink-0"
-                title="Delete recording"
-              >
-                {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-              </button>
-            )}
-          </div>
-          {duration > 0 && (
-            <div className="flex justify-between text-[9px] text-muted-foreground px-1">
-              <span>{formatTime(currentTime)}</span>
-              <span>{formatTime(duration)}</span>
-            </div>
-          )}
+        <div className="flex items-center gap-2 text-[10px] text-primary pt-1">
+          <Play className="w-3 h-3" />
+          <span className="font-medium">Tap to expand replay</span>
         </div>
       )}
 
