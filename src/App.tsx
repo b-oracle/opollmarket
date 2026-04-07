@@ -535,6 +535,7 @@ const App = () => {
                           <Route path="telegram" element={<AdminTelegram />} />
                           <Route path="investor-deck" element={<InvestorDeck />} />
                           <Route path="aimtell" element={<AdminAimtell />} />
+                          <Route path="notification-broadcast" element={<AdminNotificationBroadcast />} />
                           <Route path="api-keys" element={<AdminApiKeys />} />
                           <Route path="kyc" element={<AdminKyc />} />
                           <Route path="support" element={<AdminSupport />} />
