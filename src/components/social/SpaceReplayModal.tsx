@@ -281,8 +281,8 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-x-0 top-0 z-[60] bg-background/95 backdrop-blur-sm flex flex-col"
-        style={{ paddingTop: "var(--safe-top, 0px)", bottom: "var(--content-bottom, 4rem)" }}
+        className="fixed inset-x-0 top-0 z-[60] bg-background/95 backdrop-blur-sm flex flex-col overflow-hidden"
+        style={{ paddingTop: "var(--safe-top, 0px)", bottom: "var(--content-bottom, 4rem)", overscrollBehavior: "contain", touchAction: "none" }}
       >
         {/* Floating reactions */}
         <AnimatePresence>
@@ -450,31 +450,30 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center gap-4 mt-1.5">
-            <button
-              onClick={cycleSpeed}
-              className="w-8 h-8 rounded-full bg-muted text-foreground text-[10px] font-bold flex items-center justify-center hover:bg-accent transition-colors"
-            >
-              {SPEEDS[speedIdx]}x
-            </button>
-            <button onClick={() => skip(-15)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={togglePlay}
-              className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity"
-            >
-              {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
-            </button>
-            <button onClick={() => skip(15)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
-              <RotateCw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={cycleSpeed}
-              className="w-8 h-8 rounded-full bg-muted text-foreground text-[10px] font-bold flex items-center justify-center opacity-0 pointer-events-none"
-            >
-              {/* spacer for symmetry */}
-            </button>
+          <div className="flex items-center justify-between mt-1.5">
+            <div className="w-10 flex justify-center">
+              <button
+                onClick={cycleSpeed}
+                className="w-8 h-8 rounded-full bg-muted text-foreground text-[10px] font-bold flex items-center justify-center hover:bg-accent transition-colors"
+              >
+                {SPEEDS[speedIdx]}x
+              </button>
+            </div>
+            <div className="flex items-center gap-4">
+              <button onClick={() => skip(-15)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              <button
+                onClick={togglePlay}
+                className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90 transition-opacity"
+              >
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+              </button>
+              <button onClick={() => skip(15)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors">
+                <RotateCw className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="w-10" />
           </div>
         </div>
       </motion.div>
