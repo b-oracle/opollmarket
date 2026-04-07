@@ -69,9 +69,14 @@ const CopySubscriptions = () => {
     setUpdating(sub.id + field);
     const newVal = !sub[field];
 
+    const updatePayload: { copy_predictions?: boolean; copy_quick_trades?: boolean; auto_copy?: boolean; updated_at: string } = {
+      updated_at: new Date().toISOString(),
+    };
+    updatePayload[field] = newVal;
+
     const { error } = await supabase
       .from("copy_settings")
-      .update({ [field]: newVal, updated_at: new Date().toISOString() })
+      .update(updatePayload)
       .eq("id", sub.id)
       .eq("user_id", user.id);
 
