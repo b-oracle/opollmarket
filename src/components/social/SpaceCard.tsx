@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Radio, Headphones, LogIn, LogOut, Loader2, Bell, BellOff, Calendar, Share2, Play, Pause, Trash2, RotateCcw, RotateCw, Users, TrendingUp, MessageCircle, Clock, Pencil, Check, X, Lock, Megaphone, XCircle } from "lucide-react";
 import BroadcastSpaceModal from "./BroadcastSpaceModal";
-import SpaceReplayModal from "./SpaceReplayModal";
+import { useSpaceReplay } from "@/hooks/useSpaceReplay";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
@@ -54,7 +54,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [editTitleValue, setEditTitleValue] = useState(space.title);
   const [savingTitle, setSavingTitle] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
-  const [replayOpen, setReplayOpen] = useState(false);
+  const { openReplay } = useSpaceReplay();
   const [cancelling, setCancelling] = useState(false);
   const isHost = user?.id === space.host_id;
   const isLive = space.status === "live";
@@ -306,7 +306,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const handleCardClick = () => {
     if (space.status === "scheduled") return;
     if (isRecorded) {
-      setReplayOpen(true);
+      openReplay(space, hostProfile);
       return;
     }
     if (!user) { toast.error("Sign in to join spaces"); return; }
@@ -573,14 +573,6 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       spaceId={space.id}
       spaceTitle={space.title}
     />
-    {isRecorded && (
-      <SpaceReplayModal
-        open={replayOpen}
-        onClose={() => setReplayOpen(false)}
-        space={space}
-        hostProfile={hostProfile}
-      />
-    )}
     </>
   );
 };
