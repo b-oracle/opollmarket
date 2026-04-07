@@ -281,7 +281,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm flex flex-col"
+        className="fixed inset-0 z-[90] bg-background/95 backdrop-blur-sm flex flex-col"
         style={{ paddingTop: "var(--safe-top, 0px)", paddingBottom: "var(--safe-bottom, 0px)" }}
       >
         {/* Floating reactions */}
@@ -435,7 +435,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         </Tabs>
 
         {/* Audio Player - sticky bottom, safe-area aware */}
-        <div className="border-t border-border bg-card px-3 py-2 shrink-0" style={{ paddingBottom: "max(0.5rem, var(--safe-bottom, 0px))" }}>
+        <div className="border-t border-border bg-card px-3 py-2 shrink-0" style={{ paddingBottom: "max(1rem, calc(var(--content-bottom, 0px) + 0.5rem))" }}>
           {/* Seek bar */}
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <span className="w-9 text-right tabular-nums">{formatTime(currentTime)}</span>
