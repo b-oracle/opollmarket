@@ -2557,10 +2557,14 @@ const Create = () => {
                   value={endDate}
                   onChange={(e) => { setEndDate(e.target.value); markTouched("endDate"); }}
                   min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                  max={autoResolve && category === "Twitter/X" ? new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0] : undefined}
                   className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${
                     touched.endDate && errors.endDate ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"
                   }`}
                 />
+                {autoResolve && category === "Twitter/X" && (
+                  <p className="text-[10px] text-amber-500 mt-1">⚠️ Twitter/X auto-resolve markets are limited to 5 days max to manage API costs</p>
+                )}
                 {touched.endDate && errors.endDate && (
                   <p className="text-[10px] text-destructive mt-1.5">{errors.endDate}</p>
                 )}

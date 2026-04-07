@@ -1066,8 +1066,12 @@ const AdminCreateMarket = () => {
               onChange={(e) => setEndDate(e.target.value)}
               onBlur={() => touch("endDate")}
               min={new Date().toISOString().split("T")[0]}
+              max={category === "Twitter/X" && twitterResourceId.trim() ? new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0] : undefined}
               className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-colors ${inputBorder("endDate")}`}
             />
+            {category === "Twitter/X" && twitterResourceId.trim() && (
+              <p className="text-[10px] text-amber-500 mt-1">⚠️ Twitter/X markets limited to 5 days max</p>
+            )}
             {fieldError("endDate") && (
               <p className="text-[11px] text-destructive mt-1">{fieldError("endDate")}</p>
             )}
