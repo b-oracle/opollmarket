@@ -1,10 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { ArrowLeft, Plus, MessageCircle, Search, Inbox, Phone, Users, HelpCircle, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
@@ -70,6 +72,17 @@ const ConversationList = () => {
       queryClient.invalidateQueries({ queryKey: ["unread-support"] });
     }
   }, [tab]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["dm-conversations"] }),
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] }),
+      queryClient.invalidateQueries({ queryKey: ["unread-support"] }),
+      queryClient.invalidateQueries({ queryKey: ["unread-community"] }),
+    ]);
+  }, [queryClient]);
+  const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers } = usePullToRefresh({ onRefresh: handleRefresh, scrollRef });
 
   const topTabs = [
     { key: "chats" as const, label: "Chats", badge: 0, featureKey: null },
@@ -303,8 +316,8 @@ const ConversationList = () => {
           </div>
         )}
 
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
+        <div ref={scrollRef} className="flex-1 overflow-y-auto min-h-0" {...handlers}>
           {/* New chat picker */}
           {showNewChat && isTopTab(tab) && (
             <div className="border-b border-border p-4 space-y-3">
