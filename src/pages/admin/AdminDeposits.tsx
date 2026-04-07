@@ -226,7 +226,7 @@ const AdminDeposits = () => {
                       </td>
                       {canEdit && (
                         <td className="px-4 py-3 text-right">
-                          {(d.status === "pending" || d.status === "partial" || d.status === "expired") && (
+                          {(d.status === "pending" || d.status === "partial") && (
                             <div className="flex items-center justify-end gap-1.5">
                               {editingId === d.id ? (
                                 <>
