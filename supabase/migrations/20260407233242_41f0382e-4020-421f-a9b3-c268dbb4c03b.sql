@@ -1,0 +1,1 @@
+UPDATE feature_toggles SET enabled = true WHERE feature_key = 'portfolio';
