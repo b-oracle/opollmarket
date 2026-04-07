@@ -1,0 +1,1 @@
+UPDATE public.transactions SET status = 'partial' WHERE id = '9b519bf6-e2b7-496d-9189-a9cbca6cb71a' AND status = 'expired' AND type = 'deposit';
