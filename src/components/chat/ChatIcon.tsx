@@ -4,17 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 
 const ChatIcon = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { isFeatureEnabled } = useFeatureToggles();
+  const { supportUnread, communityUnread } = useUnreadCounts();
 
-  const { data: unreadCount = 0 } = useQuery({
+  const { data: dmUnread = 0 } = useQuery({
     queryKey: ["dm-unread-count", user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      // Get conversations where user is a participant
       const { data: convos } = await supabase
         .from("dm_conversations" as any)
         .select("id")
@@ -36,6 +37,8 @@ const ChatIcon = () => {
 
   if (!user || !isFeatureEnabled("dm_chat")) return null;
 
+  const totalUnread = dmUnread + supportUnread + communityUnread;
+
   return (
     <button
       onClick={() => navigate("/messages")}
@@ -43,9 +46,9 @@ const ChatIcon = () => {
       aria-label="Messages"
     >
       <MessageCircle className="w-5 h-5" />
-      {unreadCount > 0 && (
+      {totalUnread > 0 && (
         <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse">
-          {unreadCount > 99 ? "99+" : unreadCount}
+          {totalUnread > 99 ? "99+" : totalUnread}
         </span>
       )}
     </button>
