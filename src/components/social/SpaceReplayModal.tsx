@@ -159,14 +159,21 @@ const SpaceReplayModal = () => {
     setDeleting(true);
     try {
       if (audioRef.current) { audioRef.current.pause(); }
-      await supabase
+      const { error } = await supabase
         .from("spaces")
         .update({ is_recorded: false, recording_url: null } as any)
-        .eq("id", space.id);
+        .eq("id", space.id)
+        .eq("host_id", user.id);
+      if (error) {
+        console.error("Delete recording error:", error);
+        toast.error("Failed to delete: " + error.message);
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["space-replay-participants"] });
       toast.success("Recording deleted");
       closeReplay();
-    } catch { toast.error("Failed to delete"); }
+    } catch (e: any) { toast.error("Failed to delete: " + (e?.message || "Unknown error")); }
     finally { setDeleting(false); }
   };
 
