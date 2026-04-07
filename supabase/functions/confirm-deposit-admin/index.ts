@@ -98,9 +98,8 @@ Deno.serve(async (req) => {
     }
 
     // Credit the user's balance atomically
-    // If partial, only credit the difference (amount - already credited)
-    const alreadyCredited = tx.status === "partial" ? originalAmount : 0;
-    const creditAmount = Number(amount) - alreadyCredited;
+    // Partial deposits were NOT credited by the webhook, so credit the full approved amount
+    const creditAmount = Number(amount);
 
     if (creditAmount > 0) {
       const { error: balError } = await adminClient.rpc("adjust_balance", {
