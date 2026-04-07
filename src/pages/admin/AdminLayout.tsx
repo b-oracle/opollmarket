@@ -42,6 +42,7 @@ const navItems: NavItem[] = [
   { to: "/admin/telegram", label: "Telegram", icon: Phone, roles: ["super_admin", "admin"] },
   { to: "/admin/investor-deck", label: "Investor Deck", icon: Presentation, roles: ["super_admin"] },
   { to: "/admin/aimtell", label: "Aimtell Push", icon: Bell, roles: ["super_admin"] },
+  { to: "/admin/notification-broadcast", label: "Broadcast Notifications", icon: Megaphone, roles: ["super_admin"] },
   { to: "/admin/api-keys", label: "API Keys", icon: FileCode2, roles: ["super_admin", "admin"] },
   { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin"] },
   { to: "/admin/support", label: "Support Tickets", icon: HelpCircle, roles: ["super_admin", "admin", "support"] },
