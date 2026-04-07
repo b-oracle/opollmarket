@@ -35,6 +35,8 @@ const AdminDeposits = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-deposits", page, statusFilter, search],
@@ -225,24 +227,63 @@ const AdminDeposits = () => {
                       {canEdit && (
                         <td className="px-4 py-3 text-right">
                           {(d.status === "pending" || d.status === "partial") && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
-                              disabled={confirmMutation.isPending}
-                              onClick={() => {
-                                if (confirm(`Manually confirm $${Number(d.amount).toFixed(2)} deposit for ${d.display_name}?`)) {
-                                  confirmMutation.mutate({
-                                    txId: d.id,
-                                    userId: d.user_id,
-                                    amount: Number(d.amount),
-                                  });
-                                }
-                              }}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              Confirm
-                            </Button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              {editingId === d.id ? (
+                                <>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    max={Number(d.amount)}
+                                    value={editAmount}
+                                    onChange={(e) => setEditAmount(e.target.value)}
+                                    className="w-24 h-8 text-xs"
+                                    placeholder="Amount"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    className="text-xs h-8"
+                                    disabled={confirmMutation.isPending || !editAmount || Number(editAmount) <= 0 || Number(editAmount) > Number(d.amount)}
+                                    onClick={() => {
+                                      if (confirm(`Credit $${Number(editAmount).toFixed(2)} (partial) for ${d.display_name}?`)) {
+                                        confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: Number(editAmount) });
+                                        setEditingId(null);
+                                      }
+                                    }}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button size="sm" variant="ghost" className="text-xs h-8 px-2" onClick={() => setEditingId(null)}>✕</Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                                    disabled={confirmMutation.isPending}
+                                    onClick={() => {
+                                      if (confirm(`Confirm FULL $${Number(d.amount).toFixed(2)} deposit for ${d.display_name}?`)) {
+                                        confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: Number(d.amount) });
+                                      }
+                                    }}
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    Full
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    className="text-xs gap-1"
+                                    disabled={confirmMutation.isPending}
+                                    onClick={() => { setEditingId(d.id); setEditAmount(String(d.amount)); }}
+                                  >
+                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                    Partial
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           )}
                         </td>
                       )}
