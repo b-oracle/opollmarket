@@ -25,7 +25,7 @@ const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive 
   const shareUrl = `${shareOrigin}/feed?space=${spaceId}&ref=${encodeURIComponent(hostName)}`;
   const shareText = isLive
     ? `🎙️ Join me LIVE on "${spaceTitle}" — Let's discuss your OPinion, JOIN NOW 👇🏽`
-    : `🗓️ "${spaceTitle}" is coming soon on OPoll Spaces — Let's discuss your OPinion, JOIN NOW 👇🏽`;
+    : `🗓️ Set your reminder for my upcoming space "${spaceTitle}" on OPollmarket — Let's discuss your OPinion, JOIN NOW 👇🏽`;
 
   const handleCopy = async () => {
     try {
