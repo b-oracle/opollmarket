@@ -281,8 +281,8 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[90] bg-background/95 backdrop-blur-sm flex flex-col"
-        style={{ paddingTop: "var(--safe-top, 0px)", paddingBottom: "var(--safe-bottom, 0px)" }}
+        className="fixed inset-x-0 top-0 z-[60] bg-background/95 backdrop-blur-sm flex flex-col"
+        style={{ paddingTop: "var(--safe-top, 0px)", bottom: "var(--content-bottom, 4rem)" }}
       >
         {/* Floating reactions */}
         <AnimatePresence>
