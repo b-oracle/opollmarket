@@ -775,7 +775,7 @@ const Create = () => {
     description: description.trim().length === 0 ? "Description is required" : description.trim().length < 20 ? "Must be at least 20 characters" : null,
     details: details.trim().length === 0 ? "More details are required" : details.trim().length < 20 ? "Must be at least 20 characters" : null,
     category: !category ? "Select a category" : null,
-    endDate: !endDate ? "Resolution date is required" : null,
+    endDate: !endDate ? "Resolution date is required" : (autoResolve && category === "Twitter/X" && new Date(endDate) > new Date(Date.now() + 5 * 86400000)) ? "Twitter/X markets must resolve within 5 days" : null,
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
     initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < minLiquidity ? `Minimum ${minLiquidity} USDT` : null,
     options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
