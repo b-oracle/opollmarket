@@ -37,10 +37,10 @@ const statusConfig: Record<string, { icon: React.ElementType; label: string; col
 };
 
 const STATUS_FILTERS = [
-  { key: "all", label: "All" },
   { key: "open", label: "Open" },
   { key: "resolved", label: "Resolved" },
   { key: "closed", label: "Closed" },
+  { key: "all", label: "All" },
 ];
 
 const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: boolean) => void }) => {
@@ -54,7 +54,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
   const [submitting, setSubmitting] = useState(false);
   const [activeTicket, setActiveTicket] = useState<string | null>(null);
   const [isStaffTicket, setIsStaffTicket] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("open");
   const [ticketSearch, setTicketSearch] = useState("");
   const [deleteTicketId, setDeleteTicketId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
