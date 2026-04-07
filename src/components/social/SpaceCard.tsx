@@ -337,7 +337,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
       className={`glass rounded-xl p-3.5 space-y-2 transition-colors ${
-        isScheduled || isRecorded ? "cursor-default border border-primary/10" : "cursor-pointer hover:bg-accent/20"
+        isScheduled ? "cursor-default border border-primary/10" : isRecorded ? "cursor-pointer border border-primary/10 hover:bg-accent/20" : "cursor-pointer hover:bg-accent/20"
       }`}
       onClick={handleCardClick}
     >
