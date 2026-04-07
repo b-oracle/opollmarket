@@ -305,7 +305,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
 
   const handleCardClick = () => {
     if (space.status === "scheduled") return;
-    if (isRecorded) return; // Recorded spaces use inline player
+    if (isRecorded) {
+      setReplayOpen(true);
+      return;
+    }
     if (!user) { toast.error("Sign in to join spaces"); return; }
     if (isActiveRoom) {
       maximize();
