@@ -573,6 +573,14 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       spaceId={space.id}
       spaceTitle={space.title}
     />
+    {isRecorded && (
+      <SpaceReplayModal
+        open={replayOpen}
+        onClose={() => setReplayOpen(false)}
+        space={space}
+        hostProfile={hostProfile}
+      />
+    )}
     </>
   );
 };
