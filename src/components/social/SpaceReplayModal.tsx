@@ -435,7 +435,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         </Tabs>
 
         {/* Audio Player - sticky bottom, safe-area aware */}
-        <div className="border-t border-border bg-card px-3 py-2 shrink-0" style={{ paddingBottom: "max(1rem, calc(var(--content-bottom, 0px) + 0.5rem))" }}>
+        <div className="border-t border-border bg-card px-3 py-2 pb-3 shrink-0">
           {/* Seek bar */}
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <span className="w-9 text-right tabular-nums">{formatTime(currentTime)}</span>
