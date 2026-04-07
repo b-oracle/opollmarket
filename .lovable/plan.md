@@ -1,37 +1,24 @@
 
 
-## Plan: Fix Space Replay Modal Alignment and Scroll Bleed
+## Plan: Add Partial Deposit Approval with Custom Amount
 
-### Problem 1: Play button misaligned with bottom nav Create button
-The controls row has 5 items: speed, skip-back, play, skip-forward, and an invisible spacer button for symmetry. However the spacer approach doesn't perfectly center the play button over the bottom nav's Create button. The fix is to remove the spacer and use a simple centered layout with fixed-width containers on each side.
-
-### Problem 2: Background page scrolls when scrolling inside the modal
-The modal doesn't block touch events from propagating to the page underneath. When the user scrolls the participants or chat list and hits the boundary, the scroll "bleeds" through to the background page.
+### Problem
+When a user sends slightly less crypto than expected (e.g., 13.3743 instead of 13.3898 USDT), the deposit stays as "partial" or "pending" with no way for admins to credit the actual received amount. The current "Confirm" button always credits the full original amount.
 
 ### Changes
 
-**`src/components/social/SpaceReplayModal.tsx`**
+**`src/pages/admin/AdminDeposits.tsx`**
 
-1. Add `overscroll-behavior: contain` and `touch-action: none` on the root modal `motion.div` to prevent scroll bleed-through to the background page.
+1. Add a state variable for a custom amount input per deposit row (e.g., `editingId` and `editAmount`).
+2. For pending/partial deposits, add two buttons:
+   - **Confirm Full** — works as today, credits the original amount
+   - **Approve Partial** — opens an inline input pre-filled with the deposit amount, letting the admin type the actual received amount, then calls the edge function with that custom amount
+3. The partial approve input validates that the entered amount is > 0 and ≤ the original deposit amount.
 
-2. Add an `overflow-hidden` class on the root div to ensure no scroll leaks.
+**`supabase/functions/confirm-deposit-admin/index.ts`**
 
-3. Replace the controls row layout: remove the invisible spacer button, and instead use a symmetrical layout where the left side (speed button) and right side are equal-width containers, with the 3 core buttons (skip-back, play, skip-forward) truly centered using flexbox.
+Already supports receiving a custom `amount` less than or equal to the original — no changes needed. The edge function already validates `amount <= originalAmount` and credits accordingly.
 
-**Controls layout change:**
-```
-<div className="flex items-center justify-between mt-1.5">
-  <div className="w-10 flex justify-center">
-    <speed button />
-  </div>
-  <div className="flex items-center gap-4">
-    <skip-back />
-    <play />
-    <skip-forward />
-  </div>
-  <div className="w-10" /> <!-- empty spacer same width as speed button -->
-</div>
-```
-
-This ensures the play button is dead-center on the screen regardless of the speed button width.
+### Customer Resolution
+After the feature is deployed, the admin can find BabyBC400's partial deposit, click "Approve Partial", enter 13.3743, and confirm. Only $13.37 will be credited to their balance.
 
