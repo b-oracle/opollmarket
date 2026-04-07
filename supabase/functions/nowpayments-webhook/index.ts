@@ -526,7 +526,90 @@ Deno.serve(async (req) => {
 
     const { payment_status, order_id } = payload;
 
-    // Accept "finished", "confirmed", and "sending" statuses for crediting
+    // Handle partially_paid: mark deposit as "partial" for admin review (no balance credit)
+    if (payment_status === "partially_paid") {
+      console.log(`Partial payment received for order ${order_id}`);
+      const prefix = (order_id || "").split("_")[0];
+      if (prefix === "deposit") {
+        const supa = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        const parts = order_id.split("_");
+        const userId = parts.length >= 3 ? parts[1] : null;
+        const paymentIdStr = String(payload.payment_id);
+        const actuallyPaid = Number(payload.actually_paid) || 0;
+        const outcomeAmount = Number(payload.outcome_amount) || actuallyPaid;
+        const priceAmount = Number(payload.price_amount) || 0;
+
+        // Try to find and update the matching transaction to "partial"
+        const { data: existingTx } = await supa
+          .from("transactions")
+          .select("id, status")
+          .eq("nowpayments_payment_id", paymentIdStr)
+          .maybeSingle();
+
+        if (existingTx && existingTx.status === "partial") {
+          console.log("Already marked as partial:", paymentIdStr);
+          return new Response("OK", { status: 200, headers: corsHeaders });
+        }
+
+        // Find the pending/expired deposit transaction
+        let txId = existingTx?.id;
+        if (!txId && userId) {
+          const { data: pendingTx } = await supa
+            .from("transactions")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("type", "deposit")
+            .eq("nowpayments_payment_id", paymentIdStr)
+            .in("status", ["pending", "expired"])
+            .limit(1)
+            .maybeSingle();
+          txId = pendingTx?.id;
+
+          // Fallback: match by user without payment_id
+          if (!txId) {
+            const { data: fallbackTx } = await supa
+              .from("transactions")
+              .select("id")
+              .eq("user_id", userId)
+              .eq("type", "deposit")
+              .in("status", ["pending", "expired"])
+              .is("nowpayments_payment_id", null)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            txId = fallbackTx?.id;
+          }
+        }
+
+        if (txId) {
+          await supa
+            .from("transactions")
+            .update({
+              status: "partial",
+              nowpayments_payment_id: paymentIdStr,
+              amount: outcomeAmount > 0 ? outcomeAmount : priceAmount,
+            })
+            .eq("id", txId);
+          console.log(`Marked deposit ${txId} as partial ($${outcomeAmount})`);
+        }
+
+        // Notify user
+        if (userId) {
+          await supa.from("notifications").insert({
+            user_id: userId,
+            title: "Partial Payment Received ⚠️",
+            message: `You sent a partial payment of $${outcomeAmount.toFixed(2)} for your $${priceAmount.toFixed(2)} deposit. Please contact support for resolution.`,
+            type: "deposit",
+          });
+        }
+      }
+      return new Response("OK", { status: 200, headers: corsHeaders });
+    }
+
+    // Accept "finished" and "confirmed" statuses for crediting
     if (payment_status !== "finished" && payment_status !== "confirmed") {
       console.log(`Ignoring status: ${payment_status}`);
       return new Response("OK", { status: 200, headers: corsHeaders });
