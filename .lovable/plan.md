@@ -1,38 +1,29 @@
 
 
-## Plan: Expandable Space Recording Playback
+## Plan: Restrict Twitter/X Auto-Resolve Markets to 5-Day Maximum
 
 ### Problem
-Currently, space recordings play inline on the SpaceCard with a minimal audio bar. There's no way to see who participated, who was speaking, or the chat/reactions from the original session — unlike Twitter/X Spaces replays which show an expanded view.
+Twitter/X auto-resolve markets can currently be set with distant end dates (e.g., December 2029), causing excessive X API polling costs over extended periods.
 
 ### Solution
-Create a new `SpaceReplayModal` component that opens when a user taps a recorded space card. This expanded view will show:
+Enforce a maximum 5-day resolution window for any market using Twitter/X auto-resolve, in both the user-facing Create page and the Admin Create Market page.
 
-1. **Full-screen modal/drawer** with the audio player at the bottom
-2. **Participants list** — fetched from `space_participants` table, showing who joined with their roles (host, co-host, speaker, listener) and avatars
-3. **Chat replay** — all `space_messages` for that space, displayed in a scrollable feed synced to the audio timeline (messages highlight/auto-scroll as playback progresses based on `created_at` timestamps)
-4. **Reactions timeline** — reactions from `space_messages.reactions` shown as floating emoji overlays during playback
+### Changes
 
-### What Changes
+**1. `src/pages/Create.tsx`**
+- Update the `endDate` validation rule: when `category === "Twitter/X"` and `autoResolve` is true, validate that `endDate` is within 5 days from today. Show error: "Twitter/X markets must resolve within 5 days"
+- Dynamically set the `max` attribute on the end-date input to 5 days from now when Twitter/X auto-resolve is active
+- Add a helper note below the date picker when Twitter/X is selected explaining the 5-day limit
 
-**New file: `src/components/social/SpaceReplayModal.tsx`**
-- Full-screen modal with three sections:
-  - **Top**: Space title, host info, duration, participant count
-  - **Middle (tabbed)**: "Participants" tab showing avatar grid with roles; "Chat" tab showing timestamped messages that auto-scroll with playback
-  - **Bottom (sticky)**: Enhanced audio player with play/pause, seek bar, skip buttons, current time/duration, and playback speed control (1x, 1.5x, 2x)
-- Fetches participants from `space_participants` joined with `profiles` for display names and avatars
-- Fetches all `space_messages` for the space, sorted by `created_at`
-- During playback, highlights messages whose `created_at` falls before the current playback position (relative to `space.started_at`)
-- Floating emoji reactions appear when the playback cursor passes a message with reactions
+**2. `src/pages/admin/AdminCreateMarket.tsx`**
+- Apply the same 5-day max validation for Twitter markets (`isTwitterMarket` flag)
+- Cap the date picker max value accordingly
 
-**Modified file: `src/components/social/SpaceCard.tsx`**
-- When `isRecorded`, clicking the card (or the play button) opens `SpaceReplayModal` instead of playing inline
-- Remove the inline audio player for recorded spaces (moved into the modal)
+**3. `supabase/functions/publish_draft_market` (database function)**
+- Add a server-side guard in the `publish_draft_market` function: if `twitter_resource_id` is set, reject if `end_date` is more than 5 days from now
 
 ### Technical Details
-- Audio playback position is mapped to the space timeline: `messageTimeOffset = message.created_at - space.started_at`; when `audio.currentTime` passes that offset, the message is highlighted
-- Participants query: `supabase.from("space_participants").select("*, profiles(display_name, avatar_url, verification_level)").eq("space_id", id)`
-- Messages query: `supabase.from("space_messages").select("*").eq("space_id", id).order("created_at")`
-- Playback speed uses `audio.playbackRate`
-- No database changes needed — all data already exists in `space_participants` and `space_messages`
+- Validation: `new Date(endDate) > new Date(Date.now() + 5 * 86400000)` → error
+- The 5-day cap applies only when Twitter/X auto-resolve is enabled; non-auto-resolve Twitter/X markets are unaffected
+- Server-side enforcement in the publish function prevents bypassing the UI constraint
 
