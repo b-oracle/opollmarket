@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Play, Pause, RotateCcw, RotateCw, Users, MessageCircle, Headphones, Mic, Crown, Shield, Trash2, Loader2 } from "lucide-react";
+import { X, Play, Pause, RotateCcw, RotateCw, Users, MessageCircle, Headphones, Mic, Crown, Shield, Trash2, Loader2, Share2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
