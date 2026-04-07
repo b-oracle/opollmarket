@@ -114,7 +114,7 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
           >
             <div className="relative w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <CategoryIcon category={categoryMap[c.slug] || "Other"} className="w-5 h-5 text-primary" />
-              {unread > 0 && (
+              {unread > 0 && membershipSet.has(c.slug) && (
                 <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
                   {unread > 99 ? "99+" : unread}
                 </span>
