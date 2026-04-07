@@ -54,6 +54,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   const [editTitleValue, setEditTitleValue] = useState(space.title);
   const [savingTitle, setSavingTitle] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [replayOpen, setReplayOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const isHost = user?.id === space.host_id;
   const isLive = space.status === "live";
