@@ -2,7 +2,10 @@
 import { lazy, Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSecuritySettings, useInvalidateSecuritySettings } from "./hooks/useSecuritySettings";
 import { ActiveSpaceProvider, useActiveSpace } from "./hooks/useActiveSpace";
+import { SpaceReplayProvider } from "./hooks/useSpaceReplay";
 import SpaceRoom from "./components/social/SpaceRoom";
+const SpaceReplayModal = lazy(() => import("./components/social/SpaceReplayModal"));
+const SpaceReplayMiniPlayer = lazy(() => import("./components/social/SpaceReplayMiniPlayer"));
 const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
 
 import { Navigate } from "react-router-dom";
@@ -457,6 +460,7 @@ const App = () => {
           <VerificationThresholdProvider>
           <AuthProvider>
             <ActiveSpaceProvider>
+            <SpaceReplayProvider>
             <SidebarStateProvider>
               <TooltipProvider>
                 <Toaster />
@@ -471,6 +475,8 @@ const App = () => {
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
                 </DeferredMount>
                 <GlobalSpaceRoom />
+                <Suspense fallback={null}><SpaceReplayModal /></Suspense>
+                <Suspense fallback={null}><SpaceReplayMiniPlayer /></Suspense>
                 <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalSidebar />
                 <ConditionalLayout>
@@ -558,6 +564,7 @@ const App = () => {
                 </BrowserRouter>
               </TooltipProvider>
             </SidebarStateProvider>
+            </SpaceReplayProvider>
             </ActiveSpaceProvider>
           </AuthProvider>
           </VerificationThresholdProvider>

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { X, Play, Pause, RotateCcw, RotateCw, Users, MessageCircle, Headphones, Mic, Crown, Shield, Trash2, Loader2, Share2 } from "lucide-react";
+import { X, Play, Pause, RotateCcw, RotateCw, Users, MessageCircle, Headphones, Mic, Crown, Shield, Trash2, Loader2, Share2, Minimize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,22 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
-
-interface SpaceReplayModalProps {
-  open: boolean;
-  onClose: () => void;
-  space: {
-    id: string;
-    host_id: string;
-    title: string;
-    started_at: string;
-    ended_at?: string | null;
-    recording_url?: string | null;
-    is_recorded?: boolean;
-    listener_count: number;
-  };
-  hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
-}
+import { useSpaceReplay } from "@/hooks/useSpaceReplay";
 
 const formatTime = (s: number) => {
   const h = Math.floor(s / 3600);
@@ -37,25 +22,39 @@ const formatTime = (s: number) => {
 
 const SPEEDS = [1, 1.5, 2];
 
-const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModalProps) => {
+const SpaceReplayModal = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const {
+    space,
+    hostProfile,
+    isExpanded,
+    isPlaying,
+    currentTime,
+    duration,
+    progress,
+    togglePlay,
+    seek,
+    skip,
+    setSpeed,
+    closeReplay,
+    minimize,
+    audioRef,
+  } = useSpaceReplay();
+
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
   const [speedIdx, setSpeedIdx] = useState(0);
   const [activeTab, setActiveTab] = useState("chat");
   const [deleting, setDeleting] = useState(false);
   const [floatingReactions, setFloatingReactions] = useState<{ id: string; emoji: string; x: number }[]>([]);
-  const isHost = user?.id === space.host_id;
+
+  const isHost = user?.id === space?.host_id;
 
   // Fetch participants
   const { data: participants = [] } = useQuery({
-    queryKey: ["space-replay-participants", space.id],
+    queryKey: ["space-replay-participants", space?.id],
     queryFn: async () => {
+      if (!space) return [];
       const { data, error } = await supabase
         .from("space_participants")
         .select("user_id, role, joined_at, left_at")
@@ -70,13 +69,14 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((p: any) => ({ ...p, profile: profileMap.get(p.user_id) || null }));
     },
-    enabled: open,
+    enabled: !!space && isExpanded,
   });
 
   // Fetch messages
   const { data: messages = [] } = useQuery({
-    queryKey: ["space-replay-messages", space.id],
+    queryKey: ["space-replay-messages", space?.id],
     queryFn: async () => {
+      if (!space) return [];
       const { data, error } = await supabase
         .from("space_messages")
         .select("*")
@@ -92,87 +92,22 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((m: any) => ({ ...m, profile: profileMap.get(m.user_id) || null }));
     },
-    enabled: open,
+    enabled: !!space && isExpanded,
   });
 
-  const spaceStartMs = new Date(space.started_at).getTime();
-
-  // Setup audio
-  useEffect(() => {
-    if (!open || !space.recording_url) return;
-    const audio = new Audio();
-    audio.crossOrigin = "anonymous";
-    audio.preload = "metadata";
-    audio.src = space.recording_url;
-    audioRef.current = audio;
-
-    const onTime = () => {
-      if (audio.duration && isFinite(audio.duration)) {
-        setProgress((audio.currentTime / audio.duration) * 100);
-        setCurrentTime(audio.currentTime);
-      }
-    };
-    const onMeta = () => { if (isFinite(audio.duration)) setDuration(audio.duration); };
-    const onEnd = () => { setIsPlaying(false); setProgress(100); };
-    const onErr = () => {
-      const code = audio.error?.code;
-      if (code === 4) toast.error("Recording format not supported on your browser");
-      else toast.error("Failed to load recording");
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener("timeupdate", onTime);
-    audio.addEventListener("loadedmetadata", onMeta);
-    audio.addEventListener("ended", onEnd);
-    audio.addEventListener("error", onErr);
-
-    return () => {
-      audio.pause();
-      audio.removeEventListener("timeupdate", onTime);
-      audio.removeEventListener("loadedmetadata", onMeta);
-      audio.removeEventListener("ended", onEnd);
-      audio.removeEventListener("error", onErr);
-      audioRef.current = null;
-      setIsPlaying(false);
-      setProgress(0);
-      setCurrentTime(0);
-      setDuration(0);
-      setSpeedIdx(0);
-    };
-  }, [open, space.recording_url]);
-
-  const togglePlay = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (isPlaying) {
-      audio.pause();
-      setIsPlaying(false);
-    } else {
-      audio.play().catch(() => toast.error("Failed to play"));
-      setIsPlaying(true);
-    }
-  }, [isPlaying]);
+  const spaceStartMs = space ? new Date(space.started_at).getTime() : 0;
 
   const cycleSpeed = useCallback(() => {
     const next = (speedIdx + 1) % SPEEDS.length;
     setSpeedIdx(next);
-    if (audioRef.current) audioRef.current.playbackRate = SPEEDS[next];
-  }, [speedIdx]);
-
-  const skip = useCallback((sec: number) => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.currentTime = Math.max(0, Math.min(audio.duration || 0, audio.currentTime + sec));
-  }, []);
+    setSpeed(SPEEDS[next]);
+  }, [speedIdx, setSpeed]);
 
   const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const audio = audioRef.current;
-    if (!audio || !audio.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    audio.currentTime = pct * audio.duration;
-    setProgress(pct * 100);
-  }, []);
+    seek(pct);
+  }, [seek]);
 
   // Auto-scroll chat to current playback position
   useEffect(() => {
@@ -193,7 +128,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
   useEffect(() => {
     if (!isPlaying || messages.length === 0) return;
     const playbackMs = spaceStartMs + currentTime * 1000;
-    const window = 1500; // 1.5 second window
+    const window = 1500;
     messages.forEach((msg: any) => {
       const msgMs = new Date(msg.created_at).getTime();
       if (msgMs > playbackMs - window && msgMs <= playbackMs) {
@@ -219,7 +154,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
   }, [floatingReactions]);
 
   const handleDelete = async () => {
-    if (!user || user.id !== space.host_id) return;
+    if (!user || !space || user.id !== space.host_id) return;
     if (!confirm("Delete this recording?")) return;
     setDeleting(true);
     try {
@@ -230,7 +165,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
         .eq("id", space.id);
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       toast.success("Recording deleted");
-      onClose();
+      closeReplay();
     } catch { toast.error("Failed to delete"); }
     finally { setDeleting(false); }
   };
@@ -249,7 +184,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
     return "Listener";
   };
 
-  // Deduplicate participants by user_id, keep highest role
+  // Deduplicate participants
   const roleOrder: Record<string, number> = { host: 0, co_host: 1, speaker: 2, listener: 3 };
   const uniqueParticipants = Object.values(
     participants.reduce((acc: any, p: any) => {
@@ -261,6 +196,7 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
   ).sort((a: any, b: any) => (roleOrder[a.role] || 9) - (roleOrder[b.role] || 9));
 
   const handleShare = useCallback(async () => {
+    if (!space) return;
     const url = `${window.location.origin}/feed?space=${space.id}`;
     if (navigator.share) {
       try { await navigator.share({ title: space.title, url }); } catch {}
@@ -268,9 +204,9 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
       await navigator.clipboard.writeText(url);
       toast.success("Link copied!");
     }
-  }, [space.id, space.title]);
+  }, [space]);
 
-  if (!open) return null;
+  if (!space || !isExpanded) return null;
 
   const hostName = hostProfile?.display_name || "Anonymous";
   const playbackMs = spaceStartMs + currentTime * 1000;
@@ -303,8 +239,8 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
 
         {/* Header */}
         <div className="flex items-center gap-3 px-3 py-2.5 border-b border-border shrink-0">
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors shrink-0">
-            <X className="w-4 h-4" />
+          <button onClick={minimize} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors shrink-0">
+            <Minimize2 className="w-4 h-4" />
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -331,14 +267,9 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
                 {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               </button>
             )}
-            <Avatar className="w-8 h-8 border border-primary/30">
-              {hostProfile?.avatar_url ? (
-                <AvatarImage src={hostProfile.avatar_url} />
-              ) : null}
-              <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
-                {hostName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <button onClick={closeReplay} className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-accent transition-colors shrink-0">
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -434,9 +365,8 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
           </TabsContent>
         </Tabs>
 
-        {/* Audio Player - sticky bottom, safe-area aware */}
+        {/* Audio Player */}
         <div className="border-t border-border bg-card px-3 py-2 pb-3 shrink-0">
-          {/* Seek bar */}
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
             <span className="w-9 text-right tabular-nums">{formatTime(currentTime)}</span>
             <div className="flex-1 h-1.5 rounded-full bg-muted cursor-pointer relative group" onClick={handleSeek}>
@@ -449,7 +379,6 @@ const SpaceReplayModal = ({ open, onClose, space, hostProfile }: SpaceReplayModa
             <span className="w-9 tabular-nums">{formatTime(duration)}</span>
           </div>
 
-          {/* Controls */}
           <div className="flex items-center justify-between mt-1.5">
             <div className="w-10 flex justify-center">
               <button
