@@ -218,7 +218,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     const timeout = setTimeout(async () => {
       setInviteSearching(true);
       const { data } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url")
         .neq("id", user.id)
         .ilike("display_name", `%${inviteSearchQuery.trim()}%`)
@@ -299,7 +299,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       let profileMap: Record<string, string> = {};
       if (allIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("public_profiles" as any)
+          .from("profiles")
           .select("id, display_name")
           .in("id", allIds);
         (profiles || []).forEach((p: any) => { profileMap[p.id] = p.display_name || "Anonymous"; });
@@ -850,7 +850,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     if (ids.length === 0) return;
     (async () => {
       const { data } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, avatar_url, verification_level")
         .in("id", ids);
       if (data) {

@@ -39,7 +39,7 @@ const MutualFollowers = ({ targetUserId }: MutualFollowersProps) => {
       if (mutualIds.length === 0) return [];
 
       const { data: profiles } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url")
         .in("id", mutualIds.slice(0, 5));
 

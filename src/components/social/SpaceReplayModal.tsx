@@ -63,7 +63,7 @@ const SpaceReplayModal = () => {
       if (!data || data.length === 0) return [];
       const userIds = [...new Set(data.map((p: any) => p.user_id))];
       const { data: profiles } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url, verification_level")
         .in("id", userIds);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
@@ -86,7 +86,7 @@ const SpaceReplayModal = () => {
       if (!data || data.length === 0) return [];
       const userIds = [...new Set(data.map((m: any) => m.user_id))];
       const { data: profiles } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url")
         .in("id", userIds);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));

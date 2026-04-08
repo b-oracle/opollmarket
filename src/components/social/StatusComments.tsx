@@ -50,7 +50,7 @@ const StatusComments = ({ statusId }: StatusCommentsProps) => {
     queryFn: async () => {
       if (authorIds.length === 0) return new Map();
       const { data } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url, verification_level")
         .in("id", authorIds.slice(0, 50));
       return new Map((data || []).map((p: any) => [p.id, p]));

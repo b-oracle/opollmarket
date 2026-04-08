@@ -38,7 +38,7 @@ const CallHistoryTab = () => {
       ))];
 
       const { data: profiles } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url")
         .in("id", otherIds as string[]);
 

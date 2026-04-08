@@ -42,7 +42,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
     queryKey: ["creator-profile", creatorUserId],
     queryFn: async () => {
       const { data } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("wallet_address, display_name, avatar_url, verification_level")
         .eq("id", creatorUserId)
         .maybeSingle();
@@ -237,7 +237,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
       const authorIds = [...new Set((data || []).map(c => c.author_wallet).filter(Boolean))] as string[];
       const profileMap = new Map<string, { avatar_url: string | null; verification_level: string }>();
       if (authorIds.length > 0) {
-        const { data: profiles } = await supabase.from("public_profiles" as any).select("id, avatar_url, verification_level").in("id", authorIds);
+        const { data: profiles } = await supabase.from("profiles").select("id, avatar_url, verification_level").in("id", authorIds);
         for (const p of profiles || []) profileMap.set(p.id, { avatar_url: p.avatar_url, verification_level: p.verification_level });
       }
 

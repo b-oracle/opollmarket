@@ -54,7 +54,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
 
       const userIds = [...new Set(msgs.map((m: any) => m.user_id))] as string[];
       const { data: profiles } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url, verification_level")
         .in("id", userIds);
 

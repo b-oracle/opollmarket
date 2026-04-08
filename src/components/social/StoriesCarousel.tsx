@@ -102,7 +102,7 @@ const StoriesCarousel = () => {
       // Get profiles
       const userIds = [...new Set(stories.map((s: any) => s.user_id))];
       const { data: profiles } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, avatar_url")
         .in("id", userIds.slice(0, 50));
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
