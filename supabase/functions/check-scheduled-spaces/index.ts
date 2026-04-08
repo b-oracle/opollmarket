@@ -38,16 +38,35 @@ Deno.serve(async (req) => {
         .update({ status: "live", started_at: now })
         .eq("id", space.id);
 
+      // Collect all user IDs to notify (deduped)
+      const notifyUserIds = new Set<string>();
+
       // Get all users who set reminders
       const { data: reminders } = await supabase
         .from("space_reminders")
         .select("user_id")
         .eq("space_id", space.id);
 
-      if (reminders && reminders.length > 0) {
-        // Send notifications to all reminder users
-        const notifications = reminders.map((r: any) => ({
-          user_id: r.user_id,
+      if (reminders) {
+        reminders.forEach((r: any) => notifyUserIds.add(r.user_id));
+      }
+
+      // Get all invited users (for private spaces)
+      const { data: invites } = await supabase
+        .from("space_invites")
+        .select("invitee_id")
+        .eq("space_id", space.id);
+
+      if (invites) {
+        invites.forEach((i: any) => notifyUserIds.add(i.invitee_id));
+      }
+
+      // Remove the host from the set (they get a separate notification)
+      notifyUserIds.delete(space.host_id);
+
+      if (notifyUserIds.size > 0) {
+        const notifications = Array.from(notifyUserIds).map((userId) => ({
+          user_id: userId,
           title: "Space is Live! 🎙️",
           message: `"${space.title}" is now live! Join the conversation.`,
           type: "info",
