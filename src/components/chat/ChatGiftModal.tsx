@@ -169,7 +169,7 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
               }`}
             >
               <Gift className="w-3.5 h-3.5" />
-              Emoji Gifts
+              Emoji Gift
             </button>
             <button
               onClick={() => { setActiveTab("money"); setShowTopUp(false); }}
@@ -182,12 +182,12 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
             </button>
             <button
               onClick={() => { setActiveTab("history"); setShowTopUp(false); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-all ${
+              className={`w-10 flex items-center justify-center py-2 rounded-md text-sm font-medium transition-all ${
                 activeTab === "history" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
+              title="Transaction History"
             >
-              <History className="w-3.5 h-3.5" />
-              History
+              <History className="w-4 h-4" />
             </button>
           </div>
 
