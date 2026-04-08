@@ -392,7 +392,7 @@ const TwitterSection = ({ userId }: { userId?: string }) => {
     queryFn: async () => {
       if (!userId) return null;
       const { data } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("twitter_username, twitter_id, twitter_avatar_url, twitter_linked_at")
         .eq("id", userId)
         .maybeSingle();
