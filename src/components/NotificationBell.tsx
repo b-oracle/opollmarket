@@ -126,6 +126,13 @@ const NotificationBell = () => {
       return;
     }
 
+    // Space invite / live notifications → navigate to feed with space context
+    if (n.title?.includes("Space Invite") || n.title?.includes("Space is Live") || n.title?.includes("Scheduled Space is Live")) {
+      setOpen(false);
+      navigate(`/feed`);
+      return;
+    }
+
     // Call notifications → navigate to the conversation
     if (n.type === "call" && n.market_id) {
       setOpen(false);
