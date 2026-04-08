@@ -141,7 +141,7 @@ const AdminReferrals = () => {
         for (let i = 0; i < userIds.length; i += batchSize) {
           const batch = userIds.slice(i, i + batchSize);
           const { data: profiles } = await supabase
-            .from("profiles")
+            .from("public_profiles" as any)
             .select("id, display_name, email")
             .in("id", batch);
           if (profiles) {
@@ -457,7 +457,7 @@ const PendingReferrals = ({ range }: { range: number }) => {
         : null;
 
       let q = supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, email, referred_by, created_at")
         .not("referred_by", "is", null)
         .order("created_at", { ascending: false })
@@ -479,7 +479,7 @@ const PendingReferrals = ({ range }: { range: number }) => {
       const referrerMap = new Map<string, string>();
       if (referrerIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("public_profiles" as any)
           .select("id, display_name")
           .in("id", referrerIds.slice(0, 100));
         if (profiles) profiles.forEach(p => referrerMap.set(p.id, p.display_name || p.id.slice(0, 8)));

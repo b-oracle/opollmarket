@@ -44,7 +44,7 @@ export const usePendingCopyTrades = () => {
       let market_title = "";
 
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("display_name")
         .eq("id", row.trader_user_id)
         .single();

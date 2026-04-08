@@ -45,7 +45,7 @@ const AdminSupport = () => {
 
       const userIds = [...new Set(data.map((t: any) => t.user_id))] as string[];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", userIds);
 

@@ -117,7 +117,7 @@ const ConversationList = () => {
       );
 
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", otherIds);
 
@@ -169,7 +169,7 @@ const ConversationList = () => {
     queryFn: async () => {
       if (!user || !search.trim()) return [];
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .neq("id", user.id)
         .ilike("display_name", `%${search.trim()}%`)
@@ -204,7 +204,7 @@ const ConversationList = () => {
       if (mutualIds.length === 0) return [];
 
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", mutualIds);
 

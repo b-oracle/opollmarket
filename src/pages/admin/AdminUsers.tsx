@@ -55,7 +55,7 @@ const AdminUsers = () => {
     const to = from + PAGE_SIZE - 1;
 
     let query = supabase
-      .from("profiles")
+      .from("public_profiles" as any)
       .select("*", { count: "exact" })
       .order("created_at", { ascending: false });
 

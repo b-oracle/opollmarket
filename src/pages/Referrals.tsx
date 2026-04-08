@@ -49,7 +49,7 @@ const Referrals = () => {
     queryFn: async () => {
       if (!user) return [];
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, email, created_at")
         .eq("referred_by", user.id)
         .order("created_at", { ascending: false });

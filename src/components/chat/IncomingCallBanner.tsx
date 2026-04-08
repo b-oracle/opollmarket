@@ -113,7 +113,7 @@ const IncomingCallBanner = () => {
 
           // Fetch caller profile
           const { data: profile } = await supabase
-            .from("profiles")
+            .from("public_profiles" as any)
             .select("display_name, avatar_url")
             .eq("id", call.caller_id)
             .maybeSingle();

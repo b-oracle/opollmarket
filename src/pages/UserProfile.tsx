@@ -99,7 +99,7 @@ const UserProfile = () => {
       // Ensure we have a valid session before querying
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
         .eq("id", id)
         .maybeSingle();
@@ -173,7 +173,7 @@ const UserProfile = () => {
     queryFn: async () => {
       if (!id) return 0;
       const { count } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id", { count: "exact", head: true })
         .eq("referred_by", id);
       return count || 0;

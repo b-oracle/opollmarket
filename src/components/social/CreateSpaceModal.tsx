@@ -57,7 +57,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
     const timeout = setTimeout(async () => {
       setSearching(true);
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .neq("id", user.id)
         .ilike("display_name", `%${searchQuery.trim()}%`)

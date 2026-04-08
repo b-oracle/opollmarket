@@ -67,7 +67,7 @@ const Followers = () => {
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
@@ -88,7 +88,7 @@ const Followers = () => {
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));

@@ -52,7 +52,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
     queryFn: async () => {
       if (!user || !debouncedSearch || debouncedSearch.length < 2) return [];
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, bio, is_public")
         .eq("is_public", true)
         .ilike("display_name", `%${debouncedSearch}%`)
@@ -89,7 +89,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data: profiles } = await supabase.from("public_profiles" as any).select("id, display_name, avatar_url").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.follower_id) }));
     },
@@ -108,7 +108,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data: profiles } = await supabase.from("public_profiles" as any).select("id, display_name, avatar_url").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.following_id) }));
     },
@@ -137,7 +137,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
       if (uniqueIds.length === 0) return [];
 
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, bio, is_public")
         .in("id", uniqueIds)
         .eq("is_public", true);

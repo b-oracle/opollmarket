@@ -192,7 +192,7 @@ const useReferralLeaderboard = (period: TimePeriod) => {
       if (cutoff) commissionsQuery = commissionsQuery.gte("created_at", cutoff);
 
       // 3. Fetch actual referral signup counts from profiles.referred_by
-      const referralCountsQuery = supabase.from("profiles").select("referred_by").not("referred_by", "is", null);
+      const referralCountsQuery = supabase.from("public_profiles" as any).select("referred_by").not("referred_by", "is", null);
 
       const [{ data: rewards }, { data: commissions }, { data: referralProfiles }] = await Promise.all([
         rewardsQuery,
@@ -231,7 +231,7 @@ const useReferralLeaderboard = (period: TimePeriod) => {
 
       const ids = Array.from(map.keys());
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, verification_level")
         .in("id", ids);
 
@@ -327,7 +327,7 @@ const useQuickTradeLeaderboard = (period: TimePeriod) => {
       } as any);
       if (data && (data as any[]).length > 0) {
         const userIds = (data as any[]).map((d) => d.user_id);
-        const { data: profiles } = await supabase.from("profiles").select("id, verification_level").in("id", userIds);
+        const { data: profiles } = await supabase.from("public_profiles" as any).select("id, verification_level").in("id", userIds);
         const vMap = new Map((profiles || []).map((p: any) => [p.id, p.verification_level]));
         setQuickTraders(
           (data as any[]).map((d) => ({
@@ -369,7 +369,7 @@ const useStreakLeaderboard = () => {
       const { data } = await supabase.rpc("get_streak_leaderboard", { _limit: 20 } as any);
       if (data && (data as any[]).length > 0) {
         const userIds = (data as any[]).map((d) => d.user_id);
-        const { data: profiles } = await supabase.from("profiles").select("id, verification_level").in("id", userIds);
+        const { data: profiles } = await supabase.from("public_profiles" as any).select("id, verification_level").in("id", userIds);
         const vMap = new Map((profiles || []).map((p: any) => [p.id, p.verification_level]));
         setStreakUsers(
           (data as any[]).map((d) => ({

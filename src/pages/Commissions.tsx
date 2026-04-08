@@ -321,7 +321,7 @@ const Commissions = () => {
     queryFn: async () => {
       if (allReferredIds.length === 0) return {};
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", allReferredIds);
       const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
@@ -343,7 +343,7 @@ const Commissions = () => {
     queryFn: async () => {
       if (allCopierIds.length === 0) return {};
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", allCopierIds);
       const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};
@@ -366,7 +366,7 @@ const Commissions = () => {
     queryFn: async () => {
       if (allGiftCounterpartyIds.length === 0) return {};
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", allGiftCounterpartyIds);
       const map: Record<string, { display_name: string | null; avatar_url: string | null }> = {};

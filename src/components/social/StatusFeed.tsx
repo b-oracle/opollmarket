@@ -203,7 +203,7 @@ const StatusFeed = ({ userId, showComposer = false, onlyUserId }: StatusFeedProp
     queryFn: async () => {
       if (allUserIds.length === 0) return new Map();
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, verification_level")
         .in("id", allUserIds.slice(0, 50));
       return new Map((data || []).map((p: any) => [p.id, p]));

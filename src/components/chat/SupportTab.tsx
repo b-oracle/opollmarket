@@ -98,7 +98,7 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
         // Enrich with profile info for staff view
         const userIds = [...new Set(data.map((t: any) => t.user_id))] as string[];
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("public_profiles" as any)
           .select("id, display_name, avatar_url")
           .in("id", userIds);
         const profileMap = new Map((profiles || []).map((p) => [p.id, p]));

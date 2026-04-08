@@ -39,7 +39,7 @@ const SpacesFeed = () => {
     queryFn: async () => {
       if (hostIds.length === 0) return new Map();
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url")
         .in("id", hostIds.slice(0, 50));
       return new Map((data || []).map((p: any) => [p.id, p]));

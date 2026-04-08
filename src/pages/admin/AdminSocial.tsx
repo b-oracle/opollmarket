@@ -203,7 +203,7 @@ const AdminSocial = () => {
     const from = (page - 1) * PAGE_SIZE;
     const to = from + PAGE_SIZE - 1;
 
-    let query = supabase.from("profiles").select("id, display_name, email, avatar_url, bio, is_public, created_at", { count: "exact" }).order("created_at", { ascending: false });
+    let query = supabase.from("public_profiles" as any).select("id, display_name, email, avatar_url, bio, is_public, created_at", { count: "exact" }).order("created_at", { ascending: false });
 
     if (debouncedSearch.trim()) {
       const q = `%${debouncedSearch.trim()}%`;
@@ -266,7 +266,7 @@ const AdminSocial = () => {
     const topIds = [...countMap.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
     if (topIds.length === 0) { setTopFollowed([]); return; }
 
-    const { data: topProfiles } = await supabase.from("profiles").select("id, display_name, avatar_url, is_public, created_at").in("id", topIds.map(t => t[0]));
+    const { data: topProfiles } = await supabase.from("public_profiles" as any).select("id, display_name, avatar_url, is_public, created_at").in("id", topIds.map(t => t[0]));
 
     const result: ProfileRow[] = topIds.map(([uid, count]) => {
       const p = (topProfiles || []).find((pr: any) => pr.id === uid);

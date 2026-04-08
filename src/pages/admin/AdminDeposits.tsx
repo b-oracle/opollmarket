@@ -48,7 +48,7 @@ const AdminDeposits = () => {
       let emailUserIds: string[] | null = null;
       if (trimmed && !isValidUUID(trimmed)) {
         const { data: matchedProfiles } = await supabase
-          .from("profiles")
+          .from("public_profiles" as any)
           .select("id")
           .or(`email.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`);
         emailUserIds = (matchedProfiles || []).map((p) => p.id);
@@ -84,7 +84,7 @@ const AdminDeposits = () => {
 
       const userIds = [...new Set((txs || []).map((t) => t.user_id))];
       const { data: profiles } = userIds.length
-        ? await supabase.from("profiles").select("id, display_name, email").in("id", userIds)
+        ? await supabase.from("public_profiles" as any).select("id, display_name, email").in("id", userIds)
         : { data: [] };
 
       const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));

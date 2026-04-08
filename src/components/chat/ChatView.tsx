@@ -62,7 +62,7 @@ const ChatView = () => {
       if (!data) return null;
       const otherId = data.user_a === user!.id ? data.user_b : data.user_a;
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("id, display_name, avatar_url, verification_level")
         .eq("id", otherId)
         .maybeSingle();

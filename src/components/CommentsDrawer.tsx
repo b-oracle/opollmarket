@@ -221,7 +221,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
       const profileMap = new Map<string, { avatar_url: string | null; verification_level: string }>();
       if (authorIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("profiles")
+          .from("public_profiles" as any)
           .select("id, avatar_url, verification_level")
           .in("id", authorIds);
         for (const p of profiles || []) {

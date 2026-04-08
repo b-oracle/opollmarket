@@ -63,7 +63,7 @@ const AdminAuditLog = () => {
       let searchActorIds: string[] | null = null;
       if (trimmed) {
         const { data: matchedProfiles } = await supabase
-          .from("profiles")
+          .from("public_profiles" as any)
           .select("id")
           .or(`email.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`);
         searchActorIds = (matchedProfiles || []).map((p) => p.id);
@@ -112,7 +112,7 @@ const AdminAuditLog = () => {
       });
 
       const { data: profiles } = userIds.size > 0
-        ? await supabase.from("profiles").select("id, display_name, email").in("id", Array.from(userIds))
+        ? await supabase.from("public_profiles" as any).select("id, display_name, email").in("id", Array.from(userIds))
         : { data: [] };
 
       const nameMap = new Map<string, string>();

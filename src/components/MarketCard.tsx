@@ -79,7 +79,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     queryKey: ["creator-wallet", market.creatorAddress],
     queryFn: async () => {
       const { data } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("wallet_address, avatar_url, verification_level, display_name")
         .eq("id", market.creatorAddress)
         .maybeSingle();

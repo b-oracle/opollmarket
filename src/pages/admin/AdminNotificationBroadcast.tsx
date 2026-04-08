@@ -79,7 +79,7 @@ const AdminNotificationBroadcast = () => {
     if (term.length < 2) { setUserResults([]); return; }
     setSearchLoading(true);
     const { data } = await supabase
-      .from("profiles")
+      .from("public_profiles" as any)
       .select("id, display_name, email")
       .or(`display_name.ilike.%${term}%,email.ilike.%${term}%`)
       .limit(10);

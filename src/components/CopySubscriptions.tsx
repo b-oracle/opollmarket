@@ -41,7 +41,7 @@ const CopySubscriptions = () => {
     const enriched: CopySubscription[] = [];
     for (const row of data) {
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("public_profiles" as any)
         .select("display_name, avatar_url")
         .eq("id", row.target_user_id)
         .single();
