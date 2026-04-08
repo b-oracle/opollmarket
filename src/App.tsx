@@ -473,6 +473,8 @@ const App = () => {
                 <Sonner />
                 <PWAUpdatePrompt />
                 <BrowserRouter>
+                {/* IncomingCallBanner must be OUTSIDE ConditionalWagmiProvider so it persists across all route changes */}
+                <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalWagmiProvider>
                 {/* Deferred: these components trigger network requests but aren't needed for first paint */}
                 <DeferredMount delay={2000}>
@@ -483,7 +485,6 @@ const App = () => {
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
                 <Suspense fallback={null}><SpaceReplayMiniPlayer /></Suspense>
-                <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
