@@ -120,7 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
-        setIsSupport(false);
+          setIsSupport(false);
+          setIsBusiness(false);
           setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
@@ -135,7 +136,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
-        setIsSupport(false);
+          setIsSupport(false);
+          setIsBusiness(false);
           setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
@@ -186,7 +188,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
-        setIsSupport(false);
+          setIsSupport(false);
+          setIsBusiness(false);
           setRolesLoaded(true);
           setProfileDisplayName(null);
         }
@@ -365,7 +368,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsSuperAdmin(false);
     setIsAdmin(false);
     setIsModerator(false);
-        setIsSupport(false);
+    setIsSupport(false);
+    setIsBusiness(false);
     setRolesLoaded(false);
     setProfileDisplayName(null);
 
@@ -391,11 +395,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isEmailVerified = !!user?.email_confirmed_at;
   const hasAdminAccess = isSuperAdmin || isAdmin || isModerator || isSupport;
-  const canEdit = isSuperAdmin || isAdmin; // Super admin + admin can make changes (admin has same access as moderator)
+  const hasBusinessAccess = isBusiness || isSuperAdmin || isAdmin;
+  const canEdit = isSuperAdmin || isAdmin;
   const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, rolesLoaded, displayName, isSuperAdmin, isAdmin, isModerator, isSupport, hasAdminAccess, canEdit, isEmailVerified,
+    user, session, loading, rolesLoaded, displayName, isSuperAdmin, isAdmin, isModerator, isSupport, isBusiness, hasAdminAccess, hasBusinessAccess, canEdit, isEmailVerified,
     signIn, signUp, signOut,
   };
 
