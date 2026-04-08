@@ -1,53 +1,81 @@
 
 
-## Plan: Media Storage Optimization & Cleanup
+## Plan: Business Role & Dashboard
 
-### Problem
-Over time, storage will grow unbounded because recordings, social images, and support attachments are never cleaned up. Only stories have automated expiry.
+### Overview
+Add a new `business` role to the platform. Business users get their own `/business` dashboard (separate from admin) with analytics, API key management, and customization tools. Admins can assign the `business` role to any account.
 
-### What We'll Build
+### Database Changes
 
-**1. Automated Recording Cleanup Edge Function**
-Create `cleanup-old-recordings` that deletes space recordings older than 30 days from both the `spaces` table (clears `recording_url`) and the `space-recordings` storage bucket.
+**1. Add `business` to `app_role` enum**
+```sql
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'business';
+```
 
-**2. Automated Social Media Cleanup Edge Function**
-Create `cleanup-old-social-media` that removes storage files for status post images older than 90 days (keeping the text post, just removing the blob). Updates `image_url` to null on affected `status_updates`.
+**2. RLS policies for business users**
+- Allow business users to read their own API keys from `api_keys` (currently admin-only)
+- Allow business users to read their own analytics data (markets they created, transaction volume on their markets)
 
-**3. Schedule All Cleanup Jobs via pg_cron**
-Add a single migration that schedules:
-- `cleanup-expired-stories` — every hour
-- `cleanup-old-recordings` — daily at 3 AM
-- `cleanup-old-social-media` — daily at 4 AM
-- `cleanup-deleted-markets` — every hour (already exists, just not scheduled)
-- `cleanup-audit-logs` — daily at 5 AM (already exists, just not scheduled)
+### Auth & Role System Updates
 
-**4. Recording Size Cap**
-In `SpaceRoom.tsx`, enforce a max recording duration of 2 hours and cap blob size at 50 MB before upload. Show a toast if exceeded.
+**3. Update `useAuth.ts`**
+- Add `isBusiness` state, check via `has_role(_user_id, 'business')`
+- Add `hasBusinessAccess` computed property
+- Expose in context
 
-**5. Upload File Size Validation**
-Add a shared utility `validateFileSize(file, maxMB)` and apply it in:
-- `StatusComposer.tsx` (10 MB cap)
-- `StoryCreator.tsx` (10 MB cap)
-- `SupportChat.tsx` (5 MB cap)
-- `Create.tsx` / `AdminMarkets.tsx` (5 MB cap for market images)
+### Routing & Layout
 
-### Technical Details
+**4. Create `BusinessLayout` component** (`src/pages/business/BusinessLayout.tsx`)
+- Similar structure to `AdminLayout` but with a trimmed sidebar: Dashboard, API Keys, Customization
+- Auth gate: redirect to `/auth` if user lacks `business` role
+- Own sidebar branding ("Business Portal")
 
-| Component | File(s) | Change |
-|-----------|---------|--------|
-| Recording cleanup | New `supabase/functions/cleanup-old-recordings/index.ts` | Query spaces with `recording_url` older than 30 days, delete from bucket, null out URL |
-| Social cleanup | New `supabase/functions/cleanup-old-social-media/index.ts` | Query `status_updates` with `image_url` older than 90 days, delete from `social-media` bucket |
-| Cron scheduling | New migration SQL | `cron.schedule()` calls for all 5 cleanup functions |
-| Recording cap | `src/components/social/SpaceRoom.tsx` | Check blob size before upload, abort if >50 MB |
-| File size util | New `src/lib/validateFileSize.ts` | Simple `(file, maxMB) => boolean` helper |
-| Upload guards | `StatusComposer.tsx`, `StoryCreator.tsx`, `SupportChat.tsx`, `Create.tsx`, `AdminMarkets.tsx` | Add size check before compression/upload |
+**5. Create business pages:**
+- `BusinessDashboard.tsx` — analytics cards showing: markets created, total volume on their markets, total participants, revenue/commissions earned
+- `BusinessApiKeys.tsx` — reuse/adapt `AdminApiKeys` component scoped to the business user's own keys only
+- `BusinessCustomization.tsx` — brand settings (name, logo, colors) tied to their API key
 
-### Retention Summary
-| Media Type | Retention | Already Exists? |
-|-----------|-----------|-----------------|
-| Stories | 24 hours | ✅ Yes |
-| Recordings | 30 days | ❌ New |
-| Social images | 90 days | ❌ New |
-| Market images | Permanent | ✅ (tied to market lifecycle) |
-| Audit logs | 90 days | ✅ Yes (just needs scheduling) |
+**6. Add routes in `App.tsx`**
+```
+/business          → BusinessLayout
+  /business        → BusinessDashboard
+  /business/api-keys → BusinessApiKeys
+  /business/customize → BusinessCustomization
+```
+
+### Navigation
+
+**7. Update `TopBar.tsx`**
+- Show a "Business" badge/button for users with the `business` role (similar to Admin badge but navigates to `/business`)
+
+**8. Update `BottomNav.tsx` / `DesktopSidebar.tsx`**
+- Add a "Business" link for business-role users
+
+### Admin: Assign Business Role
+
+**9. Update `AdminUsers.tsx`**
+- Add a "Business" role toggle/button in the user management row, allowing admins to assign/revoke the `business` role (insert/delete from `user_roles`)
+
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `src/pages/business/BusinessLayout.tsx` | Layout with sidebar + auth gate |
+| `src/pages/business/BusinessDashboard.tsx` | Analytics for business user's markets |
+| `src/pages/business/BusinessApiKeys.tsx` | Self-service API key management |
+| `src/pages/business/BusinessCustomization.tsx` | Brand settings |
+
+### Files to Modify
+| File | Change |
+|------|--------|
+| `src/hooks/useAuth.ts` | Add `isBusiness` / `hasBusinessAccess` |
+| `src/App.tsx` | Add `/business` routes |
+| `src/components/TopBar.tsx` | Business badge button |
+| `src/components/DesktopSidebar.tsx` | Business nav link |
+| `src/pages/admin/AdminUsers.tsx` | Role assignment UI |
+| Migration SQL | Enum + RLS policies |
+
+### Security
+- Business users can only see/manage their own API keys and analytics — never other users' data
+- Role assignment restricted to admin/super_admin via existing `user_roles` RLS
+- API key creation by business users scoped to their `user_id`
 
