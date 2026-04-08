@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
+import { useQuery } from "@tanstack/react-query";
 import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Maximize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
