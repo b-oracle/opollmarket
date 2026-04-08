@@ -107,7 +107,7 @@ const AdminUsers = () => {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin" | "support", hasRole: boolean) => {
+  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin" | "support" | "business", hasRole: boolean) => {
     if (hasRole) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) { toast.error(`Failed to remove ${role} role`); return; }
