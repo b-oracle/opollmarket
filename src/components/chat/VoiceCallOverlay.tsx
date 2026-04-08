@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +42,8 @@ const VoiceCallOverlay = ({
   onMaximize,
   onClose,
 }: VoiceCallOverlayProps) => {
+  const { isFeatureEnabled } = useFeatureToggles();
+  const screenShareEnabled = isFeatureEnabled("dm_screen_sharing");
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
@@ -988,6 +991,18 @@ const VoiceCallOverlay = ({
                 aria-label="Flip camera"
               >
                 <SwitchCamera className="w-5 h-5" />
+              </button>
+            )}
+
+            {screenShareEnabled && (
+              <button
+                onClick={toggleScreenShare}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                  screenShareOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
+                }`}
+                aria-label="Screen share"
+              >
+                {screenShareOn ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
               </button>
             )}
           </>
