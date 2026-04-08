@@ -409,6 +409,52 @@ const VoiceCallOverlay = ({
     tryAttach(0);
   }, [hasRemoteScreenShare, status]);
 
+  // Re-attach all video tracks when returning from minimized state
+  useEffect(() => {
+    if (minimized) return;
+    // Re-attach local camera
+    if (cameraOn) {
+      const room = roomRef.current;
+      if (room) {
+        const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (camPub?.track) {
+          const tryAttachLocal = (attempt: number) => {
+            if (localVideoRef.current) {
+              camPub.track!.attach(localVideoRef.current);
+            } else if (attempt < 10) {
+              setTimeout(() => tryAttachLocal(attempt + 1), 100);
+            }
+          };
+          tryAttachLocal(0);
+        }
+      }
+    }
+    // Re-attach remote video
+    if (hasRemoteVideo && pendingRemoteVideoTrackRef.current) {
+      const track = pendingRemoteVideoTrackRef.current;
+      const tryAttach = (attempt: number) => {
+        if (remoteVideoRef.current) {
+          track.attach(remoteVideoRef.current);
+        } else if (attempt < 10) {
+          setTimeout(() => tryAttach(attempt + 1), 100);
+        }
+      };
+      tryAttach(0);
+    }
+    // Re-attach remote screen share
+    if (hasRemoteScreenShare && pendingScreenShareTrackRef.current) {
+      const track = pendingScreenShareTrackRef.current;
+      const tryAttach = (attempt: number) => {
+        if (screenShareRef.current) {
+          track.attach(screenShareRef.current);
+        } else if (attempt < 10) {
+          setTimeout(() => tryAttach(attempt + 1), 100);
+        }
+      };
+      tryAttach(0);
+    }
+  }, [minimized, cameraOn, hasRemoteVideo, hasRemoteScreenShare]);
+
   // Ensure dial tone is killed the moment status leaves "ringing"
   useEffect(() => {
     if (status !== "ringing" && stopToneRef.current) {
