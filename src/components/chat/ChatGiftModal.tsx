@@ -191,7 +191,13 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
             </button>
           </div>
 
-          {activeTab === "emoji" ? (
+          {activeTab === "history" ? (
+            <ChatGiftHistory
+              conversationId={conversationId}
+              recipientId={recipientId}
+              recipientName={recipientName}
+            />
+          ) : activeTab === "emoji" ? (
             <>
               {/* Emoji tab header */}
               <div className="flex items-center justify-between">
