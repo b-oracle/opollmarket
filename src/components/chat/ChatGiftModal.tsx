@@ -180,6 +180,15 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
               <Banknote className="w-3.5 h-3.5" />
               Send Money
             </button>
+            <button
+              onClick={() => { setActiveTab("history"); setShowTopUp(false); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === "history" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <History className="w-3.5 h-3.5" />
+              History
+            </button>
           </div>
 
           {activeTab === "emoji" ? (
@@ -353,6 +362,12 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
                 <p className="text-[10px] text-center text-muted-foreground">🔒 PIN verification required for security</p>
               )}
             </div>
+          ) : (
+            <ChatGiftHistory
+              conversationId={conversationId}
+              recipientId={recipientId}
+              recipientName={recipientName}
+            />
           )}
         </div>
       </BottomSheet>
