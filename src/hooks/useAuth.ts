@@ -14,7 +14,9 @@ interface AuthContextValue {
   isAdmin: boolean;
   isModerator: boolean;
   isSupport: boolean;
+  isBusiness: boolean;
   hasAdminAccess: boolean;
+  hasBusinessAccess: boolean;
   canEdit: boolean;
   isEmailVerified: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -32,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isModerator, setIsModerator] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
+  const [isBusiness, setIsBusiness] = useState(false);
   const [rolesLoaded, setRolesLoaded] = useState(false);
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(null);
   const lastSessionRef = useRef<Session | null>(null);
@@ -52,17 +55,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const checkRoles = useCallback(async (userId: string, mounted: { current: boolean }) => {
     try {
-      const [{ data: superAdminData }, { data: adminData }, { data: modData }, { data: supportData }] = await Promise.all([
+      const [{ data: superAdminData }, { data: adminData }, { data: modData }, { data: supportData }, { data: businessData }] = await Promise.all([
         supabase.rpc("has_role", { _user_id: userId, _role: "super_admin" as any }),
         supabase.rpc("has_role", { _user_id: userId, _role: "admin" }),
         supabase.rpc("has_role", { _user_id: userId, _role: "moderator" }),
         supabase.rpc("has_role", { _user_id: userId, _role: "support" as any }),
+        supabase.rpc("has_role", { _user_id: userId, _role: "business" as any }),
       ]);
       if (mounted.current) {
         setIsSuperAdmin(!!superAdminData);
         setIsAdmin(!!adminData);
         setIsModerator(!!modData);
         setIsSupport(!!supportData);
+        setIsBusiness(!!businessData);
         setRolesLoaded(true);
       }
     } catch {
@@ -71,7 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAdmin(false);
         setIsModerator(false);
         setIsSupport(false);
-        setIsSupport(false);
+        setIsBusiness(false);
         setRolesLoaded(true);
       }
     }
@@ -115,7 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
-        setIsSupport(false);
+          setIsSupport(false);
+          setIsBusiness(false);
           setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
@@ -130,7 +136,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
-        setIsSupport(false);
+          setIsSupport(false);
+          setIsBusiness(false);
           setRolesLoaded(false);
           setProfileDisplayName(null);
           if (mounted.current) setLoading(false);
@@ -181,7 +188,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsSuperAdmin(false);
           setIsAdmin(false);
           setIsModerator(false);
-        setIsSupport(false);
+          setIsSupport(false);
+          setIsBusiness(false);
           setRolesLoaded(true);
           setProfileDisplayName(null);
         }
@@ -360,7 +368,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsSuperAdmin(false);
     setIsAdmin(false);
     setIsModerator(false);
-        setIsSupport(false);
+    setIsSupport(false);
+    setIsBusiness(false);
     setRolesLoaded(false);
     setProfileDisplayName(null);
 
@@ -386,11 +395,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const isEmailVerified = !!user?.email_confirmed_at;
   const hasAdminAccess = isSuperAdmin || isAdmin || isModerator || isSupport;
-  const canEdit = isSuperAdmin || isAdmin; // Super admin + admin can make changes (admin has same access as moderator)
+  const hasBusinessAccess = isBusiness || isSuperAdmin || isAdmin;
+  const canEdit = isSuperAdmin || isAdmin;
   const displayName = profileDisplayName || user?.user_metadata?.display_name || user?.email?.split("@")[0] || "User";
 
   const value: AuthContextValue = {
-    user, session, loading, rolesLoaded, displayName, isSuperAdmin, isAdmin, isModerator, isSupport, hasAdminAccess, canEdit, isEmailVerified,
+    user, session, loading, rolesLoaded, displayName, isSuperAdmin, isAdmin, isModerator, isSupport, isBusiness, hasAdminAccess, hasBusinessAccess, canEdit, isEmailVerified,
     signIn, signUp, signOut,
   };
 

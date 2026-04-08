@@ -224,6 +224,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          owner_id: string | null
           partner_name: string
           permissions: Json
           rate_limit_per_min: number
@@ -241,6 +242,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          owner_id?: string | null
           partner_name: string
           permissions?: Json
           rate_limit_per_min?: number
@@ -258,6 +260,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          owner_id?: string | null
           partner_name?: string
           permissions?: Json
           rate_limit_per_min?: number
@@ -4341,7 +4344,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user" | "super_admin" | "support"
+      app_role:
+        | "admin"
+        | "moderator"
+        | "user"
+        | "super_admin"
+        | "support"
+        | "business"
       space_role: "host" | "speaker" | "listener"
       space_status: "scheduled" | "live" | "ended" | "cancelled"
     }
@@ -4471,7 +4480,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user", "super_admin", "support"],
+      app_role: [
+        "admin",
+        "moderator",
+        "user",
+        "super_admin",
+        "support",
+        "business",
+      ],
       space_role: ["host", "speaker", "listener"],
       space_status: ["scheduled", "live", "ended", "cancelled"],
     },

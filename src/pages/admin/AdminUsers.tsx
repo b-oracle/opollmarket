@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle, Infinity, Headset } from "lucide-react";
+import { Loader2, Shield, ShieldOff, DollarSign, X, ShieldCheck, ShieldMinus, Search, Crown, Eye, Ban, CheckCircle, Infinity, Headset, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/lib/auditLog";
 import { motion, AnimatePresence } from "framer-motion";
@@ -32,7 +32,7 @@ const AdminUsers = () => {
   const [balanceModal, setBalanceModal] = useState<{ userId: string; name: string; current: number } | null>(null);
   const [creditAmount, setCreditAmount] = useState("");
   const [crediting, setCrediting] = useState(false);
-  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin" | "support"; hasRole: boolean } | null>(null);
+  const [roleConfirm, setRoleConfirm] = useState<{ userId: string; name: string; role: "admin" | "moderator" | "super_admin" | "support" | "business"; hasRole: boolean } | null>(null);
   const [blockConfirm, setBlockConfirm] = useState<{ userId: string; name: string; currentlyBlocked: boolean } | null>(null);
   const [unlimitedConfirm, setUnlimitedConfirm] = useState<{ userId: string; name: string; current: boolean } | null>(null);
   const [activityDrawer, setActivityDrawer] = useState<{ userId: string; name: string } | null>(null);
@@ -107,7 +107,7 @@ const AdminUsers = () => {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin" | "support", hasRole: boolean) => {
+  const toggleRole = async (userId: string, role: "admin" | "moderator" | "super_admin" | "support" | "business", hasRole: boolean) => {
     if (hasRole) {
       const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
       if (error) { toast.error(`Failed to remove ${role} role`); return; }
@@ -192,6 +192,7 @@ const AdminUsers = () => {
       case "admin": return { label: "Admin", cls: "bg-blue-500/10 text-blue-500" };
       case "moderator": return { label: "Moderator", cls: "bg-amber-500/10 text-amber-500" };
       case "support": return { label: "Support", cls: "bg-emerald-500/10 text-emerald-500" };
+      case "business": return { label: "Business", cls: "bg-violet-500/10 text-violet-500" };
       default: return { label: r, cls: "bg-muted text-muted-foreground" };
     }
   };
@@ -281,6 +282,7 @@ const AdminUsers = () => {
                 const isAdmin = u.roles.includes("admin");
                 const isMod = u.roles.includes("moderator");
                 const isSupport = u.roles.includes("support");
+                const isBiz = u.roles.includes("business");
                 const isSelf = u.id === currentUser?.id;
                 return (
                   <tr key={u.id} className={`border-b border-border/50 hover:bg-muted/30 ${u.is_blocked ? "opacity-60 bg-destructive/5" : ""}`}>
@@ -366,6 +368,15 @@ const AdminUsers = () => {
                               title={isSupport ? "Remove Support" : "Make Support"}
                             >
                               <Headset className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "business", hasRole: isBiz })}
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                isBiz ? "hover:bg-destructive/10 text-violet-500" : "hover:bg-violet-500/10 text-muted-foreground"
+                              }`}
+                              title={isBiz ? "Remove Business" : "Make Business"}
+                            >
+                              <Briefcase className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => setRoleConfirm({ userId: u.id, name: u.display_name || u.email || "User", role: "super_admin", hasRole: isSA })}
