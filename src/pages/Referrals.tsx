@@ -50,7 +50,7 @@ const Referrals = () => {
       if (!user) return [];
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, email, created_at")
+        .select("id, display_name, created_at")
         .eq("referred_by", user.id)
         .order("created_at", { ascending: false });
       return data || [];
@@ -381,7 +381,7 @@ const Referrals = () => {
                     {paginated.map((signup: any, i: number) => {
                       const isRewarded = rewardedUserIds.has(signup.id);
                       const reward = rewardByUserId.get(signup.id);
-                      const name = signup.display_name || signup.email?.split("@")[0] || "User";
+                      const name = signup.display_name || "User";
                       return (
                         <motion.div
                           key={signup.id}
