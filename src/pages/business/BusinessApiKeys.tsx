@@ -45,6 +45,9 @@ const API_ENDPOINTS = [
   { method: "POST", action: "create-user", perm: "trade", desc: "Create a user account" },
   { method: "POST", action: "deposit", perm: "deposit", desc: "Initiate crypto deposit" },
   { method: "GET/POST", action: "webhooks", perm: "any", desc: "Manage webhook config" },
+  { method: "GET", action: "comments", perm: "read", desc: "Read market comments" },
+  { method: "POST", action: "comments", perm: "trade", desc: "Post a comment" },
+  { method: "GET", action: "price-history", perm: "read", desc: "Historical price data" },
   { method: "GET", action: "embed-data", perm: "none", desc: "Public embed data (no key)" },
 ];
 

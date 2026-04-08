@@ -256,6 +256,24 @@ const Developers = () => {
                 response: `{ "pay_address": "...", "payment_id": "..." }`,
               },
               {
+                method: "GET", action: "comments",
+                desc: "Read comments for a market. Supports pagination.",
+                params: "Query: market_id (required), limit?, offset?",
+                response: `{ "comments": [{ "id": "...", "author_name": "...", "content": "...", "likes_count": 3 }], "count": 12 }`,
+              },
+              {
+                method: "POST", action: "comments",
+                desc: "Post a comment on a market. Requires user Bearer token + trade permission.",
+                params: "Body: { market_id, content, parent_id? }",
+                response: `{ "comment": { "id": "...", "content": "...", "created_at": "..." } }`,
+              },
+              {
+                method: "GET", action: "price-history",
+                desc: "Fetch historical trade prices for charting. Optionally filter by date.",
+                params: "Query: market_id (required), limit?, since? (ISO timestamp)",
+                response: `{ "trades": [{ "timestamp": "...", "side": "yes", "price": 0.65 }], "current": { "yes_price": 0.72 }, "count": 50 }`,
+              },
+              {
                 method: "GET/POST", action: "webhooks",
                 desc: "View or update your API key's webhook configuration.",
                 params: "GET: none | POST Body: { webhookUrl, webhookSecret? }",
