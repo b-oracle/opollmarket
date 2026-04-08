@@ -1,34 +1,40 @@
 
 
-## Plan: Fix Twitter Card Images for Shared Market Links
+## Plan: Enhanced Admin API Keys with Business Analytics
 
-### Problem
-When market links are shared on Twitter/X, the preview card shows the default OPoll placeholder instead of the market-specific image and title. This happens because:
+### What changes
 
-1. **Auto-tweets use the wrong URL** — `twitter-post-tweet` posts links like `https://opoll.org/market/{id}`, which is a client-side SPA route. Twitter's crawler gets the default `index.html` meta tags, not market-specific OG tags.
-2. **The `og-share` edge function exists** but is only used in `ShareModal.tsx` — not in auto-tweets or the `BetModal` share button.
-3. **SVG fallback won't work** — If a market has no `image_url`, the `og-image` function returns SVG, which Twitter doesn't support.
+Rebuild the Admin API Keys page (`src/pages/admin/AdminApiKeys.tsx`) to serve as a comprehensive management dashboard showing per-key analytics, owner details, webhook delivery logs, and usage stats.
 
-### Solution
+### New sections to add
 
-**1. Use `og-share` URL in all tweet links**
-Update `BetModal.tsx` (`ShareToXButton`) to construct the tweet URL using the `og-share` edge function instead of the direct SPA URL. This ensures Twitter's crawler hits the edge function and receives proper OG meta tags with the correct market image and title.
+1. **Summary cards at the top** -- Total keys, Active keys, Total API requests (from `api_request_logs`), Webhook events (from `webhook_events`).
 
-**2. Convert `og-image` fallback from SVG to PNG**
-The `og-image` edge function currently returns SVG. Twitter requires raster images (PNG/JPEG). Convert it to render the SVG to a PNG using the `@vercel/og`-style approach with Satori + resvg-wasm, or simply use a simpler HTML-to-image approach. This handles the case where a market has no uploaded image.
+2. **Per-key analytics** -- Each key card will show:
+   - Owner info (display name, avatar) joined from `profiles` via `owner_id`
+   - Total requests count and last-used timestamp from `api_request_logs`
+   - Top endpoints breakdown (e.g. "markets: 120, place-bet: 45")
+   - Requests in last 24h / 7d
+   - Webhook delivery stats: total sent, delivered, failed from `webhook_events`
 
-**3. Add `og:image` content type hint**
-In `og-share`, add `og:image:type` meta tag so Twitter knows the image format.
+3. **Expandable webhook event log per key** -- Show recent webhook events with status (delivered/failed), response code, event type, and timestamp from `webhook_events`.
 
-### Files to Change
+4. **Improved key card layout** -- Show owner name/avatar next to partner name, better visual hierarchy with usage sparkline data.
+
+### Data fetching approach
+
+- Fetch `api_keys` joined with owner profile info
+- Aggregate `api_request_logs` grouped by `api_key_id` for counts and top endpoints
+- Aggregate `webhook_events` grouped by `api_key_id` for delivery stats
+- All queries run client-side using the Supabase SDK (admin has SELECT access)
+
+### Files modified
 
 | File | Change |
-|------|--------|
-| `src/components/BetModal.tsx` | Use `og-share` URL in ShareToXButton tweet text |
-| `supabase/functions/og-image/index.ts` | Convert SVG output to PNG using resvg-wasm |
-| `supabase/functions/og-share/index.ts` | Add `og:image:type` meta tag |
+|---|---|
+| `src/pages/admin/AdminApiKeys.tsx` | Full rewrite with analytics cards, owner info, per-key usage stats, webhook logs |
 
-### Technical Detail
+### Technical detail
 
-The `og-share` function already fetches `market.image_url` and uses it as the OG image when available. The main fix is routing all shared links through `og-share` so Twitter's crawler gets the right meta tags. The PNG conversion of `og-image` is a secondary improvement for markets without uploaded images.
+No database migrations needed -- all data already exists in `api_request_logs` and `webhook_events` tables. The page will make 4 queries on load: api_keys (with profiles join via owner_id), aggregated request logs, aggregated webhook events, and recent webhook event details. Since RLS on these tables allows admin access, no policy changes are needed.
 
