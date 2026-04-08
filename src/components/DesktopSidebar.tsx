@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut, ChevronsLeft, ChevronsRight, LineChart } from "lucide-react";
+import { Home, Compass, PlusCircle, BarChart3, User, Trophy, Gift, HelpCircle, LogIn, LogOut, ChevronsLeft, ChevronsRight, LineChart, Briefcase } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import SignOutConfirmDialog from "@/components/SignOutConfirmDialog";
@@ -23,6 +23,7 @@ const DesktopSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { isBusiness } = useAuth();
   const [signOutOpen, setSignOutOpen] = useState(false);
   const { collapsed, toggle } = useSidebarState();
   const { isFeatureEnabled } = useFeatureToggles();

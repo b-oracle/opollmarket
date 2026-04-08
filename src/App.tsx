@@ -46,6 +46,10 @@ const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
+const BusinessLayout = lazy(() => import("./pages/business/BusinessLayout"));
+const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
+const BusinessApiKeys = lazy(() => import("./pages/business/BusinessApiKeys"));
+const BusinessCustomization = lazy(() => import("./pages/business/BusinessCustomization"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminMarkets = lazy(() => import("./pages/admin/AdminMarkets"));
 const AdminComments = lazy(() => import("./pages/admin/AdminComments"));
@@ -126,6 +130,7 @@ if (typeof window !== "undefined") {
 }
 
 const isAdminRoute = (pathname: string) => pathname.startsWith("/admin");
+const isBusinessRoute = (pathname: string) => pathname.startsWith("/business");
 const isEmbedRoute = (pathname: string) => pathname.startsWith("/embed/") || pathname === "/embed";
 
 const noFooterRoutes = ["/feed", "/quick-trade", "/messages"];
@@ -134,24 +139,25 @@ const isFullscreenRoute = (pathname: string) => pathname.startsWith("/messages")
 
 const ConditionalFooter = () => {
   const location = useLocation();
-  if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
+  if (isAdminRoute(location.pathname) || isBusinessRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
   if (noFooterRoutes.includes(location.pathname) || isFullscreenRoute(location.pathname)) return null;
   return <DesktopFooter />;
 };
 
 const ConditionalSidebar = () => {
   const location = useLocation();
-  if (isAdminRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
+  if (isAdminRoute(location.pathname) || isBusinessRoute(location.pathname) || isEmbedRoute(location.pathname)) return null;
   return <DesktopSidebar />;
 };
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdmin = isAdminRoute(location.pathname);
+  const isBusiness = isBusinessRoute(location.pathname);
   const isEmbed = isEmbedRoute(location.pathname);
   const isFullscreen = isFullscreenRoute(location.pathname);
   const { collapsed } = useSidebarState();
-  const ml = (isAdmin || isEmbed) ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
+  const ml = (isAdmin || isBusiness || isEmbed) ? "" : collapsed ? "lg:ml-[4.5rem]" : "lg:ml-60";
   return <div className={`${ml} ${isFullscreen ? "h-[100dvh] overflow-hidden" : "min-h-screen"} flex flex-col transition-all duration-300`}>{children}</div>;
 };
 
@@ -546,6 +552,11 @@ const App = () => {
                           <Route path="kyc" element={<AdminKyc />} />
                           <Route path="support" element={<AdminSupport />} />
                           <Route path="escrows" element={<AdminEscrows />} />
+                        </Route>
+                        <Route path="/business" element={<BusinessLayout />}>
+                          <Route index element={<BusinessDashboard />} />
+                          <Route path="api-keys" element={<BusinessApiKeys />} />
+                          <Route path="customize" element={<BusinessCustomization />} />
                         </Route>
                         <Route path="/developers" element={<Developers />} />
                         <Route path="/embed/market/:id" element={<EmbedMarket />} />

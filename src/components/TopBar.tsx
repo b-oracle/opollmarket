@@ -59,7 +59,7 @@ const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boo
 };
 
 const TopBar = () => {
-  const { user, isSuperAdmin, isAdmin, hasAdminAccess, signOut, loading, displayName } = useAuth();
+  const { user, isSuperAdmin, isAdmin, hasAdminAccess, isBusiness, signOut, loading, displayName } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -112,6 +112,23 @@ const TopBar = () => {
         </div>
         <div className="hidden lg:block" />
         <div className="flex items-center gap-2">
+          {/* Business mode toggle */}
+          {isBusiness && user && !hasAdminAccess && (
+            <button
+              onClick={() => navigate(location.pathname.startsWith("/business") ? "/" : "/business")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all active:scale-95 ${
+                location.pathname.startsWith("/business")
+                  ? "bg-violet-500/20 text-violet-500 border border-violet-500/30"
+                  : "bg-muted/50 text-muted-foreground border border-border hover:border-violet-500/30 hover:text-violet-500"
+              }`}
+            >
+              {location.pathname.startsWith("/business") ? (
+                <><ArrowLeft className="w-3.5 h-3.5" /> User Mode</>
+              ) : (
+                <><Shield className="w-3.5 h-3.5" /> Business</>
+              )}
+            </button>
+          )}
           {/* Admin mode toggle for admin users */}
           {hasAdminAccess && user && (
             <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} />
