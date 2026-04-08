@@ -27,13 +27,13 @@ const AddLiquidityModal = ({ open, onClose, marketId, marketTitle, currentLiquid
   const [minLiquidity, setMinLiquidity] = useState(10);
 
   useEffect(() => {
-    supabase.from("public_commission_settings" as any).select("min_liquidity").limit(1).single().then(({ data }) => {
-      if (data) setMinLiquidity(Number((data as any).min_liquidity) || 10);
+    supabase.from("commission_settings").select("min_liquidity").limit(1).single().then(({ data }) => {
+      if (data) setMinLiquidity(Number((data as any).min_liquidity) || 1);
     });
   }, []);
 
   const numAmount = parseFloat(amount) || 0;
-  const isValid = numAmount >= minLiquidity && numAmount <= balance;
+  const isValid = numAmount > 0 && (balance <= 0 || numAmount <= balance);
 
   const handleSubmit = async () => {
     if (!isValid || !userId || submitting) return;
