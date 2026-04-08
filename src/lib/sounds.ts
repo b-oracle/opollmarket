@@ -104,6 +104,7 @@ export function playDialTone(): () => void {
     const ctx = getAudioContext();
     let stopped = false;
     let timeoutId: ReturnType<typeof setTimeout>;
+    let activeGain: GainNode | null = null;
 
     const playBurst = () => {
       if (stopped) return;
@@ -133,6 +134,8 @@ export function playDialTone(): () => void {
       osc1.stop(now + 1.1);
       osc2.stop(now + 1.1);
 
+      activeGain = gain;
+
       // Repeat after 3s gap (1s tone + 2s silence)
       timeoutId = setTimeout(playBurst, 3000);
     };
@@ -142,6 +145,11 @@ export function playDialTone(): () => void {
     return () => {
       stopped = true;
       clearTimeout(timeoutId);
+      // Immediately silence any currently playing burst
+      if (activeGain) {
+        try { activeGain.disconnect(); } catch {}
+        activeGain = null;
+      }
     };
   } catch {
     return () => {};
