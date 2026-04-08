@@ -319,6 +319,8 @@ const VoiceCallOverlay = ({
           setStatus("active");
           startTimeRef.current = Date.now();
         } else {
+          // Kill any existing dial tone before starting a new one (prevents orphaned tones on reconnect)
+          if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
           stopToneRef.current = playDialTone();
         }
       })
