@@ -3952,9 +3952,9 @@ export type Database = {
           interests: string[] | null
           is_public: boolean | null
           kyc_status: string | null
-          location: string | null
-          social_tutorial_seen: boolean | null
+          referred_by: string | null
           twitter_avatar_url: string | null
+          twitter_linked_at: string | null
           twitter_username: string | null
           unlimited_markets: boolean | null
           updated_at: string | null
@@ -3970,9 +3970,9 @@ export type Database = {
           interests?: string[] | null
           is_public?: boolean | null
           kyc_status?: string | null
-          location?: string | null
-          social_tutorial_seen?: boolean | null
+          referred_by?: string | null
           twitter_avatar_url?: string | null
+          twitter_linked_at?: string | null
           twitter_username?: string | null
           unlimited_markets?: boolean | null
           updated_at?: string | null
@@ -3988,9 +3988,9 @@ export type Database = {
           interests?: string[] | null
           is_public?: boolean | null
           kyc_status?: string | null
-          location?: string | null
-          social_tutorial_seen?: boolean | null
+          referred_by?: string | null
           twitter_avatar_url?: string | null
+          twitter_linked_at?: string | null
           twitter_username?: string | null
           unlimited_markets?: boolean | null
           updated_at?: string | null
