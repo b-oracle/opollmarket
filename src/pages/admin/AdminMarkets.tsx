@@ -367,9 +367,12 @@ const AdminMarkets = () => {
     // Upload new image if selected
     if (editState.newImageFile) {
       try {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) throw new Error("Not authenticated");
         const compressed = await compressImage(editState.newImageFile, "market-banner");
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
-        const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: "image/webp", upsert: true });
+        const ext = compressed.type === "image/webp" ? "webp" : compressed.type === "image/jpeg" ? "jpg" : "webp";
+        const fileName = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: compressed.type, upsert: true });
         if (upErr) throw upErr;
         const { data: pubData } = supabase.storage.from("market-images").getPublicUrl(fileName);
         imageUrl = pubData.publicUrl;
