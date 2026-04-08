@@ -845,7 +845,7 @@ const VoiceCallOverlay = ({
       {/* Doodle pattern layer */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.08] dark:opacity-[0.10]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
       {/* E2EE indicator + minimize */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 z-10" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
+      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 z-20" style={{ paddingTop: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
         <div className="flex items-center gap-1.5 text-xs text-emerald-500">
           <Lock className="w-3 h-3" />
           <span>End-to-end encrypted</span>
@@ -859,17 +859,17 @@ const VoiceCallOverlay = ({
 
       {/* Close / back */}
       {status === "ended" && (
-        <button onClick={onClose} className="absolute right-6 text-muted-foreground z-10" style={{ top: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
+        <button onClick={onClose} className="absolute right-6 text-muted-foreground z-20" style={{ top: "max(1.5rem, calc(var(--safe-top) + 0.5rem))" }}>
           <X className="w-5 h-5" />
         </button>
       )}
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col items-center justify-center relative">
+      {/* Main content area — on desktop use a centered constrained layout */}
+      <div className="flex-1 flex flex-col items-center justify-center relative min-h-0">
         {/* Video feeds — shown when any video is active */}
         {hasAnyVideo && status === "active" ? (
-          <div className="w-full h-full relative">
-            {/* Remote screen share — full screen */}
+          <div className="w-full h-full relative flex items-center justify-center">
+            {/* Remote screen share — full screen with contain */}
             {hasRemoteScreenShare && (
               <video
                 ref={screenShareRef}
@@ -879,17 +879,16 @@ const VoiceCallOverlay = ({
               />
             )}
 
-            {/* Remote camera — full screen or inset if screen share is active */}
+            {/* Remote camera — contained on desktop, cover on mobile */}
             {hasRemoteVideo && (
               <video
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
                 className={hasRemoteScreenShare
-                  ? "absolute top-16 right-4 w-32 h-24 rounded-xl object-cover border-2 border-border shadow-lg z-10"
-                  : "w-full h-full object-cover"
+                  ? "absolute top-16 right-4 w-32 h-24 lg:w-48 lg:h-36 rounded-xl object-cover border-2 border-border shadow-lg z-10"
+                  : "w-full h-full object-cover sm:object-contain sm:max-h-[calc(100vh-10rem)] sm:max-w-[calc(100vw-2rem)]"
                 }
-                style={!hasRemoteScreenShare ? {} : {}}
               />
             )}
 
@@ -897,7 +896,7 @@ const VoiceCallOverlay = ({
             {!hasRemoteVideo && !hasRemoteScreenShare && (
               <div className="w-full h-full flex items-center justify-center">
                 <div
-                  className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden transition-shadow duration-150"
+                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden transition-shadow duration-150"
                   style={{
                     boxShadow: remoteAudioLevel > 0.05
                       ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
@@ -907,16 +906,16 @@ const VoiceCallOverlay = ({
                   {otherUserAvatar ? (
                     <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
                   ) : (
-                    <span className="text-3xl font-bold text-primary">{otherUserName.charAt(0).toUpperCase()}</span>
+                    <span className="text-3xl lg:text-4xl font-bold text-primary">{otherUserName.charAt(0).toUpperCase()}</span>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Local camera PiP — draggable */}
+            {/* Local camera PiP — draggable, larger on desktop */}
             {cameraOn && (
               <div
-                className="absolute w-28 h-36 rounded-xl overflow-hidden border-2 border-border shadow-lg z-10 touch-none cursor-grab active:cursor-grabbing"
+                className="absolute w-28 h-36 sm:w-36 sm:h-48 lg:w-44 lg:h-56 rounded-xl overflow-hidden border-2 border-border shadow-lg z-10 touch-none cursor-grab active:cursor-grabbing"
                 style={{
                   bottom: `${pipPos.y}px`,
                   right: `${pipPos.x}px`,
@@ -953,8 +952,8 @@ const VoiceCallOverlay = ({
               </div>
             )}
 
-            {/* Name + duration overlay */}
-            <div className="absolute bottom-20 left-0 right-0 text-center z-10">
+            {/* Name + duration overlay — positioned above controls */}
+            <div className="absolute bottom-0 left-0 right-0 text-center z-10 pb-2">
               <h2 className="text-lg font-semibold text-foreground drop-shadow-md">{otherUserName}</h2>
               <p className="text-sm text-muted-foreground">
                 {reconnecting ? "Reconnecting..." : waitingReconnect ? `Waiting for ${otherUserName}...` : formatTime(duration)}
@@ -966,7 +965,7 @@ const VoiceCallOverlay = ({
           <>
             <div className="flex items-center gap-6 mb-4">
               <div
-                className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
+                className="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
                 style={{
                   boxShadow: status === "active" && remoteAudioLevel > 0.05
                     ? `0 0 ${12 + remoteAudioLevel * 30}px ${4 + remoteAudioLevel * 10}px hsl(var(--primary) / ${0.35 + remoteAudioLevel * 0.55})`
@@ -976,7 +975,7 @@ const VoiceCallOverlay = ({
                 {otherUserAvatar ? (
                   <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
                 ) : (
-                  <span className="text-3xl font-bold text-primary">{otherUserName.charAt(0).toUpperCase()}</span>
+                  <span className="text-3xl lg:text-4xl font-bold text-primary">{otherUserName.charAt(0).toUpperCase()}</span>
                 )}
               </div>
             </div>
@@ -1010,47 +1009,47 @@ const VoiceCallOverlay = ({
         </div>
       )}
 
-      {/* Controls */}
-      <div className="flex items-center justify-center gap-3 pb-8 px-4 shrink-0 flex-wrap" style={{ paddingBottom: "max(2rem, calc(var(--safe-bottom) + 1rem))" }}>
+      {/* Controls — always visible, never pushed off-screen */}
+      <div className="shrink-0 flex items-center justify-center gap-3 px-4 py-4 lg:gap-4" style={{ paddingBottom: "max(1.5rem, calc(var(--safe-bottom) + 1rem))" }}>
         {status === "active" && !showRejoin && (
           <>
             <button
               onClick={toggleMute}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              className={`w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center transition-colors ${
                 muted ? "bg-destructive/20 text-destructive" : "bg-muted text-foreground"
               }`}
             >
-              {muted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              {muted ? <MicOff className="w-5 h-5 lg:w-6 lg:h-6" /> : <Mic className="w-5 h-5 lg:w-6 lg:h-6" />}
             </button>
 
             <button
               onClick={toggleCamera}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              className={`w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center transition-colors ${
                 cameraOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
               }`}
             >
-              {cameraOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              {cameraOn ? <Video className="w-5 h-5 lg:w-6 lg:h-6" /> : <VideoOff className="w-5 h-5 lg:w-6 lg:h-6" />}
             </button>
 
             {cameraOn && (
               <button
                 onClick={flipCamera}
-                className="w-12 h-12 rounded-full flex items-center justify-center bg-muted text-foreground transition-colors"
+                className="w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center bg-muted text-foreground transition-colors"
                 aria-label="Flip camera"
               >
-                <SwitchCamera className="w-5 h-5" />
+                <SwitchCamera className="w-5 h-5 lg:w-6 lg:h-6" />
               </button>
             )}
 
             {screenShareEnabled && (
               <button
                 onClick={toggleScreenShare}
-                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center transition-colors ${
                   screenShareOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
                 }`}
                 aria-label="Screen share"
               >
-                {screenShareOn ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                {screenShareOn ? <MonitorOff className="w-5 h-5 lg:w-6 lg:h-6" /> : <Monitor className="w-5 h-5 lg:w-6 lg:h-6" />}
               </button>
             )}
           </>
@@ -1059,9 +1058,9 @@ const VoiceCallOverlay = ({
         {(status === "ringing" || status === "connecting" || status === "active") && !showRejoin && (
           <button
             onClick={status === "ringing" && isOutgoing ? handleCancel : handleEnd}
-            className="w-14 h-14 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground active:scale-95 transition-transform"
+            className="w-14 h-14 lg:w-16 lg:h-16 rounded-full bg-destructive flex items-center justify-center text-destructive-foreground active:scale-95 transition-transform"
           >
-            <PhoneOff className="w-6 h-6" />
+            <PhoneOff className="w-6 h-6 lg:w-7 lg:h-7" />
           </button>
         )}
 
@@ -1069,11 +1068,11 @@ const VoiceCallOverlay = ({
           <>
             <button
               onClick={toggleSpeaker}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+              className={`w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center transition-colors ${
                 speakerOn ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-foreground"
               }`}
             >
-              {speakerOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+              {speakerOn ? <Volume2 className="w-5 h-5 lg:w-6 lg:h-6" /> : <VolumeX className="w-5 h-5 lg:w-6 lg:h-6" />}
             </button>
           </>
         )}
