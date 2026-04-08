@@ -173,14 +173,14 @@ const Developers = () => {
               },
               {
                 method: "GET", action: "balance",
-                desc: "Get a user's balance.",
-                params: "user_id (required)",
+                desc: "Get authenticated user's balance (scoped via Bearer token).",
+                params: "Bearer token required",
                 response: `{ "balance": { "amount": 100.50, "bonus_balance": 5.00, "currency": "USDT" } }`,
               },
               {
                 method: "GET", action: "positions",
-                desc: "Get a user's open positions with market data.",
-                params: "user_id (required)",
+                desc: "Get authenticated user's open positions with market data.",
+                params: "Bearer token required",
                 response: `{ "positions": [{ "market_id": "...", "side": "yes", "shares": 10, ... }] }`,
               },
               {
@@ -190,10 +190,52 @@ const Developers = () => {
                 response: `{ "market": { "id": "...", "title": "...", "yes_price": 0.65, "options": [...] } }`,
               },
               {
+                method: "GET", action: "categories",
+                desc: "List all active market categories.",
+                params: "None",
+                response: `{ "categories": ["Sports", "Crypto", "Politics", ...] }`,
+              },
+              {
+                method: "GET", action: "trending",
+                desc: "Fetch markets ranked by trending score.",
+                params: "limit (max 50, default 20)",
+                response: `{ "markets": [{ "id": "...", "title": "...", "trending_score": 85.2, ... }] }`,
+              },
+              {
+                method: "GET", action: "search",
+                desc: "Full-text search across market titles and descriptions.",
+                params: "q (required, min 2 chars), limit (max 50), status",
+                response: `{ "markets": [...], "count": 5 }`,
+              },
+              {
+                method: "GET", action: "market-trades",
+                desc: "Fetch recent confirmed trades for a specific market.",
+                params: "marketId (required), limit (max 100), offset",
+                response: `{ "trades": [{ "type": "buy", "side": "yes", "amount": 10, ... }], "count": 50 }`,
+              },
+              {
+                method: "GET", action: "trade-history",
+                desc: "Authenticated user's transaction log.",
+                params: "Bearer token required, type (optional filter), limit, offset",
+                response: `{ "trades": [{ "type": "buy", "amount": 25, "market_id": "...", ... }], "count": 20 }`,
+              },
+              {
                 method: "POST", action: "place-bet",
                 desc: "Place a prediction on a market. Requires user Bearer token.",
                 params: "Body: { marketId, side, amount, optionId? }",
                 response: `{ "success": true, "transaction_id": "..." }`,
+              },
+              {
+                method: "POST", action: "sell-position",
+                desc: "Close/exit an open position. Requires user Bearer token.",
+                params: "Body: { positionId }",
+                response: `{ "success": true, "netProceeds": 12.50, "exitFee": 0.65 }`,
+              },
+              {
+                method: "POST", action: "boost-market",
+                desc: "Programmatically boost a market's visibility. Requires trade permission.",
+                params: "Body: { marketId, tier: 'flash'|'standard'|'whale' }",
+                response: `{ "boost_id": "...", "pay_address": "...", "pay_amount": 20 }`,
               },
               {
                 method: "POST", action: "create-user",
@@ -205,13 +247,19 @@ const Developers = () => {
                 method: "POST", action: "create-market",
                 desc: "Create a new prediction market. Requires user Bearer token + trade permission.",
                 params: "Body: { title, description, category, endDate, marketType?, options?, imageUrl?, resolutionSource?, initialLiquidity? }",
-                response: `{ "market": { "id": "...", "title": "...", "status": "active" } }`,
+                response: `{ "market": { "id": "...", "title": "...", "status": "pending" } }`,
               },
               {
                 method: "POST", action: "deposit",
                 desc: "Initiate a crypto deposit. Requires user Bearer token.",
                 params: "Body: { amount, currency? }",
                 response: `{ "pay_address": "...", "payment_id": "..." }`,
+              },
+              {
+                method: "GET/POST", action: "webhooks",
+                desc: "View or update your API key's webhook configuration.",
+                params: "GET: none | POST Body: { webhookUrl, webhookSecret? }",
+                response: `{ "success": true, "message": "Webhook configuration updated" }`,
               },
             ].map((ep) => (
               <div key={ep.action} className="bg-card border border-border rounded-xl p-4 space-y-2">
