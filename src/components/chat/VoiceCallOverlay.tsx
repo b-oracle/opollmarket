@@ -3,7 +3,7 @@ import { Room, RoomEvent, Track } from "livekit-client";
 import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
+import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Maximize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
 
 interface VoiceCallOverlayProps {
@@ -783,7 +783,7 @@ const VoiceCallOverlay = ({
               className="w-8 h-8 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               title="Expand"
             >
-              <Minimize2 className="w-3.5 h-3.5" />
+              <Maximize2 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
