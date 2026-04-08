@@ -56,7 +56,7 @@ const AdminEscrows = () => {
     let profiles: Record<string, { display_name: string; email: string }> = {};
     if (userIds.length) {
       const { data: pData } = await supabase
-        .from("public_profiles" as any)
+        .from("profiles")
         .select("id, display_name, email")
         .in("id", userIds);
       (pData || []).forEach((p: any) => { profiles[p.id] = p; });

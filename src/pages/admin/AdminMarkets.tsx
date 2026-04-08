@@ -262,7 +262,7 @@ const AdminMarkets = () => {
       const modIds = [...new Set(data.filter(m => m.moderator_id).map(m => m.moderator_id!))];
       if (modIds.length > 0) {
         const { data: modProfiles } = await supabase
-          .from("public_profiles" as any)
+          .from("profiles")
           .select("id, display_name, email")
           .in("id", modIds);
         const map = new Map<string, string>();

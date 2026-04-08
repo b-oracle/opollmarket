@@ -92,7 +92,7 @@ const AdminDashboard = () => {
         supabase.from("markets").select("*", { count: "exact", head: true }),
         supabase.from("comments").select("*", { count: "exact", head: true }),
         supabase.from("market_boosts").select("*", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("public_profiles" as any).select("*", { count: "exact", head: true }),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("transactions").select("*", { count: "exact", head: true }),
         supabase.from("referral_rewards").select("*", { count: "exact", head: true }),
         supabase.from("quick_rounds").select("*", { count: "exact", head: true }),

@@ -79,7 +79,7 @@ const AdminCommissions = () => {
       const creatorUserIds = [...new Set((txns || []).filter(t => !ids.has(t.user_id)).map(t => t.user_id))];
       if (creatorUserIds.length > 0) {
         const { data: profiles } = await supabase
-          .from("public_profiles" as any)
+          .from("profiles")
           .select("id, display_name, email")
           .in("id", creatorUserIds);
         setProfileMap(new Map((profiles || []).map((p) => [p.id, p.display_name || p.email || p.id.slice(0, 8)])));
