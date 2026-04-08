@@ -3262,6 +3262,7 @@ export type Database = {
           api_key_id: string | null
           bonus_amount: number
           created_at: string
+          description: string | null
           id: string
           is_copy_trade: boolean
           market_id: string | null
@@ -3281,6 +3282,7 @@ export type Database = {
           api_key_id?: string | null
           bonus_amount?: number
           created_at?: string
+          description?: string | null
           id?: string
           is_copy_trade?: boolean
           market_id?: string | null
@@ -3300,6 +3302,7 @@ export type Database = {
           api_key_id?: string | null
           bonus_amount?: number
           created_at?: string
+          description?: string | null
           id?: string
           is_copy_trade?: boolean
           market_id?: string | null
