@@ -276,7 +276,7 @@ const ConversationList = () => {
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
         <div className="shrink-0 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 z-30" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
-          <button onClick={() => navigate("/feed?tab=social")} className="text-muted-foreground hover:text-foreground">
+          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-bold flex-1">
