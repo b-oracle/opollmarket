@@ -149,6 +149,7 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); e.target.value = ""; return; }
     const ext = file.name.split(".").pop();
     const path = `${user.id}/support-${ticketId}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage.from("market-images").upload(path, file);

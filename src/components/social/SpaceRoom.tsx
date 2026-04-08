@@ -2053,6 +2053,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       recorder.start(1000); // collect chunks every second
       mediaRecorderRef.current = recorder;
       setRecording(true);
+
+      // Auto-stop after 2 hours
+      const MAX_RECORDING_MS = 2 * 60 * 60 * 1000;
+      setTimeout(() => {
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+          toast.info("Recording reached 2-hour limit, saving...");
+          stopClientRecording();
+        }
+      }, MAX_RECORDING_MS);
+
       toast.success("Recording started 🔴");
     } catch (err: any) {
       toast.error(err.message || "Failed to start recording");
@@ -2120,6 +2130,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
       if (blob.size < 1000) {
         toast.error("Recording too short");
+        setRecording(false);
+        setRecordingLoading(false);
+        return;
+      }
+
+      // Cap at 50 MB
+      const MAX_RECORDING_BYTES = 50 * 1024 * 1024;
+      if (blob.size > MAX_RECORDING_BYTES) {
+        toast.error("Recording exceeds 50MB limit. Try a shorter session.");
         setRecording(false);
         setRecordingLoading(false);
         return;
