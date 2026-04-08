@@ -486,6 +486,241 @@ Deno.serve(async (req) => {
       return json({ market, note: "Market created as pending — requires admin approval" }, 201);
     }
 
+    // ==================== BOOST MARKET ====================
+    if (action === "boost-market" && req.method === "POST") {
+      if (!hasPermission("trade")) return err("Permission denied", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const body = await req.json();
+      const { marketId, tier, paymentMethod } = body;
+
+      if (!marketId) return err("Missing marketId");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(marketId)) {
+        return err("Invalid marketId format");
+      }
+      if (!tier || !["flash", "standard", "whale"].includes(tier)) {
+        return err("Invalid tier. Must be flash, standard, or whale");
+      }
+
+      // Invoke existing create-boost-payment edge function
+      const boostUrl = `${supabaseUrl}/functions/v1/create-boost-payment`;
+      const resp = await fetch(boostUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: req.headers.get("authorization") || "",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({ market_id: marketId, tier }),
+      });
+
+      const result = await resp.json();
+
+      // Track via API key
+      if (resp.ok && apiKeyRecord) {
+        await admin.from("api_request_logs").insert({
+          api_key_id: apiKeyRecord.id,
+          endpoint: "boost-market",
+          ip: req.headers.get("x-forwarded-for") || "unknown",
+        }).then(() => {});
+      }
+
+      return json(result, resp.status);
+    }
+
+    // ==================== SELL POSITION ====================
+    if (action === "sell-position" && req.method === "POST") {
+      if (!hasPermission("trade")) return err("Permission denied: trade not allowed", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const body = await req.json();
+      const { positionId } = body;
+
+      if (!positionId) return err("Missing positionId");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(positionId)) {
+        return err("Invalid positionId format");
+      }
+
+      // Invoke existing sell-position edge function
+      const sellUrl = `${supabaseUrl}/functions/v1/sell-position`;
+      const resp = await fetch(sellUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: req.headers.get("authorization") || "",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({ positionId }),
+      });
+
+      const result = await resp.json();
+      return json(result, resp.status);
+    }
+
+    // ==================== MARKET TRADES ====================
+    if (action === "market-trades" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const marketId = url.searchParams.get("marketId");
+      if (!marketId) return err("Missing marketId parameter");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(marketId)) {
+        return err("Invalid marketId format");
+      }
+
+      const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
+      const offset = parseInt(url.searchParams.get("offset") || "0");
+      if (isNaN(limit) || limit < 1 || isNaN(offset) || offset < 0) {
+        return err("Invalid limit or offset");
+      }
+
+      const { data, error } = await admin
+        .from("transactions")
+        .select("id, type, side, amount, price, shares, status, created_at")
+        .eq("market_id", marketId)
+        .in("type", ["buy", "sell"])
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) return err("Failed to fetch trades", 500);
+      return json({ trades: data, count: data?.length ?? 0 });
+    }
+
+    // ==================== USER TRADE HISTORY ====================
+    if (action === "trade-history" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
+      const offset = parseInt(url.searchParams.get("offset") || "0");
+      const type = url.searchParams.get("type"); // buy, sell, deposit, etc.
+
+      if (isNaN(limit) || limit < 1 || isNaN(offset) || offset < 0) {
+        return err("Invalid limit or offset");
+      }
+
+      let query = admin
+        .from("transactions")
+        .select("id, type, side, amount, price, shares, status, market_id, created_at, description")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (type) query = query.eq("type", type);
+
+      const { data, error } = await query;
+      if (error) return err("Failed to fetch trade history", 500);
+      return json({ trades: data, count: data?.length ?? 0 });
+    }
+
+    // ==================== CATEGORIES ====================
+    if (action === "categories" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const { data, error } = await admin
+        .from("markets")
+        .select("category")
+        .eq("status", "active");
+
+      if (error) return err("Failed to fetch categories", 500);
+
+      const categories = [...new Set((data || []).map((m: any) => m.category).filter(Boolean))].sort();
+      return json({ categories });
+    }
+
+    // ==================== TRENDING MARKETS ====================
+    if (action === "trending" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 50);
+
+      const { data, error } = await admin.rpc("get_trending_scores");
+
+      if (error) return err("Failed to fetch trending markets", 500);
+
+      const topIds = (data || []).slice(0, limit).map((r: any) => r.market_id);
+
+      if (topIds.length === 0) return json({ markets: [] });
+
+      const { data: markets } = await admin
+        .from("markets")
+        .select("id, title, description, category, yes_price, no_price, volume, participants, end_date, status, image_url, market_type, created_at")
+        .in("id", topIds);
+
+      // Merge scores and sort
+      const scoreMap = new Map((data || []).map((r: any) => [r.market_id, r.total_score]));
+      const sorted = (markets || [])
+        .map((m: any) => ({ ...m, trending_score: scoreMap.get(m.id) || 0 }))
+        .sort((a: any, b: any) => b.trending_score - a.trending_score);
+
+      return json({ markets: sorted });
+    }
+
+    // ==================== WEBHOOKS MANAGEMENT ====================
+    if (action === "webhooks" && (req.method === "GET" || req.method === "POST" || req.method === "PUT")) {
+      if (!apiKeyRecord) return err("API key required", 401);
+
+      // GET — return current webhook config
+      if (req.method === "GET") {
+        return json({
+          webhook_url: apiKeyRecord.webhook_url || null,
+          webhook_secret: apiKeyRecord.webhook_secret ? "***configured***" : null,
+        });
+      }
+
+      // POST/PUT — update webhook config
+      const body = await req.json();
+      const { webhookUrl, webhookSecret } = body;
+
+      if (webhookUrl !== undefined) {
+        if (webhookUrl !== null && typeof webhookUrl === "string") {
+          if (!/^https?:\/\/.+/.test(webhookUrl)) return err("webhookUrl must be a valid HTTP(S) URL");
+        }
+      }
+
+      const updates: Record<string, any> = {};
+      if (webhookUrl !== undefined) updates.webhook_url = webhookUrl || null;
+      if (webhookSecret !== undefined) updates.webhook_secret = webhookSecret || null;
+      updates.updated_at = new Date().toISOString();
+
+      const { error } = await admin
+        .from("api_keys")
+        .update(updates)
+        .eq("id", apiKeyRecord.id);
+
+      if (error) return err("Failed to update webhook config", 500);
+      return json({ success: true, message: "Webhook configuration updated" });
+    }
+
+    // ==================== MARKET SEARCH ====================
+    if (action === "search" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const q = url.searchParams.get("q");
+      if (!q || q.trim().length < 2) return err("Search query (q) must be at least 2 characters");
+
+      const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 50);
+      const status = url.searchParams.get("status") || "active";
+      const sanitized = q.trim().replace(/[%_]/g, "");
+
+      const { data, error } = await admin
+        .from("markets")
+        .select("id, title, description, category, yes_price, no_price, volume, participants, end_date, status, image_url, market_type, created_at")
+        .eq("status", status)
+        .or(`title.ilike.%${sanitized}%,description.ilike.%${sanitized}%`)
+        .order("volume", { ascending: false })
+        .limit(limit);
+
+      if (error) return err("Search failed", 500);
+      return json({ markets: data, count: data?.length ?? 0 });
+    }
+
     return err(`Unknown action: ${action}`, 404);
   } catch (e) {
     console.error("api-public error:", e);
