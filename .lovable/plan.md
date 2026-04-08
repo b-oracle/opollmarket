@@ -1,81 +1,34 @@
 
 
-## Plan: Business Role & Dashboard
+## Plan: Fix Twitter Card Images for Shared Market Links
 
-### Overview
-Add a new `business` role to the platform. Business users get their own `/business` dashboard (separate from admin) with analytics, API key management, and customization tools. Admins can assign the `business` role to any account.
+### Problem
+When market links are shared on Twitter/X, the preview card shows the default OPoll placeholder instead of the market-specific image and title. This happens because:
 
-### Database Changes
+1. **Auto-tweets use the wrong URL** — `twitter-post-tweet` posts links like `https://opoll.org/market/{id}`, which is a client-side SPA route. Twitter's crawler gets the default `index.html` meta tags, not market-specific OG tags.
+2. **The `og-share` edge function exists** but is only used in `ShareModal.tsx` — not in auto-tweets or the `BetModal` share button.
+3. **SVG fallback won't work** — If a market has no `image_url`, the `og-image` function returns SVG, which Twitter doesn't support.
 
-**1. Add `business` to `app_role` enum**
-```sql
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'business';
-```
+### Solution
 
-**2. RLS policies for business users**
-- Allow business users to read their own API keys from `api_keys` (currently admin-only)
-- Allow business users to read their own analytics data (markets they created, transaction volume on their markets)
+**1. Use `og-share` URL in all tweet links**
+Update `BetModal.tsx` (`ShareToXButton`) to construct the tweet URL using the `og-share` edge function instead of the direct SPA URL. This ensures Twitter's crawler hits the edge function and receives proper OG meta tags with the correct market image and title.
 
-### Auth & Role System Updates
+**2. Convert `og-image` fallback from SVG to PNG**
+The `og-image` edge function currently returns SVG. Twitter requires raster images (PNG/JPEG). Convert it to render the SVG to a PNG using the `@vercel/og`-style approach with Satori + resvg-wasm, or simply use a simpler HTML-to-image approach. This handles the case where a market has no uploaded image.
 
-**3. Update `useAuth.ts`**
-- Add `isBusiness` state, check via `has_role(_user_id, 'business')`
-- Add `hasBusinessAccess` computed property
-- Expose in context
+**3. Add `og:image` content type hint**
+In `og-share`, add `og:image:type` meta tag so Twitter knows the image format.
 
-### Routing & Layout
+### Files to Change
 
-**4. Create `BusinessLayout` component** (`src/pages/business/BusinessLayout.tsx`)
-- Similar structure to `AdminLayout` but with a trimmed sidebar: Dashboard, API Keys, Customization
-- Auth gate: redirect to `/auth` if user lacks `business` role
-- Own sidebar branding ("Business Portal")
-
-**5. Create business pages:**
-- `BusinessDashboard.tsx` — analytics cards showing: markets created, total volume on their markets, total participants, revenue/commissions earned
-- `BusinessApiKeys.tsx` — reuse/adapt `AdminApiKeys` component scoped to the business user's own keys only
-- `BusinessCustomization.tsx` — brand settings (name, logo, colors) tied to their API key
-
-**6. Add routes in `App.tsx`**
-```
-/business          → BusinessLayout
-  /business        → BusinessDashboard
-  /business/api-keys → BusinessApiKeys
-  /business/customize → BusinessCustomization
-```
-
-### Navigation
-
-**7. Update `TopBar.tsx`**
-- Show a "Business" badge/button for users with the `business` role (similar to Admin badge but navigates to `/business`)
-
-**8. Update `BottomNav.tsx` / `DesktopSidebar.tsx`**
-- Add a "Business" link for business-role users
-
-### Admin: Assign Business Role
-
-**9. Update `AdminUsers.tsx`**
-- Add a "Business" role toggle/button in the user management row, allowing admins to assign/revoke the `business` role (insert/delete from `user_roles`)
-
-### Files to Create
-| File | Purpose |
-|------|---------|
-| `src/pages/business/BusinessLayout.tsx` | Layout with sidebar + auth gate |
-| `src/pages/business/BusinessDashboard.tsx` | Analytics for business user's markets |
-| `src/pages/business/BusinessApiKeys.tsx` | Self-service API key management |
-| `src/pages/business/BusinessCustomization.tsx` | Brand settings |
-
-### Files to Modify
 | File | Change |
 |------|--------|
-| `src/hooks/useAuth.ts` | Add `isBusiness` / `hasBusinessAccess` |
-| `src/App.tsx` | Add `/business` routes |
-| `src/components/TopBar.tsx` | Business badge button |
-| `src/components/DesktopSidebar.tsx` | Business nav link |
-| `src/pages/admin/AdminUsers.tsx` | Role assignment UI |
-| Migration SQL | Enum + RLS policies |
+| `src/components/BetModal.tsx` | Use `og-share` URL in ShareToXButton tweet text |
+| `supabase/functions/og-image/index.ts` | Convert SVG output to PNG using resvg-wasm |
+| `supabase/functions/og-share/index.ts` | Add `og:image:type` meta tag |
 
-### Security
-- Business users can only see/manage their own API keys and analytics — never other users' data
-- Role assignment restricted to admin/super_admin via existing `user_roles` RLS
-- API key creation by business users scoped to their `user_id`
+### Technical Detail
+
+The `og-share` function already fetches `market.image_url` and uses it as the OG image when available. The main fix is routing all shared links through `og-share` so Twitter's crawler gets the right meta tags. The PNG conversion of `og-image` is a secondary improvement for markets without uploaded images.
 
