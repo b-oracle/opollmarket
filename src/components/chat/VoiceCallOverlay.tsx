@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
+import { useQuery } from "@tanstack/react-query";
 import { playDialTone } from "@/lib/sounds";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Maximize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
@@ -42,8 +44,27 @@ const VoiceCallOverlay = ({
   onMaximize,
   onClose,
 }: VoiceCallOverlayProps) => {
+  const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
-  const screenShareEnabled = isFeatureEnabled("dm_screen_sharing");
+  const globalScreenShareEnabled = isFeatureEnabled("dm_screen_sharing");
+
+  // Check per-user allow_screen_sharing setting
+  const { data: userScreenShareAllowed = true } = useQuery({
+    queryKey: ["user-screen-share-setting", user?.id],
+    queryFn: async () => {
+      if (!user) return true;
+      const { data } = await supabase
+        .from("user_settings" as any)
+        .select("allow_screen_sharing")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return (data as any)?.allow_screen_sharing ?? true;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  const screenShareEnabled = globalScreenShareEnabled && userScreenShareAllowed;
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
