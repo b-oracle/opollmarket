@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
-const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boolean; onClick: () => void; userId: string }) => {
+const AdminBadgeButton = ({ isAdminRoute, onClick, userId, label }: { isAdminRoute: boolean; onClick: () => void; userId: string; label?: string }) => {
   const { data: pendingCount = 0 } = useQuery({
     queryKey: ["admin-pending-count", userId],
     queryFn: async () => {
@@ -46,7 +46,7 @@ const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boo
       ) : (
         <>
           <Shield className="w-3.5 h-3.5" />
-          Admin
+          {label || "Admin"}
         </>
       )}
       {pendingCount > 0 && !isAdminRoute && (
@@ -59,7 +59,7 @@ const AdminBadgeButton = ({ isAdminRoute, onClick, userId }: { isAdminRoute: boo
 };
 
 const TopBar = () => {
-  const { user, isSuperAdmin, isAdmin, hasAdminAccess, isBusiness, signOut, loading, displayName } = useAuth();
+  const { user, isSuperAdmin, isAdmin, isModerator, isSupport, hasAdminAccess, isBusiness, signOut, loading, displayName } = useAuth();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -131,7 +131,7 @@ const TopBar = () => {
           )}
           {/* Admin mode toggle for admin users */}
           {hasAdminAccess && user && (
-            <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} />
+            <AdminBadgeButton isAdminRoute={isAdminRoute} onClick={() => navigate(isAdminRoute ? "/" : "/admin")} userId={user.id} label={!isSuperAdmin && !isAdmin && !isModerator && isSupport ? "Support" : "Admin"} />
           )}
           <ChatIcon />
           <NotificationBell />
