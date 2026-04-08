@@ -5,12 +5,13 @@ import { useUserBalance } from "@/hooks/useUserBalance";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useSecuritySettings } from "@/hooks/useSecuritySettings";
 import { toast } from "sonner";
-import { Loader2, Gift, Banknote } from "lucide-react";
+import { Loader2, Gift, Banknote, History } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import BottomSheet from "@/components/BottomSheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SecurityVerificationModal from "@/components/SecurityVerificationModal";
+import ChatGiftHistory from "@/components/chat/ChatGiftHistory";
 
 interface ChatGiftModalProps {
   open: boolean;
@@ -43,7 +44,7 @@ const EMOJI_PRICES: Record<string, number> = {
 
 const QUICK_AMOUNTS = [1, 5, 10, 25];
 
-type TabType = "emoji" | "money";
+type TabType = "emoji" | "money" | "history";
 
 const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientName }: ChatGiftModalProps) => {
   const { user } = useAuth();
