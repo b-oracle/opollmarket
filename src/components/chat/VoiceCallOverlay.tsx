@@ -42,6 +42,8 @@ const VoiceCallOverlay = ({
   onMaximize,
   onClose,
 }: VoiceCallOverlayProps) => {
+  const { isFeatureEnabled } = useFeatureToggles();
+  const screenShareEnabled = isFeatureEnabled("dm_screen_sharing");
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
