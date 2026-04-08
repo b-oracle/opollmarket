@@ -368,12 +368,6 @@ const ChatGiftModal = ({ open, onClose, conversationId, recipientId, recipientNa
                 <p className="text-[10px] text-center text-muted-foreground">🔒 PIN verification required for security</p>
               )}
             </div>
-          ) : (
-            <ChatGiftHistory
-              conversationId={conversationId}
-              recipientId={recipientId}
-              recipientName={recipientName}
-            />
           )}
         </div>
       </BottomSheet>
