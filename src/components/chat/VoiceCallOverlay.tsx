@@ -44,8 +44,27 @@ const VoiceCallOverlay = ({
   onMaximize,
   onClose,
 }: VoiceCallOverlayProps) => {
+  const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
-  const screenShareEnabled = isFeatureEnabled("dm_screen_sharing");
+  const globalScreenShareEnabled = isFeatureEnabled("dm_screen_sharing");
+
+  // Check per-user allow_screen_sharing setting
+  const { data: userScreenShareAllowed = true } = useQuery({
+    queryKey: ["user-screen-share-setting", user?.id],
+    queryFn: async () => {
+      if (!user) return true;
+      const { data } = await supabase
+        .from("user_settings" as any)
+        .select("allow_screen_sharing")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return (data as any)?.allow_screen_sharing ?? true;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
+  });
+
+  const screenShareEnabled = globalScreenShareEnabled && userScreenShareAllowed;
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
