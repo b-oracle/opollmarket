@@ -224,6 +224,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          owner_id: string | null
           partner_name: string
           permissions: Json
           rate_limit_per_min: number
@@ -241,6 +242,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          owner_id?: string | null
           partner_name: string
           permissions?: Json
           rate_limit_per_min?: number
@@ -258,6 +260,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          owner_id?: string | null
           partner_name?: string
           permissions?: Json
           rate_limit_per_min?: number
