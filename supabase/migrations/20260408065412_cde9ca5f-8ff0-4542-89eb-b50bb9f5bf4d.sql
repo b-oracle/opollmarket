@@ -1,0 +1,1 @@
+ALTER TABLE public.user_settings ADD COLUMN IF NOT EXISTS allow_screen_sharing boolean NOT NULL DEFAULT true;

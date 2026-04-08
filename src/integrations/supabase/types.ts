@@ -3483,6 +3483,7 @@ export type Database = {
           allow_dm_gifts: boolean
           allow_dm_money: boolean
           allow_dms: boolean
+          allow_screen_sharing: boolean
           created_at: string
           enable_gift_animations: boolean
           id: string
@@ -3500,6 +3501,7 @@ export type Database = {
           allow_dm_gifts?: boolean
           allow_dm_money?: boolean
           allow_dms?: boolean
+          allow_screen_sharing?: boolean
           created_at?: string
           enable_gift_animations?: boolean
           id?: string
@@ -3517,6 +3519,7 @@ export type Database = {
           allow_dm_gifts?: boolean
           allow_dm_money?: boolean
           allow_dms?: boolean
+          allow_screen_sharing?: boolean
           created_at?: string
           enable_gift_animations?: boolean
           id?: string

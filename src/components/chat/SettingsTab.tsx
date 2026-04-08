@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles } from "lucide-react";
+import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles, Monitor } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserSettings {
@@ -19,6 +19,7 @@ interface UserSettings {
   allow_dm_gifts: boolean;
   allow_dm_money: boolean;
   enable_gift_animations: boolean;
+  allow_screen_sharing: boolean;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -33,6 +34,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   allow_dm_gifts: true,
   allow_dm_money: true,
   enable_gift_animations: true,
+  allow_screen_sharing: true,
 };
 
 const SETTING_GROUPS = [
@@ -43,6 +45,7 @@ const SETTING_GROUPS = [
       { key: "allow_dms" as const, label: "Allow Message Requests", desc: "Receive new message requests", icon: MessageCircle },
       { key: "allow_dm_gifts" as const, label: "Allow DM Gifts", desc: "Let others send you emoji gifts", icon: Gift },
       { key: "allow_dm_money" as const, label: "Allow Money Transfers", desc: "Let others send you money via DMs", icon: DollarSign },
+      { key: "allow_screen_sharing" as const, label: "Allow Screen Sharing", desc: "Let others share their screen during calls", icon: Monitor },
     ],
   },
   {
