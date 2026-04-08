@@ -721,6 +721,126 @@ Deno.serve(async (req) => {
       return json({ markets: data, count: data?.length ?? 0 });
     }
 
+    // ==================== COMMENTS ====================
+    if (action === "comments" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const marketId = url.searchParams.get("market_id");
+      if (!marketId || !/^[0-9a-f-]{36}$/i.test(marketId)) return err("Valid market_id is required");
+
+      const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
+      const offset = Math.max(parseInt(url.searchParams.get("offset") || "0"), 0);
+
+      const { data, error } = await admin
+        .from("comments")
+        .select("id, market_id, author_name, content, likes_count, parent_id, created_at")
+        .eq("market_id", marketId)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) return err("Failed to fetch comments", 500);
+      return json({ comments: data, count: data?.length ?? 0 });
+    }
+
+    if (action === "comments" && req.method === "POST") {
+      if (!hasPermission("trade")) return err("Permission denied", 403);
+      if (!userId) return err("Authentication required for posting comments", 401);
+
+      const body = await req.json();
+      const marketId = body.market_id;
+      const content = body.content?.trim();
+      const parentId = body.parent_id || null;
+
+      if (!marketId || !/^[0-9a-f-]{36}$/i.test(marketId)) return err("Valid market_id is required");
+      if (!content || content.length < 1 || content.length > 500) return err("Content must be 1-500 characters");
+      if (parentId && !/^[0-9a-f-]{36}$/i.test(parentId)) return err("Invalid parent_id");
+
+      // Get user display name
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("display_name")
+        .eq("id", userId)
+        .single();
+
+      const authorName = profile?.display_name || "Anonymous";
+
+      const { data: comment, error } = await admin
+        .from("comments")
+        .insert({
+          market_id: marketId,
+          author_wallet: userId,
+          author_name: authorName,
+          content,
+          parent_id: parentId,
+        })
+        .select("id, market_id, author_name, content, parent_id, created_at")
+        .single();
+
+      if (error) return err("Failed to post comment", 500);
+      return json({ comment }, 201);
+    }
+
+    // ==================== PRICE HISTORY ====================
+    if (action === "price-history" && req.method === "GET") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const marketId = url.searchParams.get("market_id");
+      if (!marketId || !/^[0-9a-f-]{36}$/i.test(marketId)) return err("Valid market_id is required");
+
+      const limit = Math.min(parseInt(url.searchParams.get("limit") || "200"), 1000);
+      const since = url.searchParams.get("since"); // ISO timestamp
+
+      let query = admin
+        .from("transactions")
+        .select("created_at, side, price, option_id")
+        .eq("market_id", marketId)
+        .in("type", ["buy", "sell"])
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: true })
+        .limit(limit);
+
+      if (since) {
+        query = query.gte("created_at", since);
+      }
+
+      const { data, error } = await query;
+      if (error) return err("Failed to fetch price history", 500);
+
+      // Also fetch current market prices
+      const { data: market } = await admin
+        .from("markets")
+        .select("yes_price, no_price, market_type")
+        .eq("id", marketId)
+        .single();
+
+      // Fetch options if multi-option
+      let options = null;
+      if (market?.market_type !== "binary") {
+        const { data: opts } = await admin
+          .from("market_options")
+          .select("id, label, price, sort_order")
+          .eq("market_id", marketId)
+          .order("sort_order");
+        options = opts;
+      }
+
+      return json({
+        trades: data?.map((t: any) => ({
+          timestamp: t.created_at,
+          side: t.side,
+          price: t.price,
+          option_id: t.option_id,
+        })),
+        current: {
+          yes_price: market?.yes_price,
+          no_price: market?.no_price,
+          market_type: market?.market_type,
+        },
+        options,
+        count: data?.length ?? 0,
+      });
+    }
+
     return err(`Unknown action: ${action}`, 404);
   } catch (e) {
     console.error("api-public error:", e);
