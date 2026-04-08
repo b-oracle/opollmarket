@@ -3956,11 +3956,12 @@ export type Database = {
           display_name: string | null
           id: string | null
           interests: string[] | null
+          is_blocked: boolean | null
           is_public: boolean | null
           kyc_status: string | null
           referred_by: string | null
+          social_tutorial_seen: boolean | null
           twitter_avatar_url: string | null
-          twitter_linked_at: string | null
           twitter_username: string | null
           unlimited_markets: boolean | null
           updated_at: string | null
@@ -3974,11 +3975,12 @@ export type Database = {
           display_name?: string | null
           id?: string | null
           interests?: string[] | null
+          is_blocked?: boolean | null
           is_public?: boolean | null
           kyc_status?: string | null
           referred_by?: string | null
+          social_tutorial_seen?: boolean | null
           twitter_avatar_url?: string | null
-          twitter_linked_at?: string | null
           twitter_username?: string | null
           unlimited_markets?: boolean | null
           updated_at?: string | null
@@ -3992,11 +3994,12 @@ export type Database = {
           display_name?: string | null
           id?: string | null
           interests?: string[] | null
+          is_blocked?: boolean | null
           is_public?: boolean | null
           kyc_status?: string | null
           referred_by?: string | null
+          social_tutorial_seen?: boolean | null
           twitter_avatar_url?: string | null
-          twitter_linked_at?: string | null
           twitter_username?: string | null
           unlimited_markets?: boolean | null
           updated_at?: string | null
