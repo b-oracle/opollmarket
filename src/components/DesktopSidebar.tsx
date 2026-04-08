@@ -22,15 +22,17 @@ const allNavItems: { icon: typeof Home; label: string; path: string; featureKey:
 const DesktopSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { isBusiness } = useAuth();
+  const { user, isBusiness } = useAuth();
   const [signOutOpen, setSignOutOpen] = useState(false);
   const { collapsed, toggle } = useSidebarState();
   const { isFeatureEnabled } = useFeatureToggles();
 
-  const navItems = allNavItems.filter(
+  const baseNavItems = allNavItems.filter(
     (item) => (!item.featureKey || isFeatureEnabled(item.featureKey)) && (!item.requiresAuth || !!user)
   );
+  const navItems = isBusiness && user
+    ? [...baseNavItems, { icon: Briefcase, label: "Business", path: "/business", featureKey: null }]
+    : baseNavItems;
 
   return (
     <>
