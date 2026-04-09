@@ -53,7 +53,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
       if (!user || !debouncedSearch || debouncedSearch.length < 2) return [];
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, username")
         .eq("is_public", true)
         .ilike("display_name", `%${debouncedSearch}%`)
         .neq("id", user.id)
@@ -69,7 +69,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, username")
         .eq("id", user.id)
         .single();
       return data;
@@ -89,7 +89,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, username").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.follower_id) }));
     },
@@ -108,7 +108,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, username").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.following_id) }));
     },
@@ -138,7 +138,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, username")
         .in("id", uniqueIds)
         .eq("is_public", true);
 
