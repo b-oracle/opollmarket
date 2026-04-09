@@ -333,6 +333,15 @@ const UserProfile = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h2 className="text-lg font-bold truncate flex-1">{displayName}</h2>
+          {!isOwnProfile && user && (
+            <button
+              onClick={() => navigate(`/messages/${id}`)}
+              className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
+              aria-label="Send message"
+            >
+              <MessageCircle className="w-4.5 h-4.5" />
+            </button>
+          )}
           <button
             onClick={() => setShareOpen(true)}
             className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
