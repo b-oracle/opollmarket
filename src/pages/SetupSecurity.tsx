@@ -476,7 +476,7 @@ const SetupSecurity = () => {
 
                   {/* KYC Section */}
                   <div className="pt-2">
-                    <KycSubmissionForm />
+                    <KycSubmissionForm onSkip={() => navigate("/")} />
                   </div>
 
                   <button
