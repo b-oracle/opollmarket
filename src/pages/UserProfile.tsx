@@ -397,6 +397,9 @@ const UserProfile = () => {
                 <h3 className="text-lg font-bold truncate">{displayName}</h3>
                 {isVerified && <NftBadge size={18} className="shrink-0" level={verificationLevel} />}
               </div>
+              {(profile as any)?.username && (
+                <p className="text-xs text-muted-foreground font-medium mb-1">@{(profile as any).username}</p>
+              )}
               {profile.bio && <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{profile.bio}</p>}
               {(profile as any).twitter_username && (
                 <a
