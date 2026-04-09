@@ -24,24 +24,25 @@ const Referrals = () => {
 
   useEffect(() => { track("page_view", { page: "referrals" }); }, []);
 
-  // Fetch profile display_name for referral link
-  const { data: profileName, isLoading: profileLoading } = useQuery({
-    queryKey: ["profile_display_name", user?.id],
+  // Fetch profile username for referral link
+  const { data: profileUsername, isLoading: profileLoading } = useQuery({
+    queryKey: ["profile_username", user?.id],
     queryFn: async () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("display_name")
+        .select("username")
         .eq("id", user.id)
         .single();
-      return data?.display_name || user.user_metadata?.display_name || null;
+      return data?.username || null;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 
-  const referralLink = user && profileName ? `${window.location.origin}/?ref=${encodeURIComponent(profileName)}` : "";
+  const profileName = profileUsername;
+  const referralLink = user && profileUsername ? `${window.location.origin}/?ref=${encodeURIComponent(profileUsername)}` : "";
 
   // Fetch ALL referred signups (profiles where referred_by = current user)
   const { data: referredSignups = [], isLoading: signupsLoading } = useQuery({
