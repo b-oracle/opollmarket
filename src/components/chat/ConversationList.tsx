@@ -56,6 +56,21 @@ const ConversationList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { data: myUsername } = useQuery({
+    queryKey: ["my-username", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .maybeSingle();
+      return data?.username || null;
+    },
+    enabled: !!user,
+    staleTime: 300_000,
+  });
   const { supportUnread, communityUnread, markSupportRead, markCommunityRead } = useUnreadCounts();
   const { isFeatureEnabled } = useFeatureToggles();
   const [showNewChat, setShowNewChat] = useState(false);
@@ -279,7 +294,7 @@ const ConversationList = () => {
       <div className="max-w-lg mx-auto w-full flex flex-col flex-1 min-h-0">
         {/* Header */}
         <div className="shrink-0 bg-background/95 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3 z-30" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
-          <button onClick={() => navigate("/profile")} className="text-muted-foreground hover:text-foreground">
+          <button onClick={() => navigate(`/user/${myUsername || user?.id}`)} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-bold flex-1">
