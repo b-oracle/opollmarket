@@ -1,40 +1,46 @@
 
 
-## Plan: Enhanced Admin API Keys with Business Analytics
+## Plan: Throttle External API Cron Jobs
 
-### What changes
+### Current state (expensive jobs)
 
-Rebuild the Admin API Keys page (`src/pages/admin/AdminApiKeys.tsx`) to serve as a comprehensive management dashboard showing per-key analytics, owner details, webhook delivery logs, and usage stats.
+| Job | Current | External API | Calls/day |
+|---|---|---|---|
+| `check-sports-scores` | Every 2 min | API-Sports | ~720 |
+| `check-sports-resolve-markets` | Every 5 min | API-Sports | ~288 |
+| `check-auto-resolve-markets` | Every 5 min | Twitter + Price APIs | ~288 |
+| `check-poly-resolve-every-5min` | Every 5 min | Polymarket | ~288 |
+| `import-polymarkets-every-30min` | Every 30 min | Polymarket | ~48 |
 
-### New sections to add
+### New schedules
 
-1. **Summary cards at the top** -- Total keys, Active keys, Total API requests (from `api_request_logs`), Webhook events (from `webhook_events`).
+| Job | New Schedule | Calls/day | Savings |
+|---|---|---|---|
+| `check-sports-scores` | Every 30 min | 48 | **93% reduction** |
+| `check-sports-resolve-markets` | Twice daily (8AM, 8PM UTC) | 2 | **99% reduction** |
+| `check-auto-resolve-markets` | Twice daily (7AM, 7PM UTC) | 2 | **99% reduction** |
+| `check-poly-resolve-every-5min` | Twice daily (9AM, 9PM UTC) | 2 | **99% reduction** |
+| `import-polymarkets-every-30min` | Keep as-is (free API) | 48 | -- |
 
-2. **Per-key analytics** -- Each key card will show:
-   - Owner info (display name, avatar) joined from `profiles` via `owner_id`
-   - Total requests count and last-used timestamp from `api_request_logs`
-   - Top endpoints breakdown (e.g. "markets: 120, place-bet: 45")
-   - Requests in last 24h / 7d
-   - Webhook delivery stats: total sent, delivered, failed from `webhook_events`
+### Implementation
 
-3. **Expandable webhook event log per key** -- Show recent webhook events with status (delivered/failed), response code, event type, and timestamp from `webhook_events`.
+Run SQL via insert tool (not migration) to update cron schedules:
 
-4. **Improved key card layout** -- Show owner name/avatar next to partner name, better visual hierarchy with usage sparkline data.
+```sql
+SELECT cron.alter_job(5,  schedule := '*/30 * * * *');   -- sports scores
+SELECT cron.alter_job(4,  schedule := '0 8,20 * * *');   -- sports resolve
+SELECT cron.alter_job(3,  schedule := '0 7,19 * * *');   -- auto resolve (Twitter + price)
+SELECT cron.alter_job(8,  schedule := '0 9,21 * * *');   -- poly resolve
+```
 
-### Data fetching approach
+### Trade-offs
 
-- Fetch `api_keys` joined with owner profile info
-- Aggregate `api_request_logs` grouped by `api_key_id` for counts and top endpoints
-- Aggregate `webhook_events` grouped by `api_key_id` for delivery stats
-- All queries run client-side using the Supabase SDK (admin has SELECT access)
+- Live score badges on market pages will update every 30 min instead of every 2 min
+- Twitter engagement trackers will only refresh twice daily
+- Auto-resolution of markets will happen at fixed times rather than near-instantly
+- Polymarket import frequency stays the same (free API, no cost concern)
 
 ### Files modified
 
-| File | Change |
-|---|---|
-| `src/pages/admin/AdminApiKeys.tsx` | Full rewrite with analytics cards, owner info, per-key usage stats, webhook logs |
-
-### Technical detail
-
-No database migrations needed -- all data already exists in `api_request_logs` and `webhook_events` tables. The page will make 4 queries on load: api_keys (with profiles join via owner_id), aggregated request logs, aggregated webhook events, and recent webhook event details. Since RLS on these tables allows admin access, no policy changes are needed.
+None -- this is a database-only change (cron job schedule updates).
 
