@@ -53,9 +53,13 @@ const UserProfile = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const isOwnProfile = user?.id === id;
-  const { isFollowing, loading: followLoading, toggleFollow } = useFollow(id);
-  const followCounts = useFollowCounts(id);
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || "");
+  // We'll resolve the actual profile id after fetching
+  const [resolvedId, setResolvedId] = useState<string | null>(isUUID ? (id ?? null) : null);
+  const profileUserId = resolvedId || id;
+  const isOwnProfile = user?.id === profileUserId;
+  const { isFollowing, loading: followLoading, toggleFollow } = useFollow(profileUserId);
+  const followCounts = useFollowCounts(profileUserId);
   const { settings: copySettings, updateSettings } = useCopySettings(id);
   const { isFeatureEnabled } = useFeatureToggles();
   const copyTradingEnabled = isFeatureEnabled("copy_trading");
@@ -96,18 +100,23 @@ const UserProfile = () => {
     queryKey: ["user-profile", id, user?.id ?? "anon"],
     queryFn: async () => {
       if (!id) return null;
-      // Ensure we have a valid session before querying
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase
+      const query = supabase
         .from("profiles")
-        .select("id, display_name, username, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
-        .eq("id", id)
-        .maybeSingle();
-      // If no data and we're authenticated, this might be a transient RLS issue — throw to trigger retry
+        .select("id, display_name, username, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id");
+
+      const { data, error } = await (isUUID
+        ? query.eq("id", id)
+        : query.eq("username", id.toLowerCase())
+      ).maybeSingle();
+
       if (!data && !error && session) {
         throw new Error("Profile not found — retrying");
       }
       if (error) throw error;
+      if (data && data.id !== resolvedId) {
+        setResolvedId(data.id);
+      }
       return data ?? null;
     },
     enabled: !!id && !authLoading,
@@ -372,7 +381,7 @@ const UserProfile = () => {
           onOpenChange={setShareOpen}
           title={`${displayName} on OPoll`}
           description={`Join me on OPoll — the social prediction platform. Predict and earn! 🔥`}
-          marketUrl={`${getCanonicalOrigin()}/user/${id}${profile?.display_name ? `?ref=${encodeURIComponent(profile.display_name)}` : ""}`}
+          marketUrl={`${getCanonicalOrigin()}/user/${(profile as any)?.username || profileUserId}${profile?.display_name ? `?ref=${encodeURIComponent(profile.display_name)}` : ""}`}
           captureRef={profileCardRef}
         />
 

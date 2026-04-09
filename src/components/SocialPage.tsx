@@ -193,7 +193,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.03 }}
         className="glass rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
-        onClick={() => { onClose(); navigate(`/user/${userId}`); }}
+        onClick={() => { onClose(); navigate(`/user/${prof?.username || userId}`); }}
       >
         <div className="relative shrink-0">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
