@@ -289,7 +289,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { onClose(); navigate(`/user/${user.id}`); }}
+                  onClick={() => { onClose(); navigate(`/user/${(profile as any)?.username || user.id}`); }}
                   className="w-8 h-8 rounded-full glass flex items-center justify-center shrink-0"
                 >
                   <ChevronRight className="w-4 h-4" />
