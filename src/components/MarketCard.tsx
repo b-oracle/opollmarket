@@ -295,7 +295,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div className="absolute inset-0 overflow-hidden">
           {market.imageUrl ? (
             <div className="absolute inset-[-4px_0] will-change-transform" style={{ transform: `translateY(${parallaxY}px)` }}>
-              <img src={optimizedImageUrl(market.imageUrl, "feed")} alt="" className="w-full h-full object-cover object-top opacity-40" loading="lazy" />
+              <img src={optimizedImageUrl(market.imageUrl, "feed")} alt="" className="w-full h-full object-cover object-top opacity-55" loading="lazy" />
             </div>
           ) : null}
           {/* Strong bottom-heavy gradient for text readability */}
@@ -326,7 +326,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div ref={captureContentRef} className="absolute -left-[9999px] w-[600px] overflow-hidden rounded-xl bg-background" style={{ height: '400px' }}>
           {market.imageUrl && (
             <div className="absolute inset-0">
-              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-50" loading="lazy" />
+              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-60" loading="lazy" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
             </div>
           )}
