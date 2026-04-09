@@ -659,7 +659,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level, age, date_of_birth, gender, location, interests")
+        .select("wallet_address, avatar_url, display_name, username, is_public, bio, verification_level, age, date_of_birth, gender, location, interests")
         .eq("id", user.id)
         .single();
       return data;
@@ -934,6 +934,7 @@ const Profile = () => {
           <button
             onClick={() => {
               setEditName(profile?.display_name || authDisplayName);
+              setEditUsername((profile as any)?.username || "");
               setEditBio((profile as any)?.bio || "");
               setEditIsPublic((profile as any)?.is_public ?? true);
               setEditDob((profile as any)?.date_of_birth ? parseISO((profile as any).date_of_birth) : undefined);
@@ -968,6 +969,9 @@ const Profile = () => {
               </span>
             )}
           </div>
+          {(profile as any)?.username && (
+            <p className="text-xs text-muted-foreground font-medium">@{(profile as any).username}</p>
+          )}
           <p className="text-xs text-muted-foreground">
             {user?.email ? `${user.email.slice(0, 3)}***@${user.email.split("@")[1]}` : ""}
           </p>
