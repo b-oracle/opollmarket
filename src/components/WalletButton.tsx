@@ -33,6 +33,20 @@ const WalletButton = () => {
     return () => clearTimeout(timer);
   }, [showHint]);
 
+  // Clear connection timeout when wallet connects
+  useEffect(() => {
+    if (isConnected) {
+      (window as any).__walletConnected = true;
+      const tid = (window as any).__walletConnectTimeout;
+      if (tid) {
+        clearTimeout(tid);
+        delete (window as any).__walletConnectTimeout;
+      }
+    } else {
+      (window as any).__walletConnected = false;
+    }
+  }, [isConnected]);
+
   const handleConnect = () => {
     const alreadyShown = sessionStorage.getItem("dapp_hint_shown");
     if (isNormalMobileBrowser() && !alreadyShown) {
