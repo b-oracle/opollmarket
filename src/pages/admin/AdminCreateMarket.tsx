@@ -1201,7 +1201,6 @@ const AdminCreateMarket = () => {
       </div>
     </div>
 
-    {/* AI Generation Confirmation */}
     <AlertDialog open={!!pendingAiType} onOpenChange={(open) => { if (!open) setPendingAiType(null); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -1219,8 +1218,8 @@ const AdminCreateMarket = () => {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
   );
-};
 };
 
 export default AdminCreateMarket;
