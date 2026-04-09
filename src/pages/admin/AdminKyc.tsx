@@ -70,34 +70,22 @@ const AdminKyc = () => {
     },
   });
 
-  const getSignedUrl = async (path: string): Promise<string | null> => {
-    if (!path) return null;
-    const { data, error } = await supabase.storage
-      .from("kyc-documents")
-      .createSignedUrl(path, 300); // 5 min
-    if (error) {
-      console.error("Signed URL error:", error.message, "path:", path);
-      return null;
-    }
-    return data?.signedUrl || null;
-  };
-
   const handleViewImage = async (path: string) => {
-    const url = await getSignedUrl(path);
-    if (url) {
-      setViewingImage(url);
-    } else {
-      // Fallback: try generating a public URL with download
-      const { data: dlData, error: dlError } = await supabase.storage
-        .from("kyc-documents")
-        .download(path);
-      if (dlData) {
-        const objectUrl = URL.createObjectURL(dlData);
-        setViewingImage(objectUrl);
-      } else {
-        console.error("Download fallback failed:", dlError?.message);
-        toast.error("Could not load document — check admin permissions");
+    if (!path) return;
+    try {
+      // Use edge function proxy with service role to bypass storage RLS
+      const { data, error } = await supabase.functions.invoke("kyc-document-proxy", {
+        body: { path },
+      });
+      if (error || !data?.url) {
+        console.error("KYC proxy error:", error?.message || data?.error);
+        toast.error("Could not load document — please try again");
+        return;
       }
+      setViewingImage(data.url);
+    } catch (err) {
+      console.error("KYC document load failed:", err);
+      toast.error("Could not load document — please try again");
     }
   };
 
