@@ -36,7 +36,7 @@ interface ReplyTo {
 }
 
 const ChatView = () => {
-  const { conversationId } = useParams<{ conversationId: string }>();
+  const { conversationId: paramId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -50,6 +50,51 @@ const ChatView = () => {
   const [replyTo, setReplyTo] = useState<ReplyTo | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [resolvedConvoId, setResolvedConvoId] = useState<string | null>(null);
+  const resolvedRef = useRef(false);
+
+  // If paramId is a user ID (not a conversation ID), resolve it to a conversation
+  useEffect(() => {
+    if (!paramId || !user) return;
+    resolvedRef.current = false;
+    setResolvedConvoId(null);
+
+    // Try to load as conversation first
+    (async () => {
+      const { data: existing } = await supabase
+        .from("dm_conversations" as any)
+        .select("id")
+        .eq("id", paramId)
+        .maybeSingle() as any;
+
+      if (existing) {
+        // paramId is a valid conversation ID
+        setResolvedConvoId(paramId);
+        resolvedRef.current = true;
+        return;
+      }
+
+      // paramId might be a user ID — use start_dm_conversation RPC
+      try {
+        const { data: convoId, error } = await supabase.rpc("start_dm_conversation", {
+          _other_user_id: paramId,
+        });
+        if (error) throw error;
+        if (convoId) {
+          // Replace URL so back button works correctly
+          navigate(`/messages/${convoId}`, { replace: true });
+          setResolvedConvoId(convoId);
+          resolvedRef.current = true;
+        }
+      } catch (err) {
+        console.error("Failed to resolve conversation:", err);
+        toast.error("Could not start conversation");
+        navigate("/messages", { replace: true });
+      }
+    })();
+  }, [paramId, user, navigate]);
+
+  const conversationId = resolvedConvoId;
 
   const { data: convo } = useQuery({
     queryKey: ["dm-conversation", conversationId],
