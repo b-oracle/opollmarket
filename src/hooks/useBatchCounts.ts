@@ -23,15 +23,19 @@ export const useBatchCounts = (marketIds: string[]) => {
       if (marketIds.length === 0) return { comments, likes };
 
       // Batch fetch: get counts grouped by market_id in 2 queries total
+      // Fetch ALL rows (override default 1000-row limit) so counts are accurate
+      const batchIds = marketIds.slice(0, 100);
       const [commentResult, likeResult] = await Promise.all([
         supabase
           .from("comments")
-          .select("market_id")
-          .in("market_id", marketIds.slice(0, 100)),
+          .select("market_id", { count: "exact", head: false })
+          .in("market_id", batchIds)
+          .limit(10000),
         supabase
           .from("market_likes")
-          .select("market_id")
-          .in("market_id", marketIds.slice(0, 100)),
+          .select("market_id", { count: "exact", head: false })
+          .in("market_id", batchIds)
+          .limit(10000),
       ]);
 
       // Count comments per market
