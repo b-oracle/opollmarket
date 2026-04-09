@@ -4,6 +4,7 @@ import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink, X, Smartphone }
 import { useState, useEffect } from "react";
 import { formatUnits } from "viem";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 const truncateAddress = (addr: string) =>
   `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -32,6 +33,20 @@ const WalletButton = () => {
     return () => clearTimeout(timer);
   }, [showHint]);
 
+  // Clear connection timeout when wallet connects
+  useEffect(() => {
+    if (isConnected) {
+      (window as any).__walletConnected = true;
+      const tid = (window as any).__walletConnectTimeout;
+      if (tid) {
+        clearTimeout(tid);
+        delete (window as any).__walletConnectTimeout;
+      }
+    } else {
+      (window as any).__walletConnected = false;
+    }
+  }, [isConnected]);
+
   const handleConnect = () => {
     const alreadyShown = sessionStorage.getItem("dapp_hint_shown");
     if (isNormalMobileBrowser() && !alreadyShown) {
@@ -39,6 +54,20 @@ const WalletButton = () => {
       sessionStorage.setItem("dapp_hint_shown", "1");
     }
     open();
+
+    // Start a 15s timeout – if still not connected, show troubleshooting toast
+    const timeoutId = setTimeout(() => {
+      // Re-check connection status at timeout time
+      if (!(window as any).__walletConnected) {
+        toast.error("Wallet connection timed out", {
+          description: "Try: 1) Open this site inside your wallet's built-in browser, 2) Use the QR code option, or 3) Refresh and retry.",
+          duration: 12000,
+        });
+      }
+    }, 15000);
+
+    // Store timeout so we can clear it on successful connect
+    (window as any).__walletConnectTimeout = timeoutId;
   };
 
   const copyAddress = () => {
