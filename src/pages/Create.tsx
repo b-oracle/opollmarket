@@ -1950,7 +1950,7 @@ const Create = () => {
                   {isFeatureEnabled("ai_generate_description") && (
                     <button
                       type="button"
-                      onClick={() => handleAiGenerate("description")}
+                      onClick={() => setPendingAiType("description")}
                       disabled={generatingDesc || !title.trim()}
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
