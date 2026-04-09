@@ -372,8 +372,17 @@ const AdminMarkets = () => {
         const compressed = await compressImage(editState.newImageFile, "market-banner");
         const ext = compressed.type === "image/webp" ? "webp" : compressed.type === "image/jpeg" ? "jpg" : "webp";
         const fileName = `${currentUser.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: compressed.type, upsert: true });
-        if (upErr) throw upErr;
+        
+        // Retry upload up to 3 times (handles transient schema cache issues)
+        let uploadError: any = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const { error: upErr } = await supabase.storage.from("market-images").upload(fileName, compressed, { contentType: compressed.type, upsert: true });
+          if (!upErr) { uploadError = null; break; }
+          uploadError = upErr;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+        }
+        if (uploadError) throw uploadError;
+        
         const { data: pubData } = supabase.storage.from("market-images").getPublicUrl(fileName);
         imageUrl = pubData.publicUrl;
       } catch (e: any) {
