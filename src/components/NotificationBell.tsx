@@ -126,10 +126,13 @@ const NotificationBell = () => {
       return;
     }
 
-    // Space invite / live notifications → navigate to feed with space context
+    // Space invite / live notifications → join the space directly
     if (n.title?.includes("Space Invite") || n.title?.includes("Space is Live") || n.title?.includes("Scheduled Space is Live")) {
       setOpen(false);
-      navigate(`/feed`);
+      if (n.market_id) {
+        window.dispatchEvent(new CustomEvent("join-space", { detail: { id: n.market_id, title: "", hostId: "" } }));
+      }
+      navigate("/profile", { state: { tab: "social", socialTab: "spaces" } });
       return;
     }
 
