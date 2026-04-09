@@ -1277,9 +1277,18 @@ const Profile = () => {
                             return;
                           }
 
+                          // Validate username
+                          const cleanUsername = editUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+                          if (cleanUsername && cleanUsername.length < 3) {
+                            toast.error("Username must be at least 3 characters");
+                            setSavingProfile(false);
+                            return;
+                          }
+
                           // Update profile table
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
+                            username: cleanUsername || undefined,
                             bio: editBio.trim(),
                             is_public: editIsPublic,
                             date_of_birth: editDob ? format(editDob, "yyyy-MM-dd") : null,
@@ -1290,7 +1299,7 @@ const Profile = () => {
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
                           } as any).eq("id", user!.id);
                           if (profileError) {
-                            if (profileError.message?.includes("unique_display_name") || profileError.code === "23505") {
+                            if (profileError.message?.includes("idx_profiles_username_unique") || profileError.code === "23505") {
                               toast.error("This username is already taken. Please choose a different one.");
                             } else {
                               toast.error("Failed to update profile");
