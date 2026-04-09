@@ -209,7 +209,7 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
       transition={{ duration: 0.3 }}
     >
       {/* Backdrop — semi-transparent so the page behind is visible */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={handleSkip} />
+      <div className="absolute inset-0 bg-black/60" onClick={handleSkip} />
 
       {/* Card */}
       <AnimatePresence mode="wait">
