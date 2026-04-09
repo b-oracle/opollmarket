@@ -73,10 +73,10 @@ const UserProfile = () => {
   const { pulling, pullDistance, refreshing, pullProgress, spinControls, handlers: pullHandlers } = usePullToRefresh({
     onRefresh: async () => {
       await queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
-      await queryClient.invalidateQueries({ queryKey: ["user-markets", id] });
-      await queryClient.invalidateQueries({ queryKey: ["user-positions-public", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-markets", profileUserId] });
+      await queryClient.invalidateQueries({ queryKey: ["user-positions-public", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-likes-count", id] });
-      await queryClient.invalidateQueries({ queryKey: ["user-leaderboard-ranks", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-leaderboard-ranks", profileUserId] });
     },
     scrollRef: containerRef,
   });
@@ -128,43 +128,43 @@ const UserProfile = () => {
 
   // Markets created by user
   const { data: userMarkets = [] } = useQuery({
-    queryKey: ["user-markets", id],
+    queryKey: ["user-markets", profileUserId],
     queryFn: async () => {
       if (!id) return [];
       const { data } = await supabase
         .from("markets")
         .select("id, title, image_url, category, yes_price, no_price, status, volume, participants, end_date, market_type")
-        .eq("creator_wallet", id)
+        .eq("creator_wallet", profileUserId)
         .in("status", ["active", "ended", "resolved"])
         .order("created_at", { ascending: false })
         .limit(20);
       return data || [];
     },
-    enabled: !!id,
+    enabled: !!profileUserId,
   });
 
   // User positions (predictions)
   const { data: userPositions = [] } = useQuery({
-    queryKey: ["user-positions-public", id],
+    queryKey: ["user-positions-public", profileUserId],
     queryFn: async () => {
       if (!id) return [];
       const { data } = await supabase
         .from("positions")
         .select("id, market_id, side, shares, avg_price, option_id, market_options(label, price)")
-        .eq("user_id", id)
+        .eq("user_id", profileUserId)
         .gt("shares", 0)
         .limit(20);
       return data || [];
     },
-    enabled: !!id && (isOwnProfile || !!profile?.is_public),
+    enabled: !!profileUserId && (isOwnProfile || !!profile?.is_public),
   });
 
   // Total trades count (predictions + quick trades) via security-definer function
   const { data: tradeData = { predictions: 0, quick_trades: 0, total: 0 } } = useQuery({
-    queryKey: ["user-trades-count", id],
+    queryKey: ["user-trades-count", profileUserId],
     queryFn: async () => {
       if (!id) return { predictions: 0, quick_trades: 0, total: 0 };
-      const { data, error } = await supabase.rpc("get_user_trade_count", { _user_id: id });
+      const { data, error } = await supabase.rpc("get_user_trade_count", { _user_id: profileUserId });
       if (error || !data || !data[0]) return { predictions: 0, quick_trades: 0, total: 0 };
       const row = data[0];
       return {
@@ -173,26 +173,26 @@ const UserProfile = () => {
         total: (Number(row.predictions) || 0) + (Number(row.quick_trades) || 0),
       };
     },
-    enabled: !!id,
+    enabled: !!profileUserId,
   });
 
   // Referral count
   const { data: referralCount = 0 } = useQuery({
-    queryKey: ["user-referral-count", id],
+    queryKey: ["user-referral-count", profileUserId],
     queryFn: async () => {
       if (!id) return 0;
       const { count } = await supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
-        .eq("referred_by", id);
+        .eq("referred_by", profileUserId);
       return count || 0;
     },
-    enabled: !!id,
+    enabled: !!profileUserId,
   });
 
   // Leaderboard ranks
   const { data: leaderboardRanks, isLoading: ranksLoading } = useQuery({
-    queryKey: ["user-leaderboard-ranks", id],
+    queryKey: ["user-leaderboard-ranks", profileUserId],
     queryFn: async () => {
       if (!id) return null;
 
@@ -200,7 +200,7 @@ const UserProfile = () => {
       const { data: predLeaderboard } = await supabase.rpc("get_prediction_leaderboard", { _limit: 500, _sort: "pnl" } as any);
       let predictionRank: number | null = null;
       if (predLeaderboard && Array.isArray(predLeaderboard)) {
-        const idx = predLeaderboard.findIndex((r: any) => r.user_id === id);
+        const idx = predLeaderboard.findIndex((r: any) => r.user_id === profileUserId);
         predictionRank = idx >= 0 ? idx + 1 : null;
       }
 
@@ -215,7 +215,7 @@ const UserProfile = () => {
           refMap.set(r.referrer_id, (refMap.get(r.referrer_id) || 0) + Number(r.amount));
         }
         const sorted = [...refMap.entries()].sort((a, b) => b[1] - a[1]);
-        const idx = sorted.findIndex(([uid]) => uid === id);
+        const idx = sorted.findIndex(([uid]) => uid === profileUserId);
         referralRank = idx >= 0 ? idx + 1 : null;
       }
 
@@ -223,7 +223,7 @@ const UserProfile = () => {
       const { data: qtLeaderboard } = await supabase.rpc("get_quick_trade_leaderboard", { _limit: 500 });
       let qtProfitRank: number | null = null;
       if (qtLeaderboard && Array.isArray(qtLeaderboard)) {
-        const idx = qtLeaderboard.findIndex((r: any) => r.user_id === id);
+        const idx = qtLeaderboard.findIndex((r: any) => r.user_id === profileUserId);
         qtProfitRank = idx >= 0 ? idx + 1 : null;
       }
 
@@ -231,13 +231,13 @@ const UserProfile = () => {
       const { data: streakLeaderboard } = await supabase.rpc("get_streak_leaderboard", { _limit: 500 });
       let streakRank: number | null = null;
       if (streakLeaderboard && Array.isArray(streakLeaderboard)) {
-        const idx = streakLeaderboard.findIndex((r: any) => r.user_id === id);
+        const idx = streakLeaderboard.findIndex((r: any) => r.user_id === profileUserId);
         streakRank = idx >= 0 ? idx + 1 : null;
       }
 
       return { predictionRank, referralRank, qtProfitRank, streakRank };
     },
-    enabled: !!id,
+    enabled: !!profileUserId,
     staleTime: 60_000,
   });
 
