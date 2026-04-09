@@ -125,7 +125,7 @@ export const checkTutorialSeenFromDB = async (userId: string): Promise<boolean> 
     .select("social_tutorial_seen")
     .eq("id", userId)
     .single();
-  return !!(data as any)?.social_tutorial_seen;
+  return !!data?.social_tutorial_seen;
 };
 
 export const markTutorialSeen = async (userId?: string) => {
