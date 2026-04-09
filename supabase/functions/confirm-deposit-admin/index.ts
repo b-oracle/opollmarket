@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
         _user_id: user_id,
         _delta: creditAmount,
         _bonus_delta: 0,
+        _insurance_delta: 0,
       });
       if (balError) {
         console.error("CRITICAL: Failed to credit balance:", balError);
@@ -148,7 +149,7 @@ Deno.serve(async (req) => {
                 if (percent > 0 && cap > 0) {
                   const bonus = Math.min(Number(amount) * percent / 100, cap);
                   if (bonus > 0) {
-                    await adminClient.rpc("adjust_balance", { _user_id: user_id, _delta: 0, _bonus_delta: bonus });
+                    await adminClient.rpc("adjust_balance", { _user_id: user_id, _delta: 0, _bonus_delta: bonus, _insurance_delta: 0 });
                     await adminClient.from("transactions").insert({ user_id, type: "welcome_bonus", amount: bonus, status: "confirmed" });
                     await adminClient.from("notifications").insert({ user_id, title: "Welcome Bonus! 🎁", message: `You received a $${bonus.toFixed(2)} welcome bonus on your first deposit!`, type: "deposit" });
                     console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${user_id}`);
