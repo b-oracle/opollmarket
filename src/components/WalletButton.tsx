@@ -4,6 +4,7 @@ import { Wallet, LogOut, ChevronDown, Copy, Check, ExternalLink, X, Smartphone }
 import { useState, useEffect } from "react";
 import { formatUnits } from "viem";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 const truncateAddress = (addr: string) =>
   `${addr.slice(0, 6)}...${addr.slice(-4)}`;
