@@ -53,7 +53,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
       if (!user || !debouncedSearch || debouncedSearch.length < 2) return [];
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, username")
         .eq("is_public", true)
         .ilike("display_name", `%${debouncedSearch}%`)
         .neq("id", user.id)
@@ -69,7 +69,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, username")
         .eq("id", user.id)
         .single();
       return data;
@@ -89,7 +89,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.follower_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, username").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.follower_id) }));
     },
@@ -108,7 +108,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         .order("created_at", { ascending: false });
       if (!data || data.length === 0) return [];
       const ids = data.map((f: any) => f.following_id);
-      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url").in("id", ids);
+      const { data: profiles } = await supabase.from("profiles").select("id, display_name, avatar_url, username").in("id", ids);
       const map = new Map((profiles || []).map((p: any) => [p.id, p]));
       return data.map((f: any) => ({ ...f, profile: map.get(f.following_id) }));
     },
@@ -138,7 +138,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, bio, is_public")
+        .select("id, display_name, avatar_url, bio, is_public, username")
         .in("id", uniqueIds)
         .eq("is_public", true);
 
@@ -193,7 +193,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: index * 0.03 }}
         className="glass rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-accent/30 transition-colors"
-        onClick={() => { onClose(); navigate(`/user/${userId}`); }}
+        onClick={() => { onClose(); navigate(`/user/${prof?.username || userId}`); }}
       >
         <div className="relative shrink-0">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
@@ -289,7 +289,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                   </div>
                 </div>
                 <button
-                  onClick={() => { onClose(); navigate(`/user/${user.id}`); }}
+                  onClick={() => { onClose(); navigate(`/user/${(profile as any)?.username || user.id}`); }}
                   className="w-8 h-8 rounded-full glass flex items-center justify-center shrink-0"
                 >
                   <ChevronRight className="w-4 h-4" />
