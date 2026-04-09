@@ -226,7 +226,7 @@ const AdminDeposits = () => {
                       </td>
                       {canEdit && (
                         <td className="px-4 py-3 text-right">
-                          {(d.status === "pending" || d.status === "partial") && (
+                          {d.status === "partial" && (
                             <div className="flex items-center justify-end gap-1.5">
                               {editingId === d.id ? (
                                 <>
@@ -245,7 +245,7 @@ const AdminDeposits = () => {
                                     className="text-xs h-8"
                                     disabled={confirmMutation.isPending || !editAmount || Number(editAmount) <= 0 || Number(editAmount) > Number(d.amount)}
                                     onClick={() => {
-                                      if (confirm(`Credit $${Number(editAmount).toFixed(2)} (partial) for ${d.display_name}?`)) {
+                                      if (confirm(`Credit $${Number(editAmount).toFixed(2)} for ${d.display_name}?`)) {
                                         confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: Number(editAmount) });
                                         setEditingId(null);
                                       }
@@ -284,6 +284,11 @@ const AdminDeposits = () => {
                                 </>
                               )}
                             </div>
+                          )}
+                          {d.status === "pending" && (
+                            <Badge variant="outline" className="text-xs text-muted-foreground">
+                              No action needed
+                            </Badge>
                           )}
                         </td>
                       )}
