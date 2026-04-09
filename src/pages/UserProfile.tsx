@@ -577,8 +577,8 @@ const UserProfile = () => {
         </AnimatePresence>
 
         {/* Social Section (collapsible) */}
-        {(isOwnProfile || profile?.is_public) && (
-          <SocialSection userId={id!} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} initialTab={searchParams.get("tab") === "spaces" ? "spaces" : undefined} />
+        {(isOwnProfile || profile?.is_public) && profile?.id && (
+          <SocialSection userId={profile.id} isOwnProfile={isOwnProfile} isPublic={!!profile?.is_public} initialTab={searchParams.get("tab") === "spaces" ? "spaces" : undefined} />
         )}
 
         {/* Content Tabs */}
