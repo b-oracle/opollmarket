@@ -154,6 +154,7 @@ const AdminCreateMarket = () => {
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [pendingAiType, setPendingAiType] = useState<"description" | "details" | "image" | null>(null);
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);

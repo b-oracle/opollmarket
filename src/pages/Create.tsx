@@ -225,6 +225,7 @@ const Create = () => {
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [pendingAiType, setPendingAiType] = useState<"description" | "details" | "image" | null>(null);
 
   // Boost & Broadcast add-ons at creation
   const [creationBoost, setCreationBoost] = useState(false);
