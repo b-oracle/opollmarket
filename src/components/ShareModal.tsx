@@ -95,6 +95,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [postingToFeed, setPostingToFeed] = useState(false);
   const [storyCreatorOpen, setStoryCreatorOpen] = useState(false);
@@ -119,6 +120,16 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   const salesMessage = `Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${cleanShareLink}`;
 
   // Capture screenshot when modal opens
+  // Fetch market image as fallback when modal opens
+  useEffect(() => {
+    if (!open || !marketId) { setFallbackImage(null); return; }
+    let cancelled = false;
+    supabase.from("markets").select("image_url").eq("id", marketId).single().then(({ data }) => {
+      if (!cancelled && data?.image_url) setFallbackImage(data.image_url);
+    });
+    return () => { cancelled = true; };
+  }, [open, marketId]);
+
   useEffect(() => {
     if (!open) {
       setScreenshot(null);
@@ -146,9 +157,6 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
         setScreenshot(canvas.toDataURL("image/png"));
       } catch (err) {
         console.error("Screenshot capture failed:", err);
-        if (!cancelled) {
-          // Don't show error toast — just show fallback
-        }
       } finally {
         if (!cancelled) setCapturing(false);
       }
@@ -311,6 +319,8 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
                       </div>
                     ) : screenshot ? (
                       <img src={screenshot} alt="Preview" className="w-full object-contain max-h-[40vh]" />
+                    ) : fallbackImage ? (
+                      <img src={fallbackImage} alt="Preview" className="w-full object-contain max-h-[40vh] rounded-lg" />
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-8">
                         <Share2 className="w-6 h-6 text-muted-foreground" />
