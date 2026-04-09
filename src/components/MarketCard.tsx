@@ -326,7 +326,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         <div ref={captureContentRef} className="absolute -left-[9999px] w-[600px] overflow-hidden rounded-xl bg-background" style={{ height: '400px' }}>
           {market.imageUrl && (
             <div className="absolute inset-0">
-              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-75" loading="lazy" />
+              <img src={market.imageUrl} alt="" className="w-full h-full object-cover opacity-75" loading="eager" />
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
             </div>
           )}
