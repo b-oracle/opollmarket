@@ -445,6 +445,7 @@ const AdminCreateMarket = () => {
   };
 
   return (
+    <>
     <div className="space-y-6 max-w-2xl pb-10">
       <div>
         <h2 className="text-2xl font-bold">Create Market</h2>
