@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
         _user_id: user_id,
         _delta: creditAmount,
         _bonus_delta: 0,
+        _insurance_delta: 0,
       });
       if (balError) {
         console.error("CRITICAL: Failed to credit balance:", balError);
