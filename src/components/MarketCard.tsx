@@ -221,7 +221,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       });
       return;
     }
-    toggleLike();
+    handleToggleLike();
   };
 
   const handleShare = () => {
