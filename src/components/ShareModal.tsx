@@ -319,6 +319,8 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
                       </div>
                     ) : screenshot ? (
                       <img src={screenshot} alt="Preview" className="w-full object-contain max-h-[40vh]" />
+                    ) : fallbackImage ? (
+                      <img src={fallbackImage} alt="Preview" className="w-full object-contain max-h-[40vh] rounded-lg" />
                     ) : (
                       <div className="flex flex-col items-center gap-2 py-8">
                         <Share2 className="w-6 h-6 text-muted-foreground" />
