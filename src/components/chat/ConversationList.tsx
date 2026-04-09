@@ -56,6 +56,21 @@ const ConversationList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { data: myUsername } = useQuery({
+    queryKey: ["my-username", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .maybeSingle();
+      return data?.username || null;
+    },
+    enabled: !!user,
+    staleTime: 300_000,
+  });
   const { supportUnread, communityUnread, markSupportRead, markCommunityRead } = useUnreadCounts();
   const { isFeatureEnabled } = useFeatureToggles();
   const [showNewChat, setShowNewChat] = useState(false);
