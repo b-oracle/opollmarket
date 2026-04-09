@@ -213,13 +213,16 @@ const ConversationList = () => {
     enabled: !!user && showNewChat,
   });
 
-  const existingPartnerIds = new Set(
-    allConversations.map((c) => c.other_user?.id).filter(Boolean)
+  const existingActivePartnerIds = new Set(
+    allConversations
+      .filter((c) => c.status !== "rejected")
+      .map((c) => c.other_user?.id)
+      .filter(Boolean)
   );
 
   const displayUsers = search.trim()
-    ? searchResults.filter((m) => !existingPartnerIds.has(m.id))
-    : mutualFollows.filter((m) => !existingPartnerIds.has(m.id));
+    ? searchResults.filter((m) => !existingActivePartnerIds.has(m.id))
+    : mutualFollows.filter((m) => !existingActivePartnerIds.has(m.id));
 
   const startConversation = async (otherId: string) => {
     if (!user) return;
