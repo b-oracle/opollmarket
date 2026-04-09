@@ -45,6 +45,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [referralCode, setReferralCode] = useState("");
   const [referralFromLink, setReferralFromLink] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -202,7 +204,20 @@ const Auth = () => {
           }
           localStorage.setItem("referral_id", referrerId);
         }
-        const { error } = await signUp(email, password, displayName);
+        // Validate username
+        const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+        if (cleanUsername.length < 3) {
+          toast.error("Username must be at least 3 characters (letters, numbers, underscores).");
+          return;
+        }
+        // Check uniqueness
+        const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).ilike("username", cleanUsername);
+        if ((count ?? 0) > 0) {
+          setUsernameError("Username already taken");
+          toast.error("Username already taken. Please choose another.");
+          return;
+        }
+        const { error } = await signUp(email, password, displayName, cleanUsername);
         if (error) {
           toast.error(error.message);
         } else {
@@ -246,6 +261,34 @@ const Auth = () => {
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
                 <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name"
                   className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Username</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => {
+                      const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setUsername(v);
+                      setUsernameError("");
+                    }}
+                    onBlur={async () => {
+                      if (username.length >= 3) {
+                        const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).ilike("username", username);
+                        if ((count ?? 0) > 0) setUsernameError("Username already taken");
+                      }
+                    }}
+                    placeholder="your_username"
+                    required
+                    minLength={3}
+                    maxLength={25}
+                    className="w-full bg-muted/50 border border-border rounded-xl pl-8 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                </div>
+                {usernameError && <p className="text-xs text-destructive mt-1">{usernameError}</p>}
+                {username.length > 0 && username.length < 3 && <p className="text-xs text-muted-foreground mt-1">Min 3 characters</p>}
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">

@@ -20,7 +20,7 @@ interface AuthContextValue {
   canEdit: boolean;
   isEmailVerified: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, displayName?: string, username?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -335,7 +335,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return result;
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, displayName?: string) => {
+  const signUp = useCallback(async (email: string, password: string, displayName?: string, username?: string) => {
     const referredBy = localStorage.getItem("referral_id");
     const { error } = await supabase.auth.signUp({
       email,
@@ -343,6 +343,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       options: {
         data: {
           display_name: displayName,
+          ...(username ? { username } : {}),
           ...(referredBy ? { referred_by: referredBy } : {}),
         },
         emailRedirectTo: getCanonicalOrigin(),
