@@ -579,6 +579,7 @@ const Profile = () => {
   const [walletNfts, setWalletNfts] = useState<Array<{ token_address: string; token_id: string; name: string; image_url: string; collection_name: string }>>([]);
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
+  const [editUsername, setEditUsername] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [editDob, setEditDob] = useState<Date | undefined>(undefined);
   const [editGender, setEditGender] = useState("");
