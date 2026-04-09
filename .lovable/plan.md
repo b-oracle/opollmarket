@@ -1,28 +1,47 @@
 
 
-## Plan: Navigate Messages back button to user's social status page
+## Plan: Username requirement for registration + backfill existing users
 
 ### Problem
-The back button on the Messages page currently navigates to `/profile` (the settings/wallet profile page). The user wants it to go to their social status page at `/user/{username}` instead.
+1. Existing users without a custom username need one assigned
+2. New registrations should require a username field
+3. Usernames must be unique
 
-### Change
+### Changes
 
-**File: `src/components/chat/ConversationList.tsx`** (line 282)
+#### 1. Backfill existing users without usernames (DB migration)
+Run a one-time SQL migration that assigns a random username (using the existing `generate_unique_username` function) to any profile where `username` is NULL or empty.
 
-Update the back button's `onClick` handler to navigate to the user's social page using their username (falling back to their user ID):
-
-```typescript
-// Before
-navigate("/profile")
-
-// After  
-navigate(`/user/${profile?.username || user?.id}`)
+```sql
+DO $$
+DECLARE r RECORD;
+BEGIN
+  FOR r IN SELECT id, display_name FROM profiles WHERE username IS NULL OR username = '' LOOP
+    UPDATE profiles SET username = generate_unique_username(COALESCE(r.display_name, 'user'))
+    WHERE id = r.id;
+  END LOOP;
+END $$;
 ```
 
-This requires accessing the user's profile data (specifically the `username` field). The component already has the `user` object from `useAuth()`, so we'll add a quick profile query or use the username from the profile if already available.
+Also add a NOT NULL constraint (with a default) to prevent future NULL usernames, and a unique index if not already present.
 
-### Details
-- Fetch the user's `username` from the `profiles` table (a lightweight single-field query)
-- Navigate to `/user/{username}` if available, otherwise fall back to `/user/{userId}`
-- This matches the same destination as the "My Social" button on the Profile page
+#### 2. Add username field to signup form (`src/pages/Auth.tsx`)
+- Add a `username` state variable
+- Add a username input field in the signup form (below Display Name)
+- Show `@` prefix, validate: min 3 chars, alphanumeric + underscores only
+- Check uniqueness on blur via a quick query before submission
+- Pass username through signup metadata so the DB trigger can use it
+
+#### 3. Update `signUp` in `src/hooks/useAuth.ts`
+- Accept `username` parameter alongside `displayName`
+- Include `username` in `options.data` metadata
+
+#### 4. Update `handle_new_user()` DB function (migration)
+- Read `username` from `raw_user_meta_data` if provided
+- Use it instead of auto-generating, falling back to `generate_unique_username` if not provided (for Google OAuth signups)
+
+### Files to modify
+- `src/pages/Auth.tsx` — add username input field + client-side validation
+- `src/hooks/useAuth.ts` — pass username in signup metadata
+- DB migration — backfill usernames + update `handle_new_user()` trigger + add NOT NULL constraint
 
