@@ -579,6 +579,7 @@ const Profile = () => {
   const [walletNfts, setWalletNfts] = useState<Array<{ token_address: string; token_id: string; name: string; image_url: string; collection_name: string }>>([]);
   const [selectedNftUrl, setSelectedNftUrl] = useState<string | null>(null);
   const [editBio, setEditBio] = useState("");
+  const [editUsername, setEditUsername] = useState("");
   const [editIsPublic, setEditIsPublic] = useState(true);
   const [editDob, setEditDob] = useState<Date | undefined>(undefined);
   const [editGender, setEditGender] = useState("");
@@ -658,7 +659,7 @@ const Profile = () => {
       if (!user) return null;
       const { data } = await supabase
         .from("profiles")
-        .select("wallet_address, avatar_url, display_name, is_public, bio, verification_level, age, date_of_birth, gender, location, interests")
+        .select("wallet_address, avatar_url, display_name, username, is_public, bio, verification_level, age, date_of_birth, gender, location, interests")
         .eq("id", user.id)
         .single();
       return data;
@@ -933,6 +934,7 @@ const Profile = () => {
           <button
             onClick={() => {
               setEditName(profile?.display_name || authDisplayName);
+              setEditUsername((profile as any)?.username || "");
               setEditBio((profile as any)?.bio || "");
               setEditIsPublic((profile as any)?.is_public ?? true);
               setEditDob((profile as any)?.date_of_birth ? parseISO((profile as any).date_of_birth) : undefined);
@@ -967,6 +969,9 @@ const Profile = () => {
               </span>
             )}
           </div>
+          {(profile as any)?.username && (
+            <p className="text-xs text-muted-foreground font-medium">@{(profile as any).username}</p>
+          )}
           <p className="text-xs text-muted-foreground">
             {user?.email ? `${user.email.slice(0, 3)}***@${user.email.split("@")[1]}` : ""}
           </p>
@@ -1087,6 +1092,22 @@ const Profile = () => {
                       placeholder="Your name"
                       maxLength={50}
                     />
+                  </div>
+                  {/* Username */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Username</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                      <input
+                        type="text"
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                        className="w-full bg-muted/50 border border-border rounded-xl pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="your_username"
+                        maxLength={25}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Only lowercase letters, numbers, and underscores</p>
                   </div>
                   {/* Bio */}
                   <div>
@@ -1256,9 +1277,18 @@ const Profile = () => {
                             return;
                           }
 
+                          // Validate username
+                          const cleanUsername = editUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+                          if (cleanUsername && cleanUsername.length < 3) {
+                            toast.error("Username must be at least 3 characters");
+                            setSavingProfile(false);
+                            return;
+                          }
+
                           // Update profile table
                           const { error: profileError } = await supabase.from("profiles").update({
                             display_name: editName.trim(),
+                            username: cleanUsername || undefined,
                             bio: editBio.trim(),
                             is_public: editIsPublic,
                             date_of_birth: editDob ? format(editDob, "yyyy-MM-dd") : null,
@@ -1269,7 +1299,7 @@ const Profile = () => {
                             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
                           } as any).eq("id", user!.id);
                           if (profileError) {
-                            if (profileError.message?.includes("unique_display_name") || profileError.code === "23505") {
+                            if (profileError.message?.includes("idx_profiles_username_unique") || profileError.code === "23505") {
                               toast.error("This username is already taken. Please choose a different one.");
                             } else {
                               toast.error("Failed to update profile");

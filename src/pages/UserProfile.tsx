@@ -100,7 +100,7 @@ const UserProfile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
+        .select("id, display_name, username, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
         .eq("id", id)
         .maybeSingle();
       // If no data and we're authenticated, this might be a transient RLS issue — throw to trigger retry
@@ -397,6 +397,9 @@ const UserProfile = () => {
                 <h3 className="text-lg font-bold truncate">{displayName}</h3>
                 {isVerified && <NftBadge size={18} className="shrink-0" level={verificationLevel} />}
               </div>
+              {(profile as any)?.username && (
+                <p className="text-xs text-muted-foreground font-medium mb-1">@{(profile as any).username}</p>
+              )}
               {profile.bio && <p className="text-xs text-muted-foreground mb-2 line-clamp-2">{profile.bio}</p>}
               {(profile as any).twitter_username && (
                 <a

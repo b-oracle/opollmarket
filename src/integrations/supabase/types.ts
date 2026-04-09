@@ -2050,6 +2050,7 @@ export type Database = {
           twitter_username: string | null
           unlimited_markets: boolean
           updated_at: string
+          username: string
           verification_level: string
           wallet_address: string | null
         }
@@ -2078,6 +2079,7 @@ export type Database = {
           twitter_username?: string | null
           unlimited_markets?: boolean
           updated_at?: string
+          username?: string
           verification_level?: string
           wallet_address?: string | null
         }
@@ -2106,6 +2108,7 @@ export type Database = {
           twitter_username?: string | null
           unlimited_markets?: boolean
           updated_at?: string
+          username?: string
           verification_level?: string
           wallet_address?: string | null
         }
@@ -4102,6 +4105,10 @@ export type Database = {
           market_id: string
           title: string
         }[]
+      }
+      generate_unique_username: {
+        Args: { _display_name: string }
+        Returns: string
       }
       get_admin_user_stats: { Args: never; Returns: Json }
       get_copy_trade_stats: {
