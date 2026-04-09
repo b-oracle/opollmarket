@@ -75,7 +75,7 @@ const UserProfile = () => {
       await queryClient.invalidateQueries({ queryKey: ["user-profile", id] });
       await queryClient.invalidateQueries({ queryKey: ["user-markets", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-positions-public", profileUserId] });
-      await queryClient.invalidateQueries({ queryKey: ["user-likes-count", id] });
+      await queryClient.invalidateQueries({ queryKey: ["user-likes-count", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-leaderboard-ranks", profileUserId] });
     },
     scrollRef: containerRef,
@@ -344,7 +344,7 @@ const UserProfile = () => {
           <h2 className="text-lg font-bold truncate flex-1">{displayName}</h2>
           {!isOwnProfile && user && (
             <button
-              onClick={() => navigate(`/messages/${id}`)}
+              onClick={() => navigate(`/messages/${profileUserId}`)}
               className="w-9 h-9 rounded-full glass flex items-center justify-center hover:bg-muted transition-colors"
               aria-label="Send message"
             >
