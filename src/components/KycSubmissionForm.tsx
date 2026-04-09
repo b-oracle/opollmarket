@@ -46,7 +46,7 @@ const KYC_STATUS_CONFIG = {
   rejected: { label: "Rejected", icon: XCircle, color: "bg-destructive/10 text-destructive" },
 } as const;
 
-const KycSubmissionForm = () => {
+const KycSubmissionForm = ({ onSkip }: { onSkip?: () => void }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
@@ -333,6 +333,11 @@ const KycSubmissionForm = () => {
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
             Submit Verification
           </Button>
+          {onSkip && (
+            <Button variant="ghost" onClick={onSkip} className="w-full text-xs text-muted-foreground" size="sm">
+              Skip for now
+            </Button>
+          )}
         </div>
       )}
     </div>
