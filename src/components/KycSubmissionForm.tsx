@@ -46,7 +46,7 @@ const KYC_STATUS_CONFIG = {
   rejected: { label: "Rejected", icon: XCircle, color: "bg-destructive/10 text-destructive" },
 } as const;
 
-const KycSubmissionForm = () => {
+const KycSubmissionForm = ({ onSkip }: { onSkip?: () => void }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
