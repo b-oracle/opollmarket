@@ -333,6 +333,11 @@ const KycSubmissionForm = () => {
             {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Upload className="w-4 h-4 mr-2" />}
             Submit Verification
           </Button>
+          {onSkip && (
+            <Button variant="ghost" onClick={onSkip} className="w-full text-xs text-muted-foreground" size="sm">
+              Skip for now
+            </Button>
+          )}
         </div>
       )}
     </div>
