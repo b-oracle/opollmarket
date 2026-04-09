@@ -100,7 +100,7 @@ const UserProfile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
+        .select("id, display_name, username, avatar_url, is_public, bio, created_at, wallet_address, verification_level, twitter_username, twitter_id")
         .eq("id", id)
         .maybeSingle();
       // If no data and we're authenticated, this might be a transient RLS issue — throw to trigger retry
