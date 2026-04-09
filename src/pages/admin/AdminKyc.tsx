@@ -72,16 +72,33 @@ const AdminKyc = () => {
 
   const getSignedUrl = async (path: string): Promise<string | null> => {
     if (!path) return null;
-    const { data } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from("kyc-documents")
       .createSignedUrl(path, 300); // 5 min
+    if (error) {
+      console.error("Signed URL error:", error.message, "path:", path);
+      return null;
+    }
     return data?.signedUrl || null;
   };
 
   const handleViewImage = async (path: string) => {
     const url = await getSignedUrl(path);
-    if (url) setViewingImage(url);
-    else toast.error("Could not load document");
+    if (url) {
+      setViewingImage(url);
+    } else {
+      // Fallback: try generating a public URL with download
+      const { data: dlData, error: dlError } = await supabase.storage
+        .from("kyc-documents")
+        .download(path);
+      if (dlData) {
+        const objectUrl = URL.createObjectURL(dlData);
+        setViewingImage(objectUrl);
+      } else {
+        console.error("Download fallback failed:", dlError?.message);
+        toast.error("Could not load document — check admin permissions");
+      }
+    }
   };
 
   const handleAction = async (submission: KycSubmission, action: "approved" | "rejected") => {
