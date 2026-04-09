@@ -132,7 +132,7 @@ export const markTutorialSeen = async (userId?: string) => {
   if (userId) {
     await supabase
       .from("profiles")
-      .update({ social_tutorial_seen: true } as any)
+      .update({ social_tutorial_seen: true })
       .eq("id", userId);
   }
 };
@@ -141,7 +141,7 @@ export const resetTutorial = async (userId?: string) => {
   if (userId) {
     await supabase
       .from("profiles")
-      .update({ social_tutorial_seen: false } as any)
+      .update({ social_tutorial_seen: false })
       .eq("id", userId);
   }
 };
