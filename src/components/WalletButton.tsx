@@ -118,7 +118,7 @@ const WalletButton = () => {
                   Open in MetaMask
                 </a>
                 <a
-                  href={`https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(window.location.href)}`}
+                  href={`https://link.trustwallet.com/open_url?coin_id=20000714&url=${encodeURIComponent(window.location.href)}`}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/50 hover:bg-accent transition-colors text-xs font-medium text-foreground"
                 >
                   <svg className="w-4 h-4 shrink-0" viewBox="0 0 40 40" fill="none"><path d="M20 4C11.7 4 5 10.4 5 18.7c0 5.3 8 15.7 12.8 20.2a3.2 3.2 0 004.4 0C27 34.4 35 24 35 18.7 35 10.4 28.3 4 20 4z" fill="#3375BB"/><path d="M20 8.5c-5.3 0-9.5 4.2-9.5 9.5 0 3.5 5 10.5 8.2 13.8a1.8 1.8 0 002.6 0c3.2-3.3 8.2-10.3 8.2-13.8 0-5.3-4.2-9.5-9.5-9.5z" fill="white"/><path d="M20 12l-5.5 3v6.5c0 3.2 2.3 6.2 5.5 7 3.2-.8 5.5-3.8 5.5-7V15L20 12z" fill="#3375BB"/></svg>
