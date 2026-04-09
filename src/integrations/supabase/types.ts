@@ -998,6 +998,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          initiated_by: string | null
           last_message_at: string | null
           status: string
           user_a: string
@@ -1006,6 +1007,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          initiated_by?: string | null
           last_message_at?: string | null
           status?: string
           user_a: string
@@ -1014,6 +1016,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          initiated_by?: string | null
           last_message_at?: string | null
           status?: string
           user_a?: string
