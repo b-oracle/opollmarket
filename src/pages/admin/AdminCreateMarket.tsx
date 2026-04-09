@@ -1,4 +1,14 @@
 import { useState, useRef, useEffect } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -154,6 +164,7 @@ const AdminCreateMarket = () => {
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [pendingAiType, setPendingAiType] = useState<"description" | "details" | "image" | null>(null);
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -434,6 +445,7 @@ const AdminCreateMarket = () => {
   };
 
   return (
+    <>
     <div className="space-y-6 max-w-2xl pb-10">
       <div>
         <h2 className="text-2xl font-bold">Create Market</h2>
@@ -501,7 +513,7 @@ const AdminCreateMarket = () => {
             {isFeatureEnabled("ai_generate_description") && (
               <button
                 type="button"
-                onClick={() => handleAiGenerate("description")}
+                onClick={() => setPendingAiType("description")}
                 disabled={generatingDesc || !title.trim()}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -535,7 +547,7 @@ const AdminCreateMarket = () => {
               {isFeatureEnabled("ai_generate_details") && (
                 <button
                   type="button"
-                  onClick={() => handleAiGenerate("details")}
+                  onClick={() => setPendingAiType("details")}
                   disabled={generatingDetails || !title.trim()}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -677,7 +689,7 @@ const AdminCreateMarket = () => {
                 {isFeatureEnabled("ai_generate_image") && (
                   <button
                     type="button"
-                    onClick={() => handleAiGenerate("image")}
+                    onClick={() => setPendingAiType("image")}
                     disabled={generatingImage || !title.trim()}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                   >
@@ -1189,6 +1201,25 @@ const AdminCreateMarket = () => {
         </button>
       </div>
     </div>
+
+    <AlertDialog open={!!pendingAiType} onOpenChange={(open) => { if (!open) setPendingAiType(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Confirm AI Generation</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will generate {pendingAiType === "image" ? "a cover image" : pendingAiType === "details" ? "detailed content" : "a description"} using AI.
+            <span className="block mt-2 font-semibold text-foreground">${aiGenerationCost.toFixed(2)} will be charged.</span>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => { const t = pendingAiType; setPendingAiType(null); if (t) handleAiGenerate(t); }}>
+            Generate — ${aiGenerationCost.toFixed(2)}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
