@@ -1093,6 +1093,22 @@ const Profile = () => {
                       maxLength={50}
                     />
                   </div>
+                  {/* Username */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Username</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                      <input
+                        type="text"
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                        className="w-full bg-muted/50 border border-border rounded-xl pl-8 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder="your_username"
+                        maxLength={25}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Only lowercase letters, numbers, and underscores</p>
+                  </div>
                   {/* Bio */}
                   <div>
                     <label className="text-xs font-medium text-muted-foreground mb-1 block">Bio</label>
