@@ -91,9 +91,15 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const creatorLabel = creatorProfile?.display_name
     ? `@${creatorProfile.display_name}`
     : `@${market.creatorName}`;
-  const skipIndividualLike = batchLikeCount !== undefined;
   const { liked, likeCount: individualLikeCount, toggleLike } = useMarketLike(market.id);
-  const likeCount = skipIndividualLike ? batchLikeCount : individualLikeCount;
+  const [likeDelta, setLikeDelta] = useState(0);
+  const likeCount = (batchLikeCount !== undefined ? batchLikeCount : individualLikeCount) + likeDelta;
+
+  const handleToggleLike = useCallback(async () => {
+    const prev = liked;
+    setLikeDelta(d => d + (prev ? -1 : 1));
+    await toggleLike();
+  }, [liked, toggleLike]);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
   const bookmarkCount = useBookmarkCount(market.id);
   const [betModal, setBetModal] = useState<{ open: boolean; side: "yes" | "no"; optionId?: string; optionLabel?: string; optionPrice?: number; optionColor?: string }>({ open: false, side: "yes" });
