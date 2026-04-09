@@ -39,6 +39,20 @@ const WalletButton = () => {
       sessionStorage.setItem("dapp_hint_shown", "1");
     }
     open();
+
+    // Start a 15s timeout – if still not connected, show troubleshooting toast
+    const timeoutId = setTimeout(() => {
+      // Re-check connection status at timeout time
+      if (!(window as any).__walletConnected) {
+        toast.error("Wallet connection timed out", {
+          description: "Try: 1) Open this site inside your wallet's built-in browser, 2) Use the QR code option, or 3) Refresh and retry.",
+          duration: 12000,
+        });
+      }
+    }, 15000);
+
+    // Store timeout so we can clear it on successful connect
+    (window as any).__walletConnectTimeout = timeoutId;
   };
 
   const copyAddress = () => {
