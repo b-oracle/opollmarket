@@ -132,7 +132,7 @@ const NotificationBell = () => {
       if (n.market_id) {
         window.dispatchEvent(new CustomEvent("join-space", { detail: { id: n.market_id, title: "", hostId: "" } }));
       }
-      navigate("/profile", { state: { tab: "social", socialTab: "spaces" } });
+      navigate("/");
       return;
     }
 
