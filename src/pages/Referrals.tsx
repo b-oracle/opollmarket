@@ -255,9 +255,9 @@ const Referrals = () => {
           <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 mb-4 flex items-start gap-3">
             <Gift className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-yellow-500">Set a display name first</p>
+              <p className="text-sm font-semibold text-yellow-500">Username not found</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Your referral link and code use your display name. Set one in your profile to start sharing.
+                Your referral link and code use your username. Set one in your profile to start sharing.
               </p>
               <button
                 onClick={() => navigate("/profile")}
