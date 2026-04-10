@@ -164,7 +164,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
           .eq("currency", "USDT");
 
         if (aiResponse.status === 429) {
-          return new Response(JSON.stringify({ error: "AI rate limited, please try again shortly" }), {
+          return new Response(JSON.stringify({ error: "AI is temporarily busy — please wait a few seconds and try again" }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
@@ -223,7 +223,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
           .eq("currency", "USDT");
 
         if (aiResponse.status === 429) {
-          return new Response(JSON.stringify({ error: "AI rate limited, please try again shortly" }), {
+          return new Response(JSON.stringify({ error: "AI is temporarily busy — please wait a few seconds and try again" }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
