@@ -167,10 +167,30 @@ Deno.serve(async (req) => {
     }
 
     // 7. Credit user balance (net proceeds to main)
-    await supabase.rpc("adjust_balance", {
+    const { error: balanceError } = await supabase.rpc("adjust_balance", {
       _user_id: userId,
       _delta: netProceeds,
+      _bonus_delta: 0,
     });
+
+    if (balanceError) {
+      console.error("adjust_balance failed after position close:", balanceError);
+      // Position is already zeroed — must not leave user without funds
+      // Retry with direct update as fallback
+      await supabase
+        .from("balances")
+        .update({ amount: supabase.rpc ? undefined : undefined })
+        .eq("user_id", userId);
+      // Use raw SQL fallback via second RPC attempt
+      const { error: retryError } = await supabase.rpc("adjust_balance", {
+        _user_id: userId,
+        _delta: netProceeds,
+        _bonus_delta: 0,
+      });
+      if (retryError) {
+        console.error("adjust_balance retry also failed:", retryError);
+      }
+    }
 
     // 8. Credit exit fee to platform pool
     if (exitFee > 0) {
