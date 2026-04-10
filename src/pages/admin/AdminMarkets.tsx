@@ -992,6 +992,32 @@ const AdminMarkets = () => {
                                       <Gavel className="w-4 h-4" />
                                     </button>
                                   )}
+                                  {m.status === "ended" && (
+                                    <button
+                                      onClick={async () => {
+                                        const newEndDate = prompt("Re-open market — enter new end date (YYYY-MM-DD):", new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0]);
+                                        if (!newEndDate) return;
+                                        const parsed = new Date(newEndDate);
+                                        if (isNaN(parsed.getTime()) || parsed <= new Date()) {
+                                          toast.error("End date must be in the future");
+                                          return;
+                                        }
+                                        const { error } = await supabase.from("markets").update({
+                                          status: "active",
+                                          end_date: newEndDate,
+                                          updated_at: new Date().toISOString(),
+                                        }).eq("id", m.id).eq("status", "ended");
+                                        if (error) { toast.error("Failed to re-open market"); return; }
+                                        toast.success("Market re-opened with new end date!");
+                                        logAuditEvent({ action: "market_reopened", targetId: m.id, targetType: "market", details: { title: m.title, new_end_date: newEndDate } });
+                                        fetchMarkets();
+                                      }}
+                                      className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
+                                      title="Re-open market with new end date"
+                                    >
+                                      <Clock className="w-4 h-4" />
+                                    </button>
+                                  )}
                                   <button
                                     onClick={() => handleCancel(m.id)}
                                     className="p-1.5 rounded-lg hover:bg-yellow-500/10 text-yellow-500 transition-colors"
