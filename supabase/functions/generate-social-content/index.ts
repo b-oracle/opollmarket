@@ -155,7 +155,7 @@ serve(async (req) => {
 
       if (!aiResponse.ok) {
         await refund();
-        const errMsg = aiResponse.status === 429 ? "AI rate limited, try again shortly" : aiResponse.status === 402 ? "AI credits exhausted" : "Caption generation failed. You have been refunded.";
+        const errMsg = aiResponse.status === 429 ? "AI is temporarily busy — please wait a few seconds and try again" : aiResponse.status === 402 ? "AI credits exhausted" : "Caption generation failed. You have been refunded.";
         return new Response(JSON.stringify({ error: errMsg }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -202,7 +202,7 @@ serve(async (req) => {
 
       if (!aiResponse.ok) {
         await refund();
-        const errMsg = aiResponse.status === 429 ? "AI rate limited, try again shortly" : aiResponse.status === 402 ? "AI credits exhausted" : "Image generation failed. You have been refunded.";
+        const errMsg = aiResponse.status === 429 ? "AI is temporarily busy — please wait a few seconds and try again" : aiResponse.status === 402 ? "AI credits exhausted" : "Image generation failed. You have been refunded.";
         return new Response(JSON.stringify({ error: errMsg }), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
