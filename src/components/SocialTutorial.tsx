@@ -183,7 +183,7 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
       playTickSound();
       setStep((s) => s + 1);
     }
-  }, [isLast, onComplete, navigate]);
+  }, [isLast, onComplete, navigate, fireWinConfetti, userId]);
 
   const handleBack = useCallback(() => {
     if (step > 0) {
