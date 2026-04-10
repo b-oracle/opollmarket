@@ -147,20 +147,8 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { fireWinConfetti } = useConfetti();
-  const location = useLocation();
   const current = steps[step];
   const isLast = step === steps.length - 1;
-
-  // Navigate to the step's route when step changes (only on step change, not on location change)
-  const lastNavigatedStep = useRef(-1);
-  useEffect(() => {
-    if (lastNavigatedStep.current !== step) {
-      lastNavigatedStep.current = step;
-      if (location.pathname !== current.route) {
-        navigate(current.route, { replace: true });
-      }
-    }
-  }, [step, current.route, navigate, location.pathname]);
 
   const handleNext = useCallback(() => {
     if (isLast) {
