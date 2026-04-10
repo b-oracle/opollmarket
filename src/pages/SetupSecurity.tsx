@@ -466,6 +466,12 @@ const SetupSecurity = () => {
                   {!canProceed && (
                     <p className="text-center text-sm text-muted-foreground">Complete at least one method to continue</p>
                   )}
+                  <button
+                    onClick={() => navigate("/")}
+                    className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Skip for now
+                  </button>
                 </>
               )}
 
