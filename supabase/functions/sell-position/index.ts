@@ -167,10 +167,15 @@ Deno.serve(async (req) => {
     }
 
     // 7. Credit user balance (net proceeds to main)
-    await supabase.rpc("adjust_balance", {
+    const { error: balanceError } = await supabase.rpc("adjust_balance", {
       _user_id: userId,
       _delta: netProceeds,
+      _bonus_delta: 0,
     });
+
+    if (balanceError) {
+      console.error("CRITICAL: adjust_balance failed after position close:", balanceError, { userId, netProceeds, positionId });
+    }
 
     // 8. Credit exit fee to platform pool
     if (exitFee > 0) {
