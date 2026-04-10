@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useConfetti } from "@/hooks/useConfetti";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MessageCircle, Users, Bookmark, ArrowRight, ArrowLeft, Sparkles, UserPlus, Globe } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,7 +64,6 @@ interface TutorialStep {
   title: string;
   description: string;
   color: string;
-  route: string;
 }
 
 const steps: TutorialStep[] = [
@@ -73,49 +72,42 @@ const steps: TutorialStep[] = [
     title: "Welcome to Social!",
     description: "Connect with traders, share insights, and stay ahead of the market. Let us show you around!",
     color: "from-primary to-primary/60",
-    route: "/",
   },
   {
     icon: Heart,
     title: "Like & React",
     description: "Tap the heart on any market or post to show your support. See what's trending based on community likes.",
     color: "from-rose-500 to-pink-400",
-    route: "/",
   },
   {
     icon: MessageCircle,
     title: "Posts & Stories",
     description: "Share updates, images, and market tags in your feed. Post Stories that disappear after 24 hours — tap the ring on any avatar to view them.",
     color: "from-blue-500 to-cyan-400",
-    route: "/feed",
   },
   {
     icon: UserPlus,
     title: "Follow & Copy Trade",
     description: "Follow top traders and enable Copy Trading to automatically mirror their positions. Track performance before you subscribe.",
     color: "from-emerald-500 to-green-400",
-    route: "/rankings",
   },
   {
     icon: Users,
     title: "Live Spaces",
     description: "Join or host live audio rooms to discuss markets in real time. React with sounds, send gifts, and listen to replays later.",
     color: "from-violet-500 to-purple-400",
-    route: "/feed",
   },
   {
     icon: Globe,
     title: "Messages & Calls",
     description: "Chat privately with any trader, send emoji gifts, and make voice or video calls — all built right in.",
     color: "from-sky-500 to-indigo-400",
-    route: "/messages",
   },
   {
     icon: Bookmark,
     title: "Watchlist & Profile",
     description: "Bookmark markets to your watchlist and build your public profile — followers, activity, and stats all in one place. You're all set!",
     color: "from-amber-500 to-yellow-400",
-    route: "/profile",
   },
 ];
 
@@ -155,20 +147,8 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
   const [step, setStep] = useState(0);
   const navigate = useNavigate();
   const { fireWinConfetti } = useConfetti();
-  const location = useLocation();
   const current = steps[step];
   const isLast = step === steps.length - 1;
-
-  // Navigate to the step's route when step changes (only on step change, not on location change)
-  const lastNavigatedStep = useRef(-1);
-  useEffect(() => {
-    if (lastNavigatedStep.current !== step) {
-      lastNavigatedStep.current = step;
-      if (location.pathname !== current.route) {
-        navigate(current.route, { replace: true });
-      }
-    }
-  }, [step, current.route, navigate, location.pathname]);
 
   const handleNext = useCallback(() => {
     if (isLast) {
