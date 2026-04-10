@@ -198,7 +198,7 @@ const SocialTutorial = ({ onComplete, userId }: SocialTutorialProps) => {
     markTutorialSeen(userId);
     navigate("/", { replace: true });
     onComplete();
-  }, [onComplete, navigate]);
+  }, [onComplete, navigate, userId]);
 
   return (
     <motion.div
