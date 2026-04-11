@@ -995,6 +995,20 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
         room.on(RoomEvent.TrackUnmuted, () => updateParticipants(room));
+
+        // Restore mic when returning from app switch / minimize
+        const handleVisibilityChange = async () => {
+          if (document.visibilityState === "visible" && roomRef.current && wasMicOnRef.current && !forceMuted) {
+            try {
+              const micPub = roomRef.current.localParticipant.getTrackPublication(Track.Source.Microphone);
+              if (micPub?.isMuted) {
+                await roomRef.current.localParticipant.setMicrophoneEnabled(true);
+              }
+            } catch {}
+          }
+        };
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
         room.on(RoomEvent.ParticipantPermissionsChanged, () => {
           updateParticipants(room);
