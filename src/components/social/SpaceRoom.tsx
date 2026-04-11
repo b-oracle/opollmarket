@@ -1008,7 +1008,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             } catch {}
           }
         };
-        document.addEventListener("visibilitychange", handleVisibilityChange);
+        visChangeHandlerRef.current = handleVisibilityChange;
 
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
         room.on(RoomEvent.ParticipantPermissionsChanged, () => {
