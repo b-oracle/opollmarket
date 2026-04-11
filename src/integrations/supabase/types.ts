@@ -3374,6 +3374,33 @@ export type Database = {
         }
         Relationships: []
       }
+      twitter_auto_post_settings: {
+        Row: {
+          enabled: boolean
+          event_type: string
+          id: string
+          tweet_template: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          event_type: string
+          id?: string
+          tweet_template: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          event_type?: string
+          id?: string
+          tweet_template?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       twitter_tokens: {
         Row: {
           access_token: string
