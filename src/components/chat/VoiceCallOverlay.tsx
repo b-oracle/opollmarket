@@ -344,6 +344,7 @@ const VoiceCallOverlay = ({
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    room
       .connect(livekitUrl, token)
       .then(async () => {
         await room.localParticipant.setMicrophoneEnabled(true);
