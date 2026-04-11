@@ -522,6 +522,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const wakeLockRef = useRef<any>(null);
   // Track whether mic was on before backgrounding
   const wasMicOnRef = useRef(false);
+  const visChangeHandlerRef = useRef<(() => void) | null>(null);
 
   // ============ Session persistence on background / calls ============
   useEffect(() => {
@@ -995,6 +996,21 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
         room.on(RoomEvent.TrackUnmuted, () => updateParticipants(room));
+
+        // Restore mic when returning from app switch / minimize
+        const handleVisibilityChange = async () => {
+          if (document.visibilityState === "visible" && roomRef.current && wasMicOnRef.current && !forceMuted) {
+            try {
+              const micPub = roomRef.current.localParticipant.getTrackPublication(Track.Source.Microphone);
+              if (micPub?.isMuted) {
+                await roomRef.current.localParticipant.setMicrophoneEnabled(true);
+              }
+            } catch {}
+          }
+        };
+        visChangeHandlerRef.current = handleVisibilityChange;
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
         room.on(RoomEvent.ParticipantPermissionsChanged, () => {
           updateParticipants(room);
@@ -1157,6 +1173,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     connect();
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", visChangeHandlerRef.current!);
       const r = roomRef.current;
       roomRef.current = null;
       if (r) {

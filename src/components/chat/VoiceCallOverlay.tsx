@@ -165,12 +165,17 @@ const VoiceCallOverlay = ({
     setTimeout(onClose, 500);
   }, [callId, onClose]);
 
+  // Track whether the user intentionally muted, so we can auto-restore on app switch
+  const userIntentMutedRef = useRef(false);
+
   // Connect to LiveKit room
   useEffect(() => {
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
       videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
+      // Keep connection alive when page is hidden (app switch / minimize)
+      disconnectOnPageLeave: false,
     });
     roomRef.current = room;
 
@@ -309,6 +314,36 @@ const VoiceCallOverlay = ({
       }
     });
 
+    // Auto-restore mic when browser mutes it on app switch / minimize
+    room.on(RoomEvent.TrackMuted, (pub, participant) => {
+      if (
+        participant.identity === room.localParticipant.identity &&
+        pub.source === Track.Source.Microphone &&
+        !userIntentMutedRef.current
+      ) {
+        setTimeout(async () => {
+          try {
+            if (roomRef.current && !userIntentMutedRef.current) {
+              await room.localParticipant.setMicrophoneEnabled(true);
+            }
+          } catch {}
+        }, 500);
+      }
+    });
+
+    // Also restore mic when page becomes visible again (returning from app switch)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible" && roomRef.current && !userIntentMutedRef.current) {
+        try {
+          const micPub = roomRef.current.localParticipant.getTrackPublication(Track.Source.Microphone);
+          if (micPub?.isMuted) {
+            await roomRef.current.localParticipant.setMicrophoneEnabled(true);
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     room
       .connect(livekitUrl, token)
       .then(async () => {
@@ -369,6 +404,7 @@ const VoiceCallOverlay = ({
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       room.disconnect();
       roomRef.current = null;
     };
@@ -537,6 +573,7 @@ const VoiceCallOverlay = ({
   const toggleMute = async () => {
     if (!roomRef.current) return;
     const newMuted = !muted;
+    userIntentMutedRef.current = newMuted;
     await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
     setMuted(newMuted);
   };
