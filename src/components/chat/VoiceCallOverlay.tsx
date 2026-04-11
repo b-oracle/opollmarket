@@ -314,7 +314,36 @@ const VoiceCallOverlay = ({
       }
     });
 
-    room
+    // Auto-restore mic when browser mutes it on app switch / minimize
+    room.on(RoomEvent.TrackMuted, (pub, participant) => {
+      if (
+        participant.identity === room.localParticipant.identity &&
+        pub.source === Track.Source.Microphone &&
+        !userIntentMutedRef.current
+      ) {
+        setTimeout(async () => {
+          try {
+            if (roomRef.current && !userIntentMutedRef.current) {
+              await room.localParticipant.setMicrophoneEnabled(true);
+            }
+          } catch {}
+        }, 500);
+      }
+    });
+
+    // Also restore mic when page becomes visible again (returning from app switch)
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible" && roomRef.current && !userIntentMutedRef.current) {
+        try {
+          const micPub = roomRef.current.localParticipant.getTrackPublication(Track.Source.Microphone);
+          if (micPub?.isMuted) {
+            await roomRef.current.localParticipant.setMicrophoneEnabled(true);
+          }
+        } catch {}
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
       .connect(livekitUrl, token)
       .then(async () => {
         await room.localParticipant.setMicrophoneEnabled(true);
