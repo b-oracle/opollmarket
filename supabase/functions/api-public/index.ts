@@ -312,18 +312,35 @@ Deno.serve(async (req) => {
       // Enforce minimum password length
       if (typeof password !== "string" || password.length < 8) return err("Password must be at least 8 characters");
 
-      // FIX: Do NOT auto-confirm email — require verification
+      // Auto-confirm for API-created users so partners get a session token immediately
       const { data, error } = await admin.auth.admin.createUser({
         email,
         password,
-        email_confirm: false,
+        email_confirm: true,
       });
 
       if (error) {
         console.error("create-user auth error:", error.message);
         return err(safeError(error, "Failed to create user"), 400);
       }
-      return json({ user: { id: data.user.id, email: data.user.email }, email_verification_required: true });
+
+      // Sign in to generate session tokens for the partner
+      const { data: signInData, error: signInError } = await admin.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        console.error("create-user sign-in error:", signInError.message);
+        // User was created successfully but sign-in failed — return user info without tokens
+        return json({ user: { id: data.user.id, email: data.user.email }, warning: "User created but session generation failed" });
+      }
+
+      return json({
+        user: { id: data.user.id, email: data.user.email },
+        access_token: signInData.session.access_token,
+        refresh_token: signInData.session.refresh_token,
+      });
     }
 
     // ==================== DEPOSIT ====================
