@@ -66,7 +66,7 @@ const TaggedMarketsCarousel = ({ spaceId, taggedMarketIds, isHost, isCoHost = fa
   if (editing) {
     return (
       <div className="px-5 py-3 border-b border-border space-y-2">
-        <MarketTagSelector selected={editMarkets} onChange={setEditMarkets} max={6} />
+        <MarketTagSelector selected={editMarkets} onChange={setEditMarkets} max={10} />
         <div className="flex gap-2">
           <button onClick={handleSave} disabled={saving}
             className="text-xs font-semibold text-primary px-3 py-1 rounded-lg bg-primary/10 disabled:opacity-40">
