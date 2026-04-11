@@ -522,6 +522,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const wakeLockRef = useRef<any>(null);
   // Track whether mic was on before backgrounding
   const wasMicOnRef = useRef(false);
+  const visChangeHandlerRef = useRef<(() => void) | null>(null);
 
   // ============ Session persistence on background / calls ============
   useEffect(() => {
