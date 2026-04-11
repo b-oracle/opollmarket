@@ -4086,6 +4086,11 @@ export type Database = {
         }
         Returns: Json
       }
+      can_invite_to_space: { Args: { _space_id: string }; Returns: boolean }
+      can_read_space_invite: {
+        Args: { _invitee_id: string; _inviter_id: string; _space_id: string }
+        Returns: boolean
+      }
       can_send_dm: {
         Args: { _conversation_id: string; _sender_id: string }
         Returns: boolean
