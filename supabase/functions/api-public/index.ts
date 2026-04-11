@@ -351,8 +351,15 @@ Deno.serve(async (req) => {
       if (!userId) return err("User authentication required", 401);
 
       const body = await req.json();
-      const { amount, currency } = body;
+      const { amount, pay_currency, currency } = body;
       if (!amount || typeof amount !== "number" || amount <= 0) return err("Invalid amount");
+
+      // Supported crypto networks for deposits
+      const supportedCurrencies = ["usdtbsc", "usdttrc20", "usdterc20", "usdtsol", "usdtmatic"];
+      const selectedCurrency = pay_currency || currency || "usdtbsc";
+      if (!supportedCurrencies.includes(selectedCurrency)) {
+        return err(`Invalid pay_currency. Supported: ${supportedCurrencies.join(", ")}`);
+      }
 
       // Invoke existing create-deposit edge function
       const depositUrl = `${supabaseUrl}/functions/v1/create-deposit`;
@@ -363,7 +370,7 @@ Deno.serve(async (req) => {
           Authorization: req.headers.get("authorization") || "",
           apikey: anonKey,
         },
-        body: JSON.stringify({ amount, currency: currency || "usdttrc20" }),
+        body: JSON.stringify({ amount, pay_currency: selectedCurrency }),
       });
 
       const result = await resp.json();
