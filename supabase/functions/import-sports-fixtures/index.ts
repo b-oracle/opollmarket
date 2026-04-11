@@ -416,8 +416,9 @@ Deno.serve(async (req) => {
           // Set auto_resolve_deadline to 2 hours after match start (grace for delays)
           const autoResolveDeadline = new Date(fixtureDate.getTime() + 2 * 60 * 60 * 1000);
 
-          // Set end_date to 3 hours AFTER kickoff so the market doesn't close before the match
-          const endDateAfterKickoff = new Date(fixtureDate.getTime() + 3 * 60 * 60 * 1000);
+          // Set end_date to the DAY AFTER kickoff since end_date is a date-only column
+          // and same-day matches would be closed prematurely by the cron job
+          const endDateAfterKickoff = new Date(fixtureDate.getTime() + 24 * 60 * 60 * 1000);
 
           const { data: newMarket, error: insertErr } = await adminClient.from("markets").insert({
             title: title.slice(0, 500),
