@@ -555,6 +555,31 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         } catch {}
 
+        // Resume remote audio playback that browsers suspend on background
+        try {
+          await room.startAudio();
+        } catch {}
+
+        // Force-resume any suspended remote audio tracks
+        try {
+          room.remoteParticipants.forEach((p) => {
+            p.audioTrackPublications.forEach((pub) => {
+              if (pub.track && pub.track.mediaStreamTrack) {
+                pub.track.mediaStreamTrack.enabled = true;
+                // Re-attach to audio element if detached
+                const els = pub.track.attachedElements;
+                if (els && els.length > 0) {
+                  els.forEach((el: HTMLMediaElement) => {
+                    if (el.paused) {
+                      el.play().catch(() => {});
+                    }
+                  });
+                }
+              }
+            });
+          });
+        } catch {}
+
         // Restore mic state to what it was before backgrounding
         // This prevents navigation or minimize from muting speakers
         const shouldBeUnmuted = wasMicOnRef.current && canPublish && !forceMuted;
