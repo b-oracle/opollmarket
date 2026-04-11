@@ -2764,11 +2764,13 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                           </div>
                         ) : (
                         <>
+                        {isFeatureEnabled("jamendo_music") && (
                         <button onClick={() => { setShowMusicMenu(false); setShowJamendoBrowser(true); }}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
                           <Library className="w-3 h-3" />
                           <span>Browse Music</span>
                         </button>
+                        )}
                         <button onClick={() => deviceFileInputRef.current?.click()}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs hover:bg-muted text-foreground transition-colors">
                           <Upload className="w-3 h-3" />
