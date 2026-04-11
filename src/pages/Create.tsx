@@ -2340,7 +2340,12 @@ const Create = () => {
                                 : `**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
                             }
                             if (!endDate && fixture.date) {
-                              try { setEndDate(new Date(fixture.date).toISOString().split("T")[0]); } catch {}
+                              try {
+                                // Set end_date to DAY AFTER kickoff to prevent premature market closure
+                                const kickoff = new Date(fixture.date);
+                                const dayAfter = new Date(kickoff.getTime() + 24 * 60 * 60 * 1000);
+                                setEndDate(dayAfter.toISOString().split("T")[0]);
+                              } catch {}
                             }
                           }
                         }}
