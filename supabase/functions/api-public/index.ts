@@ -746,6 +746,7 @@ Deno.serve(async (req) => {
 
     if (action === "comments" && req.method === "POST") {
       if (!hasPermission("trade")) return err("Permission denied", 403);
+      const userId = await getAuthUser();
       if (!userId) return err("Authentication required for posting comments", 401);
 
       const body = await req.json();
