@@ -404,6 +404,7 @@ const VoiceCallOverlay = ({
       if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       room.disconnect();
       roomRef.current = null;
     };
