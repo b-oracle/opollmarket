@@ -121,6 +121,30 @@ const AdminDeposits = () => {
     },
   });
 
+  // ── Admin Direct Credit ──
+  const [showCreditForm, setShowCreditForm] = useState(false);
+  const [creditUserId, setCreditUserId] = useState("");
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditDescription, setCreditDescription] = useState("");
+
+  const creditMutation = useMutation({
+    mutationFn: async ({ user_id, amount, description }: { user_id: string; amount: number; description: string }) => {
+      const { data, error } = await supabase.functions.invoke("admin-credit-deposit", {
+        body: { user_id, amount, description },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
+      return data;
+    },
+    onSuccess: () => {
+      toast.success(`$${Number(creditAmount).toFixed(2)} credited successfully`);
+      queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
+      setShowCreditForm(false);
+      setCreditUserId("");
+      setCreditAmount("");
+      setCreditDescription("");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to credit deposit"),
+  });
 
   return (
     <div>
@@ -134,10 +158,75 @@ const AdminDeposits = () => {
             Manage pending and partial deposits
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-          <RefreshCw className={`w-4 h-4 mr-1 transition-transform ${isLoading ? "animate-spin" : ""}`} /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          {isSuperAdmin && (
+            <Button variant="default" size="sm" onClick={() => setShowCreditForm(!showCreditForm)}>
+              {showCreditForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+              {showCreditForm ? "Cancel" : "Credit Deposit"}
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`w-4 h-4 mr-1 transition-transform ${isLoading ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
+
+      {/* Direct Credit Form */}
+      {showCreditForm && (
+        <div className="border border-primary/20 bg-primary/5 rounded-xl p-4 mb-6 space-y-3">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Plus className="w-4 h-4 text-primary" />
+            Credit Deposit Directly
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Credit a user's balance without going through a payment provider. An audit trail and transaction record will be created.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Input
+              placeholder="User ID (UUID)"
+              value={creditUserId}
+              onChange={(e) => setCreditUserId(e.target.value)}
+              className="font-mono text-xs"
+            />
+            <Input
+              type="number"
+              step="0.01"
+              min="0.01"
+              max="100000"
+              placeholder="Amount ($)"
+              value={creditAmount}
+              onChange={(e) => setCreditAmount(e.target.value)}
+            />
+            <Input
+              placeholder="Description (optional)"
+              value={creditDescription}
+              onChange={(e) => setCreditDescription(e.target.value)}
+            />
+          </div>
+          <Button
+            size="sm"
+            disabled={
+              creditMutation.isPending ||
+              !creditUserId.trim() ||
+              !creditAmount ||
+              Number(creditAmount) <= 0 ||
+              !isValidUUID(creditUserId.trim())
+            }
+            onClick={() => {
+              if (confirm(`Credit $${Number(creditAmount).toFixed(2)} to user ${creditUserId.trim()}?`)) {
+                creditMutation.mutate({
+                  user_id: creditUserId.trim(),
+                  amount: Number(creditAmount),
+                  description: creditDescription.trim(),
+                });
+              }
+            }}
+          >
+            {creditMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <CheckCircle2 className="w-4 h-4 mr-1" />}
+            Confirm Credit
+          </Button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
