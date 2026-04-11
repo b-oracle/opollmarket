@@ -573,6 +573,7 @@ const VoiceCallOverlay = ({
   const toggleMute = async () => {
     if (!roomRef.current) return;
     const newMuted = !muted;
+    userIntentMutedRef.current = newMuted;
     await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
     setMuted(newMuted);
   };
