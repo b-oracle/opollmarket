@@ -135,3 +135,5 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.cleanup-old-social-media]
     verify_jwt = false
+  [functions.twitter-auto-post]
+    verify_jwt = false
