@@ -100,10 +100,9 @@ Deno.serve(async (req) => {
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    const token = authHeader.replace("Bearer ", "");
-    const { data, error } = await userClient.auth.getClaims(token);
-    if (error || !data?.claims) return null;
-    return data.claims.sub as string;
+    const { data: { user }, error } = await userClient.auth.getUser();
+    if (error || !user) return null;
+    return user.id;
   };
 
   try {
@@ -320,7 +319,10 @@ Deno.serve(async (req) => {
         email_confirm: false,
       });
 
-      if (error) return err("Failed to create user", 400);
+      if (error) {
+        console.error("create-user auth error:", error.message);
+        return err(safeError(error, "Failed to create user"), 400);
+      }
       return json({ user: { id: data.user.id, email: data.user.email }, email_verification_required: true });
     }
 
@@ -744,6 +746,7 @@ Deno.serve(async (req) => {
 
     if (action === "comments" && req.method === "POST") {
       if (!hasPermission("trade")) return err("Permission denied", 403);
+      const userId = await getAuthUser();
       if (!userId) return err("Authentication required for posting comments", 401);
 
       const body = await req.json();
