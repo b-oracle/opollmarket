@@ -378,6 +378,23 @@ async function handleResolve(
     }
   }
 
+  // Auto-post to official X account
+  try {
+    const outcomeLabel = winningSide === "yes" ? "Yes ✅" : winningSide === "no" ? "No ❌" : (winningOptionId ? winningSide : winningSide);
+    await supabase.functions.invoke("twitter-auto-post", {
+      body: {
+        event_type: "market_resolved",
+        variables: {
+          title: market.title,
+          market_id: marketId,
+          outcome: outcomeLabel,
+        },
+      },
+    });
+  } catch (tweetErr) {
+    console.warn("resolve-market: twitter auto-post failed (non-critical)", tweetErr);
+  }
+
 
   // ── Process copy trade revenue share ──
   // Find all copy_trade_earnings for this market
