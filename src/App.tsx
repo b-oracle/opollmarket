@@ -50,6 +50,7 @@ const BusinessLayout = lazy(() => import("./pages/business/BusinessLayout"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
 const BusinessApiKeys = lazy(() => import("./pages/business/BusinessApiKeys"));
 const BusinessCustomization = lazy(() => import("./pages/business/BusinessCustomization"));
+const BusinessDeposits = lazy(() => import("./pages/business/BusinessDeposits"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminMarkets = lazy(() => import("./pages/admin/AdminMarkets"));
 const AdminComments = lazy(() => import("./pages/admin/AdminComments"));

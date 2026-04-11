@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LayoutDashboard, Key, Palette, ArrowLeft, LogOut, Loader2, Menu, X } from "lucide-react";
+import { LayoutDashboard, Key, Palette, ArrowLeft, LogOut, Loader2, Menu, X, ArrowDownToLine } from "lucide-react";
 
 const navItems = [
   { to: "/business", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/business/deposits", label: "Deposits", icon: ArrowDownToLine },
   { to: "/business/api-keys", label: "API Keys", icon: Key },
   { to: "/business/customize", label: "Customization", icon: Palette },
 ];
