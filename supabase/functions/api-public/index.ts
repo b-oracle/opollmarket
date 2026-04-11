@@ -353,6 +353,84 @@ Deno.serve(async (req) => {
       return json(result, resp.status);
     }
 
+    // ==================== DEPOSIT (Flutterwave / NGN) ====================
+    if (action === "deposit-flutterwave" && req.method === "POST") {
+      if (!hasPermission("deposit")) return err("Permission denied: deposit not allowed", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const body = await req.json();
+      const { amount } = body;
+      if (!amount || typeof amount !== "number" || amount <= 0) return err("Invalid amount");
+
+      const depositUrl = `${supabaseUrl}/functions/v1/create-flutterwave-deposit`;
+      const resp = await fetch(depositUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: req.headers.get("authorization") || "",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({ amount }),
+      });
+
+      const result = await resp.json();
+      return json(result, resp.status);
+    }
+
+    // ==================== DEPOSIT (Payaza / NGN) ====================
+    if (action === "deposit-payaza" && req.method === "POST") {
+      if (!hasPermission("deposit")) return err("Permission denied: deposit not allowed", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const body = await req.json();
+      const { amount } = body;
+      if (!amount || typeof amount !== "number" || amount <= 0) return err("Invalid amount");
+
+      const depositUrl = `${supabaseUrl}/functions/v1/create-payaza-deposit`;
+      const resp = await fetch(depositUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: req.headers.get("authorization") || "",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({ amount }),
+      });
+
+      const result = await resp.json();
+      return json(result, resp.status);
+    }
+
+    // ==================== DEPOSIT STATUS ====================
+    if (action === "deposit-status" && req.method === "POST") {
+      if (!hasPermission("read")) return err("Permission denied", 403);
+
+      const userId = await getAuthUser();
+      if (!userId) return err("User authentication required", 401);
+
+      const body = await req.json();
+      const { payment_id } = body;
+      if (!payment_id) return err("payment_id is required");
+
+      const depositUrl = `${supabaseUrl}/functions/v1/get-deposit-status`;
+      const resp = await fetch(depositUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: req.headers.get("authorization") || "",
+          apikey: anonKey,
+        },
+        body: JSON.stringify({ payment_id }),
+      });
+
+      const result = await resp.json();
+      return json(result, resp.status);
+    }
+
     // ==================== CREATE MARKET ====================
     if (action === "create-market" && req.method === "POST") {
       if (!hasPermission("trade")) return err("Permission denied: trade not allowed", 403);
