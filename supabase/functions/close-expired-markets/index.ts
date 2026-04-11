@@ -20,11 +20,14 @@ Deno.serve(async (req) => {
     // Find all active markets whose end_date has passed (including today)
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
+    // Skip sports auto-resolve markets — those are handled by the sports resolution system
+    // and their end_date (date-only column) can't precisely represent kickoff + 3h
     const { data: expiredMarkets, error: fetchError } = await supabase
       .from("markets")
       .select("id, title, creator_wallet")
       .eq("status", "active")
-      .lte("end_date", today);
+      .lte("end_date", today)
+      .or("sport_match_id.is.null,auto_resolve.eq.false");
 
     if (fetchError) {
       console.error("Fetch error:", fetchError);
