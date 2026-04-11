@@ -1171,6 +1171,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     connect();
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", visChangeHandlerRef.current!);
       const r = roomRef.current;
       roomRef.current = null;
       if (r) {
