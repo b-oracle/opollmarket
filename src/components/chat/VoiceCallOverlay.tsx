@@ -165,12 +165,17 @@ const VoiceCallOverlay = ({
     setTimeout(onClose, 500);
   }, [callId, onClose]);
 
+  // Track whether the user intentionally muted, so we can auto-restore on app switch
+  const userIntentMutedRef = useRef(false);
+
   // Connect to LiveKit room
   useEffect(() => {
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
       videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
+      // Keep connection alive when page is hidden (app switch / minimize)
+      disconnectOnPageLeave: false,
     });
     roomRef.current = room;
 
