@@ -1,47 +1,27 @@
 
 
-## Plan: Username requirement for registration + backfill existing users
+## Plan: Auto-confirm API-created users and return session token
 
 ### Problem
-1. Existing users without a custom username need one assigned
-2. New registrations should require a username field
-3. Usernames must be unique
+The `create-user` endpoint in the public API creates users with `email_confirm: false`, requiring email verification. API partners using pseudo-emails (e.g., `user@nyxly.io`) can't verify emails, so they never get a session token to call `deposit` or `place-bet`.
+
+### Solution
+Update the `create-user` handler in `supabase/functions/api-public/index.ts` to:
+
+1. Set `email_confirm: true` when creating the user via `admin.auth.admin.createUser()`
+2. After user creation, generate a session token using `admin.auth.admin.generateLink()` or sign in with `signInWithPassword` to return an `access_token` and `refresh_token`
+3. Return the tokens in the response so partners can immediately use them for authenticated actions
 
 ### Changes
 
-#### 1. Backfill existing users without usernames (DB migration)
-Run a one-time SQL migration that assigns a random username (using the existing `generate_unique_username` function) to any profile where `username` is NULL or empty.
+**File: `supabase/functions/api-public/index.ts`** (lines 315-326)
 
-```sql
-DO $$
-DECLARE r RECORD;
-BEGIN
-  FOR r IN SELECT id, display_name FROM profiles WHERE username IS NULL OR username = '' LOOP
-    UPDATE profiles SET username = generate_unique_username(COALESCE(r.display_name, 'user'))
-    WHERE id = r.id;
-  END LOOP;
-END $$;
-```
+- Change `email_confirm: false` → `email_confirm: true`
+- After successful creation, call `admin.auth.signInWithPassword({ email, password })` to generate a session
+- Return `{ user: { id, email }, access_token, refresh_token }` instead of `{ email_verification_required: true }`
 
-Also add a NOT NULL constraint (with a default) to prevent future NULL usernames, and a unique index if not already present.
-
-#### 2. Add username field to signup form (`src/pages/Auth.tsx`)
-- Add a `username` state variable
-- Add a username input field in the signup form (below Display Name)
-- Show `@` prefix, validate: min 3 chars, alphanumeric + underscores only
-- Check uniqueness on blur via a quick query before submission
-- Pass username through signup metadata so the DB trigger can use it
-
-#### 3. Update `signUp` in `src/hooks/useAuth.ts`
-- Accept `username` parameter alongside `displayName`
-- Include `username` in `options.data` metadata
-
-#### 4. Update `handle_new_user()` DB function (migration)
-- Read `username` from `raw_user_meta_data` if provided
-- Use it instead of auto-generating, falling back to `generate_unique_username` if not provided (for Google OAuth signups)
-
-### Files to modify
-- `src/pages/Auth.tsx` — add username input field + client-side validation
-- `src/hooks/useAuth.ts` — pass username in signup metadata
-- DB migration — backfill usernames + update `handle_new_user()` trigger + add NOT NULL constraint
+### Security considerations
+- This only affects users created through the API (requires valid API key with `trade` permission)
+- Regular web signups remain unaffected — they still go through email verification
+- API keys are already rate-limited and permission-scoped
 
