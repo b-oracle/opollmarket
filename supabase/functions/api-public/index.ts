@@ -319,7 +319,10 @@ Deno.serve(async (req) => {
         email_confirm: false,
       });
 
-      if (error) return err("Failed to create user", 400);
+      if (error) {
+        console.error("create-user auth error:", error.message);
+        return err(safeError(error, "Failed to create user"), 400);
+      }
       return json({ user: { id: data.user.id, email: data.user.email }, email_verification_required: true });
     }
 
