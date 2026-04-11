@@ -557,6 +557,7 @@ const App = () => {
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />
+                          <Route path="deposits" element={<BusinessDeposits />} />
                           <Route path="api-keys" element={<BusinessApiKeys />} />
                           <Route path="customize" element={<BusinessCustomization />} />
                         </Route>
