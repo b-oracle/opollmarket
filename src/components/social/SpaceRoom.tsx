@@ -1009,6 +1009,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         };
         visChangeHandlerRef.current = handleVisibilityChange;
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
         room.on(RoomEvent.ActiveSpeakersChanged, () => updateParticipants(room));
         room.on(RoomEvent.ParticipantPermissionsChanged, () => {
