@@ -42,8 +42,11 @@ export const useFeatureToggles = () => {
     gcTime: 5 * 60_000,
   });
 
+  /** Keys that should respect the toggle even for admins */
+  const adminEnforcedKeys = new Set(["jamendo_music"]);
+
   const isFeatureEnabled = (key: string): boolean => {
-    if (isAdmin || isSuperAdmin) return true;
+    if ((isAdmin || isSuperAdmin) && !adminEnforcedKeys.has(key)) return true;
     const toggle = toggles.find((t) => t.feature_key === key);
     return toggle ? toggle.enabled : true;
   };
