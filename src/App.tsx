@@ -50,6 +50,7 @@ const BusinessLayout = lazy(() => import("./pages/business/BusinessLayout"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
 const BusinessApiKeys = lazy(() => import("./pages/business/BusinessApiKeys"));
 const BusinessCustomization = lazy(() => import("./pages/business/BusinessCustomization"));
+const BusinessDeposits = lazy(() => import("./pages/business/BusinessDeposits"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminMarkets = lazy(() => import("./pages/admin/AdminMarkets"));
 const AdminComments = lazy(() => import("./pages/admin/AdminComments"));
@@ -556,6 +557,7 @@ const App = () => {
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />
+                          <Route path="deposits" element={<BusinessDeposits />} />
                           <Route path="api-keys" element={<BusinessApiKeys />} />
                           <Route path="customize" element={<BusinessCustomization />} />
                         </Route>
