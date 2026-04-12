@@ -716,14 +716,8 @@ const MarketDetail = () => {
           )}
 
           {/* LiveKit stream viewer (for non-creators when market is streaming) */}
-          {market.isStreaming && !isCreator && (
-            <div className="mt-4">
-              <MarketStreamPlayer marketId={market.id} />
-            </div>
-          )}
-
-          {/* Fallback: creator sees viewer player if market is streaming but they aren't the active broadcaster */}
-          {market.isStreaming && isCreator && (
+          {/* LiveKit stream viewer (for anyone when market is streaming) */}
+          {market.isStreaming && (
             <div className="mt-4">
               <MarketStreamPlayer marketId={market.id} />
             </div>
