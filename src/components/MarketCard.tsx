@@ -344,11 +344,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         {/* Chance badge removed from here — now inline with title */}
 
         {/* Hidden capture div for share screenshot */}
-        <div ref={captureContentRef} className="absolute -left-[9999px] w-[600px] overflow-hidden rounded-xl bg-background" style={{ height: '400px' }}>
+        <div ref={captureContentRef} className="absolute -left-[9999px] w-[600px] overflow-hidden rounded-xl" style={{ height: '400px', backgroundColor: '#0a0a0a' }}>
           {market.imageUrl && (
             <div className="absolute inset-0">
               <img src={market.imageUrl} alt="" className="w-full h-full object-cover" loading="eager" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />
+              <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,10,10,0.9) 0%, rgba(10,10,10,0.2) 40%, transparent 100%)' }} />
             </div>
           )}
           {isBoosted && boostTier && (
@@ -360,21 +360,21 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           {/* Probability ring or multi-option indicator */}
           <div className="absolute top-6 right-6 z-10">
             {isMulti ? (
-              <div className="glass rounded-xl px-4 py-3 flex flex-col items-center gap-1">
-                <BarChart3 className="w-6 h-6 text-primary" />
-                <span className="text-xs font-bold text-primary uppercase">
+              <div className="rounded-xl px-4 py-3 flex flex-col items-center gap-1" style={{ background: 'rgba(0,0,0,0.5)' }}>
+                <BarChart3 className="w-6 h-6" style={{ color: '#22c55e' }} />
+                <span className="text-xs font-bold uppercase" style={{ color: '#22c55e' }}>
                   {market.options?.length} options
                 </span>
               </div>
             ) : (
               <div className="relative w-24 h-24">
                 <svg className="w-24 h-24 -rotate-90" viewBox="0 0 80 80">
-                  <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
-                  <circle cx="40" cy="40" r="34" fill="none" stroke="hsl(var(--neon-yes))" strokeWidth="4" strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`} strokeLinecap="round" />
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#27272a" strokeWidth="4" />
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#22c55e" strokeWidth="4" strokeDasharray={`${yesPercent * 2.136} ${213.6 - yesPercent * 2.136}`} strokeLinecap="round" />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-xl font-bold neon-yes">{yesPercent}%</span>
-                  <span className="text-[11px] text-muted-foreground">YES</span>
+                  <span className="text-xl font-bold" style={{ color: '#22c55e' }}>{yesPercent}%</span>
+                  <span className="text-[11px]" style={{ color: '#a1a1aa' }}>YES</span>
                 </div>
               </div>
             )}
@@ -382,23 +382,23 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
           {/* Category badge */}
           <div className="absolute top-6 left-6 z-10 flex items-center gap-2">
-            <span className="glass px-4 py-2 rounded-full text-sm font-medium text-foreground/80 inline-flex items-center gap-1.5">
+            <span className="px-4 py-2 rounded-full text-sm font-medium inline-flex items-center gap-1.5" style={{ background: 'rgba(0,0,0,0.5)', color: 'rgba(255,255,255,0.8)' }}>
               <CategoryIcon category={market.category} className="w-3.5 h-3.5" /> {market.category}
             </span>
             {isMulti && (
-              <span className="glass px-3 py-2 rounded-full text-xs font-bold text-primary">
+              <span className="px-3 py-2 rounded-full text-xs font-bold" style={{ background: 'rgba(0,0,0,0.5)', color: '#22c55e' }}>
                 {market.marketType === "range" ? "📊 Range" : "🎯 Multi"}
               </span>
             )}
           </div>
 
           {/* Bottom text overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/85 via-black/50 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-8" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)' }}>
             {isMulti && market.options?.length ? (() => {
               const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a);
-              return <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{Math.round(leading.price * 100)}% Chance · {leading.label}</span>;
+              return <span className="inline-block px-3 py-1 rounded-full text-lg font-bold mb-2" style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: '#22c55e' }}>{Math.round(leading.price * 100)}% Chance · {leading.label}</span>;
             })() : (
-              <span className="inline-block px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm text-lg font-bold neon-yes mb-2">{yesPercent}% Chance</span>
+              <span className="inline-block px-3 py-1 rounded-full text-lg font-bold mb-2" style={{ backgroundColor: 'rgba(0,0,0,0.4)', color: '#22c55e' }}>{yesPercent}% Chance</span>
             )}
             <h3 className="text-2xl font-bold text-white mb-2 leading-tight">{market.title}</h3>
             <div className="flex items-center justify-between">
@@ -416,15 +416,14 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   <span className="px-4 py-1.5 rounded-full text-sm font-bold text-white" style={{ backgroundColor: 'hsl(0, 85%, 55%, 0.85)' }}>Buy No {noPercent}%</span>
                 </div>
               )}
-              <span className="text-[11px] text-white/50 font-mono shrink-0 ml-3 flex items-center gap-1">
+              <span className="text-[11px] font-mono shrink-0 ml-3 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
           {/* Watermark */}
           <div className="absolute bottom-3 right-4 z-20 opacity-40">
-            <img src={watermarkLogo} alt="" className="h-7 w-auto hidden dark:block" />
-            <img src={blueLogo} alt="" className="h-7 w-auto dark:hidden" />
+            <img src={watermarkLogo} alt="" className="h-7 w-auto" />
           </div>
         </div>
 
