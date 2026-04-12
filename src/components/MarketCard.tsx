@@ -225,7 +225,19 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     handleToggleLike();
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    // Preload market image into browser cache so html2canvas captures it
+    const imgUrl = market.imageUrl || market.image_url;
+    if (imgUrl) {
+      await new Promise<void>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = imgUrl;
+        setTimeout(resolve, 2000);
+      });
+    }
     setShareOpen(true);
   };
 
