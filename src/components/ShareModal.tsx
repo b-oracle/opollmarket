@@ -134,14 +134,22 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   // Extract market ID from URL
   const extractedMarketId = marketUrl.split("/market/")[1]?.split("?")[0] || marketId;
 
-  // Clean link for display/copy and non-crawler platforms
+  // Clean link for display/copy
   const cleanShareLink = (() => {
     if (!extractedMarketId) return referralLink;
     const base = `https://opoll.org/market/${extractedMarketId}`;
     return user ? `${base}?ref=${user.id}` : base;
   })();
 
-
+  // OG-aware link for social platforms (crawlers get dynamic OG tags, users get redirected)
+  const ogShareLink = (() => {
+    if (!extractedMarketId) return cleanShareLink;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) return cleanShareLink;
+    const params = new URLSearchParams({ id: extractedMarketId });
+    if (user) params.set("ref", user.id);
+    return `${supabaseUrl}/functions/v1/og-share?${params.toString()}`;
+  })();
 
   const salesMessage = `Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${cleanShareLink}`;
 
@@ -188,7 +196,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
       }
     };
 
-    const timer = setTimeout(run, 500);
+    const timer = setTimeout(run, 800);
     return () => {
       cancelled = true;
       clearTimeout(timer);
