@@ -227,6 +227,11 @@ const Create = () => {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [pendingAiType, setPendingAiType] = useState<"description" | "details" | "image" | null>(null);
 
+  // AI Agent state
+  const [aiAgentOpen, setAiAgentOpen] = useState(false);
+  const [aiAgentPrompt, setAiAgentPrompt] = useState("");
+  const [aiAgentLoading, setAiAgentLoading] = useState(false);
+
   // Boost & Broadcast add-ons at creation
   const [creationBoost, setCreationBoost] = useState(false);
   const [creationBoostTier, setCreationBoostTier] = useState<"flash" | "standard" | "whale">("flash");
@@ -538,6 +543,45 @@ const Create = () => {
         { value: "away_win", label: "Away Win" },
         { value: "draw", label: "Draw" },
       ];
+  // AI Agent: generate entire market from prompt
+  const handleAiAgent = async () => {
+    if (!user) { toast.error("Sign in to use AI market creation"); return; }
+    if (!aiAgentPrompt.trim()) { toast.error("Enter a prompt describing your market"); return; }
+    setAiAgentLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-create-market", {
+        body: { prompt: aiAgentPrompt.trim() },
+      });
+      if (error) { toast.error("AI generation failed"); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      const m = data.market;
+      if (!m) { toast.error("No market data returned"); return; }
+      setTitle(m.title || "");
+      setDescription(m.description || "");
+      setDetails(m.details || "");
+      setCategory(m.category || "");
+      setEndDate(m.endDate || "");
+      setResolutionSource(m.resolutionSource || "");
+      setMarketType(m.marketType || "binary");
+      if (m.options?.length) setOptions(m.options);
+      if (m.autoResolve) {
+        setAutoResolve(true);
+        if (m.autoResolveAsset) setAutoResolveAsset(m.autoResolveAsset);
+        if (m.autoResolveOperator) setAutoResolveOperator(m.autoResolveOperator);
+        if (m.autoResolveTargetPrice) setAutoResolveTargetPrice(String(m.autoResolveTargetPrice));
+      }
+      if (m.sportType) setSportType(m.sportType);
+      if (m.sportPredictedOutcome) setSportPredictedOutcome(m.sportPredictedOutcome);
+      setAiAgentOpen(false);
+      toast.success(`Market generated! $${(data.cost ?? 0).toFixed(2)} charged. Review and edit below.`);
+      queryClient.invalidateQueries({ queryKey: ["user-balance"] });
+    } catch (err) {
+      toast.error("Something went wrong");
+    } finally {
+      setAiAgentLoading(false);
+    }
+  };
+
   // AI content generation handler
   const handleAiGenerate = async (genType: "description" | "details" | "image") => {
     if (!user) { toast.error("Sign in to use AI generation"); return; }
@@ -1917,6 +1961,55 @@ const Create = () => {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
+              {/* AI Agent Section */}
+              {isFeatureEnabled("ai_market_creation") && (
+                <div className="glass rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setAiAgentOpen(!aiAgentOpen)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold hover:bg-muted/30 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                      AI Market Agent — Create from Prompt
+                    </span>
+                    <span className="text-xs text-muted-foreground">{aiAgentOpen ? "▲" : "▼"}</span>
+                  </button>
+                  <AnimatePresence>
+                    {aiAgentOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-4 pb-4 space-y-3">
+                          <p className="text-[11px] text-muted-foreground">
+                            Describe the market you want to create and AI will fill in all the fields for you. Cost: ${aiGenerationCost.toFixed(2)}
+                          </p>
+                          <textarea
+                            value={aiAgentPrompt}
+                            onChange={(e) => setAiAgentPrompt(e.target.value)}
+                            placeholder="e.g. Create an auto resolve market: Will there be a Tyson Fury vs Anthony Joshua fight before December 2026?"
+                            rows={3}
+                            className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+                            maxLength={500}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAiAgent}
+                            disabled={aiAgentLoading || !aiAgentPrompt.trim()}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {aiAgentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                            {aiAgentLoading ? "Generating..." : `Generate Market — $${aiGenerationCost.toFixed(2)}`}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
               <div className={`glass rounded-xl p-4 ${shakeClass("title")} ${touched.title && errors.title ? "border-destructive/50" : ""}`}>
                 <label className="flex items-center gap-2 text-sm font-semibold mb-2">
                   <FileText className="w-4 h-4 text-primary" />
