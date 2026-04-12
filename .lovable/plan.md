@@ -1,68 +1,51 @@
 
 
-## Plan: Live Match Streaming on Market Detail Pages
+## Plan: Fix Share Image Rendering and Twitter OG Preview
 
-Add the ability for market creators to go live or embed external streams directly on their market's detail page. This leverages your existing LiveKit infrastructure (already used for Spaces) and the YouTube/StreamYard embed system.
+### Problem 1: Incomplete html2canvas rendering
+The hidden capture div sometimes fails to render fully because:
+- Cross-origin market images may not load before capture starts
+- CSS variables (`var(--muted)`, `var(--neon-yes)`) aren't resolved by html2canvas
+- The `glass` utility class uses backdrop-blur which html2canvas doesn't support
+- Only a 500ms delay before capture — not enough for image loading
 
-### How it works
+### Problem 2: Twitter shows default OG image instead of market image
+The Twitter share button links to `opoll.org/market/{id}` — a client-side SPA. Twitter's crawler can't execute JavaScript, so it reads the static `index.html` OG tags (default image). The `og-share` edge function already generates correct OG tags for crawlers but **isn't used** in the share URL.
 
-**Two streaming modes (both available to market creators):**
+---
 
-1. **Embed a third-party stream** — Paste a YouTube Live or StreamYard URL. It renders as an embedded player on the market detail page for all viewers. Free, no hosting cost.
+### Fix 1: Pre-load the market image before capture
 
-2. **Go Live with LiveKit** — The market creator starts a live audio/video broadcast directly from the market page. Viewers watch/listen in real-time. Uses your existing LiveKit setup (same as Spaces). Cost is whatever your LiveKit plan charges for media bandwidth.
+**`src/components/ShareModal.tsx`**
+- Before calling `html2canvas`, pre-load the market image as a base64 data URL using a canvas element (avoids CORS issues)
+- Add a retry mechanism: if first capture produces a mostly-blank canvas, wait and retry once
+- Increase the initial delay from 500ms to 800ms
 
-### Database changes
+### Fix 2: Inline CSS variable values in capture divs
 
-**Migration: Add `stream_url` and `is_streaming` columns to `markets` table**
-```sql
-ALTER TABLE markets ADD COLUMN stream_url text;
-ALTER TABLE markets ADD COLUMN is_streaming boolean DEFAULT false;
-```
+**`src/components/MarketCard.tsx`** and **`src/pages/MarketDetail.tsx`**
+- In the hidden capture div, replace CSS variable references with hardcoded color values (e.g., `hsl(var(--neon-yes))` → `#22c55e`)
+- Replace `glass` class with inline styles (`background: rgba(0,0,0,0.5)`)
+- This only affects the hidden capture element, not the visible UI
 
-### Backend changes
+### Fix 3: Route Twitter share URLs through og-share
 
-**1. New edge function: `market-stream-token/index.ts`**
-- Simplified version of `livekit-token` scoped to markets
-- Validates the caller is the market creator (for publishing) or any authenticated user (for subscribing)
-- Actions: `start_stream` (creates LiveKit room, sets `is_streaming = true`), `stop_stream`, `join` (viewer gets subscribe-only token)
-- Room name: `market-{market_id}`
+**`src/components/ShareModal.tsx`**
+- Change the Twitter share handler to use the og-share edge function URL instead of the direct `opoll.org` URL
+- Twitter link becomes: `https://{supabase_url}/functions/v1/og-share?id={marketId}&ref={userId}`
+- This serves proper OG tags to Twitter's crawler, then redirects real users to the app
+- Keep other platforms (WhatsApp, Telegram, Facebook) using the same og-share URL since they also benefit from dynamic OG tags
 
-### Frontend changes
+### Fix 4: Add image pre-loading with timeout fallback
 
-**2. `src/pages/MarketDetail.tsx`**
-- Below the banner, show a stream section:
-  - If `market.streamUrl` exists → embed via `YouTubeEmbed`
-  - If `market.isStreaming` → show LiveKit video player for viewers
-  - If current user is the market creator and market is active → show "Go Live" button (opens a simple stream control panel) and "Share Stream" button (paste YouTube/StreamYard URL)
-- When creator clicks "Go Live": call `market-stream-token` with `action: "start_stream"`, connect to LiveKit, publish camera/mic
-- Viewers see a "LIVE" badge on the market card and detail page
-
-**3. `src/components/MarketCard.tsx` and `src/pages/Feed.tsx`**
-- Show a small red "LIVE" badge on market cards where `is_streaming = true`
-
-**4. New component: `src/components/MarketStreamPlayer.tsx`**
-- LiveKit-based viewer component (subscribe-only, shows host video/audio)
-- Uses `@livekit/components-react` (already a dependency for Spaces)
-- Includes mute/fullscreen controls
-
-**5. New component: `src/components/MarketStreamControls.tsx`**
-- For the market creator: camera/mic toggle, stop stream button
-- Connects to LiveKit with publish permissions
-
-### Feature toggle
-
-Add a `market_streaming` toggle to `feature_toggles` so this can be enabled/disabled from admin settings.
-
-### Cost note
-
-- **Embedded streams (YouTube/StreamYard)**: Free — no server cost
-- **LiveKit self-hosted streams**: Paid based on your LiveKit Cloud plan (bandwidth + participant minutes). Your existing LiveKit keys work for this.
+**`src/components/ShareModal.tsx`**
+- In `captureElement`, add logic to wait for all `<img>` elements inside the target to finish loading (with a 3s timeout)
+- If capture still fails or produces a blank result, fall back to the market's `image_url` directly
 
 ### Technical details
 
-- LiveKit room naming: `market-{market_id}` (distinct from `space-{space_id}`)
-- Only one active stream per market at a time
-- When stream ends, `is_streaming` resets to `false` and the room is deleted
-- The `stream_url` field on markets is separate from `video_url` (which is for pre-recorded YouTube embeds); `stream_url` is for live external streams
+- The og-share function already handles crawler detection, serves OG HTML to bots, and 302-redirects real users — no backend changes needed
+- The SUPABASE_URL is available via `import.meta.env.VITE_SUPABASE_URL`
+- Hardcoded colors in capture div: `--neon-yes` = `#22c55e`, `--muted` = `#27272a` (dark) / `#e5e5e5` (light), `--background` = `#0a0a0a` (dark) / `#ffffff` (light)
+- Files changed: `ShareModal.tsx`, `MarketCard.tsx`, `MarketDetail.tsx`
 
