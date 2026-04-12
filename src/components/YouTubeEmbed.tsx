@@ -5,6 +5,8 @@ interface YouTubeEmbedProps {
   className?: string;
   fallbackImage?: string | null;
   fallbackAlt?: string;
+  /** When true, video starts muted and cannot be unmuted via embed controls. Default true (required for autoplay). */
+  autoplayMuted?: boolean;
 }
 
 /**
