@@ -2,6 +2,22 @@ import React from "https://esm.sh/react@18.2.0";
 import { ImageResponse } from "https://deno.land/x/og_edge@0.0.6/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 
+function splitTitle(title: string, charsPerLine: number): string[] {
+  const words = title.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if (current && (current + " " + word).length > charsPerLine) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = current ? current + " " + word : word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.slice(0, 3); // max 3 lines
+}
+
 function wrapTitle(title: string, max: number): string {
   if (title.length <= max) return title;
   return title.slice(0, max - 1).trimEnd() + "…";
