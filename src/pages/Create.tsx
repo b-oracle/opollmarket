@@ -50,6 +50,8 @@ import {
   EyeOff,
   Zap,
   Trophy,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -231,6 +233,48 @@ const Create = () => {
   const [aiAgentOpen, setAiAgentOpen] = useState(false);
   const [aiAgentPrompt, setAiAgentPrompt] = useState("");
   const [aiAgentLoading, setAiAgentLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleVoiceInput = useCallback(() => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition is not supported in your browser");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    let finalTranscript = "";
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setAiAgentPrompt((prev) => finalTranscript || (prev + interim ? prev : interim));
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript) setAiAgentPrompt(finalTranscript);
+    };
+    recognition.onerror = (e: any) => {
+      setIsListening(false);
+      if (e.error !== "aborted") toast.error("Voice input error: " + e.error);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
 
   // Boost & Broadcast add-ons at creation
   const [creationBoost, setCreationBoost] = useState(false);
@@ -1995,6 +2039,19 @@ const Create = () => {
                             className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
                             maxLength={500}
                           />
+                          <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={toggleVoiceInput}
+                            className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all ${
+                              isListening
+                                ? "bg-destructive/10 border-destructive text-destructive animate-pulse"
+                                : "bg-muted/50 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                            }`}
+                            title={isListening ? "Stop listening" : "Voice input"}
+                          >
+                            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                          </button>
                           <button
                             type="button"
                             onClick={handleAiAgent}
@@ -2004,6 +2061,7 @@ const Create = () => {
                             {aiAgentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                             {aiAgentLoading ? "Generating..." : `Generate Market — $${aiGenerationCost.toFixed(2)}`}
                           </button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
