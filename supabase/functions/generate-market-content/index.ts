@@ -117,7 +117,7 @@ serve(async (req) => {
       type: "buy",
       amount: cost,
       status: "confirmed",
-      side: "ai_generation",
+      side: type === "description" ? "ai_description" : type === "details" ? "ai_details" : "ai_image",
     });
 
     // Generate content based on type

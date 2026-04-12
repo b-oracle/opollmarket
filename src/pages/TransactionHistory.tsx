@@ -256,8 +256,20 @@ const TransactionHistory = () => {
               );
             }
 
+            const isAiTx = tx.side?.startsWith("ai_");
+            const aiSideLabels: Record<string, string> = {
+              ai_generation: "Description/Details",
+              ai_description: "Description",
+              ai_details: "Details",
+              ai_image: "Image",
+              ai_market_creation: "AI Agent",
+              ai_social_caption: "Social Caption",
+              ai_social_image: "Social Image",
+            };
             const txKey: TxType = (tx.type === "buy" && tx.side === "initial_liquidity") ? "initial_liquidity" : (tx.type as TxType);
-            const cfg = txConfig[txKey] || txConfig.buy;
+            const cfg = isAiTx
+              ? { icon: Sparkles, label: "AI Generation", colorClass: "text-violet-500 bg-violet-500/10" }
+              : txConfig[txKey] || txConfig.buy;
             const Icon = cfg.icon;
             const isPendingDeposit = tx.type === "deposit" && (tx.status === "pending" || tx.status === "partial") && tx.nowpayments_payment_id;
             const isExpanded = expandedTxId === tx.id;
@@ -286,7 +298,12 @@ const TransactionHistory = () => {
                         {tx.is_copy_trade && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent text-accent-foreground border border-border">📋 Copied</span>
                         )}
-                        {tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
+                        {isAiTx && tx.side && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500/15 text-violet-500">
+                            {aiSideLabels[tx.side] || tx.side}
+                          </span>
+                        )}
+                        {!isAiTx && tx.side && tx.side !== "initial_liquidity" && (tx.type === "buy" || tx.type === "sell") && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${(tx as any).market_options?.label ? "bg-primary/15 text-primary" : tx.side === "yes" ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
                             {(tx as any).market_options?.label || tx.side.toUpperCase()}
                           </span>
