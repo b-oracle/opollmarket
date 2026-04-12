@@ -5,6 +5,8 @@ interface YouTubeEmbedProps {
   className?: string;
   fallbackImage?: string | null;
   fallbackAlt?: string;
+  /** When true, video starts muted and cannot be unmuted via embed controls. Default true (required for autoplay). */
+  autoplayMuted?: boolean;
 }
 
 /**
@@ -37,7 +39,7 @@ export const isStreamYardUrl = (url: string): boolean => !!getStreamYardId(url);
 /** Returns true if the URL is a supported stream platform (YouTube or StreamYard). */
 export const isStreamUrl = (url: string): boolean => isYouTubeUrl(url) || isStreamYardUrl(url);
 
-const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTubeEmbedProps) => {
+const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt, autoplayMuted = true }: YouTubeEmbedProps) => {
   const videoId = getYouTubeId(url);
   const streamYardId = !videoId ? getStreamYardId(url) : null;
   const [showFallback, setShowFallback] = useState(false);
@@ -81,10 +83,14 @@ const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt }: YouTu
     );
   }
 
+  const params = autoplayMuted
+    ? `autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&modestbranding=1`
+    : `rel=0&modestbranding=1`;
+
   return (
     <iframe
       className={className}
-      src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&modestbranding=1`}
+      src={`https://www.youtube.com/embed/${videoId}?${params}`}
       title="YouTube video"
       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
       allowFullScreen

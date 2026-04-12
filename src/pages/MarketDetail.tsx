@@ -690,7 +690,7 @@ const MarketDetail = () => {
       {market.videoUrl && isYouTubeUrl(market.videoUrl) && (
         <div className="relative w-full rounded-xl overflow-hidden mt-4">
           <div className="aspect-video w-full">
-            <YouTubeEmbed url={market.videoUrl} className="w-full h-full rounded-xl" fallbackImage={market.imageUrl} fallbackAlt={market.title} />
+            <YouTubeEmbed url={market.videoUrl} className="w-full h-full rounded-xl" fallbackImage={market.imageUrl} fallbackAlt={market.title} autoplayMuted={false} />
           </div>
         </div>
       )}
