@@ -47,7 +47,7 @@ export default async function handler(req: Request) {
 
   const yesPercent = Math.round(market.yes_price * 100);
   const noPercent = 100 - yesPercent;
-  const displayTitle = wrapTitle(market.title, 100);
+  const titleLines = splitTitle(wrapTitle(market.title, 100), 38);
   const volumeStr = "$" + Number(market.volume).toLocaleString("en-US");
 
   return new ImageResponse(
