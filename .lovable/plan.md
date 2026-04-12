@@ -1,32 +1,24 @@
 
 
-## Plan: Show Live Video Preview for the Creator (Streamer)
+## Why Share Image Works from Detail but Not from Feed
 
-### Problem
-When the creator clicks "Go Live", the camera/mic permissions are requested and a LiveKit room is connected, but:
-1. **The creator never sees their own video** — `MarketStreamControls` connects to the room but doesn't render a `<video>` element for the local camera feed.
-2. **The page does a full reload** (`window.location.reload()`) to refresh the streaming state, which disconnects the LiveKit room and loses the live session.
-3. The `MarketStreamPlayer` (viewer component) is only shown to **non-creators** (`!isCreator`), so the creator has no visual feedback.
+### Root Cause
+Both pages use a hidden off-screen div (positioned at `-9999px`) containing an `<img>` tag for the market image. The `ShareModal` captures this div using `html2canvas`.
 
-### Solution
-1. **Add a local video preview to `MarketStreamControls`** — when the creator goes live and `liveRoom` is set, render a `<video>` element that displays their local camera track, plus toggle buttons for camera/mic.
-2. **Replace `window.location.reload()`** in `MarketDetail.tsx` with a React Query invalidation so the streaming state refreshes without killing the LiveKit connection.
-3. **Show `MarketStreamPlayer`** to the creator too (as a fallback when they're not the active broadcaster but the market is streaming from another session).
+- **Detail page**: The market image is already visible on the page, so the browser has it cached. When the hidden capture div is moved on-screen, the image loads instantly from cache.
+- **Feed page**: The market image in the card itself uses a different rendering path (often a `YouTubeEmbed` or gradient overlay). The hidden capture div's `<img>` at `-9999px` may never start loading because the browser deprioritizes off-screen images. When `html2canvas` runs, the image is blank or partially loaded, producing a broken screenshot.
+
+### Fix
+
+**`src/components/MarketCard.tsx`** — Force the hidden capture image to preload when the share modal opens (not before), ensuring it is fully loaded before `html2canvas` runs.
+
+1. Add `loading="eager"` and `decoding="sync"` to the capture div image (already has `loading="eager"`, but it's still off-screen).
+2. Better approach: instead of relying on the off-screen div's image, **programmatically preload the image into a temporary `Image()` object** when the share button is tapped, _before_ setting `shareOpen = true`. This guarantees the browser has it in its cache.
+
+Concretely:
+- In the share button handler, create `new Image(); img.src = market.imageUrl` and wait for its `onload` (with a 2s timeout), then open the share modal.
+- This ensures by the time `html2canvas` runs on the hidden div, the image is in the browser's memory cache.
 
 ### Files changed
-
-**`src/components/MarketStreamControls.tsx`**
-- Add a `videoRef` for the local video preview
-- After connecting to the LiveKit room, attach the local video track to this `<video>` element
-- Add camera on/off and mic on/off toggle buttons in the broadcast controls UI
-- Render the video in a 16:9 aspect-ratio container above the control buttons when live
-
-**`src/pages/MarketDetail.tsx`**
-- Replace `window.location.reload()` in `onStreamStateChange` with React Query cache invalidation (`queryClient.invalidateQueries`) for the market query
-- Also show `MarketStreamPlayer` when `isCreator && market.isStreaming && !liveRoom` (reconnect scenario)
-
-### Technical details
-- Local video track attachment: `room.localParticipant.getTrackPublication(Track.Source.Camera)?.track?.attach(videoEl)`
-- Camera/mic toggles: `room.localParticipant.setCameraEnabled(bool)` / `setMicrophoneEnabled(bool)`
-- Query invalidation key: the market query key used by `useMarket` hook
+- `src/components/MarketCard.tsx` — update share button handler to preload the market image before opening `ShareModal`
 
