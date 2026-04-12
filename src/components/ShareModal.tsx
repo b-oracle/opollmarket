@@ -19,8 +19,16 @@ interface ShareModalProps {
   captureRef?: React.RefObject<HTMLElement | null>;
 }
 
+const waitForImages = (target: HTMLElement, timeout = 3000): Promise<void> => {
+  const imgs = Array.from(target.querySelectorAll("img"));
+  if (imgs.length === 0) return Promise.resolve();
+  return Promise.race([
+    Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); }))),
+    new Promise<void>(r => setTimeout(r, timeout)),
+  ]).then(() => {});
+};
+
 const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> => {
-  // Temporarily position the element on-screen for html2canvas
   const orig = {
     left: target.style.left,
     top: target.style.top,
@@ -41,6 +49,8 @@ const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> =
     });
   }
 
+  // Wait for images to load
+  await waitForImages(target);
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   try {
@@ -49,13 +59,29 @@ const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> =
         useCORS: true,
         allowTaint: true,
         scale: 2,
-        backgroundColor: null,
+        backgroundColor: "#0a0a0a",
         logging: false,
         width: target.scrollWidth,
         height: target.scrollHeight,
       }),
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000)),
     ]);
+
+    // Check if capture is mostly blank (retry once)
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const sample = ctx.getImageData(0, 0, canvas.width, Math.min(canvas.height, 100));
+      const nonBlank = sample.data.filter((_, i) => i % 4 === 3).filter(a => a > 10).length;
+      if (nonBlank < sample.data.length / 4 * 0.05) {
+        // Mostly transparent — retry after short wait
+        await new Promise(r => setTimeout(r, 500));
+        const retry = await (await loadHtml2Canvas())(target, {
+          useCORS: true, allowTaint: true, scale: 2, backgroundColor: "#0a0a0a", logging: false,
+          width: target.scrollWidth, height: target.scrollHeight,
+        });
+        return retry;
+      }
+    }
     return canvas;
   } finally {
     if (isOffscreen) {
@@ -108,14 +134,22 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   // Extract market ID from URL
   const extractedMarketId = marketUrl.split("/market/")[1]?.split("?")[0] || marketId;
 
-  // Clean link for display/copy and non-crawler platforms
+  // Clean link for display/copy
   const cleanShareLink = (() => {
     if (!extractedMarketId) return referralLink;
     const base = `https://opoll.org/market/${extractedMarketId}`;
     return user ? `${base}?ref=${user.id}` : base;
   })();
 
-
+  // OG-aware link for social platforms (crawlers get dynamic OG tags, users get redirected)
+  const ogShareLink = (() => {
+    if (!extractedMarketId) return cleanShareLink;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) return cleanShareLink;
+    const params = new URLSearchParams({ id: extractedMarketId });
+    if (user) params.set("ref", user.id);
+    return `${supabaseUrl}/functions/v1/og-share?${params.toString()}`;
+  })();
 
   const salesMessage = `Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${cleanShareLink}`;
 
@@ -162,7 +196,7 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
       }
     };
 
-    const timer = setTimeout(run, 500);
+    const timer = setTimeout(run, 800);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -218,16 +252,16 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   };
 
   const handleTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽`)}&url=${encodeURIComponent(cleanShareLink)}`, "_blank");
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽`)}&url=${encodeURIComponent(ogShareLink)}`, "_blank");
   };
   const handleFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(cleanShareLink)}`, "_blank");
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(ogShareLink)}`, "_blank");
   };
   const handleWhatsApp = () => {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${cleanShareLink}`)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${ogShareLink}`)}`, "_blank");
   };
   const handleTelegram = () => {
-    window.open(`https://t.me/share/url?url=${encodeURIComponent(cleanShareLink)}&text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽`)}`, "_blank");
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(ogShareLink)}&text=${encodeURIComponent(`Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽`)}`, "_blank");
   };
 
   const handleCopyEmbed = () => {
