@@ -35,7 +35,7 @@ import {
   Sparkles,
   Twitter,
   Mic,
-  MicOff,
+  
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -609,7 +609,7 @@ const AdminCreateMarket = () => {
                       }`}
                       title={isListening ? "Stop listening" : "Voice input"}
                     >
-                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                      <Mic className={`w-4 h-4 ${isListening ? "text-red-500 animate-pulse" : ""}`} />
                     </button>
                     <button
                       type="button"
