@@ -566,6 +566,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       spaceTitle={space.title}
       hostName={hostName}
       isLive={isLive}
+      scheduledAt={space.scheduled_at || space.started_at}
     />
     <BroadcastSpaceModal
       open={broadcastOpen}
