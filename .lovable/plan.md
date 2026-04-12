@@ -1,36 +1,21 @@
 
 
-## Plan: Fix AI transaction labels in Transaction History
+## Plan: Auto-play YouTube video on Feed cards when video_url exists
 
-The screenshot shows AI-related transactions labeled as "Prediction" with raw side values like `AI_GENERATION` and `AI_MARKET_CREATION`. Two fixes needed:
-
-1. **Show "AI Generation" instead of "Prediction"** for AI-related transactions
-2. **Show descriptive side labels** (e.g., "Description", "Details", "Image", "AI Agent") instead of raw values
-3. **Record specific generation types** in the backend so each AI action is distinguishable
+When a market has a `video_url`, replace the static banner image in the feed card with an auto-playing, muted, looping YouTube embed.
 
 ### Changes
 
-**1. `src/pages/TransactionHistory.tsx`**
-- Add a new `txConfig` entry or inline logic to detect AI transactions (where `side` starts with `ai_`)
-- Map these to a distinct label "AI Generation" with a `Sparkles` icon and purple/violet color
-- Add a human-readable side label map:
-  - `ai_generation` → "Description/Details" (legacy generic)
-  - `ai_description` → "Description"
-  - `ai_details` → "Details"  
-  - `ai_image` → "Image"
-  - `ai_market_creation` → "AI Agent"
-  - `ai_social_caption` → "Social Caption"
-  - `ai_social_image` → "Social Image"
-- Display the mapped label in the side badge instead of the raw uppercase value
+**1. `src/components/MarketCard.tsx`**
+- In the banner section (lines ~300-317), check if `market.videoUrl` exists and is a valid YouTube/stream URL
+- If yes, render `<YouTubeEmbed>` (already supports autoplay+mute+loop) instead of the `<img>` tag, with `fallbackImage` set to `market.imageUrl`
+- The embed fills the same `absolute inset-0` container with the gradient overlay on top for text readability
+- Import `YouTubeEmbed` and `isStreamUrl` from `@/components/YouTubeEmbed`
 
-**2. `supabase/functions/generate-market-content/index.ts`**
-- Change `side: "ai_generation"` to use the specific type: `side: type === "description" ? "ai_description" : type === "details" ? "ai_details" : "ai_image"`
-- This makes future transactions distinguishable
-
-**3. `src/pages/admin/AdminPredictions.tsx`**
-- Update the AI fee filter to also include the new side values (`ai_description`, `ai_details`, `ai_image`, `ai_market_creation`)
+**2. `src/pages/Feed.tsx` — `DesktopFeedCard`**
+- Same logic in the desktop card's image section (lines ~93-106): if `market.videoUrl` exists, render the YouTube embed instead of the `<img>`
 
 ### Technical details
 
-The transactions table stores AI charges as `type: "buy"` with a `side` field indicating the AI action. The `txConfig` lookup in `TransactionHistory.tsx` currently only maps by `type`, so all `buy` transactions show as "Prediction". The fix adds a pre-check: if `side` starts with `ai_`, override the config to show "AI Generation" with appropriate styling and a readable side label.
+The `YouTubeEmbed` component already renders with `autoplay=1&mute=1&loop=1` params. It also has a fallback mechanism — if the video is unavailable, it falls back to the provided `fallbackImage`. The video will be muted by default (browser requirement for autoplay). The existing gradient overlay remains on top so title text stays readable.
 
