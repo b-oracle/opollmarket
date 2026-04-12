@@ -331,6 +331,16 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           </div>
         )}
 
+        {/* LIVE streaming badge */}
+        {!isEnded && market.isStreaming && (
+          <div className="absolute top-3 left-3 z-20">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-destructive/90 text-destructive-foreground text-[10px] font-bold uppercase tracking-wider backdrop-blur-sm">
+              <Radio className="w-3 h-3" />
+              LIVE
+            </span>
+          </div>
+        )}
+
         {/* Chance badge removed from here — now inline with title */}
 
         {/* Hidden capture div for share screenshot */}
