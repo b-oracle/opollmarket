@@ -301,8 +301,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         {/* Visible banner: always image + gradient */}
         <div className="absolute inset-0 overflow-hidden">
           {market.videoUrl && isStreamUrl(market.videoUrl) ? (
-            <div className="absolute inset-0">
-              <YouTubeEmbed url={market.videoUrl} fallbackImage={market.imageUrl ? optimizedImageUrl(market.imageUrl, "feed") : undefined} fallbackAlt={market.title} className="w-full h-full" />
+            <div className="absolute inset-0 overflow-hidden">
+              <YouTubeEmbed url={market.videoUrl} fallbackImage={market.imageUrl ? optimizedImageUrl(market.imageUrl, "feed") : undefined} fallbackAlt={market.title} className="w-full h-full" fillContainer />
             </div>
           ) : market.imageUrl ? (
             <div className="absolute inset-[-4px_0] will-change-transform" style={{ transform: `translateY(${parallaxY}px)` }}>
