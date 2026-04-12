@@ -1,21 +1,68 @@
 
 
-## Plan: Auto-play YouTube video on Feed cards when video_url exists
+## Plan: Live Match Streaming on Market Detail Pages
 
-When a market has a `video_url`, replace the static banner image in the feed card with an auto-playing, muted, looping YouTube embed.
+Add the ability for market creators to go live or embed external streams directly on their market's detail page. This leverages your existing LiveKit infrastructure (already used for Spaces) and the YouTube/StreamYard embed system.
 
-### Changes
+### How it works
 
-**1. `src/components/MarketCard.tsx`**
-- In the banner section (lines ~300-317), check if `market.videoUrl` exists and is a valid YouTube/stream URL
-- If yes, render `<YouTubeEmbed>` (already supports autoplay+mute+loop) instead of the `<img>` tag, with `fallbackImage` set to `market.imageUrl`
-- The embed fills the same `absolute inset-0` container with the gradient overlay on top for text readability
-- Import `YouTubeEmbed` and `isStreamUrl` from `@/components/YouTubeEmbed`
+**Two streaming modes (both available to market creators):**
 
-**2. `src/pages/Feed.tsx` — `DesktopFeedCard`**
-- Same logic in the desktop card's image section (lines ~93-106): if `market.videoUrl` exists, render the YouTube embed instead of the `<img>`
+1. **Embed a third-party stream** — Paste a YouTube Live or StreamYard URL. It renders as an embedded player on the market detail page for all viewers. Free, no hosting cost.
+
+2. **Go Live with LiveKit** — The market creator starts a live audio/video broadcast directly from the market page. Viewers watch/listen in real-time. Uses your existing LiveKit setup (same as Spaces). Cost is whatever your LiveKit plan charges for media bandwidth.
+
+### Database changes
+
+**Migration: Add `stream_url` and `is_streaming` columns to `markets` table**
+```sql
+ALTER TABLE markets ADD COLUMN stream_url text;
+ALTER TABLE markets ADD COLUMN is_streaming boolean DEFAULT false;
+```
+
+### Backend changes
+
+**1. New edge function: `market-stream-token/index.ts`**
+- Simplified version of `livekit-token` scoped to markets
+- Validates the caller is the market creator (for publishing) or any authenticated user (for subscribing)
+- Actions: `start_stream` (creates LiveKit room, sets `is_streaming = true`), `stop_stream`, `join` (viewer gets subscribe-only token)
+- Room name: `market-{market_id}`
+
+### Frontend changes
+
+**2. `src/pages/MarketDetail.tsx`**
+- Below the banner, show a stream section:
+  - If `market.streamUrl` exists → embed via `YouTubeEmbed`
+  - If `market.isStreaming` → show LiveKit video player for viewers
+  - If current user is the market creator and market is active → show "Go Live" button (opens a simple stream control panel) and "Share Stream" button (paste YouTube/StreamYard URL)
+- When creator clicks "Go Live": call `market-stream-token` with `action: "start_stream"`, connect to LiveKit, publish camera/mic
+- Viewers see a "LIVE" badge on the market card and detail page
+
+**3. `src/components/MarketCard.tsx` and `src/pages/Feed.tsx`**
+- Show a small red "LIVE" badge on market cards where `is_streaming = true`
+
+**4. New component: `src/components/MarketStreamPlayer.tsx`**
+- LiveKit-based viewer component (subscribe-only, shows host video/audio)
+- Uses `@livekit/components-react` (already a dependency for Spaces)
+- Includes mute/fullscreen controls
+
+**5. New component: `src/components/MarketStreamControls.tsx`**
+- For the market creator: camera/mic toggle, stop stream button
+- Connects to LiveKit with publish permissions
+
+### Feature toggle
+
+Add a `market_streaming` toggle to `feature_toggles` so this can be enabled/disabled from admin settings.
+
+### Cost note
+
+- **Embedded streams (YouTube/StreamYard)**: Free — no server cost
+- **LiveKit self-hosted streams**: Paid based on your LiveKit Cloud plan (bandwidth + participant minutes). Your existing LiveKit keys work for this.
 
 ### Technical details
 
-The `YouTubeEmbed` component already renders with `autoplay=1&mute=1&loop=1` params. It also has a fallback mechanism — if the video is unavailable, it falls back to the provided `fallbackImage`. The video will be muted by default (browser requirement for autoplay). The existing gradient overlay remains on top so title text stays readable.
+- LiveKit room naming: `market-{market_id}` (distinct from `space-{space_id}`)
+- Only one active stream per market at a time
+- When stream ends, `is_streaming` resets to `false` and the room is deleted
+- The `stream_url` field on markets is separate from `video_url` (which is for pre-recorded YouTube embeds); `stream_url` is for live external streams
 
