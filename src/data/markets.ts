@@ -42,6 +42,8 @@ export interface Market {
   isHidden?: boolean;
   resolvedSide?: string;
   winningOptionId?: string;
+  streamUrl?: string;
+  isStreaming?: boolean;
 }
 
 export const mockMarkets: Market[] = [

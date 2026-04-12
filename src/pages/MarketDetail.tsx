@@ -33,6 +33,8 @@ import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import ResolutionSummary from "@/components/ResolutionSummary";
+import MarketStreamControls from "@/components/MarketStreamControls";
+import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -453,8 +455,9 @@ const MarketDetail = () => {
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
-  const { toggles } = useFeatureToggles();
+  const { toggles, isFeatureEnabled } = useFeatureToggles();
   const showPageViews = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
+  const streamingEnabled = isFeatureEnabled("market_streaming");
 
   const { data: pageViewCount } = useQuery({
     queryKey: ["market-page-views", id],
@@ -695,8 +698,47 @@ const MarketDetail = () => {
         </div>
       )}
 
-      <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
-        {!market.imageUrl && !market.videoUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
+      {/* Live Stream Section */}
+      {streamingEnabled && (
+        <>
+          {/* Creator controls */}
+          {isCreator && !isEnded && (
+            <div className="mt-4">
+              <MarketStreamControls
+                marketId={market.id}
+                streamUrl={market.streamUrl}
+                isStreaming={market.isStreaming}
+                onStreamStateChange={() => {
+                  // Invalidate market query to refresh streaming state
+                  window.location.reload();
+                }}
+              />
+            </div>
+          )}
+
+          {/* LiveKit stream viewer (for non-creators when market is streaming) */}
+          {market.isStreaming && !isCreator && (
+            <div className="mt-4">
+              <MarketStreamPlayer marketId={market.id} />
+            </div>
+          )}
+
+          {/* External stream embed (stream_url, separate from video_url) */}
+          {market.streamUrl && !market.isStreaming && isYouTubeUrl(market.streamUrl) && (
+            <div className="relative w-full rounded-xl overflow-hidden mt-4">
+              <div className="aspect-video w-full">
+                <YouTubeEmbed url={market.streamUrl} className="w-full h-full rounded-xl" fallbackImage={market.imageUrl} fallbackAlt={market.title} autoplayMuted={false} />
+              </div>
+              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-destructive/90 text-destructive-foreground">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">LIVE STREAM</span>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+        <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && !market.videoUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
 
         {/* Resolution Summary for resolved markets */}
