@@ -310,7 +310,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
           ) : null}
           {/* Bottom-heavy gradient for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background from-3% via-background/40 via-30% to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background from-3% via-background/40 via-30% to-transparent pointer-events-none" />
           {isBoosted && boostTier && (
             <div className="absolute inset-0" style={{
               background: `linear-gradient(to bottom right, ${getBoostTierConfig(boostTier).ringClass}, transparent 60%)`,
