@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import LiveScoreBadge from "@/components/LiveScoreBadge";
 import LivePriceBadge from "@/components/LivePriceBadge";
+import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 
 interface MarketCardProps {
   market: Market;
@@ -299,7 +300,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         )}
         {/* Visible banner: always image + gradient */}
         <div className="absolute inset-0 overflow-hidden">
-          {market.imageUrl ? (
+          {market.videoUrl && isStreamUrl(market.videoUrl) ? (
+            <div className="absolute inset-0">
+              <YouTubeEmbed url={market.videoUrl} fallbackImage={market.imageUrl ? optimizedImageUrl(market.imageUrl, "feed") : undefined} fallbackAlt={market.title} className="w-full h-full" />
+            </div>
+          ) : market.imageUrl ? (
             <div className="absolute inset-[-4px_0] will-change-transform" style={{ transform: `translateY(${parallaxY}px)` }}>
               <img src={optimizedImageUrl(market.imageUrl, "feed")} alt="" className="w-full h-full object-cover object-top opacity-70" loading="lazy" />
             </div>
