@@ -309,8 +309,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <img src={optimizedImageUrl(market.imageUrl, "feed")} alt="" className="w-full h-full object-cover object-top opacity-70" loading="lazy" />
             </div>
           ) : null}
-          {/* Bottom-heavy gradient for text readability — allow clicks through to video controls at bottom */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background from-3% via-background/40 via-30% to-transparent pointer-events-none" style={{ bottom: '48px' }} />
+          {/* Bottom-heavy gradient for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background from-3% via-background/40 via-30% to-transparent pointer-events-none" />
           {isBoosted && boostTier && (
             <div className="absolute inset-0" style={{
               background: `linear-gradient(to bottom right, ${getBoostTierConfig(boostTier).ringClass}, transparent 60%)`,
