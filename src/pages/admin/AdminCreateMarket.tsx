@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +34,8 @@ import {
   Trophy,
   Sparkles,
   Twitter,
+  Mic,
+  MicOff,
 } from "lucide-react";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -165,6 +167,90 @@ const AdminCreateMarket = () => {
   const [generatingDetails, setGeneratingDetails] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [pendingAiType, setPendingAiType] = useState<"description" | "details" | "image" | null>(null);
+
+  // AI Agent state
+  const [aiAgentOpen, setAiAgentOpen] = useState(false);
+  const [aiAgentPrompt, setAiAgentPrompt] = useState("");
+  const [aiAgentLoading, setAiAgentLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleVoiceInput = useCallback(() => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Speech recognition is not supported in your browser");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    let finalTranscript = "";
+    recognition.onresult = (event: any) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+      setAiAgentPrompt((prev) => finalTranscript || (prev + interim ? prev : interim));
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      if (finalTranscript) setAiAgentPrompt(finalTranscript);
+    };
+    recognition.onerror = (e: any) => {
+      setIsListening(false);
+      if (e.error !== "aborted") toast.error("Voice input error: " + e.error);
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
+
+  const handleAiAgent = async () => {
+    if (!user) { toast.error("Sign in first"); return; }
+    if (!aiAgentPrompt.trim()) { toast.error("Enter a prompt"); return; }
+    setAiAgentLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-create-market", {
+        body: { prompt: aiAgentPrompt.trim() },
+      });
+      if (error) { toast.error("AI generation failed"); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      const m = data.market;
+      if (!m) { toast.error("No market data returned"); return; }
+      setTitle(m.title || "");
+      setDescription(m.description || "");
+      setDetails(m.details || "");
+      setCategory(m.category || "");
+      setEndDate(m.endDate || "");
+      setResolutionSource(m.resolutionSource || "");
+      setMarketType(m.marketType === "multi" ? "multi" : "binary");
+      if (m.options?.length) setOptions(m.options);
+      if (m.autoResolve) {
+        setAutoResolve(true);
+        if (m.autoResolveAsset) setAutoResolveAsset(m.autoResolveAsset);
+        if (m.autoResolveOperator) setAutoResolveOperator(m.autoResolveOperator);
+        if (m.autoResolveTargetPrice) setAutoResolveTargetPrice(String(m.autoResolveTargetPrice));
+      }
+      if (m.sportType) setSportType(m.sportType);
+      if (m.sportPredictedOutcome) setSportPredictedOutcome(m.sportPredictedOutcome);
+      setAiAgentOpen(false);
+      toast.success(`Market generated! $${(data.cost ?? 0).toFixed(2)} charged.`);
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setAiAgentLoading(false);
+    }
+  };
 
   // Image state
   const [imageFile, setImageFile] = useState<File | null>(null);
