@@ -1,41 +1,53 @@
 
 
-## Plan: Use Custom Domain for Share Links
+## Plan: Fix Share Links with Cloudflare Worker (No CNAME)
 
-### How it works
-You point `opollmarket.com` DNS to Supabase's servers via a CNAME record. Then share links become `https://opollmarket.com/functions/v1/og-share?id=...` — fully branded, no Supabase URL exposed.
+### Root Cause
+Cloudflare blocks CNAME records that point from one Cloudflare account to another (Error 1014). Since Supabase runs on Cloudflare, the CNAME `opollmarket.com → dqtjuhqndncanfwgjwva.supabase.co` is blocked.
 
-### Steps
+### Solution
+Remove the CNAME record entirely. Use only a Cloudflare Worker to proxy `/s` requests.
 
-**1. DNS setup (at your domain registrar)**
-Add a CNAME record for `opollmarket.com`:
-- **Type**: CNAME
-- **Name**: `@` (root) or leave blank (depends on registrar)
-- **Value**: `dqtjuhqndncanfwgjwva.supabase.co`
+### Step 1: DNS fix (manual, at Cloudflare)
+1. **Delete** the CNAME record pointing to `dqtjuhqndncanfwgjwva.supabase.co`
+2. Add a **proxied A record**: `@ → 192.0.2.1` (dummy IP, Cloudflare-proxied orange cloud)
+3. This allows the Cloudflare Worker to intercept requests
 
-> **Note**: Some registrars don't allow CNAME on root domains. If that's the case, use a subdomain like `link.opollmarket.com` or use a registrar that supports CNAME flattening (e.g., Cloudflare).
+### Step 2: Cloudflare Worker (manual setup)
+Create a Worker with this code and attach route `opollmarket.com/s*`:
 
-**2. Update `ShareModal.tsx`**
-Replace the Supabase URL in `ogShareLink` with the custom domain:
-```typescript
-const ogShareLink = `https://opollmarket.com/functions/v1/og-share?id=${marketId}`;
+```javascript
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === "/s" || url.pathname === "/s/") {
+      const target = "https://dqtjuhqndncanfwgjwva.supabase.co/functions/v1/og-share" + url.search;
+      const resp = await fetch(target, {
+        method: request.method,
+        headers: new Headers({
+          "User-Agent": request.headers.get("User-Agent") || "",
+          "Accept": request.headers.get("Accept") || "*/*",
+        }),
+      });
+      return new Response(resp.body, {
+        status: resp.status,
+        headers: resp.headers,
+      });
+    }
+    // All other paths redirect to main site
+    return Response.redirect("https://opoll.org" + url.pathname, 302);
+  }
+};
 ```
 
-**3. Update `og-share/index.ts`**
-Update the CORS headers to include the new origin. No other backend changes needed — the function already works correctly.
-
-### Important caveat
-Supabase custom domains for Edge Functions require the **Pro plan** on Supabase to map a custom domain to the project. Since this project runs on Lovable Cloud, this may not be directly configurable. 
-
-**Practical alternative**: Use Cloudflare (free tier) as a reverse proxy:
-1. Add `opollmarket.com` to Cloudflare (DNS only, free)
-2. Create a Cloudflare Worker that proxies requests from `opollmarket.com/s/*` to the Supabase `og-share` function
-3. Share links become `https://opollmarket.com/s/MARKET_ID` — clean and branded
-4. Update `ShareModal.tsx` to use this URL pattern
-
-This is the most reliable approach since it doesn't depend on Supabase custom domain support.
+### Step 3: Code fix — BetModal.tsx
+`BetModal.tsx` still uses the raw Supabase URL for Twitter share links. Update it to use `opollmarket.com/s` like ShareModal does.
 
 ### Files changed
-- `src/components/ShareModal.tsx` — update share link URL
-- `supabase/functions/og-share/index.ts` — minor CORS update
+- `src/components/BetModal.tsx` — replace raw Supabase URL with branded `opollmarket.com/s` link
+
+### Summary
+- No CNAME needed — delete it
+- Cloudflare Worker handles proxying
+- One code fix to align BetModal with the branded URL pattern
 
