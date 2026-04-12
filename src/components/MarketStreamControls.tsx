@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Video, VideoOff, Mic, MicOff, PhoneOff, Radio, Link2, Loader2, X } from "lucide-react";
@@ -19,6 +19,24 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
   const [urlValue, setUrlValue] = useState(streamUrl || "");
   const [savingUrl, setSavingUrl] = useState(false);
   const [liveRoom, setLiveRoom] = useState<any>(null);
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Attach local video track whenever the room or camera state changes
+  useEffect(() => {
+    if (!liveRoom || !videoRef.current) return;
+    const attachLocal = async () => {
+      try {
+        const { Track } = await import("livekit-client");
+        const pub = liveRoom.localParticipant.getTrackPublication(Track.Source.Camera);
+        if (pub?.track && videoRef.current) {
+          pub.track.attach(videoRef.current);
+        }
+      } catch { /* ignore */ }
+    };
+    attachLocal();
+  }, [liveRoom, cameraOn]);
 
   const handleGoLive = useCallback(async () => {
     setGoingLive(true);
@@ -32,16 +50,16 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
         return;
       }
 
-      // Connect to LiveKit
       const { Room } = await import("livekit-client");
       const room = new Room();
       await room.connect(data.url, data.token);
 
-      // Enable camera and mic
       await room.localParticipant.setCameraEnabled(true);
       await room.localParticipant.setMicrophoneEnabled(true);
 
       setLiveRoom(room);
+      setCameraOn(true);
+      setMicOn(true);
       onStreamStateChange();
       toast.success("You're live! 🔴");
     } catch (err: any) {
@@ -77,6 +95,20 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
     }
   }, [marketId, liveRoom, onStreamStateChange]);
 
+  const toggleCamera = useCallback(async () => {
+    if (!liveRoom) return;
+    const next = !cameraOn;
+    await liveRoom.localParticipant.setCameraEnabled(next);
+    setCameraOn(next);
+  }, [liveRoom, cameraOn]);
+
+  const toggleMic = useCallback(async () => {
+    if (!liveRoom) return;
+    const next = !micOn;
+    await liveRoom.localParticipant.setMicrophoneEnabled(next);
+    setMicOn(next);
+  }, [liveRoom, micOn]);
+
   const handleSaveUrl = useCallback(async () => {
     setSavingUrl(true);
     try {
@@ -99,21 +131,63 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
     }
   }, [marketId, urlValue, onStreamStateChange]);
 
-  // If actively broadcasting, show broadcast controls
+  // If actively broadcasting, show local preview + broadcast controls
   if (liveRoom) {
     return (
-      <div className="glass rounded-xl p-4 mb-4">
-        <div className="flex items-center gap-2 mb-3">
+      <div className="glass rounded-xl p-4 mb-4 space-y-3">
+        <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
           <span className="text-sm font-bold text-destructive">LIVE — You are broadcasting</span>
         </div>
+
+        {/* Local video preview */}
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+            style={{ transform: "scaleX(-1)" }}
+          />
+          {!cameraOn && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted/80">
+              <VideoOff className="w-8 h-8 text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Camera off</span>
+            </div>
+          )}
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-2 py-1 rounded-full bg-destructive/90 text-destructive-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-wider">LIVE</span>
+          </div>
+        </div>
+
+        {/* Control buttons */}
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleCamera}
+            className="gap-1.5"
+          >
+            {cameraOn ? <Video className="w-3.5 h-3.5" /> : <VideoOff className="w-3.5 h-3.5" />}
+            {cameraOn ? "Cam" : "Cam Off"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleMic}
+            className="gap-1.5"
+          >
+            {micOn ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
+            {micOn ? "Mic" : "Muted"}
+          </Button>
           <Button
             variant="destructive"
             size="sm"
             onClick={handleStopStream}
             disabled={stopping}
-            className="gap-1.5"
+            className="gap-1.5 ml-auto"
           >
             {stopping ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <PhoneOff className="w-3.5 h-3.5" />}
             End Stream
