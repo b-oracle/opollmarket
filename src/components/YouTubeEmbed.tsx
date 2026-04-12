@@ -41,7 +41,7 @@ export const isStreamYardUrl = (url: string): boolean => !!getStreamYardId(url);
 /** Returns true if the URL is a supported stream platform (YouTube or StreamYard). */
 export const isStreamUrl = (url: string): boolean => isYouTubeUrl(url) || isStreamYardUrl(url);
 
-const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt, autoplayMuted = true }: YouTubeEmbedProps) => {
+const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt, autoplayMuted = true, fillContainer = false }: YouTubeEmbedProps) => {
   const videoId = getYouTubeId(url);
   const streamYardId = !videoId ? getStreamYardId(url) : null;
   const [showFallback, setShowFallback] = useState(false);
