@@ -58,10 +58,9 @@ const ShareToXButton = ({ marketTitle, marketId, side, optionLabel }: { marketTi
     if (!user || !marketId) return;
     setSharing(true);
     try {
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const shareUrl = projectId
-        ? `https://${projectId}.supabase.co/functions/v1/og-share?id=${marketId}${user?.id ? `&ref=${user.id}` : ""}`
-        : `https://opoll.org/market/${marketId}`;
+      const params = new URLSearchParams({ id: marketId });
+      if (user?.id) params.set("ref", user.id);
+      const shareUrl = `https://opollmarket.com/s?${params.toString()}`;
       const text = `I just predicted ${optionLabel || side.toUpperCase()} on "${marketTitle}" 🔮\n\nJoin me → ${shareUrl}`;
       const { data, error } = await supabase.functions.invoke("twitter-post-tweet", { body: { text } });
       if (error) throw error;
