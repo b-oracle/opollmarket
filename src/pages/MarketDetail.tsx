@@ -33,6 +33,8 @@ import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import ResolutionSummary from "@/components/ResolutionSummary";
+import MarketStreamControls from "@/components/MarketStreamControls";
+import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
