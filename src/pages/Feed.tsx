@@ -21,6 +21,7 @@ import { useActiveSpace } from "@/hooks/useActiveSpace";
 import { supabase } from "@/integrations/supabase/client";
 import { useBatchCounts } from "@/hooks/useBatchCounts";
 import BoostCountdown from "@/components/BoostCountdown";
+import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -93,14 +94,16 @@ const DesktopFeedCard = ({ market, isBoosted, boostEndsAt, boostTier, commentCou
       
       {/* Image */}
       <div className="relative h-44 lg:h-52 overflow-hidden">
-        {market.imageUrl ?
+        {market.videoUrl && isStreamUrl(market.videoUrl) ?
+        <div className="absolute inset-0">
+          <YouTubeEmbed url={market.videoUrl} fallbackImage={market.imageUrl || undefined} fallbackAlt={market.title} className="w-full h-full" />
+        </div> :
+        market.imageUrl ?
         <img
           src={market.imageUrl}
           alt={market.title}
           className="w-full h-full object-cover opacity-50 transition-transform duration-500 group-hover:scale-105"
           loading="lazy" /> :
-
-
         <div className="w-full h-full bg-gradient-to-br from-primary/20 via-muted to-accent flex items-center justify-center">
             <CategoryIcon category={market.category} className="w-12 h-12 text-muted-foreground/30" />
           </div>
