@@ -144,11 +144,9 @@ const ShareModal = ({ open, onOpenChange, title, description, marketUrl, marketI
   // OG-aware link for social platforms (crawlers get dynamic OG tags, users get redirected)
   const ogShareLink = (() => {
     if (!extractedMarketId) return cleanShareLink;
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    if (!supabaseUrl) return cleanShareLink;
     const params = new URLSearchParams({ id: extractedMarketId });
     if (user) params.set("ref", user.id);
-    return `${supabaseUrl}/functions/v1/og-share?${params.toString()}`;
+    return `https://opollmarket.com/s?${params.toString()}`;
   })();
 
   const salesMessage = `Check out "${title}" on OPollmarket! Make your OPinion count, predict now👇🏽\n\n${cleanShareLink}`;
