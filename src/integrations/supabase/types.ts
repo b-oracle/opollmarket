@@ -1541,6 +1541,7 @@ export type Database = {
           image_url: string | null
           initial_liquidity: number
           is_hidden: boolean
+          is_streaming: boolean
           last_draft_reminder_at: string | null
           liquidity: number
           liquidity_verified: boolean
@@ -1562,6 +1563,7 @@ export type Database = {
           sport_predicted_outcome: string | null
           sport_type: string | null
           status: string
+          stream_url: string | null
           title: string
           trending: boolean
           twitter_current_count: number | null
@@ -1594,6 +1596,7 @@ export type Database = {
           image_url?: string | null
           initial_liquidity?: number
           is_hidden?: boolean
+          is_streaming?: boolean
           last_draft_reminder_at?: string | null
           liquidity?: number
           liquidity_verified?: boolean
@@ -1615,6 +1618,7 @@ export type Database = {
           sport_predicted_outcome?: string | null
           sport_type?: string | null
           status?: string
+          stream_url?: string | null
           title: string
           trending?: boolean
           twitter_current_count?: number | null
@@ -1647,6 +1651,7 @@ export type Database = {
           image_url?: string | null
           initial_liquidity?: number
           is_hidden?: boolean
+          is_streaming?: boolean
           last_draft_reminder_at?: string | null
           liquidity?: number
           liquidity_verified?: boolean
@@ -1668,6 +1673,7 @@ export type Database = {
           sport_predicted_outcome?: string | null
           sport_type?: string | null
           status?: string
+          stream_url?: string | null
           title?: string
           trending?: boolean
           twitter_current_count?: number | null
