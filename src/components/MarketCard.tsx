@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import LiveScoreBadge from "@/components/LiveScoreBadge";
 import LivePriceBadge from "@/components/LivePriceBadge";
+import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 
 interface MarketCardProps {
   market: Market;
