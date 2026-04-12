@@ -2061,6 +2061,7 @@ const Create = () => {
                             {aiAgentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                             {aiAgentLoading ? "Generating..." : `Generate Market — $${aiGenerationCost.toFixed(2)}`}
                           </button>
+                          </div>
                         </div>
                       </motion.div>
                     )}
