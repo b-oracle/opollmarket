@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Copy, Share2, BookOpen, Camera } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import SocialIcon from "@/components/SocialIcon";
@@ -14,18 +15,24 @@ interface SpaceShareSheetProps {
   spaceTitle: string;
   hostName: string;
   isLive: boolean;
+  scheduledAt?: string;
 }
 
-const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive }: SpaceShareSheetProps) => {
+const SpaceShareSheet = ({ open, onClose, spaceId, spaceTitle, hostName, isLive, scheduledAt }: SpaceShareSheetProps) => {
   const { user } = useAuth();
   const [posting, setPosting] = useState(false);
   const [storyOpen, setStoryOpen] = useState(false);
 
   const shareOrigin = typeof window !== "undefined" ? window.location.origin : "https://opoll.org";
   const shareUrl = `${shareOrigin}/feed?space=${spaceId}&ref=${encodeURIComponent(hostName)}`;
+
+  const formattedTime = scheduledAt
+    ? format(new Date(scheduledAt), "MMM d, yyyy 'at' h:mm a")
+    : format(new Date(), "MMM d, yyyy 'at' h:mm a");
+
   const shareText = isLive
-    ? `🎙️ Join me LIVE on "${spaceTitle}" — Let's discuss your OPinion, JOIN NOW 👇🏽`
-    : `🗓️ Set your reminder for my upcoming space "${spaceTitle}" on OPollmarket — Let's discuss your OPinion, JOIN NOW 👇🏽`;
+    ? `🎙️ Join me LIVE on "${spaceTitle}" — ${formattedTime} — Let's discuss your OPinion, JOIN NOW 👇🏽`
+    : `🗓️ Set your reminder for my upcoming space "${spaceTitle}" on ${formattedTime} on OPollmarket — Let's discuss your OPinion, JOIN NOW 👇🏽`;
 
   const handleCopy = async () => {
     try {
