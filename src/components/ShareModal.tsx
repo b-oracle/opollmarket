@@ -19,8 +19,16 @@ interface ShareModalProps {
   captureRef?: React.RefObject<HTMLElement | null>;
 }
 
+const waitForImages = (target: HTMLElement, timeout = 3000): Promise<void> => {
+  const imgs = Array.from(target.querySelectorAll("img"));
+  if (imgs.length === 0) return Promise.resolve();
+  return Promise.race([
+    Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise<void>(r => { img.onload = () => r(); img.onerror = () => r(); }))),
+    new Promise<void>(r => setTimeout(r, timeout)),
+  ]).then(() => {});
+};
+
 const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> => {
-  // Temporarily position the element on-screen for html2canvas
   const orig = {
     left: target.style.left,
     top: target.style.top,
@@ -41,6 +49,8 @@ const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> =
     });
   }
 
+  // Wait for images to load
+  await waitForImages(target);
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   try {
@@ -49,13 +59,29 @@ const captureElement = async (target: HTMLElement): Promise<HTMLCanvasElement> =
         useCORS: true,
         allowTaint: true,
         scale: 2,
-        backgroundColor: null,
+        backgroundColor: "#0a0a0a",
         logging: false,
         width: target.scrollWidth,
         height: target.scrollHeight,
       }),
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000)),
     ]);
+
+    // Check if capture is mostly blank (retry once)
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      const sample = ctx.getImageData(0, 0, canvas.width, Math.min(canvas.height, 100));
+      const nonBlank = sample.data.filter((_, i) => i % 4 === 3).filter(a => a > 10).length;
+      if (nonBlank < sample.data.length / 4 * 0.05) {
+        // Mostly transparent — retry after short wait
+        await new Promise(r => setTimeout(r, 500));
+        const retry = await (await loadHtml2Canvas())(target, {
+          useCORS: true, allowTaint: true, scale: 2, backgroundColor: "#0a0a0a", logging: false,
+          width: target.scrollWidth, height: target.scrollHeight,
+        });
+        return retry;
+      }
+    }
     return canvas;
   } finally {
     if (isOffscreen) {
