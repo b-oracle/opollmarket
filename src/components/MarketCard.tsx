@@ -227,7 +227,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
 
   const handleShare = async () => {
     // Preload market image into browser cache so html2canvas captures it
-    const imgUrl = market.imageUrl || market.image_url;
+    const imgUrl = market.imageUrl;
     if (imgUrl) {
       await new Promise<void>((resolve) => {
         const img = new Image();
