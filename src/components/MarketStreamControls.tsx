@@ -50,9 +50,22 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
         return;
       }
 
-      const { Room } = await import("livekit-client");
-      const room = new Room();
+      const { Room, RoomEvent } = await import("livekit-client");
+      const room = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+      });
+
+      // Wait for full engine connection before publishing
       await room.connect(data.url, data.token);
+
+      // Ensure engine is connected; if not yet, wait for the event
+      if (room.state !== "connected") {
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error("Room connection timed out")), 15000);
+          room.once(RoomEvent.Connected, () => { clearTimeout(timeout); resolve(); });
+        });
+      }
 
       await room.localParticipant.setCameraEnabled(true);
       await room.localParticipant.setMicrophoneEnabled(true);
