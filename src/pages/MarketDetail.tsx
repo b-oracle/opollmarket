@@ -738,7 +738,7 @@ const MarketDetail = () => {
         </>
       )}
 
-        {!market.imageUrl && !market.videoUrl && <h1 className="text-2xl font-bold leading-tight mb-2">{market.title}</h1>}
+        <div className={`${(market.imageUrl || market.videoUrl) ? 'pt-4' : 'pt-4'}`}>
         {!market.imageUrl && !market.videoUrl && <p className="text-sm text-muted-foreground mb-6">{market.description}</p>}
 
         {/* Resolution Summary for resolved markets */}
