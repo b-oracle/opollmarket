@@ -1,6 +1,18 @@
 import React from "https://esm.sh/react@18.2.0";
 import satori from "https://esm.sh/satori@0.10.14";
+import { initWasm, Resvg } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+
+// Initialize resvg WASM once
+let wasmInitialized = false;
+async function ensureWasm() {
+  if (wasmInitialized) return;
+  const wasmResp = await fetch(
+    "https://esm.sh/@aspect-dev/satori-resvg-wasm/dist/resvg.simd.wasm"
+  );
+  await initWasm(wasmResp);
+  wasmInitialized = true;
+}
 
 async function fetchImageAsBase64(url: string): Promise<string | null> {
   try {
@@ -22,7 +34,6 @@ function wrapTitle(title: string, max: number): string {
   return title.slice(0, max - 1).trimEnd() + "…";
 }
 
-// Load a font for satori
 async function loadFont(): Promise<ArrayBuffer> {
   const resp = await fetch(
     "https://cdn.jsdelivr.net/fontsource/fonts/inter@latest/latin-700-normal.woff"
@@ -57,13 +68,8 @@ export default async function handler(req: Request) {
   const yesPercent = Math.round(market.yes_price * 100);
   const noPercent = 100 - yesPercent;
   const statusColor =
-    market.status === "active"
-      ? "#22c55e"
-      : market.status === "resolved"
-      ? "#3b82f6"
-      : "#eab308";
-  const statusLabel =
-    market.status.charAt(0).toUpperCase() + market.status.slice(1);
+    market.status === "active" ? "#22c55e" : market.status === "resolved" ? "#3b82f6" : "#eab308";
+  const statusLabel = market.status.charAt(0).toUpperCase() + market.status.slice(1);
   const displayTitle = wrapTitle(market.title, 120);
   const volumeStr = `$${Number(market.volume).toLocaleString("en-US")}`;
 
@@ -73,6 +79,7 @@ export default async function handler(req: Request) {
   }
 
   const fontData = await loadFont();
+  await ensureWasm();
 
   const element = (
     <div
@@ -106,7 +113,6 @@ export default async function handler(req: Request) {
         />
       )}
 
-      {/* Dark overlay */}
       <div
         style={{
           position: "absolute",
@@ -120,7 +126,6 @@ export default async function handler(req: Request) {
         }}
       />
 
-      {/* Top bar */}
       <div
         style={{
           position: "absolute",
@@ -159,7 +164,6 @@ export default async function handler(req: Request) {
         </div>
       </div>
 
-      {/* Chance ring */}
       <div
         style={{
           position: "absolute",
@@ -180,32 +184,16 @@ export default async function handler(req: Request) {
           {yesPercent}%
         </div>
         <div
-          style={{
-            fontSize: 14,
-            color: "#22c55e",
-            fontWeight: 700,
-            marginTop: 4,
-            display: "flex",
-          }}
+          style={{ fontSize: 14, color: "#22c55e", fontWeight: 700, marginTop: 4, display: "flex" }}
         >
           YES
         </div>
       </div>
 
-      {/* Title */}
-      <div
-        style={{
-          fontSize: 40,
-          fontWeight: 800,
-          lineHeight: 1.3,
-          maxWidth: 900,
-          display: "flex",
-        }}
-      >
+      <div style={{ fontSize: 40, fontWeight: 800, lineHeight: 1.3, maxWidth: 900, display: "flex" }}>
         {displayTitle}
       </div>
 
-      {/* Progress bar */}
       <div
         style={{
           display: "flex",
@@ -228,7 +216,6 @@ export default async function handler(req: Request) {
         />
       </div>
 
-      {/* YES / NO badges */}
       <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
         <div
           style={{
@@ -258,7 +245,6 @@ export default async function handler(req: Request) {
         </div>
       </div>
 
-      {/* Bottom stats */}
       <div
         style={{
           display: "flex",
@@ -270,18 +256,12 @@ export default async function handler(req: Request) {
       >
         <div style={{ display: "flex", gap: 40 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", display: "flex" }}>
-              Volume
-            </div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", display: "flex" }}>Volume</div>
             <div style={{ fontSize: 22, fontWeight: 700, display: "flex" }}>{volumeStr}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", display: "flex" }}>
-              Traders
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, display: "flex" }}>
-              {market.participants}
-            </div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", display: "flex" }}>Traders</div>
+            <div style={{ fontSize: 22, fontWeight: 700, display: "flex" }}>{market.participants}</div>
           </div>
         </div>
         <div style={{ fontSize: 24, fontWeight: 800, color: "#22c55e", display: "flex" }}>
@@ -294,23 +274,18 @@ export default async function handler(req: Request) {
   const svg = await satori(element, {
     width: 1200,
     height: 630,
-    fonts: [
-      {
-        name: "Inter",
-        data: fontData,
-        weight: 700,
-        style: "normal",
-      },
-    ],
+    fonts: [{ name: "Inter", data: fontData, weight: 700, style: "normal" as const }],
   });
 
-  // Return SVG as PNG-compatible image
-  // Since we can't use resvg in Deno edge easily, return SVG with proper content type
-  // Social platforms accept SVG via og:image when served with correct headers
-  // But for maximum compatibility, we'll encode as SVG
-  return new Response(svg, {
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: "width" as const, value: 1200 },
+  });
+  const pngData = resvg.render();
+  const pngBuffer = pngData.asPng();
+
+  return new Response(pngBuffer, {
     headers: {
-      "Content-Type": "image/svg+xml",
+      "Content-Type": "image/png",
       "Cache-Control": "public, max-age=3600",
     },
   });
