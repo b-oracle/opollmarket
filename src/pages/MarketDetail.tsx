@@ -450,6 +450,7 @@ const MarketDetailsCollapsible = ({ details }: { details: string }) => {
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, isSuperAdmin } = useAuth();
   const { data: market, isLoading, isError } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
@@ -708,8 +709,7 @@ const MarketDetail = () => {
                 streamUrl={market.streamUrl}
                 isStreaming={market.isStreaming}
                 onStreamStateChange={() => {
-                  // Invalidate market query to refresh streaming state
-                  window.location.reload();
+                  queryClient.invalidateQueries({ queryKey: ["market", id] });
                 }}
               />
             </div>
@@ -717,6 +717,13 @@ const MarketDetail = () => {
 
           {/* LiveKit stream viewer (for non-creators when market is streaming) */}
           {market.isStreaming && !isCreator && (
+            <div className="mt-4">
+              <MarketStreamPlayer marketId={market.id} />
+            </div>
+          )}
+
+          {/* Fallback: creator sees viewer player if market is streaming but they aren't the active broadcaster */}
+          {market.isStreaming && isCreator && (
             <div className="mt-4">
               <MarketStreamPlayer marketId={market.id} />
             </div>
