@@ -62,7 +62,7 @@ const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt, autopla
   const scaleWrapper = (child: React.ReactNode) =>
     fillContainer ? (
       <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
-        <div className="w-full h-full" style={{ transform: "scale(1.5)", transformOrigin: "center center" }}>
+        <div className="w-full h-full" style={{ transform: "scale(1.35)", transformOrigin: "center 40%" }}>
           {child}
         </div>
       </div>
