@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Video, VideoOff, Mic, MicOff, PhoneOff, Radio, Link2, Loader2, X } from "lucide-react";
+import { Video, VideoOff, Mic, MicOff, PhoneOff, Radio, Link2, Loader2, X, SwitchCamera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -109,6 +109,25 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
     setMicOn(next);
   }, [liveRoom, micOn]);
 
+  const switchCamera = useCallback(async () => {
+    if (!liveRoom) return;
+    try {
+      const { Track, facingModeFromLocalTrack } = await import("livekit-client");
+      const pub = liveRoom.localParticipant.getTrackPublication(Track.Source.Camera);
+      if (!pub?.track) return;
+      const facing = facingModeFromLocalTrack(pub.track);
+      const newFacing = facing?.facingMode === "environment" ? "user" : "environment";
+      await pub.track.restartTrack({ facingMode: newFacing });
+      if (videoRef.current) pub.track.attach(videoRef.current);
+    } catch {
+      // fallback: just restart with toggled facing mode
+      try {
+        await liveRoom.localParticipant.setCameraEnabled(false);
+        await liveRoom.localParticipant.setCameraEnabled(true);
+      } catch { /* ignore */ }
+    }
+  }, [liveRoom]);
+
   const handleSaveUrl = useCallback(async () => {
     setSavingUrl(true);
     try {
@@ -181,6 +200,15 @@ const MarketStreamControls = ({ marketId, streamUrl, isStreaming, onStreamStateC
           >
             {micOn ? <Mic className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
             {micOn ? "Mic" : "Muted"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={switchCamera}
+            className="gap-1.5"
+          >
+            <SwitchCamera className="w-3.5 h-3.5" />
+            Flip
           </Button>
           <Button
             variant="destructive"
