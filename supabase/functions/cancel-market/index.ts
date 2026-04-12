@@ -226,7 +226,18 @@ Deno.serve(async (req) => {
 
     // --- Return initial liquidity to creator (only if actually paid) ---
     let liquidityRefunded = 0;
-    if (market.initial_liquidity > 0 && market.liquidity_verified) {
+    // Check for actual liquidity payment transaction (don't rely solely on liquidity_verified flag)
+    const { data: liqTx } = market.initial_liquidity > 0
+      ? await adminClient
+          .from("transactions")
+          .select("id")
+          .eq("market_id", market_id)
+          .eq("side", "initial_liquidity")
+          .eq("status", "confirmed")
+          .limit(1)
+      : { data: null };
+    const liquidityWasPaid = market.initial_liquidity > 0 && (market.liquidity_verified || (liqTx && liqTx.length > 0));
+    if (liquidityWasPaid) {
       const creatorUserId = market.creator_wallet;
       await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity, _bonus_delta: 0, _insurance_delta: 0 });
 
