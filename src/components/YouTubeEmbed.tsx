@@ -59,9 +59,20 @@ const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt, autopla
     img.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
   }, [videoId]);
 
+  const scaleWrapper = (child: React.ReactNode) =>
+    fillContainer ? (
+      <div className="absolute inset-0 overflow-hidden flex items-center justify-center">
+        <div className="w-full h-full" style={{ transform: "scale(1.5)", transformOrigin: "center center" }}>
+          {child}
+        </div>
+      </div>
+    ) : (
+      <>{child}</>
+    );
+
   // StreamYard embed
   if (streamYardId) {
-    return (
+    return scaleWrapper(
       <iframe
         className={className}
         src={`https://streamyard.com/watch/${streamYardId}?embed=true`}
@@ -89,7 +100,7 @@ const YouTubeEmbed = ({ url, className = "", fallbackImage, fallbackAlt, autopla
     ? `autoplay=1&mute=1&loop=1&playlist=${videoId}&rel=0&modestbranding=1`
     : `rel=0&modestbranding=1`;
 
-  return (
+  return scaleWrapper(
     <iframe
       className={className}
       src={`https://www.youtube.com/embed/${videoId}?${params}`}
