@@ -543,6 +543,45 @@ const Create = () => {
         { value: "away_win", label: "Away Win" },
         { value: "draw", label: "Draw" },
       ];
+  // AI Agent: generate entire market from prompt
+  const handleAiAgent = async () => {
+    if (!user) { toast.error("Sign in to use AI market creation"); return; }
+    if (!aiAgentPrompt.trim()) { toast.error("Enter a prompt describing your market"); return; }
+    setAiAgentLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-create-market", {
+        body: { prompt: aiAgentPrompt.trim() },
+      });
+      if (error) { toast.error("AI generation failed"); return; }
+      if (data?.error) { toast.error(data.error); return; }
+      const m = data.market;
+      if (!m) { toast.error("No market data returned"); return; }
+      setTitle(m.title || "");
+      setDescription(m.description || "");
+      setDetails(m.details || "");
+      setCategory(m.category || "");
+      setEndDate(m.endDate || "");
+      setResolutionSource(m.resolutionSource || "");
+      setMarketType(m.marketType || "binary");
+      if (m.options?.length) setOptions(m.options);
+      if (m.autoResolve) {
+        setAutoResolve(true);
+        if (m.autoResolveAsset) setAutoResolveAsset(m.autoResolveAsset);
+        if (m.autoResolveOperator) setAutoResolveOperator(m.autoResolveOperator);
+        if (m.autoResolveTargetPrice) setAutoResolveTargetPrice(String(m.autoResolveTargetPrice));
+      }
+      if (m.sportType) setSportType(m.sportType);
+      if (m.sportPredictedOutcome) setSportPredictedOutcome(m.sportPredictedOutcome);
+      setAiAgentOpen(false);
+      toast.success(`Market generated! $${(data.cost ?? 0).toFixed(2)} charged. Review and edit below.`);
+      queryClient.invalidateQueries({ queryKey: ["user-balance"] });
+    } catch (err) {
+      toast.error("Something went wrong");
+    } finally {
+      setAiAgentLoading(false);
+    }
+  };
+
   // AI content generation handler
   const handleAiGenerate = async (genType: "description" | "details" | "image") => {
     if (!user) { toast.error("Sign in to use AI generation"); return; }
