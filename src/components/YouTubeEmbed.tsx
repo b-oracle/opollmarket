@@ -7,6 +7,8 @@ interface YouTubeEmbedProps {
   fallbackAlt?: string;
   /** When true, video starts muted and cannot be unmuted via embed controls. Default true (required for autoplay). */
   autoplayMuted?: boolean;
+  /** When true, scales the iframe to fill the container (like object-fit: cover), cropping edges. */
+  fillContainer?: boolean;
 }
 
 /**
