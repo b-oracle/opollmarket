@@ -570,6 +570,70 @@ const AdminCreateMarket = () => {
         </div>
       </div>
 
+      {/* AI Agent Section */}
+      {isFeatureEnabled("ai_market_creation") && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setAiAgentOpen(!aiAgentOpen)}
+            className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold hover:bg-muted/30 transition-colors"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              AI Market Agent — Create from Prompt
+            </span>
+            <span className="text-xs text-muted-foreground">{aiAgentOpen ? "▲" : "▼"}</span>
+          </button>
+          <AnimatePresence>
+            {aiAgentOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="px-5 pb-4 space-y-3">
+                  <p className="text-[11px] text-muted-foreground">
+                    Describe the market and AI will fill in all fields. Cost: ${aiGenerationCost.toFixed(2)}
+                  </p>
+                  <textarea
+                    value={aiAgentPrompt}
+                    onChange={(e) => setAiAgentPrompt(e.target.value)}
+                    placeholder="e.g. Create an auto resolve market: Will Tyson Fury fight Anthony Joshua before December 2026?"
+                    rows={3}
+                    className="w-full bg-muted/50 border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+                    maxLength={500}
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleVoiceInput}
+                      className={`flex items-center justify-center w-10 h-10 rounded-xl border transition-all ${
+                        isListening
+                          ? "bg-destructive/10 border-destructive text-destructive animate-pulse"
+                          : "bg-muted/50 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
+                      }`}
+                      title={isListening ? "Stop listening" : "Voice input"}
+                    >
+                      {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAiAgent}
+                      disabled={aiAgentLoading || !aiAgentPrompt.trim()}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {aiAgentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                      {aiAgentLoading ? "Generating..." : `Generate Market — $${aiGenerationCost.toFixed(2)}`}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+
       {/* Title & Description */}
       <div className={`bg-card border border-border rounded-xl p-5 space-y-4`}>
         <div className={shakeClass("title")}>
