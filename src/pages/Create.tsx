@@ -227,6 +227,11 @@ const Create = () => {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [pendingAiType, setPendingAiType] = useState<"description" | "details" | "image" | null>(null);
 
+  // AI Agent state
+  const [aiAgentOpen, setAiAgentOpen] = useState(false);
+  const [aiAgentPrompt, setAiAgentPrompt] = useState("");
+  const [aiAgentLoading, setAiAgentLoading] = useState(false);
+
   // Boost & Broadcast add-ons at creation
   const [creationBoost, setCreationBoost] = useState(false);
   const [creationBoostTier, setCreationBoostTier] = useState<"flash" | "standard" | "whale">("flash");
