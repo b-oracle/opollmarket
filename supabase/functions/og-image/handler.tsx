@@ -56,6 +56,13 @@ export default async function handler(req: Request) {
     bgImageSrc = await fetchImageAsBase64(market.image_url);
   }
 
+  // Build background element separately to avoid null children (satori 0.4.0 bug)
+  const bgElement = bgImageSrc
+    ? <img src={bgImageSrc} width={1200} height={630} style={{
+        position: "absolute", top: 0, left: 0, width: "1200px", height: "630px", objectFit: "cover",
+      }} />
+    : <div style={{ display: "flex", position: "absolute", top: 0, left: 0, width: "1200px", height: "630px", background: "linear-gradient(135deg, #0a0a0a, #1a1a2e)" }} />;
+
   return new ImageResponse(
     (
       <div style={{
@@ -68,12 +75,7 @@ export default async function handler(req: Request) {
         fontFamily: "sans-serif",
         position: "relative",
       }}>
-        {/* Background image */}
-        {bgImageSrc ? (
-          <img src={bgImageSrc} width={1200} height={630} style={{
-            position: "absolute", top: 0, left: 0, width: "1200px", height: "630px", objectFit: "cover",
-          }} />
-        ) : null}
+        {bgElement}
 
         {/* Dark gradient overlay */}
         <div style={{
