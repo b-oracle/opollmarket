@@ -62,9 +62,7 @@ Deno.serve(async (req) => {
     const pageTitle = `${market.title} | OPoll Market`;
     const pageDesc = market.description || `YES ${yesPercent}% · NO ${100 - yesPercent}% · $${Number(market.volume).toLocaleString()} volume`;
 
-    const ogImageUrl = market.image_url
-      ? market.image_url
-      : `${supabaseUrl}/functions/v1/og-image?id=${marketId}`;
+    const ogImageUrl = `${supabaseUrl}/functions/v1/og-image?id=${marketId}`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -80,7 +78,7 @@ Deno.serve(async (req) => {
   <meta property="og:title" content="${escapeHtml(pageTitle)}" />
   <meta property="og:description" content="${escapeHtml(pageDesc)}" />
   <meta property="og:image" content="${escapeHtml(ogImageUrl)}" />
-  <meta property="og:image:type" content="${market.image_url ? "image/jpeg" : "image/png"}" />
+  <meta property="og:image:type" content="image/svg+xml" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:url" content="${escapeHtml(redirectUrl)}" />
