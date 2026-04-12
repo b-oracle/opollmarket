@@ -51,7 +51,7 @@ import {
   Zap,
   Trophy,
   Mic,
-  MicOff,
+  
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
@@ -2044,7 +2044,7 @@ const Create = () => {
                             }`}
                             title={isListening ? "Stop listening" : "Voice input"}
                           >
-                            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                            <Mic className={`w-4 h-4 ${isListening ? "text-red-500 animate-pulse" : ""}`} />
                           </button>
                           <button
                             type="button"
