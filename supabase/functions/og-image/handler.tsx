@@ -2,6 +2,22 @@ import React from "https://esm.sh/react@18.2.0";
 import { ImageResponse } from "https://deno.land/x/og_edge@0.0.6/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 
+function splitTitle(title: string, charsPerLine: number): string[] {
+  const words = title.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    if (current && (current + " " + word).length > charsPerLine) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = current ? current + " " + word : word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.slice(0, 3); // max 3 lines
+}
+
 function wrapTitle(title: string, max: number): string {
   if (title.length <= max) return title;
   return title.slice(0, max - 1).trimEnd() + "…";
@@ -31,7 +47,7 @@ export default async function handler(req: Request) {
 
   const yesPercent = Math.round(market.yes_price * 100);
   const noPercent = 100 - yesPercent;
-  const displayTitle = wrapTitle(market.title, 100);
+  const titleLines = splitTitle(wrapTitle(market.title, 100), 38);
   const volumeStr = "$" + Number(market.volume).toLocaleString("en-US");
 
   return new ImageResponse(
@@ -58,9 +74,13 @@ export default async function handler(req: Request) {
           </div>
         </div>
 
-        {/* Title */}
-        <div style={{ display: "flex", fontSize: "44px", fontWeight: 800, lineHeight: "1.25", marginTop: "40px", color: "#f1f5f9" }}>
-          {displayTitle}
+        {/* Title — rendered as separate lines to avoid Satori text-wrap bugs */}
+        <div style={{ display: "flex", flexDirection: "column", marginTop: "40px", gap: "4px" }}>
+          {titleLines.map((line, i) => (
+            <div key={i} style={{ display: "flex", fontSize: "44px", fontWeight: 800, color: "#f1f5f9" }}>
+              {line}
+            </div>
+          ))}
         </div>
 
         {/* Spacer + stats */}
