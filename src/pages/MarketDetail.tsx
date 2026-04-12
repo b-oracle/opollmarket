@@ -19,7 +19,7 @@ import ShareModal from "@/components/ShareModal";
 import OrderBook from "@/components/OrderBook";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePriceHistory } from "@/hooks/usePriceHistory";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -450,6 +450,7 @@ const MarketDetailsCollapsible = ({ details }: { details: string }) => {
 const MarketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user, isSuperAdmin } = useAuth();
   const { data: market, isLoading, isError } = useMarket(id);
   const { boostDetails } = useActiveBoosts();
@@ -708,15 +709,15 @@ const MarketDetail = () => {
                 streamUrl={market.streamUrl}
                 isStreaming={market.isStreaming}
                 onStreamStateChange={() => {
-                  // Invalidate market query to refresh streaming state
-                  window.location.reload();
+                  queryClient.invalidateQueries({ queryKey: ["market", id] });
                 }}
               />
             </div>
           )}
 
           {/* LiveKit stream viewer (for non-creators when market is streaming) */}
-          {market.isStreaming && !isCreator && (
+          {/* LiveKit stream viewer (for anyone when market is streaming) */}
+          {market.isStreaming && (
             <div className="mt-4">
               <MarketStreamPlayer marketId={market.id} />
             </div>
