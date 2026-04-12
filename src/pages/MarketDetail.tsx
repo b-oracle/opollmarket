@@ -455,8 +455,9 @@ const MarketDetail = () => {
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
-  const { toggles } = useFeatureToggles();
+  const { toggles, isFeatureEnabled } = useFeatureToggles();
   const showPageViews = toggles.find(t => t.feature_key === "show_wagered_stats")?.enabled ?? false;
+  const streamingEnabled = isFeatureEnabled("market_streaming");
 
   const { data: pageViewCount } = useQuery({
     queryKey: ["market-page-views", id],
