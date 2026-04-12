@@ -129,7 +129,7 @@ const AdminPredictions = () => {
     const predictions = buys.filter(t => t.side === "yes" || t.side === "no");
     const liquidityTx = buys.filter(t => t.side === "initial_liquidity");
     const creationFeeTx = buys.filter(t => t.side === "market_creation_fee");
-    const aiFeeTx = buys.filter(t => t.side === "ai_generation");
+    const aiFeeTx = buys.filter(t => t.side?.startsWith("ai_"));
 
     // Promotion transactions (boosts, broadcasts, social ads)
     const boostTx = buys.filter(t => t.side?.startsWith("boost_"));
