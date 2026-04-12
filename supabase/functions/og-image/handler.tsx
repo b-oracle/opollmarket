@@ -8,9 +8,10 @@ let wasmInitialized = false;
 async function ensureWasm() {
   if (wasmInitialized) return;
   const wasmResp = await fetch(
-    "https://esm.sh/@aspect-dev/satori-resvg-wasm/dist/resvg.simd.wasm"
+    "https://unpkg.com/@aspect-dev/satori-resvg-wasm@1.0.0/dist/resvg.simd.wasm"
   );
-  await initWasm(wasmResp);
+  const wasmBytes = await wasmResp.arrayBuffer();
+  await initWasm(wasmBytes);
   wasmInitialized = true;
 }
 
