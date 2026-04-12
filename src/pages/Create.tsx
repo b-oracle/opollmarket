@@ -248,24 +248,18 @@ const Create = () => {
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = "en-US";
-    let finalTranscript = "";
     recognition.onresult = (event: any) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interim += event.results[i][0].transcript;
-        }
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
       }
-      setAiAgentPrompt((prev) => finalTranscript || (prev + interim ? prev : interim));
+      setAiAgentPrompt(transcript);
     };
     recognition.onend = () => {
       setIsListening(false);
-      if (finalTranscript) setAiAgentPrompt(finalTranscript);
     };
     recognition.onerror = (e: any) => {
       setIsListening(false);
