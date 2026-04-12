@@ -59,7 +59,7 @@ export default async function handler(req: Request) {
         </div>
 
         {/* Title */}
-        <div style={{ display: "flex", fontSize: "44px", fontWeight: 800, lineHeight: "1.25", marginTop: "40px", color: "#f1f5f9" }}>
+        <div style={{ display: "flex", fontSize: "44px", fontWeight: 800, lineHeight: 1.25, marginTop: "40px", color: "#f1f5f9", maxWidth: "1080px", wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
           {displayTitle}
         </div>
 
