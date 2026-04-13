@@ -358,15 +358,27 @@ const InvestorDeck = () => {
         <div className="deck-controls flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-lg sm:text-2xl font-bold">Investor Deck</h2>
-            <p className="text-[10px] sm:text-sm text-muted-foreground">10-slide pitch deck — print or save as PDF</p>
+            <p className="text-[10px] sm:text-sm text-muted-foreground">10-slide pitch deck — download as PDF or PowerPoint</p>
           </div>
           <div className="flex gap-1.5 sm:gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={() => navigate("/admin")} className="h-8 px-2.5 sm:px-3 text-xs">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back
             </Button>
-            <Button size="sm" onClick={() => window.print()} className="gap-1 h-8 px-2.5 sm:px-3 text-xs">
-              <Printer className="w-3.5 h-3.5" /> Print / PDF
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1 h-8 px-2.5 sm:px-3 text-xs">
+                  <Download className="w-3.5 h-3.5" /> Download
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleDownloadPDF} className="gap-2">
+                  <FileText className="w-4 h-4" /> Download as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadPPTX} className="gap-2">
+                  <Presentation className="w-4 h-4" /> Download as PowerPoint
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
