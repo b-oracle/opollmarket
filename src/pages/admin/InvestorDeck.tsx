@@ -332,37 +332,39 @@ const InvestorDeck = () => {
   const navigate = useNavigate();
   const deckRef = useRef<HTMLDivElement>(null);
 
-  const handleDownloadPDF = async () => {
+  const captureSlides = async () => {
+    const html2canvas = (await import("html2canvas")).default;
     const slideEls = deckRef.current?.querySelectorAll(".deck-slide");
-    if (!slideEls?.length) return;
+    if (!slideEls?.length) return [];
+
+    const images: string[] = [];
+    for (let i = 0; i < slideEls.length; i++) {
+      const el = slideEls[i] as HTMLElement;
+      const canvas = await html2canvas(el, {
+        width: el.scrollWidth,
+        height: el.scrollHeight,
+        scale: 1920 / el.scrollWidth, // scale up to 1920 wide
+        useCORS: true,
+        backgroundColor: "#0a0c14",
+        logging: false,
+      });
+      images.push(canvas.toDataURL("image/jpeg", 0.92));
+    }
+    return images;
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!deckRef.current?.querySelectorAll(".deck-slide")?.length) return;
     const toastId = toast.loading("Generating PDF…");
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const images = await captureSlides();
+      if (!images.length) throw new Error("No slides captured");
       const { jsPDF } = await import("jspdf");
       const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1920, 1080] });
-
-      for (let i = 0; i < slideEls.length; i++) {
-        const el = slideEls[i] as HTMLElement;
-        // Find the inner 1920x1080 div and capture it at native resolution
-        const inner = el.querySelector("div[style]") as HTMLElement;
-        if (!inner) continue;
-        const canvas = await html2canvas(inner, {
-          width: 1920,
-          height: 1080,
-          scale: 1,
-          useCORS: true,
-          backgroundColor: null,
-          logging: false,
-          // Temporarily reset transform for capture
-          onclone: (_doc, clonedEl) => {
-            clonedEl.style.transform = "none";
-            clonedEl.style.position = "static";
-          },
-        });
-        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      images.forEach((img, i) => {
         if (i > 0) pdf.addPage([1920, 1080], "landscape");
-        pdf.addImage(imgData, "JPEG", 0, 0, 1920, 1080);
-      }
+        pdf.addImage(img, "JPEG", 0, 0, 1920, 1080);
+      });
       pdf.save("OPoll_Investor_Deck.pdf");
       toast.success("PDF downloaded!", { id: toastId });
     } catch (e) {
@@ -372,35 +374,18 @@ const InvestorDeck = () => {
   };
 
   const handleDownloadPPTX = async () => {
-    const slideEls = deckRef.current?.querySelectorAll(".deck-slide");
-    if (!slideEls?.length) return;
+    if (!deckRef.current?.querySelectorAll(".deck-slide")?.length) return;
     const toastId = toast.loading("Generating PowerPoint…");
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const images = await captureSlides();
+      if (!images.length) throw new Error("No slides captured");
       const PptxGenJS = (await import("pptxgenjs")).default;
       const pptx = new PptxGenJS();
-      pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inches (16:9)
-
-      for (let i = 0; i < slideEls.length; i++) {
-        const el = slideEls[i] as HTMLElement;
-        const inner = el.querySelector("div[style]") as HTMLElement;
-        if (!inner) continue;
-        const canvas = await html2canvas(inner, {
-          width: 1920,
-          height: 1080,
-          scale: 1,
-          useCORS: true,
-          backgroundColor: null,
-          logging: false,
-          onclone: (_doc, clonedEl) => {
-            clonedEl.style.transform = "none";
-            clonedEl.style.position = "static";
-          },
-        });
-        const imgData = canvas.toDataURL("image/png");
+      pptx.layout = "LAYOUT_WIDE";
+      images.forEach((img) => {
         const slide = pptx.addSlide();
-        slide.addImage({ data: imgData, x: 0, y: 0, w: "100%", h: "100%" });
-      }
+        slide.addImage({ data: img, x: 0, y: 0, w: "100%", h: "100%" });
+      });
       await pptx.writeFile({ fileName: "OPoll_Investor_Deck.pptx" });
       toast.success("PowerPoint downloaded!", { id: toastId });
     } catch (e) {
