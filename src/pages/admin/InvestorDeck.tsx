@@ -1,7 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Download, FileText, Presentation } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/sonner";
 import opollLogo from "@/assets/logo.png";
 
 /* ─── ScaledSlide: renders children at 1920×1080 and scales to fit parent ─── */
