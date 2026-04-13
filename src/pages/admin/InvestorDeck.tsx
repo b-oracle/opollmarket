@@ -1,7 +1,9 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Download, FileText, Presentation } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/sonner";
 import opollLogo from "@/assets/logo.png";
 
 /* ─── ScaledSlide: renders children at 1920×1080 and scales to fit parent ─── */
@@ -330,6 +332,83 @@ const InvestorDeck = () => {
   const navigate = useNavigate();
   const deckRef = useRef<HTMLDivElement>(null);
 
+  const handleDownloadPDF = async () => {
+    const slideEls = deckRef.current?.querySelectorAll(".deck-slide");
+    if (!slideEls?.length) return;
+    const toastId = toast.loading("Generating PDF…");
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1920, 1080] });
+
+      for (let i = 0; i < slideEls.length; i++) {
+        const el = slideEls[i] as HTMLElement;
+        // Find the inner 1920x1080 div and capture it at native resolution
+        const inner = el.querySelector("div[style]") as HTMLElement;
+        if (!inner) continue;
+        const canvas = await html2canvas(inner, {
+          width: 1920,
+          height: 1080,
+          scale: 1,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+          // Temporarily reset transform for capture
+          onclone: (_doc, clonedEl) => {
+            clonedEl.style.transform = "none";
+            clonedEl.style.position = "static";
+          },
+        });
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        if (i > 0) pdf.addPage([1920, 1080], "landscape");
+        pdf.addImage(imgData, "JPEG", 0, 0, 1920, 1080);
+      }
+      pdf.save("OPoll_Investor_Deck.pdf");
+      toast.success("PDF downloaded!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PDF", { id: toastId });
+    }
+  };
+
+  const handleDownloadPPTX = async () => {
+    const slideEls = deckRef.current?.querySelectorAll(".deck-slide");
+    if (!slideEls?.length) return;
+    const toastId = toast.loading("Generating PowerPoint…");
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const PptxGenJS = (await import("pptxgenjs")).default;
+      const pptx = new PptxGenJS();
+      pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inches (16:9)
+
+      for (let i = 0; i < slideEls.length; i++) {
+        const el = slideEls[i] as HTMLElement;
+        const inner = el.querySelector("div[style]") as HTMLElement;
+        if (!inner) continue;
+        const canvas = await html2canvas(inner, {
+          width: 1920,
+          height: 1080,
+          scale: 1,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+          onclone: (_doc, clonedEl) => {
+            clonedEl.style.transform = "none";
+            clonedEl.style.position = "static";
+          },
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const slide = pptx.addSlide();
+        slide.addImage({ data: imgData, x: 0, y: 0, w: "100%", h: "100%" });
+      }
+      await pptx.writeFile({ fileName: "OPoll_Investor_Deck.pptx" });
+      toast.success("PowerPoint downloaded!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PowerPoint", { id: toastId });
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -356,15 +435,27 @@ const InvestorDeck = () => {
         <div className="deck-controls flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h2 className="text-lg sm:text-2xl font-bold">Investor Deck</h2>
-            <p className="text-[10px] sm:text-sm text-muted-foreground">10-slide pitch deck — print or save as PDF</p>
+            <p className="text-[10px] sm:text-sm text-muted-foreground">10-slide pitch deck — download as PDF or PowerPoint</p>
           </div>
           <div className="flex gap-1.5 sm:gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={() => navigate("/admin")} className="h-8 px-2.5 sm:px-3 text-xs">
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back
             </Button>
-            <Button size="sm" onClick={() => window.print()} className="gap-1 h-8 px-2.5 sm:px-3 text-xs">
-              <Printer className="w-3.5 h-3.5" /> Print / PDF
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="gap-1 h-8 px-2.5 sm:px-3 text-xs">
+                  <Download className="w-3.5 h-3.5" /> Download
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleDownloadPDF} className="gap-2">
+                  <FileText className="w-4 h-4" /> Download as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownloadPPTX} className="gap-2">
+                  <Presentation className="w-4 h-4" /> Download as PowerPoint
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
