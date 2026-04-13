@@ -11,7 +11,7 @@ export const CANONICAL_ORIGIN = "https://www.opoll.org";
  */
 export function getCanonicalOrigin(): string {
   const origin = window.location.origin;
-  if (origin.includes("opoll.org")) {
+  if (origin.includes("opoll.org") || origin.includes("opollmarket.com")) {
     return CANONICAL_ORIGIN;
   }
   return origin;
