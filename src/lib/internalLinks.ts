@@ -1,4 +1,4 @@
-const STATIC_INTERNAL_HOSTS = new Set(["opoll.org", "www.opoll.org"]);
+const STATIC_INTERNAL_HOSTS = new Set(["opoll.org", "www.opoll.org", "opollmarket.com", "www.opollmarket.com"]);
 
 const isLovableHost = (host: string) =>
   host.endsWith(".lovable.app") || host.endsWith(".lovableproject.com");
