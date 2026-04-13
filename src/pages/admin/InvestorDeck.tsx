@@ -332,6 +332,83 @@ const InvestorDeck = () => {
   const navigate = useNavigate();
   const deckRef = useRef<HTMLDivElement>(null);
 
+  const handleDownloadPDF = async () => {
+    const slideEls = deckRef.current?.querySelectorAll(".deck-slide");
+    if (!slideEls?.length) return;
+    const toastId = toast.loading("Generating PDF…");
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF({ orientation: "landscape", unit: "px", format: [1920, 1080] });
+
+      for (let i = 0; i < slideEls.length; i++) {
+        const el = slideEls[i] as HTMLElement;
+        // Find the inner 1920x1080 div and capture it at native resolution
+        const inner = el.querySelector("div[style]") as HTMLElement;
+        if (!inner) continue;
+        const canvas = await html2canvas(inner, {
+          width: 1920,
+          height: 1080,
+          scale: 1,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+          // Temporarily reset transform for capture
+          onclone: (_doc, clonedEl) => {
+            clonedEl.style.transform = "none";
+            clonedEl.style.position = "static";
+          },
+        });
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        if (i > 0) pdf.addPage([1920, 1080], "landscape");
+        pdf.addImage(imgData, "JPEG", 0, 0, 1920, 1080);
+      }
+      pdf.save("OPoll_Investor_Deck.pdf");
+      toast.success("PDF downloaded!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PDF", { id: toastId });
+    }
+  };
+
+  const handleDownloadPPTX = async () => {
+    const slideEls = deckRef.current?.querySelectorAll(".deck-slide");
+    if (!slideEls?.length) return;
+    const toastId = toast.loading("Generating PowerPoint…");
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const PptxGenJS = (await import("pptxgenjs")).default;
+      const pptx = new PptxGenJS();
+      pptx.layout = "LAYOUT_WIDE"; // 13.33 x 7.5 inches (16:9)
+
+      for (let i = 0; i < slideEls.length; i++) {
+        const el = slideEls[i] as HTMLElement;
+        const inner = el.querySelector("div[style]") as HTMLElement;
+        if (!inner) continue;
+        const canvas = await html2canvas(inner, {
+          width: 1920,
+          height: 1080,
+          scale: 1,
+          useCORS: true,
+          backgroundColor: null,
+          logging: false,
+          onclone: (_doc, clonedEl) => {
+            clonedEl.style.transform = "none";
+            clonedEl.style.position = "static";
+          },
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const slide = pptx.addSlide();
+        slide.addImage({ data: imgData, x: 0, y: 0, w: "100%", h: "100%" });
+      }
+      await pptx.writeFile({ fileName: "OPoll_Investor_Deck.pptx" });
+      toast.success("PowerPoint downloaded!", { id: toastId });
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to generate PowerPoint", { id: toastId });
+    }
+  };
+
   return (
     <>
       <style>{`
