@@ -1096,12 +1096,44 @@ export default function QuickTrade() {
     load();
   }, [user, activeRound?.status, selectedAsset.symbol]);
 
-  // ── Realtime subscription ──
+  // ── Realtime subscription (filtered by asset, debounced, no round creation) ──
+  const realtimeLastFetchRef = useRef(0);
   useEffect(() => {
+    const assetSymbol = selectedAsset.symbol;
+
+    // Fetch-only version: SELECT existing round, never INSERT
+    const fetchRoundOnly = async () => {
+      const now = Date.now();
+      if (now - realtimeLastFetchRef.current < 2000) return; // debounce 2s
+      realtimeLastFetchRef.current = now;
+
+      const { data } = await supabase
+        .from("quick_rounds")
+        .select("*")
+        .eq("asset", assetSymbol)
+        .eq("duration_seconds", selectedTimeframe.seconds)
+        .in("status", ["open", "locked"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (data && data.length > 0) {
+        setActiveRound(data[0] as unknown as Round);
+      } else {
+        setActiveRound(null);
+      }
+    };
+
     const channel = supabase
-      .channel("quick-rounds-live")
-      .on("postgres_changes", { event: "*", schema: "public", table: "quick_rounds" }, async (payload) => {
-        fetchActiveRound();
+      .channel(`quick-rounds-${assetSymbol}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "quick_rounds",
+        filter: `asset=eq.${assetSymbol}`,
+      }, async (payload) => {
+        // Debounced fetch (SELECT only — no round creation)
+        fetchRoundOnly();
+
         // Haptic + confetti on round resolution
         if (payload.eventType === "UPDATE" && (payload.new as any)?.status === "resolved") {
           haptic("heavy");
@@ -1124,7 +1156,6 @@ export default function QuickTrade() {
                 if (!soundMuted) playWinSound();
                 fireWinConfetti();
                 haptic("success");
-                // Calculate profit: for quick trades, payout is typically 2x minus fee
                 const betAmt = myBets[0].side === "up" || myBets[0].side === "down" ? parseFloat(betAmount) || 10 : 10;
                 const estimatedPayout = betAmt * 2 * (1 - (commissionSettings?.quick_trade_fee_percent ?? 5) / 100);
                 const estimatedProfit = estimatedPayout - betAmt;
@@ -1135,7 +1166,6 @@ export default function QuickTrade() {
                 haptic("error");
               }
             } else {
-              // No trade placed, still flash neutral
               setResolveFlash(resolvedResult === "up" ? "win" : "lose");
               setTimeout(() => setResolveFlash(null), 1500);
             }
@@ -1147,7 +1177,7 @@ export default function QuickTrade() {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchActiveRound, user, fireWinConfetti]);
+  }, [selectedAsset.symbol, selectedTimeframe.seconds, user, fireWinConfetti]);
 
   // ── Place trade ──
   const placeBet = async (side: "up" | "down") => {
