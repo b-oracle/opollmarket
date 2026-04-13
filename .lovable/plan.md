@@ -1,24 +1,38 @@
 
 
-## Why Share Image Works from Detail but Not from Feed
+## Diagnosis: Quick Trade Page Refresh Loop
 
 ### Root Cause
-Both pages use a hidden off-screen div (positioned at `-9999px`) containing an `<img>` tag for the market image. The `ShareModal` captures this div using `html2canvas`.
 
-- **Detail page**: The market image is already visible on the page, so the browser has it cached. When the hidden capture div is moved on-screen, the image loads instantly from cache.
-- **Feed page**: The market image in the card itself uses a different rendering path (often a `YouTubeEmbed` or gradient overlay). The hidden capture div's `<img>` at `-9999px` may never start loading because the browser deprioritizes off-screen images. When `html2canvas` runs, the image is blank or partially loaded, producing a broken screenshot.
+The Realtime subscription at line 1100 listens to **all** changes on `quick_rounds` with `event: "*"` and **no filter**. Every insert, update, or delete on this table (from any user, any asset, any timeframe) triggers `fetchActiveRound()`.
+
+`fetchActiveRound()` itself can **create a new round** (line 972) if none exists. That insert fires another Realtime event, which calls `fetchActiveRound()` again — creating a feedback loop.
+
+Additionally, other users placing trades or rounds resolving across all assets cause constant re-fetching, leading to the continuous "refreshing" behavior.
 
 ### Fix
 
-**`src/components/MarketCard.tsx`** — Force the hidden capture image to preload when the share modal opens (not before), ensuring it is fully loaded before `html2canvas` runs.
+1. **Filter the Realtime subscription** to only react to changes relevant to the current asset. Use a Postgres Realtime filter:
+   ```
+   filter: `asset=eq.${selectedAsset.symbol}`
+   ```
+   This dramatically reduces spurious triggers.
 
-1. Add `loading="eager"` and `decoding="sync"` to the capture div image (already has `loading="eager"`, but it's still off-screen).
-2. Better approach: instead of relying on the off-screen div's image, **programmatically preload the image into a temporary `Image()` object** when the share button is tapped, _before_ setting `shareOpen = true`. This guarantees the browser has it in its cache.
+2. **Debounce `fetchActiveRound` calls** from the Realtime handler. Add a simple timestamp guard (e.g., skip if called within the last 2 seconds) to prevent rapid cascading fetches.
 
-Concretely:
-- In the share button handler, create `new Image(); img.src = market.imageUrl` and wait for its `onload` (with a 2s timeout), then open the share modal.
-- This ensures by the time `html2canvas` runs on the hidden div, the image is in the browser's memory cache.
+3. **Separate the "create round" logic** from the fetch path in the Realtime handler. The Realtime callback should only **fetch** existing rounds, never create new ones. Round creation should only happen on initial mount and asset/timeframe changes.
 
-### Files changed
-- `src/components/MarketCard.tsx` — update share button handler to preload the market image before opening `ShareModal`
+### Files Changed
+- `src/pages/QuickTrade.tsx` — Update the Realtime `useEffect` (lines 1100-1150) to add an asset filter and debounce, and guard against round creation in the Realtime callback path.
+
+### Technical Detail
+
+```text
+Current flow (broken):
+  Realtime event (any asset) → fetchActiveRound() → no round found → INSERT new round → Realtime event → loop
+
+Fixed flow:
+  Realtime event (filtered to current asset) → debounced fetch (SELECT only) → update state
+  Round creation only on: mount, asset change, timeframe change
+```
 
