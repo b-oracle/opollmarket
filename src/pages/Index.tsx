@@ -19,6 +19,7 @@ import CategoryCarousel from "@/components/CategoryCarousel";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import { Gem, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
