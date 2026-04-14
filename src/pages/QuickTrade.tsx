@@ -301,6 +301,7 @@ export default function QuickTrade() {
   const [prevPrice, setPrevPrice] = useState<number | null>(null);
   const [activeRound, setActiveRound] = useState<Round | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [resolving, setResolving] = useState(false);
   const [betAmount, setBetAmount] = useState("10");
   const [placing, setPlacing] = useState(false);
   const [userBet, setUserBet] = useState<Bet | null>(null);
@@ -1006,20 +1007,55 @@ export default function QuickTrade() {
   }, [selectedAsset.symbol, selectedTimeframe.seconds]);
 
   // ── Countdown ──
+  const resolvePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const resolveTriggeredRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!activeRound) return;
+    if (!activeRound) {
+      setResolving(false);
+      return;
+    }
+    const roundId = activeRound.id;
     const tick = () => {
       const end = new Date(activeRound.created_at).getTime() + activeRound.duration_seconds * 1000;
       const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
       setTimeLeft(left);
-      if (left === 0) {
-        // Round ended, refetch
-        setTimeout(fetchActiveRound, 2000);
+      if (left === 0 && resolveTriggeredRef.current !== roundId) {
+        resolveTriggeredRef.current = roundId;
+        setResolving(true);
+
+        // Fire-and-forget: trigger resolution immediately
+        supabase.functions.invoke("resolve-quick-round", {
+          body: { roundId },
+        }).catch(() => {});
+
+        // Poll every 3s for up to 30s to detect resolution
+        let attempts = 0;
+        resolvePollRef.current = setInterval(async () => {
+          attempts++;
+          const { data } = await supabase
+            .from("quick_rounds")
+            .select("status")
+            .eq("id", roundId)
+            .single();
+          if (data?.status === "resolved" || attempts >= 10) {
+            if (resolvePollRef.current) clearInterval(resolvePollRef.current);
+            resolvePollRef.current = null;
+            setResolving(false);
+            fetchActiveRound();
+          }
+        }, 3000);
       }
     };
     tick();
     const iv = setInterval(tick, 1000);
-    return () => clearInterval(iv);
+    return () => {
+      clearInterval(iv);
+      if (resolvePollRef.current) {
+        clearInterval(resolvePollRef.current);
+        resolvePollRef.current = null;
+      }
+    };
   }, [activeRound]);
 
   // ── Check user trade on this round ──
@@ -1459,14 +1495,19 @@ export default function QuickTrade() {
                 ) : (
                   <>
                     <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
-                      timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
+                      resolving ? "text-muted-foreground" : timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
                     }`}>
-                      {formatTime(timeLeft)}
+                      {resolving ? (
+                        <span className="flex items-center gap-2 text-lg">
+                          <span className="w-5 h-5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                          Resolving
+                        </span>
+                      ) : formatTime(timeLeft)}
                     </div>
                     <div className="flex items-center gap-1 justify-center mt-1">
                       <Timer className="w-3 h-3 text-muted-foreground" />
                       <span className="text-[10px] text-muted-foreground uppercase">
-                        {isLocked ? "Locked" : timeLeft === 0 ? "Resolving..." : "Remaining"}
+                        {resolving ? "Finalizing..." : isLocked ? "Locked" : timeLeft === 0 ? "Starting..." : "Remaining"}
                       </span>
                     </div>
                   </>
