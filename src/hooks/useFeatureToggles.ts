@@ -43,7 +43,7 @@ export const useFeatureToggles = () => {
   });
 
   /** Keys that should respect the toggle even for admins */
-  const adminEnforcedKeys = new Set(["jamendo_music"]);
+  const adminEnforcedKeys = new Set(["jamendo_music", "category_twitter_x"]);
 
   const isFeatureEnabled = (key: string): boolean => {
     if ((isAdmin || isSuperAdmin) && !adminEnforcedKeys.has(key)) return true;

@@ -19,6 +19,7 @@ import CategoryCarousel from "@/components/CategoryCarousel";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import { Gem, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import BoostMarketModal from "@/components/BoostMarketModal";
 import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
@@ -57,8 +58,9 @@ const LikeBadge = ({ count }: { count: number }) => {
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { data: markets = [], isLoading, isError, refetch } = useMarkets();
+  const { data: allMarkets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
+  const { isFeatureEnabled } = useFeatureToggles();
   const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,6 +68,20 @@ const Index = () => {
   const ITEMS_PER_PAGE = 20;
   const { track } = useAnalytics();
   const { user, loading: authLoading } = useAuth();
+
+  // Category toggle map: category name → feature_key
+  const categoryToggleMap: Record<string, string> = {
+    "Twitter/X": "category_twitter_x",
+  };
+
+  // Filter out markets whose category is toggled off
+  const markets = useMemo(() => {
+    return allMarkets.filter((m) => {
+      const toggleKey = categoryToggleMap[m.category];
+      if (toggleKey && !isFeatureEnabled(toggleKey)) return false;
+      return true;
+    });
+  }, [allMarkets, isFeatureEnabled]);
 
   // Batch fetch all comment + like counts in 2 queries instead of 2×N
   const marketIds = useMemo(() => markets.map(m => m.id), [markets]);
