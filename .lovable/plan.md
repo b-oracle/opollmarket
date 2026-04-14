@@ -1,38 +1,39 @@
 
 
-## Diagnosis: Quick Trade Page Refresh Loop
+## Fix: Quick Trade rounds appearing stuck after countdown for forex/commodities/metals
+
+### Problem
+When a Quick Trade round's countdown reaches zero, the client fetches the round again after 2 seconds. But the server-side resolution runs on a 1-minute cron cycle, so for up to 60 seconds the round remains in "open/locked" status. The client keeps re-displaying it at 0:00, making trades appear "pending" or stuck. Crypto resolves faster because its price APIs respond quickly, but forex/commodities/metals often hit the full cron delay.
 
 ### Root Cause
+- The `resolve-quick-round` edge function is only triggered by a cron job every 60 seconds
+- After countdown ends, the client's `fetchActiveRound` finds the same unresolved round and sets it as active again with 0:00 remaining
+- No client-side mechanism to trigger resolution or show a waiting state
 
-The Realtime subscription at line 1100 listens to **all** changes on `quick_rounds` with `event: "*"` and **no filter**. Every insert, update, or delete on this table (from any user, any asset, any timeframe) triggers `fetchActiveRound()`.
+### Solution (two parts)
 
-`fetchActiveRound()` itself can **create a new round** (line 972) if none exists. That insert fires another Realtime event, which calls `fetchActiveRound()` again — creating a feedback loop.
+**1. Client-side: trigger resolution proactively and show "Resolving..." state**
+- When countdown hits 0, call the `resolve-quick-round` edge function directly (fire-and-forget POST) to trigger immediate resolution instead of waiting for cron
+- Add a `resolving` UI state: when timeLeft is 0 and the round is still active, show "Resolving..." instead of "0:00" with a spinner
+- Implement a polling retry: after the initial 2s, poll every 3s (up to 30s) checking if the round status changed to "resolved", then transition to the next round
 
-Additionally, other users placing trades or rounds resolving across all assets cause constant re-fetching, leading to the continuous "refreshing" behavior.
-
-### Fix
-
-1. **Filter the Realtime subscription** to only react to changes relevant to the current asset. Use a Postgres Realtime filter:
-   ```
-   filter: `asset=eq.${selectedAsset.symbol}`
-   ```
-   This dramatically reduces spurious triggers.
-
-2. **Debounce `fetchActiveRound` calls** from the Realtime handler. Add a simple timestamp guard (e.g., skip if called within the last 2 seconds) to prevent rapid cascading fetches.
-
-3. **Separate the "create round" logic** from the fetch path in the Realtime handler. The Realtime callback should only **fetch** existing rounds, never create new ones. Round creation should only happen on initial mount and asset/timeframe changes.
+**2. Server-side: ensure the edge function handles concurrent calls safely**
+- The resolve function already handles this safely (it only updates rounds past their end time), so no server changes needed
 
 ### Files Changed
-- `src/pages/QuickTrade.tsx` — Update the Realtime `useEffect` (lines 1100-1150) to add an asset filter and debounce, and guard against round creation in the Realtime callback path.
+- `src/pages/QuickTrade.tsx` — Update the countdown `useEffect` (lines 1008-1023) to:
+  - Call `resolve-quick-round` edge function when countdown expires
+  - Add polling with exponential backoff until round resolves
+  - Show "Resolving..." indicator in the UI during the wait period
+  - Clear active round and fetch a new one once resolved
 
 ### Technical Detail
-
 ```text
-Current flow (broken):
-  Realtime event (any asset) → fetchActiveRound() → no round found → INSERT new round → Realtime event → loop
+Current flow (broken UX):
+  Countdown → 0 → wait 2s → fetchActiveRound → finds same unresolved round → shows 0:00 → repeat
 
 Fixed flow:
-  Realtime event (filtered to current asset) → debounced fetch (SELECT only) → update state
-  Round creation only on: mount, asset change, timeframe change
+  Countdown → 0 → show "Resolving..." → POST resolve-quick-round → poll every 3s
+  → round resolved → show result → clear → fetch new round
 ```
 
