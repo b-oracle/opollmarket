@@ -136,8 +136,8 @@ async function handleResolve(
 
   await adminClient.from("markets").update(updateData).eq("id", market_id);
 
-  // For multi-choice, update option prices
-  if (market.market_type === "multi" && winning_option_id) {
+  // For multi-choice/range, update option prices
+  if ((market.market_type === "multi" || market.market_type === "range") && winning_option_id) {
     await adminClient.from("market_options").update({ price: 0 }).eq("market_id", market_id);
     await adminClient.from("market_options").update({ price: 1 }).eq("id", winning_option_id);
   }
@@ -152,7 +152,7 @@ async function handleResolve(
       .eq("side", winning_side)
       .gt("shares", 0);
     winningPositions = data || [];
-  } else if (market.market_type === "multi" && winning_option_id) {
+  } else if ((market.market_type === "multi" || market.market_type === "range") && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
       .select("*, insurance_tier, insurance_premium, insurance_claimed")
@@ -175,7 +175,7 @@ async function handleResolve(
       .eq("side", losingSide)
       .gt("shares", 0);
     losingPositions = data || [];
-  } else if (market.market_type === "multi" && winning_option_id) {
+  } else if ((market.market_type === "multi" || market.market_type === "range") && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
       .select("*, insurance_tier, insurance_premium, insurance_claimed")
@@ -380,16 +380,21 @@ async function handleResolve(
 
   // Auto-post to official X account
   try {
-    const outcomeLabel = winningSide === "yes" ? "Yes ✅" : winningSide === "no" ? "No ❌" : (winningOptionId ? winningSide : winningSide);
-    await supabase.functions.invoke("twitter-auto-post", {
-      body: {
+    const outcomeLabel = winning_side === "yes" ? "Yes ✅" : winning_side === "no" ? "No ❌" : (winning_option_id ? winning_side : winning_side);
+    await fetch(`${supabaseUrl}/functions/v1/twitter-auto-post`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
         event_type: "market_resolved",
         variables: {
           title: market.title,
-          market_id: marketId,
+          market_id: market_id,
           outcome: outcomeLabel,
         },
-      },
+      }),
     });
   } catch (tweetErr) {
     console.warn("resolve-market: twitter auto-post failed (non-critical)", tweetErr);
@@ -491,12 +496,12 @@ async function handleResolve(
       },
       body: JSON.stringify({
         event_type: "market.resolved",
-        market_id: marketId,
+        market_id: market_id,
         payload: {
-          market_id: marketId,
+          market_id: market_id,
           title: market.title,
-          resolved_side: winningSide,
-          winning_option_id: winningOptionId || null,
+          resolved_side: winning_side,
+          winning_option_id: winning_option_id || null,
           total_paid_out: totalPaidOut,
           winners: winningPositions.length,
         },
