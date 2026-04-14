@@ -380,16 +380,21 @@ async function handleResolve(
 
   // Auto-post to official X account
   try {
-    const outcomeLabel = winningSide === "yes" ? "Yes ✅" : winningSide === "no" ? "No ❌" : (winningOptionId ? winningSide : winningSide);
-    await supabase.functions.invoke("twitter-auto-post", {
-      body: {
+    const outcomeLabel = winning_side === "yes" ? "Yes ✅" : winning_side === "no" ? "No ❌" : (winning_option_id ? winning_side : winning_side);
+    await fetch(`${supabaseUrl}/functions/v1/twitter-auto-post`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
         event_type: "market_resolved",
         variables: {
           title: market.title,
-          market_id: marketId,
+          market_id: market_id,
           outcome: outcomeLabel,
         },
-      },
+      }),
     });
   } catch (tweetErr) {
     console.warn("resolve-market: twitter auto-post failed (non-critical)", tweetErr);
