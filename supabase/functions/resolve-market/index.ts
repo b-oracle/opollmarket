@@ -496,12 +496,12 @@ async function handleResolve(
       },
       body: JSON.stringify({
         event_type: "market.resolved",
-        market_id: marketId,
+        market_id: market_id,
         payload: {
-          market_id: marketId,
+          market_id: market_id,
           title: market.title,
-          resolved_side: winningSide,
-          winning_option_id: winningOptionId || null,
+          resolved_side: winning_side,
+          winning_option_id: winning_option_id || null,
           total_paid_out: totalPaidOut,
           winners: winningPositions.length,
         },
