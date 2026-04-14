@@ -136,8 +136,8 @@ async function handleResolve(
 
   await adminClient.from("markets").update(updateData).eq("id", market_id);
 
-  // For multi-choice, update option prices
-  if (market.market_type === "multi" && winning_option_id) {
+  // For multi-choice/range, update option prices
+  if ((market.market_type === "multi" || market.market_type === "range") && winning_option_id) {
     await adminClient.from("market_options").update({ price: 0 }).eq("market_id", market_id);
     await adminClient.from("market_options").update({ price: 1 }).eq("id", winning_option_id);
   }
