@@ -152,7 +152,7 @@ async function handleResolve(
       .eq("side", winning_side)
       .gt("shares", 0);
     winningPositions = data || [];
-  } else if (market.market_type === "multi" && winning_option_id) {
+  } else if ((market.market_type === "multi" || market.market_type === "range") && winning_option_id) {
     const { data } = await adminClient
       .from("positions")
       .select("*, insurance_tier, insurance_premium, insurance_claimed")
