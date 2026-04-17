@@ -18,7 +18,9 @@ Deno.serve(async (req) => {
     );
 
     const INACTIVITY_MINUTES = 30;
+    const HARD_TIMEOUT_HOURS = 6;
     const cutoff = new Date(Date.now() - INACTIVITY_MINUTES * 60 * 1000).toISOString();
+    const hardCutoff = new Date(Date.now() - HARD_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString();
 
     // Find live spaces that started more than 30 minutes ago
     const { data: liveSpaces, error: fetchErr } = await supabase
