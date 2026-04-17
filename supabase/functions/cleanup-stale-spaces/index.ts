@@ -83,9 +83,14 @@ Deno.serve(async (req) => {
 
       const anyKeyUserActive = (recentKeyMessages ?? 0) > 0;
 
-      // End space if NO key user is connected AND none have recent chat activity
-      // A connected host/speaker is considered active even without chat messages
-      if (!anyKeyUserPresent && !anyKeyUserActive) {
+      // Force-end if space has been live longer than the hard timeout (e.g. 6 hours),
+      // regardless of participant records — DB left_at can be stale if the host disconnected
+      // without a clean leave event.
+      const pastHardTimeout = space.started_at < hardCutoff;
+
+      // End space if NO key user is connected AND none have recent chat activity,
+      // OR if the space exceeded the hard timeout
+      if (pastHardTimeout || (!anyKeyUserPresent && !anyKeyUserActive)) {
         const now = new Date().toISOString();
 
         // End the space
