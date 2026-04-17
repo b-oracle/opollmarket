@@ -107,11 +107,15 @@ Deno.serve(async (req) => {
           .eq("space_id", space.id)
           .is("left_at", null);
 
+        const reason = pastHardTimeout
+          ? `exceeded the maximum duration of ${HARD_TIMEOUT_HOURS} hours`
+          : `${INACTIVITY_MINUTES} minutes of no host, co-host, or speaker activity`;
+
         // Notify the host
         await supabase.from("notifications").insert({
           user_id: space.host_id,
-          title: "Space Ended (Inactivity) ⏰",
-          message: `Your space "${space.title}" was automatically ended after ${INACTIVITY_MINUTES} minutes of no host, co-host, or speaker activity.`,
+          title: "Space Ended (Auto-Closed) ⏰",
+          message: `Your space "${space.title}" was automatically ended after ${reason}.`,
           type: "info",
         });
 
