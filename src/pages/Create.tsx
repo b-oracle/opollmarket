@@ -1141,8 +1141,11 @@ const Create = () => {
     }
 
     // Save to database
-    const autoResolveDeadline = autoResolve && endDate && autoResolveTime
-      ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString()
+    // For sports markets, use exact kickoff timestamp as the betting cutoff. Otherwise build from endDate + autoResolveTime.
+    const autoResolveDeadline = autoResolve
+      ? (category === "Sports" && sportKickoffISO
+          ? sportKickoffISO
+          : (endDate && autoResolveTime ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString() : null))
       : null;
 
     const marketData = {
