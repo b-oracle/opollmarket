@@ -448,7 +448,17 @@ const AdminMarkets = () => {
       setResolveState(null);
       fetchMarkets();
     } catch (err: any) {
-      toast.error(err?.message || "Failed to resolve market");
+      const msg = err?.message || "";
+      // Resolve-market is a long-running function (payouts + notifications). The supabase-js
+      // client may time out before the function completes, but the resolution still succeeds
+      // server-side. Surface this with a clearer message and refresh so the UI reflects state.
+      if (/Failed to send a request to the Edge Function|Failed to fetch|network|timeout/i.test(msg)) {
+        toast.message("Resolution is processing in the background. Refreshing in a moment…");
+        setTimeout(() => fetchMarkets(), 4000);
+        setResolveState(null);
+      } else {
+        toast.error(msg || "Failed to resolve market");
+      }
     }
     setResolving(false);
   };
