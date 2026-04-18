@@ -746,7 +746,11 @@ const Create = () => {
         auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
         auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) && autoResolveTargetPrice ? parseFloat(autoResolveTargetPrice) : null,
         auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
-        auto_resolve_deadline: autoResolve && endDate && autoResolveTime ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString() : null,
+        auto_resolve_deadline: autoResolve
+          ? (category === "Sports" && sportKickoffISO
+              ? sportKickoffISO
+              : (endDate && autoResolveTime ? new Date(`${endDate}T${autoResolveTime}:00Z`).toISOString() : null))
+          : null,
         sport_type: autoResolve && category === "Sports" ? sportType : null,
         sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
         sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
