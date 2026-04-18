@@ -6,6 +6,7 @@ import { SpaceReplayProvider } from "./hooks/useSpaceReplay";
 import SpaceRoom from "./components/social/SpaceRoom";
 const SpaceReplayModal = lazy(() => import("./components/social/SpaceReplayModal"));
 const SpaceReplayMiniPlayer = lazy(() => import("./components/social/SpaceReplayMiniPlayer"));
+const LiveSpaceFloatingButton = lazy(() => import("./components/social/LiveSpaceFloatingButton"));
 const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
 
 import { Navigate } from "react-router-dom";
@@ -486,6 +487,7 @@ const App = () => {
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
                 <Suspense fallback={null}><SpaceReplayMiniPlayer /></Suspense>
+                <Suspense fallback={null}><LiveSpaceFloatingButton /></Suspense>
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
