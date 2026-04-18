@@ -1,46 +1,58 @@
 
-## Plan: Resolve sports markets based on exact kickoff date+time, not date only
 
-### Problem
-Sports markets currently use `end_date` (a `date` type column — date only, no time). To prevent same-day matches from being closed prematurely by the daily cron, both the user-creation flow and the auto-import flow set `end_date` to **the day AFTER kickoff**. Result:
-- A 7:30 PM Saturday match has `end_date = Sunday`, so the market stays open & accepting bets all the way through the match and into the next day.
-- The "Market Closed/Live" UI logic and `close-expired-markets` cron only see a date, not the kickoff timestamp — so betting cutoff is imprecise (off by up to ~24 hours).
-- Live match resolution timing is therefore based on the wrong signal.
+## Plan: Global Floating "Live Space" Indicator
 
 ### Goal
-Use the actual **kickoff timestamp** (date + time) as the source of truth for closing the betting window, and rely on it (not `end_date`) for resolution timing of sports markets.
+Show a pulsating floating button across the app when there's at least one ongoing space the user can join. It deep-links the user to the Spaces tab (`/feed?tab=spaces`).
 
-### Approach
+### Hide rules
+The button is hidden when:
+- The user is already inside a live space (covered by `SpaceMiniPlayer`).
+- The user is on the social/spaces page (`/feed` with `tab=spaces`).
+- Admin / Business / Embed / Auth routes.
+- No live spaces are visible to the user (`useLiveSpacesCount` returns 0).
+- A space replay mini-player is already on screen (avoid stacking).
 
-**1. Persist the kickoff timestamp**
-Reuse the existing `auto_resolve_deadline` (timestamptz) field as the precise close-time for sports markets:
-- Set `auto_resolve_deadline = kickoff time` when creating sports markets (both user flow in `Create.tsx` and `import-sports-fixtures`).
-- Keep `end_date` set to the day-after-kickoff for backwards compatibility / fallback display, but treat `auto_resolve_deadline` as the authoritative cutoff.
+### What to build
 
-**2. Close sports markets by exact timestamp**
-Update `close-expired-markets` to also close sports auto-resolve markets where `auto_resolve_deadline <= now()` (instead of skipping them entirely). The function already skips them today; we change that to:
-- Non-sports markets → close when `end_date <= today` (unchanged).
-- Sports auto-resolve markets → close when `auto_resolve_deadline <= now()` (new branch).
+**1. New component: `src/components/social/LiveSpaceFloatingButton.tsx`**
+- Uses `useLiveSpacesCount()` to know if any live spaces exist.
+- Uses `useActiveSpace()` to hide itself when the user is already in a space.
+- Uses `useLocation()` to read the current route + `tab` query param; hide on `/feed?tab=spaces`, admin/business/embed/auth/setup-security routes.
+- Renders a fixed circular button:
+  - Position: `fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-[65]` (above BottomNav `z-70`? — use `z-[65]`, sits below BottomNav and below the SpaceMiniPlayer at `z-[70]`, which is correct since miniplayer only shows when joined).
+  - Size: `w-14 h-14` rounded-full, primary gradient background, pulsing ring (Tailwind `animate-ping` halo + scale animation via Framer Motion).
+  - Icon: `Radio` or `Mic` from lucide-react with red "LIVE" dot.
+  - Small numeric badge in the top-right showing live count (cap at 9+).
+- On click: `navigate("/feed?tab=spaces")`.
+- Animated entrance/exit via `framer-motion` `AnimatePresence`.
 
-**3. Resolution logic stays the same**
-`check-sports-resolve` already polls API-Football for match status (`FT`, `AET`, etc.) — that's already time-correct. No change to the resolution decision; we just stop letting people bet after kickoff.
+**2. Mount globally in `src/App.tsx`**
+- Lazy-import the component.
+- Render alongside `GlobalSpaceRoom` (inside `ActiveSpaceProvider`), so it has access to `useActiveSpace`. Wrap in `<Suspense fallback={null}>`.
+- Place outside `Routes` so it persists across navigations.
+
+**3. Ensure `/feed` reads the `tab=spaces` query param**
+Quick check: `Feed.tsx` already imports `useSearchParams`. We'll verify it switches to the Spaces tab when `?tab=spaces` is present (NotificationBell already relies on this behavior, so it should work). No change expected — if the existing handler doesn't auto-switch, I'll add a small `useEffect` in `Feed.tsx` to set the active tab from the query param.
+
+### Visual treatment
+```text
+┌─────────────────┐
+│   🔴 (animate-  │   ← outer pulsing ring (red)
+│      ping ring) │
+│   ┌──────────┐  │
+│   │  🎙 LIVE │  │   ← solid primary circle, white mic icon
+│   │  • count │  │
+│   └──────────┘  │
+└─────────────────┘
+```
 
 ### Files Changed
-
-1. **`src/pages/Create.tsx`** (sports fixture selection block, ~line 2487)
-   - When a fixture is selected, also set `autoResolveTime` (HH:mm) from the kickoff timestamp so `auto_resolve_deadline` is persisted as the exact kickoff.
-   - Continue setting `end_date` to day-after-kickoff (display fallback only).
-
-2. **`supabase/functions/import-sports-fixtures/index.ts`** (~line 417-432)
-   - Set `auto_resolve_deadline = fixtureDate` (the actual kickoff) instead of kickoff + 2h. The 2h grace is no longer needed because `auto_resolve_deadline` is now the **betting cutoff**, and the resolution check (`check-sports-resolve`) polls the API independently for `finished` status.
-
-3. **`supabase/functions/close-expired-markets/index.ts`**
-   - Add a second query for sports auto-resolve markets: close when `auto_resolve_deadline <= now()`.
-   - Merge results and process both lists with the same notification logic.
-
-### Backwards compatibility
-Existing sports markets without `auto_resolve_deadline` will continue to be closed on `end_date` rollover (the existing path still applies if `auto_resolve_deadline IS NULL`). New markets going forward will use precise kickoff timing.
+- **NEW** `src/components/social/LiveSpaceFloatingButton.tsx`
+- `src/App.tsx` — mount the component globally
+- `src/pages/Feed.tsx` — (only if needed) ensure `?tab=spaces` opens the spaces tab on load
 
 ### Out of scope
-- The market-detail "Live/Closed" badge already uses backend status, so once the cron flips status to `ended` at kickoff, the UI updates automatically.
-- No DB migration required — we're reusing the existing `auto_resolve_deadline` column.
+- Changing the existing `SpaceMiniPlayer` (it already handles the "already joined" case).
+- Modifying the live spaces RPC or realtime channel — `useLiveSpacesCount` already invalidates on any `spaces` table change.
+
