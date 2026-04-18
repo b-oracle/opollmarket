@@ -294,13 +294,22 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
 
   const handleEndSpace = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const { error } = await supabase
-      .from("spaces")
-      .update({ status: "ended", ended_at: new Date().toISOString() })
-      .eq("id", space.id);
-    if (error) { toast.error("Failed to end"); return; }
-    queryClient.invalidateQueries({ queryKey: ["spaces"] });
-    toast.success("Space ended");
+    if (!user || user.id !== space.host_id) return;
+    if (!confirm("End this space for everyone?")) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("livekit-token", {
+        body: { space_id: space.id, action: "end_space" },
+      });
+      if (error || (data as any)?.error) {
+        toast.error((data as any)?.error || error?.message || "Failed to end");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["spaces"] });
+      queryClient.invalidateQueries({ queryKey: ["space-participant", space.id] });
+      toast.success("Space ended");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to end");
+    }
   };
 
   const handleCardClick = () => {
