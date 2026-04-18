@@ -505,6 +505,8 @@ const Create = () => {
   const [sportPredictedOutcome, setSportPredictedOutcome] = useState("");
   const [sportLeague, setSportLeague] = useState("");
   const [selectedFixtureData, setSelectedFixtureData] = useState<{ homeTeam: string; awayTeam: string; date: string; league: string; venue: string } | null>(null);
+  // Exact kickoff timestamp (ISO) for sports markets — used as the authoritative auto_resolve_deadline (betting cutoff)
+  const [sportKickoffISO, setSportKickoffISO] = useState<string | null>(null);
 
   // Twitter/X auto-resolve state
   const [twitterResourceId, setTwitterResourceId] = useState("");
