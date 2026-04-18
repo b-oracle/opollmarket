@@ -17,34 +17,62 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Find all active markets whose end_date has passed (including today)
+    // Find all active markets to close.
+    // Two branches:
+    //   (a) Non-sports / non-auto-resolve markets — close when end_date <= today (date-only column)
+    //   (b) Sports auto-resolve markets — close at exact kickoff (auto_resolve_deadline <= now())
+    //       so betting is locked the moment the match starts.
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const nowIso = new Date().toISOString();
 
-    // Skip sports auto-resolve markets — those are handled by the sports resolution system
-    // and their end_date (date-only column) can't precisely represent kickoff + 3h
-    const { data: expiredMarkets, error: fetchError } = await supabase
-      .from("markets")
-      .select("id, title, creator_wallet")
-      .eq("status", "active")
-      .lte("end_date", today)
-      .or("sport_match_id.is.null,auto_resolve.eq.false");
+    const [genericRes, sportsRes] = await Promise.all([
+      supabase
+        .from("markets")
+        .select("id, title, creator_wallet")
+        .eq("status", "active")
+        .lte("end_date", today)
+        .or("sport_match_id.is.null,auto_resolve.eq.false"),
+      supabase
+        .from("markets")
+        .select("id, title, creator_wallet")
+        .eq("status", "active")
+        .eq("auto_resolve", true)
+        .not("sport_match_id", "is", null)
+        .not("auto_resolve_deadline", "is", null)
+        .lte("auto_resolve_deadline", nowIso),
+    ]);
 
-    if (fetchError) {
-      console.error("Fetch error:", fetchError);
-      return new Response(JSON.stringify({ error: fetchError.message }), {
+    if (genericRes.error) {
+      console.error("Generic fetch error:", genericRes.error);
+      return new Response(JSON.stringify({ error: genericRes.error.message }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
+    if (sportsRes.error) {
+      console.error("Sports fetch error:", sportsRes.error);
+      return new Response(JSON.stringify({ error: sportsRes.error.message }), {
         status: 500,
         headers: corsHeaders,
       });
     }
 
-    if (!expiredMarkets || expiredMarkets.length === 0) {
+    // Merge & dedupe
+    const seen = new Set<string>();
+    const expiredMarkets = [...(genericRes.data || []), ...(sportsRes.data || [])].filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+
+    if (expiredMarkets.length === 0) {
       return new Response(
         JSON.stringify({ message: "No expired markets found", closed: 0 }),
         { headers: corsHeaders }
       );
     }
 
-    console.log(`Found ${expiredMarkets.length} expired market(s) to close`);
+    console.log(`Found ${expiredMarkets.length} expired market(s) to close (${genericRes.data?.length ?? 0} generic, ${sportsRes.data?.length ?? 0} sports)`);
 
     let closed = 0;
 
