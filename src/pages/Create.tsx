@@ -2486,12 +2486,20 @@ const Create = () => {
                                 ? `**Fight Details**\n- **Fighter 1:** ${fixture.homeTeam}\n- **Fighter 2:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **Event:** ${fixture.league || "TBD"}\n\n**Resolution**\nThis market will be auto-resolved based on the official fight result (Fight ID: ${fixture.id}).`
                                 : `**Match Details**\n- **Home:** ${fixture.homeTeam}\n- **Away:** ${fixture.awayTeam}\n- **Date:** ${matchDate}\n- **League:** ${fixture.league || "TBD"}\n${fixture.venue ? `- **Venue:** ${fixture.venue}\n` : ""}\n**Resolution**\nThis market will be auto-resolved based on the official match result from API-Football (Match ID: ${fixture.id}).`);
                             }
-                            if (!endDate && fixture.date) {
+                            if (fixture.date) {
                               try {
-                                // Set end_date to DAY AFTER kickoff to prevent premature market closure
+                                // Persist exact kickoff (ISO) — this becomes the betting cutoff (auto_resolve_deadline)
                                 const kickoff = new Date(fixture.date);
-                                const dayAfter = new Date(kickoff.getTime() + 24 * 60 * 60 * 1000);
-                                setEndDate(dayAfter.toISOString().split("T")[0]);
+                                setSportKickoffISO(kickoff.toISOString());
+                                // Also update the visible time picker so the UI reflects kickoff
+                                const hh = String(kickoff.getUTCHours()).padStart(2, "0");
+                                const mm = String(kickoff.getUTCMinutes()).padStart(2, "0");
+                                setAutoResolveTime(`${hh}:${mm}`);
+                                if (!endDate) {
+                                  // end_date stays as day-after-kickoff (display fallback only); auto_resolve_deadline is authoritative
+                                  const dayAfter = new Date(kickoff.getTime() + 24 * 60 * 60 * 1000);
+                                  setEndDate(dayAfter.toISOString().split("T")[0]);
+                                }
                               } catch {}
                             }
                           }
