@@ -12,6 +12,7 @@ import { useAdminContext } from "./AdminLayout";
 import { Badge } from "@/components/ui/badge";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { logAuditEvent } from "@/lib/auditLog";
+import { resetOnboarding, hasCompletedOnboarding } from "@/hooks/useFirstRun";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },
@@ -525,6 +526,42 @@ const AdminSettings = () => {
                 {fcmTestResult}
               </pre>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Onboarding Reset (super admin) ─── */}
+      {isSuperAdmin && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Onboarding Flow
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Reset the first-run welcome carousel for this device. Next reload will route to <code>/welcome</code>.
+              Current state: <strong>{hasCompletedOnboarding() ? "Onboarded" : "First-run"}</strong>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  resetOnboarding();
+                  toast.success("Onboarding reset — reload to see /welcome");
+                }}
+              >
+                <RefreshCw className="w-3 h-3 mr-2" /> Reset Onboarding
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => window.open("/welcome", "_blank")}
+              >
+                Preview Welcome
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

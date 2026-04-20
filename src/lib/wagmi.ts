@@ -6,7 +6,7 @@ const projectId = '6c625cc1764d2b59af4ebb27a7253cc7';
 
 export const wagmiAdapter = new WagmiAdapter({
   projectId,
-  networks: [bsc],
+  networks: [bsc as any],
 });
 
 export const config = wagmiAdapter.wagmiConfig;
@@ -14,7 +14,7 @@ export const config = wagmiAdapter.wagmiConfig;
 createAppKit({
   adapters: [wagmiAdapter],
   projectId,
-  networks: [bsc],
+  networks: [bsc as any],
   metadata: {
     name: 'OPOLL',
     description: 'Social Prediction Market',

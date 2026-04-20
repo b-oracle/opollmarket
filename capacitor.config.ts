@@ -23,6 +23,22 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: false, // JS hides it after first paint via bootNativeUI()
+      backgroundColor: '#000000',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+      useDialog: false,
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#000000',
+      overlaysWebView: false,
+    },
   },
 };
 
