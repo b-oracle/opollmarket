@@ -32,11 +32,20 @@ import DeferredMount from "./components/DeferredMount";
 import { VerificationThresholdProvider } from "./components/NftBadge";
 import { useNativePush } from "./hooks/useNativePush";
 import { useCallDeepLink } from "./hooks/useCallDeepLink";
+import { useFirstRun } from "./hooks/useFirstRun";
+import AppSplash from "./components/AppSplash";
+import { bootNativeUI } from "./lib/nativeUI";
 
 // Tiny mount-only component so the native push hook runs inside providers (AuthProvider)
 const NativePushRegistrar = () => {
   useNativePush();
   useCallDeepLink();
+  return null;
+};
+
+// Runs inside <BrowserRouter> so it can use react-router hooks.
+const FirstRunRedirector = () => {
+  useFirstRun();
   return null;
 };
 
@@ -112,6 +121,7 @@ const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
+const Welcome = lazy(() => import("./pages/Welcome"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
