@@ -1,4 +1,6 @@
 import { createRoot } from "react-dom/client";
+import { Capacitor } from "@capacitor/core";
+import { SplashScreen } from "@capacitor/splash-screen";
 import App from "./App.tsx";
 import "./index.css";
 import { cleanupBlockedPwaContext, isPwaBlockedContext } from "./lib/pwa";
@@ -144,6 +146,21 @@ if (!rootElement) {
 }
 
 createRoot(rootElement).render(<App />);
+
+// Native splash stays visible (launchAutoHide: false) until the app has mounted,
+// then fades out — avoids any flash of unstyled/empty content on cold start.
+if (Capacitor.isNativePlatform()) {
+  const hideSplash = () => {
+    SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {
+      // Ignore — plugin not available or already hidden.
+    });
+  };
+  if (document.readyState === "complete") {
+    window.setTimeout(hideSplash, 50);
+  } else {
+    window.addEventListener("load", () => window.setTimeout(hideSplash, 50), { once: true });
+  }
+}
 
 // One-time blank-screen recovery: if app failed to mount any UI, clear stale SW/cache and reload.
 window.setTimeout(async () => {

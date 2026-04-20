@@ -1,22 +1,34 @@
+/// <reference types="@capacitor/splash-screen" />
+
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f',
+  appId: 'com.opollmarket.app',
   appName: 'opollmarket',
   webDir: 'dist',
-  server: {
-    url: 'https://fbc135e2-c42c-4d3f-bb3e-e7385ced809f.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
-  ios: {
-    backgroundColor: '#000000',
-    contentInset: 'automatic',
-  },
   plugins: {
-    CapacitorBackgroundMode: {
-      enabled: true,
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: false,
+      launchFadeOutDuration: 300,
+      backgroundColor: '#000000',
+      androidSplashResourceName: 'splash',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
     },
   },
+  android: {
+    buildOptions: {
+      keystorePath: '/Users/macbook/opollmarket-r-key.jks',
+      keystorePassword: 'thelastofus1',
+      keystoreAlias: 'opollmarket',
+      keystoreAliasPassword: 'thelastofus1',
+      releaseType: 'AAB',
+  
+    },
+  }
 };
 
 export default config;
