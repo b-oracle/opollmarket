@@ -5,8 +5,12 @@ const config: CapacitorConfig = {
   appName: 'opollmarket',
   webDir: 'dist',
   server: {
-    url: 'https://fbc135e2-c42c-4d3f-bb3e-e7385ced809f.lovableproject.com?forceHideBadge=true',
-    cleartext: true
+    // Production URL so OAuth (Google sign-in) redirects resolve correctly
+    // on the native Android/iOS build. For local hot-reload during dev,
+    // temporarily swap this to your Lovable preview URL, then revert before
+    // running `npx cap sync` for a release build.
+    url: 'https://www.opoll.org',
+    cleartext: true,
   },
   ios: {
     backgroundColor: '#000000',
@@ -15,6 +19,9 @@ const config: CapacitorConfig = {
   plugins: {
     CapacitorBackgroundMode: {
       enabled: true,
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
 };
