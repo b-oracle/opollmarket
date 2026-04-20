@@ -490,6 +490,7 @@ const App = () => {
                   <Suspense fallback={null}><AimtellProvider /></Suspense>
                   <SocialTutorialTrigger />
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
+                  <NativePushRegistrar />
                 </DeferredMount>
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
