@@ -1,143 +1,86 @@
 
-## Native Calls — What's Left for the Capacitor Build
+## Native-feel Splash + Onboarding for the Capacitor App
 
-The web/server side is done. Below is everything still required to make WhatsApp-style native calls actually ring on a physical Android device. iOS is intentionally deferred (you don't have the VoIP cert yet).
-
-### Status snapshot
-
-Done already:
-- `send-fcm-push` sends data-only FCM with `is_call: true` and HIGH priority
-- `dm-call-token` includes `caller_name`, `caller_avatar`, `conversation_id` in the payload
-- `useCallDeepLink` hook parses `opoll://call/accept?...`
-- `IncomingCallBanner` auto-accepts when `auto_accept=1` is in the URL
-- Reference Kotlin/XML files exist in `android-native-ref/`
-
-Not done — required to ring on lockscreen:
+Goal: when a user opens the installed Android/iOS app (or hits the web for the first time), they see a polished splash screen followed by a swipeable onboarding carousel — indistinguishable from a hand-built native app. Web visitors who already use the product won't see it again.
 
 ---
 
-### 1. Eject to a custom Capacitor Android project (one-time)
+### What gets built
 
-Despia's wrapper cannot host the native code. You need your own Android Studio project.
+**1. Native splash (Capacitor-controlled, before JS even boots)**
+- Add `@capacitor/splash-screen` plugin.
+- Configure in `capacitor.config.ts`:
+  - 2s auto-hide, dark background `#000000`, fade animation, no spinner.
+  - Use `splash.png` (2732×2732, centered logo on black) + `splash_dark.png`.
+- Generate platform splash assets with `@capacitor/assets` from a single `assets/splash.png` + `assets/icon.png`.
+- Hide the splash from JS once the React tree mounts AND auth state has been resolved (so users don't see a flash of the login screen).
 
-```bash
-git pull                  # pull the latest from GitHub
-npm install
-npx cap add android
-npm run build
-npx cap sync android
-npx cap open android      # opens Android Studio
+**2. In-app animated splash (web + native fallback)**
+- New component `src/components/AppSplash.tsx`: full-screen black overlay with the OPOLL logo scaling/fading in, primary cyan glow pulse, then fades out.
+- Renders for ~1.2s on every cold boot of the SPA (covers the gap between Capacitor splash hide and first meaningful paint, and gives PWA/web users the same feel).
+- Mounted at the top of `App.tsx`, controlled by a single `useState` + `sessionStorage` flag so it only shows once per session.
+
+**3. Onboarding carousel (first-run only)**
+- New route `/welcome` and component `src/pages/Welcome.tsx`.
+- 4 swipeable slides using Framer Motion + touch gestures (no extra deps):
+  1. **Predict anything** — markets hero illustration, tagline.
+  2. **Trade in seconds** — Quick Trade preview, "lightning-fast parimutuel rounds".
+  3. **Earn with your circle** — Copy trading + referrals.
+  4. **Go social** — Spaces, DMs, Stories.
+- Each slide: full-bleed gradient background, large icon/illustration, headline (Space Grotesk 32px), 1-line subtext, page indicator dots.
+- Bottom CTAs: `Skip` (top-right) and `Next` → final slide shows `Get Started` which routes to `/auth`.
+- Uses existing design tokens (`--primary`, `--neon-yes`, glass utilities) — no new colors.
+
+**4. First-run gating**
+- New hook `src/hooks/useFirstRun.ts`:
+  - Reads `localStorage.opoll_onboarded_v1`.
+  - On native (Capacitor.isNativePlatform()) AND not onboarded → redirect to `/welcome` from `/`.
+  - On web, only redirect if the user lands on `/` unauthenticated and has never visited before (keeps SEO landing intact for crawlers via a `?skip_onboarding=1` bypass and a user-agent check for bots — bots see `/index` directly).
+- Mark complete when user taps `Get Started` or `Skip`.
+- Reset button hidden in **Admin Settings → Diagnostics** (super admin only) for QA.
+
+**5. Polish**
+- Status bar plugin (`@capacitor/status-bar`): set to dark style, transparent on Android, matches splash background.
+- Edge-to-edge: respect existing `--safe-top` / `--safe-bottom` vars on the welcome screen.
+- Haptic feedback on slide change (Capacitor `Haptics.impact({ style: Light })`) — no-ops on web.
+- Preload onboarding slide images so transitions are instant.
+
+---
+
+### Files to create
+
+- `src/pages/Welcome.tsx` — onboarding carousel
+- `src/components/AppSplash.tsx` — animated in-app splash overlay
+- `src/components/onboarding/OnboardingSlide.tsx` — single slide presenter
+- `src/hooks/useFirstRun.ts` — gating logic + reset helper
+- `src/lib/nativeUI.ts` — small wrapper for `SplashScreen.hide()`, `StatusBar.setStyle()`, `Haptics.impact()` (safe no-ops on web)
+- `public/onboarding/slide-1.webp` … `slide-4.webp` — illustrations (generated)
+- `public/splash.png` + `public/splash_dark.png` — Capacitor splash sources
+
+### Files to edit
+
+- `package.json` — add `@capacitor/splash-screen`, `@capacitor/status-bar`, `@capacitor/haptics`, `@capacitor/assets` (dev)
+- `capacitor.config.ts` — add `SplashScreen` plugin config (launchAutoHide false, background `#000000`, fade)
+- `src/App.tsx` — mount `<AppSplash />`, register `/welcome` route, call `useFirstRun()` and `nativeUI.boot()` once
+- `src/pages/admin/AdminSettings.tsx` — add "Reset Onboarding" button under super-admin diagnostics
+
+### Native generation step (user runs locally after pulling)
+
+```
+npx @capacitor/assets generate --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'
+npx cap sync
 ```
 
-After this, `android/` is committed to your repo and you maintain it like any native app.
+This regenerates iOS `LaunchScreen.storyboard` and Android `splash.png` densities from the single source images.
 
 ---
 
-### 2. Add Firebase to the Android project
+### What stays out of scope
 
-1. Create a Firebase project (or reuse the one whose Service Account JSON you pasted into `FCM_SERVICE_ACCOUNT_JSON`).
-2. Add an Android app with package id `app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f` (matches `capacitor.config.ts`).
-3. Download `google-services.json` → place in `android/app/`.
-4. In `android/build.gradle` add classpath `com.google.gms:google-services:4.4.2`.
-5. In `android/app/build.gradle` apply `com.google.gms.google-services` and add:
-   ```
-   implementation platform('com.google.firebase:firebase-bom:33.5.1')
-   implementation 'com.google.firebase:firebase-messaging-ktx'
-   ```
+- iOS CallKit / VoIP push (still parked until the certificate is generated).
+- Permission pre-prompts (notifications, mic) — kept on the existing in-app modals so we don't trigger system prompts during onboarding.
+- A/B testing or analytics on slide drop-off — can be added later if needed.
 
----
+### Effort
 
-### 3. Drop in the native call files
-
-Copy from `android-native-ref/` into the new Android project (replace `<your.package>` with `app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f`):
-
-| Source | Destination |
-|---|---|
-| `CallMessagingService.kt` | `android/app/src/main/java/<pkg>/CallMessagingService.kt` |
-| `IncomingCallActivity.kt` | `android/app/src/main/java/<pkg>/IncomingCallActivity.kt` |
-| `CallActionReceiver.kt` | `android/app/src/main/java/<pkg>/CallActionReceiver.kt` |
-| `activity_incoming_call.xml` | `android/app/src/main/res/layout/activity_incoming_call.xml` |
-| `AndroidManifest.additions.xml` | merge into `android/app/src/main/AndroidManifest.xml` |
-
-Also add a ringtone:
-- `android/app/src/main/res/raw/ringtone.mp3` (any short looping mp3, ≤ 1 MB)
-
----
-
-### 4. Wire the FCM token up to Supabase
-
-The activity rings only if the device is registered. You need a tiny native bridge that calls `FirebaseMessaging.getInstance().token` on app start and sends it to your existing `user_fcm_tokens` table.
-
-Two options (pick one in implementation):
-
-- **Use the existing `@capacitor/push-notifications` plugin** — it already exposes the FCM token on Android. Hook it into your current `useNativePush` hook so on native Android it upserts into `user_fcm_tokens` with `platform = 'android'`.
-- **Write a tiny custom Capacitor plugin** that listens to `CallMessagingService.onNewToken` and forwards to JS. Heavier; only needed if push-notifications plugin doesn't fire reliably.
-
-Recommended: extend `useNativePush` (already in repo) to handle the Android FCM token path.
-
----
-
-### 5. Permissions & Android 14+ gotcha
-
-Manifest already includes `USE_FULL_SCREEN_INTENT`, `POST_NOTIFICATIONS`, `WAKE_LOCK`, etc. Two runtime steps needed:
-
-1. **POST_NOTIFICATIONS** — request at runtime on first launch (Android 13+). The push-notifications plugin handles this if you call `requestPermissions()`.
-2. **USE_FULL_SCREEN_INTENT** on Android 14+ — Google now restricts this to dialer/messaging apps by default. For everyone else, the user must grant it in *Settings → Apps → Special access*. Add a one-time prompt that opens:
-   ```
-   Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT
-   ```
-   This is a small Capacitor plugin call or can be done from `MainActivity` on first launch.
-
-Without step 2, the lockscreen UI silently degrades to a heads-up notification on Android 14+.
-
----
-
-### 6. Verify the deep-link intent filter
-
-`AndroidManifest.additions.xml` declares the `opoll://` scheme on `MainActivity`. After merging, confirm the existing Capacitor `MainActivity` block has the filter — the additions file shows the pattern. Without this, tapping Accept opens the app but doesn't route to the call.
-
----
-
-### 7. Build, install, and test
-
-```bash
-npm run build
-npx cap sync android
-npx cap run android        # plug in a real device — emulators are flaky for FCM
-```
-
-End-to-end test checklist:
-1. Sign in on the device → confirm an `android` row appears in `user_fcm_tokens` for your user.
-2. Lock the device.
-3. From another account, start a voice call to that user.
-4. Lockscreen should ring with caller name + Accept/Decline within ~3 seconds.
-5. Tap Accept → app opens directly into the call thread, mic engaged.
-6. Tap Decline → notification dismisses, caller sees "call rejected".
-7. Use **Admin Settings → FCM Push Diagnostics** with the device token to dry-run the FCM v1 path if anything fails.
-
----
-
-### 8. (Later) iOS CallKit prerequisites
-
-When you're ready for iOS:
-- Generate VoIP Services Certificate (.p8 preferred) in Apple Developer portal
-- Add `@capacitor-community/callkit` + PushKit handler
-- New edge function or branch in `dm-call-token` to send to APNs `voip` topic
-- Add `user_voip_tokens` table for PushKit tokens (separate from APNs tokens)
-
-Not in scope for this round — flagged so you know what's coming.
-
----
-
-### Effort estimate
-
-| Step | Time |
-|---|---|
-| Eject + Firebase setup | 30–45 min |
-| Copy native files + manifest merge | 15 min |
-| FCM token bridge in `useNativePush` | 30 min |
-| Full-screen intent permission flow (Android 14+) | 20 min |
-| End-to-end testing on device | 30–60 min |
-| **Total** | **~2–3 hours** of native work, mostly local |
-
-All of it happens in your local checkout + Android Studio. No more Lovable-side server changes are required for the Android call path.
+~45 min of Lovable-side work. After approval the user only needs to run `npm install`, `npx @capacitor/assets generate`, `npx cap sync`, then rebuild in Android Studio / Xcode to see the native splash. The web/PWA splash + onboarding ships immediately on next deploy.
