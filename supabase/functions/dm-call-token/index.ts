@@ -220,6 +220,12 @@ Deno.serve(async (req) => {
           url: `/messages/${conversation_id}`,
           is_call: true,
           call_id: callData.id,
+          data: {
+            caller_id: user.id,
+            caller_name: callerProfile?.display_name || "Someone",
+            caller_avatar: callerProfile?.avatar_url || "",
+            conversation_id,
+          },
         });
         // Fire both in parallel — web push (browsers/PWA) and FCM (native app)
         await Promise.all([
