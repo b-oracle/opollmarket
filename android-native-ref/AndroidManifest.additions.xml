@@ -1,0 +1,57 @@
+<!--
+  Merge these into android/app/src/main/AndroidManifest.xml
+
+  1) Add <uses-permission> entries inside <manifest>
+  2) Add <service>, <activity>, <receiver> entries inside <application>
+  3) Add intent-filter for the opoll:// scheme on your MainActivity
+-->
+
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+<uses-permission android:name="android.permission.VIBRATE" />
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
+<uses-permission android:name="android.permission.TURN_SCREEN_ON" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+<application ...>
+
+    <!-- FCM data-only receiver that triggers the full-screen intent -->
+    <service
+        android:name=".CallMessagingService"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+    </service>
+
+    <!-- Lockscreen incoming-call UI -->
+    <activity
+        android:name=".IncomingCallActivity"
+        android:exported="true"
+        android:launchMode="singleTask"
+        android:excludeFromRecents="true"
+        android:showOnLockScreen="true"
+        android:showWhenLocked="true"
+        android:turnScreenOn="true"
+        android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
+
+    <!-- Accept/Decline broadcast -->
+    <receiver
+        android:name=".CallActionReceiver"
+        android:exported="false" />
+
+    <!-- Deep-link on MainActivity so tapping Accept lands in the webview route -->
+    <activity
+        android:name=".MainActivity"
+        ...>
+        <intent-filter android:autoVerify="false">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="opoll" />
+        </intent-filter>
+    </activity>
+
+</application>

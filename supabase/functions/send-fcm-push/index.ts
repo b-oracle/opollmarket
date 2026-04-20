@@ -250,28 +250,57 @@ Deno.serve(async (req) => {
     }
 
     for (const row of tokens) {
-      const message = {
-        token: row.token,
-        notification: { title, body: body || "" },
-        data: stringifiedData,
-        android: {
-          priority: "HIGH",
-          notification: {
-            channel_id: is_call ? "incoming_calls" : "default",
-            sound: is_call ? "ringtone" : "default",
-            click_action: "FCM_PLUGIN_ACTIVITY",
-          },
-        },
-        apns: {
-          headers: { "apns-priority": "10" },
-          payload: {
-            aps: {
-              sound: is_call ? "ringtone.caf" : "default",
-              "content-available": 1,
+      // For calls: send a DATA-ONLY message so our Android
+      // FirebaseMessagingService always handles it and can trigger a
+      // full-screen intent (ConnectionService/CallKit-style lockscreen UI).
+      // For non-calls: keep notification+data so the system tray handles display.
+      const message: Record<string, unknown> = is_call
+        ? {
+            token: row.token,
+            data: {
+              ...stringifiedData,
+              type: "incoming_call",
+              title: String(title),
+              body: String(body || ""),
+              caller_id: stringifiedData.caller_id || "",
+              caller_name: stringifiedData.caller_name || String(title),
+              caller_avatar: stringifiedData.caller_avatar || "",
             },
-          },
-        },
-      };
+            android: {
+              priority: "HIGH",
+              // no `notification` block — data-only so our service runs
+              ttl: "45s",
+            },
+            apns: {
+              headers: { "apns-priority": "10", "apns-push-type": "alert" },
+              payload: {
+                aps: {
+                  sound: "ringtone.caf",
+                  "content-available": 1,
+                  "mutable-content": 1,
+                },
+              },
+            },
+          }
+        : {
+            token: row.token,
+            notification: { title, body: body || "" },
+            data: stringifiedData,
+            android: {
+              priority: "HIGH",
+              notification: {
+                channel_id: "default",
+                sound: "default",
+                click_action: "FCM_PLUGIN_ACTIVITY",
+              },
+            },
+            apns: {
+              headers: { "apns-priority": "10" },
+              payload: {
+                aps: { sound: "default", "content-available": 1 },
+              },
+            },
+          };
 
       const res = await fetch(
         `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,

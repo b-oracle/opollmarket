@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- android/app/src/main/res/layout/activity_incoming_call.xml -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <TextView
+        android:id="@+id/caller_sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Incoming voice call"
+        android:textColor="#93A3B8"
+        android:textSize="14sp"
+        android:letterSpacing="0.08"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="120dp"/>
+
+    <TextView
+        android:id="@+id/caller_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Caller"
+        android:textColor="#FFFFFF"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/caller_sub"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+    <Button
+        android:id="@+id/btn_decline"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:text="End"
+        android:textColor="#FFFFFF"
+        android:background="@android:color/holo_red_dark"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginBottom="96dp"
+        android:layout_marginStart="48dp"/>
+
+    <Button
+        android:id="@+id/btn_accept"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
+        android:text="Accept"
+        android:textColor="#FFFFFF"
+        android:background="@android:color/holo_green_dark"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="96dp"
+        android:layout_marginEnd="48dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -31,10 +31,12 @@ import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import DeferredMount from "./components/DeferredMount";
 import { VerificationThresholdProvider } from "./components/NftBadge";
 import { useNativePush } from "./hooks/useNativePush";
+import { useCallDeepLink } from "./hooks/useCallDeepLink";
 
 // Tiny mount-only component so the native push hook runs inside providers (AuthProvider)
 const NativePushRegistrar = () => {
   useNativePush();
+  useCallDeepLink();
   return null;
 };
 
