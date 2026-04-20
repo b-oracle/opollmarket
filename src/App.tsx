@@ -478,6 +478,8 @@ const App = () => {
     } catch {
       // ignore storage access errors
     }
+    // Hide native splash + configure status bar (no-op on web)
+    void bootNativeUI();
   }, []);
 
   return (
@@ -490,10 +492,12 @@ const App = () => {
             <SpaceReplayProvider>
             <SidebarStateProvider>
               <TooltipProvider>
+                <AppSplash />
                 <Toaster />
                 <Sonner />
                 <PWAUpdatePrompt />
                 <BrowserRouter>
+                <FirstRunRedirector />
                 {/* IncomingCallBanner must be OUTSIDE ConditionalWagmiProvider so it persists across all route changes */}
                 <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalWagmiProvider>
@@ -517,6 +521,7 @@ const App = () => {
                       <LoginSecurityGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
+                        <Route path="/welcome" element={<Welcome />} />
                         <Route path="/index" element={<Navigate to="/" replace />} />
                         <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
