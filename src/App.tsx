@@ -30,6 +30,13 @@ import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTuto
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import DeferredMount from "./components/DeferredMount";
 import { VerificationThresholdProvider } from "./components/NftBadge";
+import { useNativePush } from "./hooks/useNativePush";
+
+// Tiny mount-only component so the native push hook runs inside providers (AuthProvider)
+const NativePushRegistrar = () => {
+  useNativePush();
+  return null;
+};
 
 const PendingCopyTrades = lazy(() => import("./components/PendingCopyTrades"));
 const AimtellProvider = lazy(() => import("./components/AimtellProvider"));
@@ -483,6 +490,7 @@ const App = () => {
                   <Suspense fallback={null}><AimtellProvider /></Suspense>
                   <SocialTutorialTrigger />
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
+                  <NativePushRegistrar />
                 </DeferredMount>
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
