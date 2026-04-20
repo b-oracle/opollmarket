@@ -113,6 +113,30 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [fcmTesting, setFcmTesting] = useState(false);
+  const [fcmTestToken, setFcmTestToken] = useState("");
+  const [fcmTestResult, setFcmTestResult] = useState<string | null>(null);
+
+  const runFcmTest = async () => {
+    setFcmTesting(true);
+    setFcmTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-push", {
+        body: { test: true, token: fcmTestToken.trim() || undefined },
+      });
+      if (error) {
+        setFcmTestResult(`Invoke error: ${error.message}`);
+      } else {
+        setFcmTestResult(JSON.stringify(data, null, 2));
+        if ((data as any)?.ok) toast.success("FCM credentials valid");
+        else toast.error(`FCM test failed at ${(data as any)?.stage ?? "unknown"}`);
+      }
+    } catch (e) {
+      setFcmTestResult(`Error: ${(e as Error).message}`);
+    } finally {
+      setFcmTesting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
