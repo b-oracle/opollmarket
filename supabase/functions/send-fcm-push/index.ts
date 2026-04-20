@@ -1,11 +1,98 @@
-// Sends a high-priority FCM push to a user's native Android/iOS devices.
-// Requires FCM_SERVER_KEY secret (Legacy server key from Firebase Console).
+// Sends a high-priority FCM push via HTTP v1 API (OAuth2 service account auth).
+// Required secrets:
+//   FCM_SERVICE_ACCOUNT_JSON — full service account JSON from Firebase Console
+//   FCM_PROJECT_ID           — Firebase project ID (e.g. "opollmarket-e7a92")
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// ---- Google OAuth2 token (service-account JWT bearer) --------------------
+
+let cachedToken: { token: string; expiresAt: number } | null = null;
+
+function base64url(bytes: Uint8Array): string {
+  let s = "";
+  bytes.forEach((b) => (s += String.fromCharCode(b)));
+  return btoa(s).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+}
+
+function strToBytes(s: string): Uint8Array {
+  return new TextEncoder().encode(s);
+}
+
+function pemToDer(pem: string): Uint8Array {
+  const b64 = pem
+    .replace(/-----BEGIN [^-]+-----/g, "")
+    .replace(/-----END [^-]+-----/g, "")
+    .replace(/\s+/g, "");
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function getAccessToken(sa: {
+  client_email: string;
+  private_key: string;
+}): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.token;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const claim = {
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now,
+    exp: now + 3600,
+  };
+
+  const encHeader = base64url(strToBytes(JSON.stringify(header)));
+  const encClaim = base64url(strToBytes(JSON.stringify(claim)));
+  const toSign = `${encHeader}.${encClaim}`;
+
+  const keyDer = pemToDer(sa.private_key.replace(/\\n/g, "\n"));
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    keyDer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = new Uint8Array(
+    await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, strToBytes(toSign)),
+  );
+  const jwt = `${toSign}.${base64url(sig)}`;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+
+  const tokenJson = await tokenRes.json();
+  if (!tokenRes.ok || !tokenJson.access_token) {
+    throw new Error(
+      `OAuth2 token error: ${tokenRes.status} ${JSON.stringify(tokenJson)}`,
+    );
+  }
+
+  cachedToken = {
+    token: tokenJson.access_token,
+    expiresAt: Date.now() + (tokenJson.expires_in ?? 3600) * 1000,
+  };
+  return cachedToken.token;
+}
+
+// ---- Handler -------------------------------------------------------------
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -19,17 +106,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    const serverKey = Deno.env.get("FCM_SERVER_KEY");
-    if (!serverKey) {
-      return new Response(JSON.stringify({ error: "FCM_SERVER_KEY not configured", sent: 0 }), {
-        status: 200, // non-fatal: web push still works via send-push
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const saJsonRaw = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
+    const projectId = Deno.env.get("FCM_PROJECT_ID");
+
+    if (!saJsonRaw || !projectId) {
+      // Non-fatal: web push still works via send-push
+      return new Response(
+        JSON.stringify({
+          sent: 0,
+          reason: "FCM_SERVICE_ACCOUNT_JSON or FCM_PROJECT_ID not configured",
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+
+    let sa: { client_email: string; private_key: string };
+    try {
+      sa = JSON.parse(saJsonRaw);
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "FCM_SERVICE_ACCOUNT_JSON is not valid JSON" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (!sa.client_email || !sa.private_key) {
+      return new Response(
+        JSON.stringify({ error: "Service account JSON missing client_email or private_key" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const accessToken = await getAccessToken(sa);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: tokens } = await supabase
@@ -46,51 +157,70 @@ Deno.serve(async (req) => {
     const expired: string[] = [];
     let sent = 0;
 
+    // FCM v1 is single-token per request. Fan out sequentially.
+    const stringifiedData: Record<string, string> = {
+      url: url || "/",
+      is_call: is_call ? "true" : "false",
+      call_id: call_id || "",
+    };
+    if (data && typeof data === "object") {
+      for (const [k, v] of Object.entries(data)) {
+        stringifiedData[k] = typeof v === "string" ? v : JSON.stringify(v);
+      }
+    }
+
     for (const row of tokens) {
-      // High-priority, heads-up notification. For calls we use a special channel
-      // with ringtone sound so it rings even when app is closed.
-      const payload: Record<string, unknown> = {
-        to: row.token,
-        priority: "high",
-        notification: {
-          title,
-          body: body || "",
-          sound: is_call ? "ringtone" : "default",
-          android_channel_id: is_call ? "incoming_calls" : "default",
-          click_action: "FCM_PLUGIN_ACTIVITY",
-        },
-        data: {
-          ...(data || {}),
-          url: url || "/",
-          is_call: is_call ? "true" : "false",
-          call_id: call_id || "",
-        },
+      const message = {
+        token: row.token,
+        notification: { title, body: body || "" },
+        data: stringifiedData,
         android: {
-          priority: "high",
+          priority: "HIGH",
           notification: {
             channel_id: is_call ? "incoming_calls" : "default",
             sound: is_call ? "ringtone" : "default",
+            click_action: "FCM_PLUGIN_ACTIVITY",
+          },
+        },
+        apns: {
+          headers: { "apns-priority": "10" },
+          payload: {
+            aps: {
+              sound: is_call ? "ringtone.caf" : "default",
+              "content-available": 1,
+            },
           },
         },
       };
 
-      const res = await fetch("https://fcm.googleapis.com/fcm/send", {
-        method: "POST",
-        headers: {
-          Authorization: `key=${serverKey}`,
-          "Content-Type": "application/json",
+      const res = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message }),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       const json = await res.json().catch(() => ({}));
-      if (res.ok && json?.success === 1) {
+
+      if (res.ok) {
         sent++;
-      } else if (
-        json?.results?.[0]?.error === "NotRegistered" ||
-        json?.results?.[0]?.error === "InvalidRegistration"
-      ) {
-        expired.push(row.id);
+      } else {
+        const errStatus = json?.error?.status || "";
+        const errCode = json?.error?.details?.[0]?.errorCode || "";
+        if (
+          errStatus === "NOT_FOUND" ||
+          errCode === "UNREGISTERED" ||
+          errCode === "INVALID_ARGUMENT"
+        ) {
+          expired.push(row.id);
+        } else {
+          console.warn("FCM v1 send error:", res.status, JSON.stringify(json));
+        }
       }
     }
 
@@ -102,6 +232,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("send-fcm-push error:", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
