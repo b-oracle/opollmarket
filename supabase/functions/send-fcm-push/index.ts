@@ -98,7 +98,87 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { user_id, title, body, data, is_call, call_id, url } = await req.json();
+    const payload = await req.json();
+    const { user_id, title, body, data, is_call, call_id, url, test } = payload;
+
+    // Diagnostic mode: verify credentials + OAuth2 token, and optionally
+    // attempt a dry-run send to a supplied token so admins can see the exact
+    // FCM error code/message.
+    if (test) {
+      const saJsonRaw = Deno.env.get("FCM_SERVICE_ACCOUNT_JSON");
+      const projectId = Deno.env.get("FCM_PROJECT_ID");
+      const diag: Record<string, unknown> = {
+        has_service_account: !!saJsonRaw,
+        has_project_id: !!projectId,
+        project_id: projectId ?? null,
+      };
+      if (!saJsonRaw || !projectId) {
+        return new Response(JSON.stringify({ ok: false, stage: "env", ...diag }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      let sa: { client_email: string; private_key: string };
+      try {
+        sa = JSON.parse(saJsonRaw);
+      } catch (e) {
+        return new Response(
+          JSON.stringify({ ok: false, stage: "parse_sa", error: (e as Error).message, ...diag }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      diag.client_email = sa.client_email ?? null;
+
+      let accessToken: string;
+      try {
+        accessToken = await getAccessToken(sa);
+      } catch (e) {
+        return new Response(
+          JSON.stringify({ ok: false, stage: "oauth2", error: (e as Error).message, ...diag }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      diag.oauth2_ok = true;
+
+      // Dry-run validate_only send so no actual notification is delivered.
+      const testToken = typeof test === "string" ? test : (payload.token as string | undefined);
+      if (testToken) {
+        const res = await fetch(
+          `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              validate_only: true,
+              message: {
+                token: testToken,
+                notification: { title: "test", body: "test" },
+              },
+            }),
+          },
+        );
+        const json = await res.json().catch(() => ({}));
+        return new Response(
+          JSON.stringify({
+            ok: res.ok,
+            stage: "fcm_send",
+            http_status: res.status,
+            fcm_response: json,
+            ...diag,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      return new Response(JSON.stringify({ ok: true, stage: "oauth2", ...diag }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!user_id || !title) {
       return new Response(JSON.stringify({ error: "user_id and title required" }), {
         status: 400,

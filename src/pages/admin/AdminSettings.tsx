@@ -113,6 +113,30 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [fcmTesting, setFcmTesting] = useState(false);
+  const [fcmTestToken, setFcmTestToken] = useState("");
+  const [fcmTestResult, setFcmTestResult] = useState<string | null>(null);
+
+  const runFcmTest = async () => {
+    setFcmTesting(true);
+    setFcmTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-push", {
+        body: { test: true, token: fcmTestToken.trim() || undefined },
+      });
+      if (error) {
+        setFcmTestResult(`Invoke error: ${error.message}`);
+      } else {
+        setFcmTestResult(JSON.stringify(data, null, 2));
+        if ((data as any)?.ok) toast.success("FCM credentials valid");
+        else toast.error(`FCM test failed at ${(data as any)?.stage ?? "unknown"}`);
+      }
+    } catch (e) {
+      setFcmTestResult(`Error: ${(e as Error).message}`);
+    } finally {
+      setFcmTesting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -1172,6 +1196,43 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* FCM Push Diagnostics */}
+            {isSuperAdmin && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-primary" /> FCM Push Diagnostics
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Verify FCM HTTP v1 credentials (service account + project ID) and optionally dry-run a send against a device token.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fcmTestToken" className="text-xs">Device FCM Token (optional)</Label>
+                    <Input
+                      id="fcmTestToken"
+                      placeholder="Paste a device FCM token to dry-run send"
+                      value={fcmTestToken}
+                      onChange={(e) => setFcmTestToken(e.target.value)}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Leave empty to only verify credentials and OAuth2 token. With a token, a <code>validate_only</code> request is sent — no actual notification is delivered.
+                    </p>
+                  </div>
+                  <Button onClick={runFcmTest} disabled={fcmTesting} size="sm">
+                    {fcmTesting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Zap className="w-3 h-3 mr-2" />}
+                    Run FCM Test
+                  </Button>
+                  {fcmTestResult && (
+                    <pre className="text-[10px] bg-muted p-3 rounded overflow-auto max-h-80 whitespace-pre-wrap break-all">
+                      {fcmTestResult}
+                    </pre>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 
