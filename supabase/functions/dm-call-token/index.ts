@@ -209,25 +209,31 @@ Deno.serve(async (req) => {
       const { error: notifErr } = await admin.from("notifications").insert(notifPayload);
       if (notifErr) console.error("Call notification insert error:", notifErr);
 
-      // Also trigger an urgent push with call metadata
+      // Also trigger an urgent push with call metadata (web push + native FCM)
       try {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        await fetch(`${supabaseUrl}/functions/v1/send-push`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${serviceKey}`,
-          },
-          body: JSON.stringify({
-            user_id: calleeId,
-            title: "Incoming Call 📞",
-            body: `${callerProfile?.display_name || "Someone"} is calling you`,
-            url: `/messages/${conversation_id}`,
-            is_call: true,
-            call_id: callData.id,
-          }),
+        const pushBody = JSON.stringify({
+          user_id: calleeId,
+          title: "Incoming Call 📞",
+          body: `${callerProfile?.display_name || "Someone"} is calling you`,
+          url: `/messages/${conversation_id}`,
+          is_call: true,
+          call_id: callData.id,
         });
+        // Fire both in parallel — web push (browsers/PWA) and FCM (native app)
+        await Promise.all([
+          fetch(`${supabaseUrl}/functions/v1/send-push`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: pushBody,
+          }).catch((e) => console.warn("web push failed:", e)),
+          fetch(`${supabaseUrl}/functions/v1/send-fcm-push`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+            body: pushBody,
+          }).catch((e) => console.warn("fcm push failed:", e)),
+        ]);
       } catch (pushErr) {
         console.warn("Urgent push for call failed (non-fatal):", pushErr);
       }
