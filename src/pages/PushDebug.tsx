@@ -763,6 +763,165 @@ export default function PushDebug() {
               </div>
             )}
           </div>
+
+          {/* Market deep-link push */}
+          <div className="pt-2 border-t border-border space-y-2">
+            <div>
+              <h3 className="text-sm font-semibold">Market deep-link push</h3>
+              <p className="text-xs text-muted-foreground">
+                Search a market, then send a push to your own device. Tapping the
+                notification opens <span className="font-mono">/market/&lt;id&gt;</span>.
+              </p>
+            </div>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={marketQuery}
+                onChange={(e) => {
+                  setMarketQuery(e.target.value);
+                  setSelectedMarket(null);
+                }}
+                placeholder="Search markets by title…"
+                className="pl-8 h-9 text-sm"
+              />
+            </div>
+
+            {searchingMarkets && (
+              <div className="flex justify-center py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {!selectedMarket && marketResults.length > 0 && (
+              <div className="space-y-1 max-h-56 overflow-y-auto rounded border border-border p-1">
+                {marketResults.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedMarket({ id: m.id, title: m.title });
+                      setMarketResults([]);
+                      setMarketQuery(m.title);
+                    }}
+                    className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted text-left text-xs"
+                  >
+                    {m.image_url ? (
+                      <img
+                        src={m.image_url}
+                        alt=""
+                        className="w-7 h-7 rounded object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded bg-muted shrink-0" />
+                    )}
+                    <span className="flex-1 truncate">{m.title}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {selectedMarket && (
+              <div className="rounded-lg border border-primary/40 bg-primary/5 p-2 text-xs flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0 space-y-1">
+                  <p className="font-medium truncate">{selectedMarket.title}</p>
+                  <p className="font-mono text-[10px] text-muted-foreground truncate">
+                    /market/{selectedMarket.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedMarket(null);
+                    setMarketQuery("");
+                  }}
+                  className="text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
+            <Button
+              onClick={handleSendMarketPush}
+              disabled={!selectedMarket || sendingMarketPush || tokens.length === 0}
+              variant="secondary"
+              className="w-full"
+            >
+              {sendingMarketPush ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send market deep-link push
+                </>
+              )}
+            </Button>
+            {tokens.length === 0 && (
+              <p className="text-[10px] text-muted-foreground">
+                You need at least one registered token to send a push.
+              </p>
+            )}
+
+            {marketPushResult && (
+              <div className="space-y-2 text-xs rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Status</span>
+                  {marketPushResult.ok ? (
+                    <Badge>Sent</Badge>
+                  ) : (
+                    <Badge variant="destructive">Failed</Badge>
+                  )}
+                </div>
+                {typeof marketPushResult.sent === "number" && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Delivered / Expired</span>
+                    <span className="font-mono">
+                      {marketPushResult.sent} / {marketPushResult.expired ?? 0}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground shrink-0">Deep-link</span>
+                  <Link
+                    to={marketPushResult.deep_link}
+                    className="font-mono text-primary hover:underline truncate flex items-center gap-1"
+                  >
+                    <span className="truncate">{marketPushResult.deep_link}</span>
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                  </Link>
+                </div>
+                <button
+                  onClick={() => copy(marketPushResult.deep_link)}
+                  className="w-full text-[10px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
+                >
+                  <Copy className="w-3 h-3" /> Copy deep-link
+                </button>
+                {marketPushResult.hint && (
+                  <p className="text-xs text-muted-foreground italic pt-1 border-t border-border">
+                    {marketPushResult.hint}
+                  </p>
+                )}
+                {marketPushResult.error && (
+                  <p className="text-xs text-destructive font-mono break-all">
+                    {marketPushResult.error}
+                  </p>
+                )}
+                {marketPushResult.results && marketPushResult.results.length > 0 && (
+                  <details className="pt-1">
+                    <summary className="cursor-pointer text-muted-foreground">
+                      Per-token results ({marketPushResult.results.length})
+                    </summary>
+                    <pre className="mt-2 overflow-auto text-[10px] bg-background p-2 rounded">
+                      {JSON.stringify(marketPushResult.results, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </div>
