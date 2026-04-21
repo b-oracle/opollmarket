@@ -289,6 +289,41 @@ export default function PushDebug() {
             </Button>
           </div>
 
+          {tokens.length > 0 && (() => {
+            const counts = tokens.reduce(
+              (acc, t) => {
+                const p = (t.platform || "").toLowerCase();
+                if (p === "android") acc.android++;
+                else if (p === "ios") acc.ios++;
+                else acc.other++;
+                return acc;
+              },
+              { android: 0, ios: 0, other: 0 }
+            );
+            const filters: Array<{ key: "all" | "android" | "ios"; label: string; count: number }> = [
+              { key: "all", label: "All", count: tokens.length },
+              { key: "android", label: "Android", count: counts.android },
+              { key: "ios", label: "iOS", count: counts.ios },
+            ];
+            return (
+              <div className="flex flex-wrap gap-2">
+                {filters.map((f) => (
+                  <Button
+                    key={f.key}
+                    size="sm"
+                    variant={platformFilter === f.key ? "default" : "outline"}
+                    onClick={() => setPlatformFilter(f.key)}
+                    className="h-7 text-xs"
+                    disabled={f.key !== "all" && f.count === 0}
+                  >
+                    {f.label}
+                    <span className="ml-1.5 opacity-70">({f.count})</span>
+                  </Button>
+                ))}
+              </div>
+            );
+          })()}
+
           {loading ? (
             <div className="flex justify-center py-6">
               <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -305,30 +340,67 @@ export default function PushDebug() {
                 </p>
               )}
             </div>
-          ) : (
-            <div className="space-y-3">
-              {tokens.map((t) => (
-                <div
-                  key={t.id}
-                  className="border border-border rounded-lg p-3 space-y-2 text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <Badge variant="outline">{t.platform}</Badge>
-                    <span className="text-muted-foreground">
-                      {new Date(t.updated_at).toLocaleString()}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => copy(t.token)}
-                    className="font-mono break-all text-left w-full hover:text-primary flex items-start gap-1"
-                  >
-                    <span className="flex-1">{t.token}</span>
-                    <Copy className="w-3 h-3 mt-0.5 shrink-0" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          ) : (() => {
+            const filtered = tokens.filter((t) => {
+              if (platformFilter === "all") return true;
+              return (t.platform || "").toLowerCase() === platformFilter;
+            });
+            // Newest token across the *full* set (not just the filtered view)
+            // so the "Newest" highlight is stable when toggling filters.
+            const newestId = tokens.reduce<string | null>((newest, t) => {
+              if (!newest) return t.id;
+              const tTime = new Date(t.updated_at).getTime();
+              const nTime = new Date(
+                tokens.find((x) => x.id === newest)!.updated_at
+              ).getTime();
+              return tTime > nTime ? t.id : newest;
+            }, null);
+
+            if (filtered.length === 0) {
+              return (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No {platformFilter} tokens registered.
+                </p>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {filtered.map((t) => {
+                  const isNewest = t.id === newestId;
+                  return (
+                    <div
+                      key={t.id}
+                      className={`rounded-lg p-3 space-y-2 text-xs border ${
+                        isNewest
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/40"
+                          : "border-border"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{t.platform}</Badge>
+                          {isNewest && (
+                            <Badge className="text-[10px] py-0 px-1.5">Newest</Badge>
+                          )}
+                        </div>
+                        <span className="text-muted-foreground">
+                          {new Date(t.updated_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => copy(t.token)}
+                        className="font-mono break-all text-left w-full hover:text-primary flex items-start gap-1"
+                      >
+                        <span className="flex-1">{t.token}</span>
+                        <Copy className="w-3 h-3 mt-0.5 shrink-0" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </Card>
 
         {/* Re-register */}
