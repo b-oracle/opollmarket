@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { logAuditEvent } from "@/lib/auditLog";
 import { resetOnboarding, hasCompletedOnboarding } from "@/hooks/useFirstRun";
+import { FcmTestDiagnostics, CallTestDiagnostics } from "@/components/admin/FcmDiagnosticsPanel";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },
@@ -597,10 +598,8 @@ const AdminSettings = () => {
               {fcmTesting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Zap className="w-3 h-3 mr-2" />}
               Run FCM Test
             </Button>
-            {fcmTestResult && (
-              <pre className="text-[10px] bg-muted p-3 rounded overflow-auto max-h-80 whitespace-pre-wrap break-all">
-                {fcmTestResult}
-              </pre>
+            {(fcmTestResult || fcmTestError) && (
+              <FcmTestDiagnostics data={fcmTestResult} error={fcmTestError} />
             )}
 
             {/* ─── Test Incoming Call ─── */}
@@ -698,10 +697,8 @@ const AdminSettings = () => {
                 )}
               </Button>
 
-              {callTestResult && (
-                <pre className="text-[10px] bg-muted p-3 rounded overflow-auto max-h-60 whitespace-pre-wrap break-all">
-                  {callTestResult}
-                </pre>
+              {(callTestResult || callTestError) && (
+                <CallTestDiagnostics data={callTestResult} error={callTestError} />
               )}
             </div>
           </CardContent>
