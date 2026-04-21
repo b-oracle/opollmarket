@@ -29,6 +29,76 @@ interface FcmToken {
   updated_at: string;
 }
 
+interface RlsDiagnostic {
+  operation: "select" | "upsert";
+  code?: string;
+  message: string;
+  details?: string;
+  hint?: string;
+  isRls: boolean;
+  steps: string[];
+}
+
+const RLS_CODES = new Set([
+  "42501", // insufficient_privilege
+  "PGRST301", // JWT expired / no auth
+  "PGRST116", // no rows / RLS-blocked
+]);
+
+function diagnoseRlsError(
+  operation: "select" | "upsert",
+  err: { code?: string; message?: string; details?: string; hint?: string } | null
+): RlsDiagnostic | null {
+  if (!err) return null;
+  const msg = err.message || "Unknown error";
+  const code = err.code;
+  const lowered = (msg + " " + (err.details || "") + " " + (err.hint || "")).toLowerCase();
+  const isRls =
+    (!!code && RLS_CODES.has(code)) ||
+    lowered.includes("row-level security") ||
+    lowered.includes("row level security") ||
+    lowered.includes("violates row-level") ||
+    lowered.includes("permission denied") ||
+    lowered.includes("not authorized") ||
+    lowered.includes("rls");
+
+  const steps: string[] = [];
+  if (isRls) {
+    if (operation === "upsert") {
+      steps.push(
+        "Confirm you are signed in — RLS requires a valid auth.uid().",
+        "The user_fcm_tokens table needs an INSERT/UPDATE policy: USING/WITH CHECK (auth.uid() = user_id).",
+        "Verify the row's user_id column matches your authenticated user id (shown above).",
+        "If a unique constraint exists on (user_id, token), an UPDATE policy is also required for upsert to succeed.",
+        "Check that RLS is ENABLED on user_fcm_tokens (ALTER TABLE … ENABLE ROW LEVEL SECURITY)."
+      );
+    } else {
+      steps.push(
+        "Confirm you are signed in — RLS requires a valid auth.uid().",
+        "Add a SELECT policy on user_fcm_tokens: USING (auth.uid() = user_id).",
+        "Verify RLS is enabled on user_fcm_tokens.",
+        "If using a service-role read elsewhere, ensure the client read uses the user JWT (not anon)."
+      );
+    }
+  } else {
+    steps.push(
+      "Check the Network tab for the failing request and inspect the response.",
+      "Verify the table name and column names match your schema (user_fcm_tokens, user_id, token, platform).",
+      "Try signing out and back in to refresh the auth session."
+    );
+  }
+
+  return {
+    operation,
+    code,
+    message: msg,
+    details: err.details,
+    hint: err.hint,
+    isRls,
+    steps,
+  };
+}
+
 export default function PushDebug() {
   const { user, loading: authLoading } = useAuth();
   const [tokens, setTokens] = useState<FcmToken[]>([]);
@@ -41,6 +111,7 @@ export default function PushDebug() {
   const [testingCall, setTestingCall] = useState(false);
   const [testResult, setTestResult] = useState<SelfTestResult | null>(null);
   const [platformFilter, setPlatformFilter] = useState<"all" | "android" | "ios">("all");
+  const [rlsDiag, setRlsDiag] = useState<RlsDiagnostic | null>(null);
 
   // Detect platform
   useEffect(() => {
@@ -74,10 +145,12 @@ export default function PushDebug() {
       .order("updated_at", { ascending: false });
     if (error) {
       setLastError(error.message);
+      setRlsDiag(diagnoseRlsError("select", error as any));
       setTokens([]);
     } else {
       setTokens((data || []) as unknown as FcmToken[]);
       setLastError(null);
+      setRlsDiag(null);
     }
     setLoading(false);
   }, [user]);
@@ -123,9 +196,11 @@ export default function PushDebug() {
           );
           if (error) {
             setLastError(error.message);
+            setRlsDiag(diagnoseRlsError("upsert", error as any));
             toast.error("Saved locally but DB upsert failed: " + error.message);
           } else {
             toast.success("Token registered ✓");
+            setRlsDiag(null);
             await loadTokens();
           }
         } finally {
@@ -428,6 +503,69 @@ export default function PushDebug() {
           {lastError && (
             <div className="text-xs text-destructive font-mono break-all p-2 bg-destructive/10 rounded">
               {lastError}
+            </div>
+          )}
+          {rlsDiag && (
+            <div
+              className={`rounded-lg border p-3 space-y-2 text-xs ${
+                rlsDiag.isRls
+                  ? "border-destructive/40 bg-destructive/5"
+                  : "border-border bg-muted/30"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <XCircle
+                    className={`w-4 h-4 ${
+                      rlsDiag.isRls ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  />
+                  {rlsDiag.isRls ? "RLS / permission error" : "Database error"}
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {rlsDiag.operation}
+                  </Badge>
+                </h4>
+                {rlsDiag.code && (
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    {rlsDiag.code}
+                  </Badge>
+                )}
+              </div>
+              <p className="font-mono text-destructive break-all">{rlsDiag.message}</p>
+              {rlsDiag.details && (
+                <p className="text-muted-foreground">
+                  <span className="font-semibold">Details:</span> {rlsDiag.details}
+                </p>
+              )}
+              {rlsDiag.hint && (
+                <p className="text-muted-foreground">
+                  <span className="font-semibold">Hint:</span> {rlsDiag.hint}
+                </p>
+              )}
+              <div className="pt-2 border-t border-border/60">
+                <p className="font-semibold mb-1">How to fix</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  {rlsDiag.steps.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ol>
+              </div>
+              <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">
+                  Expected user_id: <span className="font-mono">{user.id}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setRlsDiag(null);
+                    setLastError(null);
+                  }}
+                  className="h-6 text-[10px]"
+                >
+                  Dismiss
+                </Button>
+              </div>
             </div>
           )}
 
