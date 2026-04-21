@@ -130,6 +130,17 @@ export default function PushDebug() {
     results?: Array<{ token?: string; ok?: boolean; status?: number; error_code?: string; hint?: string }>;
   } | null>(null);
 
+  // Device token verification
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<{
+    deviceToken: string | null;
+    matchedRow: FcmToken | null;
+    isNewest: boolean;
+    newestRow: FcmToken | null;
+    error?: string;
+    note?: string;
+  } | null>(null);
+
   // Detect platform
   useEffect(() => {
     (async () => {
