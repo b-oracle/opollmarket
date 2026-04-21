@@ -137,19 +137,20 @@ const AdminSettings = () => {
   const runFcmTest = async () => {
     setFcmTesting(true);
     setFcmTestResult(null);
+    setFcmTestError(null);
     try {
       const { data, error } = await supabase.functions.invoke("send-fcm-push", {
         body: { test: true, token: fcmTestToken.trim() || undefined },
       });
       if (error) {
-        setFcmTestResult(`Invoke error: ${error.message}`);
+        setFcmTestError(`Invoke error: ${error.message}`);
       } else {
-        setFcmTestResult(JSON.stringify(data, null, 2));
+        setFcmTestResult(data);
         if ((data as any)?.ok) toast.success("FCM credentials valid");
-        else toast.error(`FCM test failed at ${(data as any)?.stage ?? "unknown"}`);
+        else toast.error(`FCM test failed at stage: ${(data as any)?.stage ?? "unknown"}`);
       }
     } catch (e) {
-      setFcmTestResult(`Error: ${(e as Error).message}`);
+      setFcmTestError(`Error: ${(e as Error).message}`);
     } finally {
       setFcmTesting(false);
     }
@@ -185,26 +186,28 @@ const AdminSettings = () => {
     if (!callTestTarget) return;
     setCallTestSending(true);
     setCallTestResult(null);
+    setCallTestError(null);
     try {
       const { data, error } = await supabase.functions.invoke("admin-test-call-push", {
         body: { target_user_id: callTestTarget.id },
       });
       if (error) {
-        setCallTestResult(`Invoke error: ${error.message}`);
+        setCallTestError(`Invoke error: ${error.message}`);
         toast.error(error.message);
       } else {
-        setCallTestResult(JSON.stringify(data, null, 2));
+        setCallTestResult(data);
         const tokens = (data as any)?.tokens_on_file ?? 0;
+        const sent = (data as any)?.sent ?? 0;
         if (tokens === 0) {
-          toast.warning("No FCM tokens on file for that user — they need to open the native app while signed in");
-        } else if ((data as any)?.ok) {
-          toast.success(`Test call dispatched to ${tokens} device(s) — phone should ring`);
+          toast.warning("No FCM tokens on file — user must open the native app while signed in");
+        } else if (sent > 0) {
+          toast.success(`Test call dispatched to ${sent}/${tokens} device(s)`);
         } else {
-          toast.error("FCM responded with an error — see details");
+          toast.error("FCM rejected every token — see per-token diagnostics");
         }
       }
     } catch (e) {
-      setCallTestResult(`Error: ${(e as Error).message}`);
+      setCallTestError(`Error: ${(e as Error).message}`);
       toast.error((e as Error).message);
     } finally {
       setCallTestSending(false);
