@@ -1,86 +1,115 @@
 
-## Native-feel Splash + Onboarding for the Capacitor App
+## Push Token Plumbing — Already Wired End-to-End
 
-Goal: when a user opens the installed Android/iOS app (or hits the web for the first time), they see a polished splash screen followed by a swipeable onboarding carousel — indistinguishable from a hand-built native app. Web visitors who already use the product won't see it again.
-
----
-
-### What gets built
-
-**1. Native splash (Capacitor-controlled, before JS even boots)**
-- Add `@capacitor/splash-screen` plugin.
-- Configure in `capacitor.config.ts`:
-  - 2s auto-hide, dark background `#000000`, fade animation, no spinner.
-  - Use `splash.png` (2732×2732, centered logo on black) + `splash_dark.png`.
-- Generate platform splash assets with `@capacitor/assets` from a single `assets/splash.png` + `assets/icon.png`.
-- Hide the splash from JS once the React tree mounts AND auth state has been resolved (so users don't see a flash of the login screen).
-
-**2. In-app animated splash (web + native fallback)**
-- New component `src/components/AppSplash.tsx`: full-screen black overlay with the OPOLL logo scaling/fading in, primary cyan glow pulse, then fades out.
-- Renders for ~1.2s on every cold boot of the SPA (covers the gap between Capacitor splash hide and first meaningful paint, and gives PWA/web users the same feel).
-- Mounted at the top of `App.tsx`, controlled by a single `useState` + `sessionStorage` flag so it only shows once per session.
-
-**3. Onboarding carousel (first-run only)**
-- New route `/welcome` and component `src/pages/Welcome.tsx`.
-- 4 swipeable slides using Framer Motion + touch gestures (no extra deps):
-  1. **Predict anything** — markets hero illustration, tagline.
-  2. **Trade in seconds** — Quick Trade preview, "lightning-fast parimutuel rounds".
-  3. **Earn with your circle** — Copy trading + referrals.
-  4. **Go social** — Spaces, DMs, Stories.
-- Each slide: full-bleed gradient background, large icon/illustration, headline (Space Grotesk 32px), 1-line subtext, page indicator dots.
-- Bottom CTAs: `Skip` (top-right) and `Next` → final slide shows `Get Started` which routes to `/auth`.
-- Uses existing design tokens (`--primary`, `--neon-yes`, glass utilities) — no new colors.
-
-**4. First-run gating**
-- New hook `src/hooks/useFirstRun.ts`:
-  - Reads `localStorage.opoll_onboarded_v1`.
-  - On native (Capacitor.isNativePlatform()) AND not onboarded → redirect to `/welcome` from `/`.
-  - On web, only redirect if the user lands on `/` unauthenticated and has never visited before (keeps SEO landing intact for crawlers via a `?skip_onboarding=1` bypass and a user-agent check for bots — bots see `/index` directly).
-- Mark complete when user taps `Get Started` or `Skip`.
-- Reset button hidden in **Admin Settings → Diagnostics** (super admin only) for QA.
-
-**5. Polish**
-- Status bar plugin (`@capacitor/status-bar`): set to dark style, transparent on Android, matches splash background.
-- Edge-to-edge: respect existing `--safe-top` / `--safe-bottom` vars on the welcome screen.
-- Haptic feedback on slide change (Capacitor `Haptics.impact({ style: Light })`) — no-ops on web.
-- Preload onboarding slide images so transitions are instant.
+You don't need to add anything to the backend. The full path you described is already built. Here is the complete flow with file pointers so you can verify each link.
 
 ---
 
-### Files to create
+### 1. Where the token is submitted (client → DB)
 
-- `src/pages/Welcome.tsx` — onboarding carousel
-- `src/components/AppSplash.tsx` — animated in-app splash overlay
-- `src/components/onboarding/OnboardingSlide.tsx` — single slide presenter
-- `src/hooks/useFirstRun.ts` — gating logic + reset helper
-- `src/lib/nativeUI.ts` — small wrapper for `SplashScreen.hide()`, `StatusBar.setStyle()`, `Haptics.impact()` (safe no-ops on web)
-- `public/onboarding/slide-1.webp` … `slide-4.webp` — illustrations (generated)
-- `public/splash.png` + `public/splash_dark.png` — Capacitor splash sources
+File: `src/hooks/useNativePush.ts`
 
-### Files to edit
+On native Android/iOS:
+- Asks for notification permission
+- Calls `PushNotifications.register()` (Capacitor plugin)
+- Listens for the `"registration"` event — the FCM/APNs token arrives here
+- Upserts directly into `user_fcm_tokens` via the Supabase JS client:
 
-- `package.json` — add `@capacitor/splash-screen`, `@capacitor/status-bar`, `@capacitor/haptics`, `@capacitor/assets` (dev)
-- `capacitor.config.ts` — add `SplashScreen` plugin config (launchAutoHide false, background `#000000`, fade)
-- `src/App.tsx` — mount `<AppSplash />`, register `/welcome` route, call `useFirstRun()` and `nativeUI.boot()` once
-- `src/pages/admin/AdminSettings.tsx` — add "Reset Onboarding" button under super-admin diagnostics
-
-### Native generation step (user runs locally after pulling)
-
-```
-npx @capacitor/assets generate --iconBackgroundColor '#000000' --splashBackgroundColor '#000000'
-npx cap sync
+```ts
+await supabase.from("user_fcm_tokens").upsert({
+  user_id: user.id,
+  token: tok.value,
+  platform: Capacitor.getPlatform(),  // "android" or "ios"
+}, { onConflict: "user_id,token" });
 ```
 
-This regenerates iOS `LaunchScreen.storyboard` and Android `splash.png` densities from the single source images.
+This hook is mounted globally — once the user signs in on the native build, the token is stored automatically. No edge function or REST endpoint is needed because the table has RLS letting the authenticated user write their own row.
 
 ---
 
-### What stays out of scope
+### 2. Where the token lives (database)
 
-- iOS CallKit / VoIP push (still parked until the certificate is generated).
-- Permission pre-prompts (notifications, mic) — kept on the existing in-app modals so we don't trigger system prompts during onboarding.
-- A/B testing or analytics on slide drop-off — can be added later if needed.
+Table: `public.user_fcm_tokens` — already exists.
 
-### Effort
+```
+id          uuid pk
+user_id     uuid fk → auth.users
+token       text
+platform    text  ('android' | 'ios')
+created_at  timestamptz
+updated_at  timestamptz
+UNIQUE (user_id, token)
+RLS: user can manage their own rows
+```
 
-~45 min of Lovable-side work. After approval the user only needs to run `npm install`, `npx @capacitor/assets generate`, `npx cap sync`, then rebuild in Android Studio / Xcode to see the native splash. The web/PWA splash + onboarding ships immediately on next deploy.
+You can confirm a device registered correctly by querying:
+```sql
+select user_id, platform, created_at from user_fcm_tokens where user_id = '<your-uuid>';
+```
+
+---
+
+### 3. Where the call triggers the push (backend)
+
+File: `supabase/functions/dm-call-token/index.ts` (lines 212–245)
+
+When `action === "start"` is called by the caller's client:
+1. Creates the LiveKit room
+2. Inserts a `dm_calls` row with status `ringing`
+3. Inserts a notification row
+4. **Fires two pushes in parallel:**
+   - `send-push` → web push (PWA / browser)
+   - `send-fcm-push` → native FCM (Android/iOS app)
+
+Payload sent to `send-fcm-push`:
+```json
+{
+  "user_id": calleeId,
+  "title": "Incoming Call 📞",
+  "body": "<caller name> is calling you",
+  "url": "/messages/<conversation_id>",
+  "is_call": true,
+  "call_id": "<uuid>",
+  "data": { "caller_id", "caller_name", "caller_avatar", "conversation_id" }
+}
+```
+
+---
+
+### 4. Where the FCM v1 request is built (backend)
+
+File: `supabase/functions/send-fcm-push/index.ts`
+
+It already does exactly what you described:
+1. Loads `FCM_SERVICE_ACCOUNT_JSON` + `FCM_PROJECT_ID` from secrets
+2. Mints an OAuth2 access token via JWT (RS256, Google's auth server)
+3. Looks up tokens in `user_fcm_tokens` for the target `user_id`
+4. For each token, POSTs to `https://fcm.googleapis.com/v1/projects/<id>/messages:send`
+5. **For calls (`is_call: true`)** — sends a **data-only** message with `priority: HIGH`, no `notification` block, so Android's `CallMessagingService` runs in the background and triggers the full-screen `IncomingCallActivity` (lockscreen ring)
+6. **For normal pushes** — sends `notification + data` so the system tray displays it
+7. Cleans up dead tokens on `UNREGISTERED` / `INVALID_ARGUMENT`
+
+---
+
+### Summary table
+
+| Concern | Status | Location |
+|---|---|---|
+| Token submission endpoint | ✅ Direct Supabase upsert (no endpoint needed) | `src/hooks/useNativePush.ts` |
+| Token storage | ✅ `user_fcm_tokens` table with RLS | DB |
+| Call → push trigger | ✅ Fires inside `start` action | `supabase/functions/dm-call-token/index.ts` lines 212–245 |
+| FCM v1 send (OAuth2 + payload) | ✅ Data-only for calls, notification+data otherwise | `supabase/functions/send-fcm-push/index.ts` |
+| Diagnostics tool | ✅ Test OAuth2 + dry-run send for any token | Admin Settings → FCM Push Diagnostics |
+
+---
+
+### What you actually still need to do
+
+1. Eject Android (`npx cap add android`) on your local machine.
+2. Drop in `google-services.json` from Firebase.
+3. Copy `android-native-ref/*.kt` + manifest into the Android project.
+4. Build and run on a device.
+
+The moment a signed-in user opens the native app, `useNativePush` will fire and a row will appear in `user_fcm_tokens` for them. From that point on, every incoming call already routes through `dm-call-token → send-fcm-push → FCM v1` and rings the device.
+
+If a token doesn't appear after sign-in, the Admin Settings → FCM Push Diagnostics card will tell you exactly why (missing service account, OAuth2 failure, or per-token FCM error).
