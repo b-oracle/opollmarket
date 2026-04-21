@@ -111,6 +111,7 @@ export default function PushDebug() {
   const [testingCall, setTestingCall] = useState(false);
   const [testResult, setTestResult] = useState<SelfTestResult | null>(null);
   const [platformFilter, setPlatformFilter] = useState<"all" | "android" | "ios">("all");
+  const [rlsDiag, setRlsDiag] = useState<RlsDiagnostic | null>(null);
 
   // Detect platform
   useEffect(() => {
