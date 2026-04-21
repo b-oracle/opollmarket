@@ -195,7 +195,7 @@ export const CallTestDiagnostics = ({ data, error }: { data: any; error: string 
       </div>
 
       {tokens === 0 && (
-        <div className="border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 rounded p-2 text-[11px] flex items-start gap-2">
+        <div className="border border-destructive/40 bg-destructive/10 text-destructive rounded p-2 text-[11px] flex items-start gap-2">
           <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           <span>
             No FCM tokens on file for this user. They must open the installed Android/iOS app while
