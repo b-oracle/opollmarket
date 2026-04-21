@@ -196,9 +196,11 @@ export default function PushDebug() {
           );
           if (error) {
             setLastError(error.message);
+            setRlsDiag(diagnoseRlsError("upsert", error as any));
             toast.error("Saved locally but DB upsert failed: " + error.message);
           } else {
             toast.success("Token registered ✓");
+            setRlsDiag(null);
             await loadTokens();
           }
         } finally {
