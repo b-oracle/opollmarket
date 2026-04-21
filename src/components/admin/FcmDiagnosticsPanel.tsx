@@ -1,5 +1,9 @@
-import { CheckCircle2, XCircle, AlertCircle, Info } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { CheckCircle2, XCircle, AlertCircle, Info, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 interface StageRowProps {
   label: string;
