@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -118,6 +118,20 @@ const AdminSettings = () => {
   const [fcmTestToken, setFcmTestToken] = useState("");
   const [fcmTestResult, setFcmTestResult] = useState<string | null>(null);
 
+  // Test incoming-call push
+  const [callTestQuery, setCallTestQuery] = useState("");
+  const [callTestResults, setCallTestResults] = useState<
+    Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>
+  >([]);
+  const [callTestSearching, setCallTestSearching] = useState(false);
+  const [callTestTarget, setCallTestTarget] = useState<{
+    id: string;
+    display_name: string | null;
+    username: string | null;
+  } | null>(null);
+  const [callTestSending, setCallTestSending] = useState(false);
+  const [callTestResult, setCallTestResult] = useState<string | null>(null);
+
   const runFcmTest = async () => {
     setFcmTesting(true);
     setFcmTestResult(null);
@@ -138,6 +152,63 @@ const AdminSettings = () => {
       setFcmTesting(false);
     }
   };
+
+  // Search users for the test-call picker
+  useEffect(() => {
+    const q = callTestQuery.trim();
+    if (q.length < 2) {
+      setCallTestResults([]);
+      return;
+    }
+    let cancelled = false;
+    setCallTestSearching(true);
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, username, avatar_url")
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%,email.ilike.%${q}%`)
+        .limit(8);
+      if (!cancelled) {
+        setCallTestResults((data || []) as any);
+        setCallTestSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [callTestQuery]);
+
+  const sendTestCall = async () => {
+    if (!callTestTarget) return;
+    setCallTestSending(true);
+    setCallTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-test-call-push", {
+        body: { target_user_id: callTestTarget.id },
+      });
+      if (error) {
+        setCallTestResult(`Invoke error: ${error.message}`);
+        toast.error(error.message);
+      } else {
+        setCallTestResult(JSON.stringify(data, null, 2));
+        const tokens = (data as any)?.tokens_on_file ?? 0;
+        if (tokens === 0) {
+          toast.warning("No FCM tokens on file for that user — they need to open the native app while signed in");
+        } else if ((data as any)?.ok) {
+          toast.success(`Test call dispatched to ${tokens} device(s) — phone should ring`);
+        } else {
+          toast.error("FCM responded with an error — see details");
+        }
+      }
+    } catch (e) {
+      setCallTestResult(`Error: ${(e as Error).message}`);
+      toast.error((e as Error).message);
+    } finally {
+      setCallTestSending(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -526,6 +597,108 @@ const AdminSettings = () => {
                 {fcmTestResult}
               </pre>
             )}
+
+            {/* ─── Test Incoming Call ─── */}
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                <p className="text-xs font-semibold">Test Incoming Call Push</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Sends a real <code>is_call: true</code> FCM payload to a selected user. Their native app should ring with the full-screen incoming-call UI.
+              </p>
+
+              {!callTestTarget ? (
+                <>
+                  <Input
+                    placeholder="Search by name, username, or email…"
+                    value={callTestQuery}
+                    onChange={(e) => setCallTestQuery(e.target.value)}
+                    className="text-xs"
+                  />
+                  {callTestSearching && (
+                    <p className="text-[10px] text-muted-foreground">Searching…</p>
+                  )}
+                  {callTestResults.length > 0 && (
+                    <div className="border border-border rounded-md max-h-48 overflow-auto divide-y divide-border">
+                      {callTestResults.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => {
+                            setCallTestTarget(u);
+                            setCallTestQuery("");
+                            setCallTestResults([]);
+                          }}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-muted text-left"
+                        >
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-muted" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">
+                              {u.display_name || "Unnamed"}
+                            </p>
+                            {u.username && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                @{u.username}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between gap-2 p-2 border border-border rounded-md">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">
+                      {callTestTarget.display_name || "Unnamed"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                      {callTestTarget.id}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCallTestTarget(null);
+                      setCallTestResult(null);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              )}
+
+              <Button
+                onClick={sendTestCall}
+                disabled={!callTestTarget || callTestSending}
+                size="sm"
+                className="w-full"
+              >
+                {callTestSending ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    Ringing…
+                  </>
+                ) : (
+                  <>
+                    <Phone className="w-3 h-3 mr-2" />
+                    Send Test Incoming Call
+                  </>
+                )}
+              </Button>
+
+              {callTestResult && (
+                <pre className="text-[10px] bg-muted p-3 rounded overflow-auto max-h-60 whitespace-pre-wrap break-all">
+                  {callTestResult}
+                </pre>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
