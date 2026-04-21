@@ -161,11 +161,18 @@ Deno.serve(async (req) => {
           },
         );
         const json = await res.json().catch(() => ({}));
+        const errStatus = json?.error?.status || null;
+        const errCode = json?.error?.details?.[0]?.errorCode || null;
+        const errMessage = json?.error?.message || null;
         return new Response(
           JSON.stringify({
             ok: res.ok,
             stage: "fcm_send",
             http_status: res.status,
+            fcm_error_status: errStatus,
+            fcm_error_code: errCode,
+            fcm_error_message: errMessage,
+            hint: hintForFcmError(res.status, errStatus, errCode),
             fcm_response: json,
             ...diag,
           }),
