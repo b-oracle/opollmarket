@@ -1,5 +1,9 @@
-import { CheckCircle2, XCircle, AlertCircle, Info } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { CheckCircle2, XCircle, AlertCircle, Info, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { formatDistanceToNow } from "date-fns";
 
 interface StageRowProps {
   label: string;
@@ -266,6 +270,157 @@ export const CallTestDiagnostics = ({ data, error }: { data: any; error: string 
           {JSON.stringify(data, null, 2)}
         </pre>
       </details>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recent delivery logs (admin-only via RLS on push_delivery_logs)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DeliveryLog {
+  id: string;
+  created_at: string;
+  user_id: string | null;
+  token_tail: string | null;
+  title: string | null;
+  body: string | null;
+  is_call: boolean;
+  call_id: string | null;
+  ok: boolean;
+  http_status: number | null;
+  fcm_error_status: string | null;
+  fcm_error_code: string | null;
+  fcm_error_message: string | null;
+  hint: string | null;
+  removed: boolean;
+}
+
+export const RecentDeliveryLogs = ({ targetUserId }: { targetUserId?: string | null }) => {
+  const [logs, setLogs] = useState<DeliveryLog[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    let q = supabase
+      .from("push_delivery_logs" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(25);
+    if (targetUserId) q = q.eq("user_id", targetUserId);
+    const { data, error: err } = await q;
+    if (err) {
+      setError(err.message);
+      setLogs([]);
+    } else {
+      setLogs((data || []) as unknown as DeliveryLog[]);
+    }
+    setLoading(false);
+  }, [targetUserId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  return (
+    <div className="border border-border rounded-md p-3 bg-muted/30 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-semibold">
+            Recent Delivery Logs {targetUserId ? "(filtered)" : "(all users)"}
+          </p>
+          <Badge variant="outline" className="text-[10px]">
+            {logs.length}
+          </Badge>
+        </div>
+        <Button variant="ghost" size="sm" onClick={load} disabled={loading} className="h-7">
+          <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+        </Button>
+      </div>
+
+      {error && (
+        <div className="border border-destructive/40 bg-destructive/10 text-destructive rounded p-2 text-[11px] flex items-start gap-2">
+          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+          <span className="font-mono break-all">{error}</span>
+        </div>
+      )}
+
+      {!error && logs.length === 0 && !loading && (
+        <p className="text-[11px] text-muted-foreground italic">
+          No delivery logs yet. Send a test push above to populate this list.
+        </p>
+      )}
+
+      <div className="space-y-1.5 max-h-96 overflow-auto">
+        {logs.map((l) => (
+          <div
+            key={l.id}
+            className={`border rounded p-2 space-y-1 ${
+              l.ok
+                ? "border-primary/30 bg-primary/5"
+                : "border-destructive/40 bg-destructive/5"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {l.ok ? (
+                  <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+                ) : (
+                  <XCircle className="w-3 h-3 text-destructive shrink-0" />
+                )}
+                <span className="text-[11px] font-medium truncate">
+                  {l.is_call ? "📞 Call" : "🔔 Push"} · {l.title || "(no title)"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                {l.ok ? (
+                  <Badge className="text-[10px]">OK</Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-[10px]">
+                    HTTP {l.http_status ?? "?"}
+                  </Badge>
+                )}
+                {l.removed && (
+                  <Badge variant="outline" className="text-[10px]">
+                    pruned
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="text-[10px] text-muted-foreground flex items-center gap-2 flex-wrap">
+              <span>{formatDistanceToNow(new Date(l.created_at), { addSuffix: true })}</span>
+              {l.token_tail && <span className="font-mono">{l.token_tail}</span>}
+              {l.user_id && (
+                <span className="font-mono truncate max-w-[180px]" title={l.user_id}>
+                  user: {l.user_id.slice(0, 8)}…
+                </span>
+              )}
+            </div>
+
+            {!l.ok && (
+              <>
+                {(l.fcm_error_code || l.fcm_error_status) && (
+                  <p className="text-[10px] font-mono text-destructive">
+                    {l.fcm_error_status}
+                    {l.fcm_error_code ? ` · ${l.fcm_error_code}` : ""}
+                  </p>
+                )}
+                {l.fcm_error_message && (
+                  <p className="text-[10px] font-mono break-all text-destructive/80">
+                    {l.fcm_error_message}
+                  </p>
+                )}
+                {l.hint && (
+                  <p className="text-[10px] italic text-muted-foreground">💡 {l.hint}</p>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

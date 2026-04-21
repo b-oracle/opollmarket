@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { logAuditEvent } from "@/lib/auditLog";
 import { resetOnboarding, hasCompletedOnboarding } from "@/hooks/useFirstRun";
-import { FcmTestDiagnostics, CallTestDiagnostics } from "@/components/admin/FcmDiagnosticsPanel";
+import { FcmTestDiagnostics, CallTestDiagnostics, RecentDeliveryLogs } from "@/components/admin/FcmDiagnosticsPanel";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },
@@ -700,6 +700,11 @@ const AdminSettings = () => {
               {(callTestResult || callTestError) && (
                 <CallTestDiagnostics data={callTestResult} error={callTestError} />
               )}
+            </div>
+
+            {/* ─── Recent Delivery Logs ─── */}
+            <div className="border-t border-border pt-3">
+              <RecentDeliveryLogs targetUserId={callTestTarget?.id ?? null} />
             </div>
           </CardContent>
         </Card>
