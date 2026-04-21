@@ -145,10 +145,12 @@ export default function PushDebug() {
       .order("updated_at", { ascending: false });
     if (error) {
       setLastError(error.message);
+      setRlsDiag(diagnoseRlsError("select", error as any));
       setTokens([]);
     } else {
       setTokens((data || []) as unknown as FcmToken[]);
       setLastError(null);
+      setRlsDiag(null);
     }
     setLoading(false);
   }, [user]);
