@@ -4,9 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy, PhoneCall, ExternalLink } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy, PhoneCall, ExternalLink, Send, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
 
 interface SelfTestResult {
   ok: boolean;
