@@ -724,6 +724,150 @@ export default function PushDebug() {
           })()}
         </Card>
 
+        {/* Verify this device */}
+        <Card className="p-4 space-y-3">
+          <div>
+            <h2 className="font-semibold flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              Verify This Device
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Reads this device's current FCM token and confirms it exists in
+              <span className="font-mono"> user_fcm_tokens</span> and matches your
+              latest registration timestamp.
+            </p>
+          </div>
+          <Button
+            onClick={handleVerifyDevice}
+            disabled={verifying || !isNative}
+            variant="secondary"
+            className="w-full"
+          >
+            {verifying ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Verifying…
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                Check my token in database
+              </>
+            )}
+          </Button>
+          {!isNative && (
+            <p className="text-xs text-muted-foreground">
+              Only works inside the installed Android/iOS app.
+            </p>
+          )}
+
+          {verifyResult && (
+            <div
+              className={`rounded-lg border p-3 space-y-2 text-xs ${
+                verifyResult.error
+                  ? "border-destructive/40 bg-destructive/5"
+                  : verifyResult.matchedRow && verifyResult.isNewest
+                  ? "border-primary/40 bg-primary/5"
+                  : verifyResult.matchedRow
+                  ? "border-amber-500/40 bg-amber-500/5"
+                  : "border-destructive/40 bg-destructive/5"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-semibold">Result</span>
+                {verifyResult.error ? (
+                  <Badge variant="destructive">Error</Badge>
+                ) : verifyResult.matchedRow && verifyResult.isNewest ? (
+                  <Badge>Verified — Latest</Badge>
+                ) : verifyResult.matchedRow ? (
+                  <Badge variant="secondary">Found — Not Latest</Badge>
+                ) : (
+                  <Badge variant="destructive">Not in Database</Badge>
+                )}
+              </div>
+
+              {verifyResult.error && (
+                <p className="font-mono text-destructive break-all">
+                  {verifyResult.error}
+                </p>
+              )}
+
+              {verifyResult.deviceToken && (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground font-semibold">
+                    This device's FCM token
+                  </p>
+                  <button
+                    onClick={() => copy(verifyResult.deviceToken!)}
+                    className="font-mono break-all text-left w-full hover:text-primary flex items-start gap-1"
+                  >
+                    <span className="flex-1">{verifyResult.deviceToken}</span>
+                    <Copy className="w-3 h-3 mt-0.5 shrink-0" />
+                  </button>
+                </div>
+              )}
+
+              {verifyResult.matchedRow && (
+                <div className="space-y-1 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">DB row id</span>
+                    <span className="font-mono">{verifyResult.matchedRow.id}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Platform</span>
+                    <Badge variant="outline">{verifyResult.matchedRow.platform}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Updated at</span>
+                    <span className="font-mono">
+                      {new Date(verifyResult.matchedRow.updated_at).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {verifyResult.newestRow && (
+                <div className="space-y-1 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Latest registration on file</span>
+                    <span className="font-mono">
+                      {new Date(verifyResult.newestRow.updated_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {verifyResult.matchedRow && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Matches latest?</span>
+                      {verifyResult.isNewest ? (
+                        <Badge className="gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Yes
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1">
+                          <XCircle className="w-3 h-3" /> No
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {verifyResult.note && (
+                <p className="pt-2 border-t border-border/60 text-muted-foreground">
+                  {verifyResult.note}
+                </p>
+              )}
+
+              {!verifyResult.error && !verifyResult.matchedRow && verifyResult.deviceToken && (
+                <p className="pt-2 border-t border-border/60 text-muted-foreground">
+                  This token isn't saved for your account. Tap{" "}
+                  <span className="font-semibold">Re-register device with FCM</span> below
+                  to upsert it.
+                </p>
+              )}
+            </div>
+          )}
+        </Card>
+
         {/* Re-register */}
         <Card className="p-4 space-y-3">
           <h2 className="font-semibold">Actions</h2>
