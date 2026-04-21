@@ -385,6 +385,8 @@ Deno.serve(async (req) => {
         }
       }
 
+      const hint = res.ok ? null : hintForFcmError(res.status, errStatus, errCode);
+
       results.push({
         token_id: row.id,
         token_tail: tokenTail,
@@ -393,9 +395,31 @@ Deno.serve(async (req) => {
         fcm_error_status: errStatus,
         fcm_error_code: errCode,
         fcm_error_message: errMessage,
-        hint: res.ok ? null : hintForFcmError(res.status, errStatus, errCode),
+        hint,
         removed,
       });
+
+      // Persist delivery log (best-effort; never block the send loop on it)
+      try {
+        await supabase.from("push_delivery_logs").insert({
+          user_id,
+          token_id: row.id,
+          token_tail: tokenTail,
+          title: String(title),
+          body: body ? String(body) : null,
+          is_call: !!is_call,
+          call_id: call_id || null,
+          ok: res.ok,
+          http_status: res.status,
+          fcm_error_status: errStatus,
+          fcm_error_code: errCode,
+          fcm_error_message: errMessage,
+          hint,
+          removed,
+        });
+      } catch (logErr) {
+        console.warn("push_delivery_logs insert failed:", (logErr as Error).message);
+      }
     }
 
     if (expired.length > 0) {
