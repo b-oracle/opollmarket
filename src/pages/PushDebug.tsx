@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy, PhoneCall, ExternalLink, Send, Search } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy, PhoneCall, ExternalLink, Send, Search, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -128,6 +128,17 @@ export default function PushDebug() {
     error?: string;
     hint?: string | null;
     results?: Array<{ token?: string; ok?: boolean; status?: number; error_code?: string; hint?: string }>;
+  } | null>(null);
+
+  // Device token verification
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<{
+    deviceToken: string | null;
+    matchedRow: FcmToken | null;
+    isNewest: boolean;
+    newestRow: FcmToken | null;
+    error?: string;
+    note?: string;
   } | null>(null);
 
   // Detect platform
@@ -359,6 +370,150 @@ export default function PushDebug() {
     }
   };
 
+  const handleVerifyDevice = async () => {
+    if (!user) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform()) {
+        setVerifyResult({
+          deviceToken: null,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "Verification requires the installed Android/iOS app — web browsers don't have an FCM device token.",
+        });
+        setVerifying(false);
+        return;
+      }
+
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      let perm = await PushNotifications.checkPermissions();
+      if (perm.receive !== "granted") {
+        perm = await PushNotifications.requestPermissions();
+        setPermission(perm.receive);
+      }
+      if (perm.receive !== "granted") {
+        setVerifyResult({
+          deviceToken: null,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "Notification permission denied — cannot read this device's FCM token.",
+        });
+        setVerifying(false);
+        return;
+      }
+
+      // Capture this device's current FCM token via a one-shot registration
+      const deviceToken: string | null = await new Promise((resolve) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(null);
+        }, 8000);
+
+        const regSub = PushNotifications.addListener("registration", (tok) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(tok.value);
+        });
+        const errSub = PushNotifications.addListener("registrationError", () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(null);
+        });
+        PushNotifications.register().catch(() => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(null);
+        });
+      });
+
+      if (!deviceToken) {
+        setVerifyResult({
+          deviceToken: null,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "Could not retrieve an FCM token from this device. Try Re-register and check Google Play Services.",
+        });
+        setVerifying(false);
+        return;
+      }
+
+      // Pull the latest snapshot from the DB and compare
+      const { data, error } = await supabase
+        .from("user_fcm_tokens" as any)
+        .select("id, token, platform, created_at, updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        setVerifyResult({
+          deviceToken,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "DB read failed: " + error.message,
+        });
+        setRlsDiag(diagnoseRlsError("select", error as any));
+        setVerifying(false);
+        return;
+      }
+
+      const rows = (data || []) as unknown as FcmToken[];
+      setTokens(rows);
+      const matched = rows.find((r) => r.token === deviceToken) || null;
+      const newest = rows[0] || null;
+      const isNewest = !!matched && !!newest && matched.id === newest.id;
+
+      setVerifyResult({
+        deviceToken,
+        matchedRow: matched,
+        isNewest,
+        newestRow: newest,
+        note:
+          matched && !isNewest
+            ? "Token exists but a newer registration is on file — likely from another device. Re-register to make this device the latest."
+            : undefined,
+      });
+
+      if (matched && isNewest) {
+        toast.success("Verified — this device is the latest registration ✓");
+      } else if (matched) {
+        toast.warning("Token found, but it's not the newest registration");
+      } else {
+        toast.error("This device's token is NOT in user_fcm_tokens");
+      }
+    } catch (err) {
+      const msg = (err as Error).message || String(err);
+      setVerifyResult({
+        deviceToken: null,
+        matchedRow: null,
+        isNewest: false,
+        newestRow: null,
+        error: msg,
+      });
+      toast.error("Verification failed: " + msg);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -567,6 +722,150 @@ export default function PushDebug() {
               </div>
             );
           })()}
+        </Card>
+
+        {/* Verify this device */}
+        <Card className="p-4 space-y-3">
+          <div>
+            <h2 className="font-semibold flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              Verify This Device
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Reads this device's current FCM token and confirms it exists in
+              <span className="font-mono"> user_fcm_tokens</span> and matches your
+              latest registration timestamp.
+            </p>
+          </div>
+          <Button
+            onClick={handleVerifyDevice}
+            disabled={verifying || !isNative}
+            variant="secondary"
+            className="w-full"
+          >
+            {verifying ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Verifying…
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="w-4 h-4 mr-2" />
+                Check my token in database
+              </>
+            )}
+          </Button>
+          {!isNative && (
+            <p className="text-xs text-muted-foreground">
+              Only works inside the installed Android/iOS app.
+            </p>
+          )}
+
+          {verifyResult && (
+            <div
+              className={`rounded-lg border p-3 space-y-2 text-xs ${
+                verifyResult.error
+                  ? "border-destructive/40 bg-destructive/5"
+                  : verifyResult.matchedRow && verifyResult.isNewest
+                  ? "border-primary/40 bg-primary/5"
+                  : verifyResult.matchedRow
+                  ? "border-amber-500/40 bg-amber-500/5"
+                  : "border-destructive/40 bg-destructive/5"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-semibold">Result</span>
+                {verifyResult.error ? (
+                  <Badge variant="destructive">Error</Badge>
+                ) : verifyResult.matchedRow && verifyResult.isNewest ? (
+                  <Badge>Verified — Latest</Badge>
+                ) : verifyResult.matchedRow ? (
+                  <Badge variant="secondary">Found — Not Latest</Badge>
+                ) : (
+                  <Badge variant="destructive">Not in Database</Badge>
+                )}
+              </div>
+
+              {verifyResult.error && (
+                <p className="font-mono text-destructive break-all">
+                  {verifyResult.error}
+                </p>
+              )}
+
+              {verifyResult.deviceToken && (
+                <div className="space-y-1">
+                  <p className="text-muted-foreground font-semibold">
+                    This device's FCM token
+                  </p>
+                  <button
+                    onClick={() => copy(verifyResult.deviceToken!)}
+                    className="font-mono break-all text-left w-full hover:text-primary flex items-start gap-1"
+                  >
+                    <span className="flex-1">{verifyResult.deviceToken}</span>
+                    <Copy className="w-3 h-3 mt-0.5 shrink-0" />
+                  </button>
+                </div>
+              )}
+
+              {verifyResult.matchedRow && (
+                <div className="space-y-1 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">DB row id</span>
+                    <span className="font-mono">{verifyResult.matchedRow.id}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Platform</span>
+                    <Badge variant="outline">{verifyResult.matchedRow.platform}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Updated at</span>
+                    <span className="font-mono">
+                      {new Date(verifyResult.matchedRow.updated_at).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {verifyResult.newestRow && (
+                <div className="space-y-1 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Latest registration on file</span>
+                    <span className="font-mono">
+                      {new Date(verifyResult.newestRow.updated_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {verifyResult.matchedRow && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Matches latest?</span>
+                      {verifyResult.isNewest ? (
+                        <Badge className="gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Yes
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="gap-1">
+                          <XCircle className="w-3 h-3" /> No
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {verifyResult.note && (
+                <p className="pt-2 border-t border-border/60 text-muted-foreground">
+                  {verifyResult.note}
+                </p>
+              )}
+
+              {!verifyResult.error && !verifyResult.matchedRow && verifyResult.deviceToken && (
+                <p className="pt-2 border-t border-border/60 text-muted-foreground">
+                  This token isn't saved for your account. Tap{" "}
+                  <span className="font-semibold">Re-register device with FCM</span> below
+                  to upsert it.
+                </p>
+              )}
+            </div>
+          )}
         </Card>
 
         {/* Re-register */}
