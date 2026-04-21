@@ -38,6 +38,8 @@ export default function PushDebug() {
   const [platform, setPlatform] = useState<string>("web");
   const [permission, setPermission] = useState<string>("unknown");
   const [lastError, setLastError] = useState<string | null>(null);
+  const [testingCall, setTestingCall] = useState(false);
+  const [testResult, setTestResult] = useState<SelfTestResult | null>(null);
 
   // Detect platform
   useEffect(() => {
