@@ -200,7 +200,7 @@ export default function PushDebug() {
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Native runtime</span>
               {isNative ? (
-                <Badge className="bg-green-600">Yes</Badge>
+                <Badge>Yes</Badge>
               ) : (
                 <Badge variant="secondary">No (web)</Badge>
               )}
@@ -220,7 +220,7 @@ export default function PushDebug() {
             <h2 className="font-semibold flex items-center gap-2">
               Registered Tokens
               {tokens.length > 0 ? (
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <CheckCircle2 className="w-4 h-4 text-primary" />
               ) : (
                 <XCircle className="w-4 h-4 text-destructive" />
               )}
