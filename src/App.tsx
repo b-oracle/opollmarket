@@ -122,6 +122,7 @@ const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
 const Welcome = lazy(() => import("./pages/Welcome"));
+const PushDebug = lazy(() => import("./pages/PushDebug"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -522,6 +523,7 @@ const App = () => {
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/welcome" element={<Welcome />} />
+                        <Route path="/push-debug" element={<PushDebug />} />
                         <Route path="/index" element={<Navigate to="/" replace />} />
                         <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
