@@ -505,6 +505,69 @@ export default function PushDebug() {
               {lastError}
             </div>
           )}
+          {rlsDiag && (
+            <div
+              className={`rounded-lg border p-3 space-y-2 text-xs ${
+                rlsDiag.isRls
+                  ? "border-destructive/40 bg-destructive/5"
+                  : "border-border bg-muted/30"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <XCircle
+                    className={`w-4 h-4 ${
+                      rlsDiag.isRls ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  />
+                  {rlsDiag.isRls ? "RLS / permission error" : "Database error"}
+                  <Badge variant="outline" className="font-mono text-[10px]">
+                    {rlsDiag.operation}
+                  </Badge>
+                </h4>
+                {rlsDiag.code && (
+                  <Badge variant="secondary" className="font-mono text-[10px]">
+                    {rlsDiag.code}
+                  </Badge>
+                )}
+              </div>
+              <p className="font-mono text-destructive break-all">{rlsDiag.message}</p>
+              {rlsDiag.details && (
+                <p className="text-muted-foreground">
+                  <span className="font-semibold">Details:</span> {rlsDiag.details}
+                </p>
+              )}
+              {rlsDiag.hint && (
+                <p className="text-muted-foreground">
+                  <span className="font-semibold">Hint:</span> {rlsDiag.hint}
+                </p>
+              )}
+              <div className="pt-2 border-t border-border/60">
+                <p className="font-semibold mb-1">How to fix</p>
+                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                  {rlsDiag.steps.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ol>
+              </div>
+              <div className="pt-2 border-t border-border/60 flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">
+                  Expected user_id: <span className="font-mono">{user.id}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setRlsDiag(null);
+                    setLastError(null);
+                  }}
+                  className="h-6 text-[10px]"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="pt-2 border-t border-border space-y-2">
             <div>
