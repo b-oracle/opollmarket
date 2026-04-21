@@ -4,9 +4,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy, PhoneCall, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+
+interface SelfTestResult {
+  ok: boolean;
+  tokens_on_file: number;
+  conversation_id: string | null;
+  call_id: string | null;
+  deep_link: string;
+  sent: number;
+  expired: number;
+  results?: Array<{ token?: string; ok?: boolean; status?: number; error_code?: string; hint?: string }>;
+  hint?: string | null;
+  error?: string;
+}
 
 interface FcmToken {
   id: string;
@@ -25,6 +38,8 @@ export default function PushDebug() {
   const [platform, setPlatform] = useState<string>("web");
   const [permission, setPermission] = useState<string>("unknown");
   const [lastError, setLastError] = useState<string | null>(null);
+  const [testingCall, setTestingCall] = useState(false);
+  const [testResult, setTestResult] = useState<SelfTestResult | null>(null);
 
   // Detect platform
   useEffect(() => {
@@ -137,6 +152,44 @@ export default function PushDebug() {
   const copy = (txt: string) => {
     navigator.clipboard.writeText(txt);
     toast.success("Copied");
+  };
+
+  const handleTestCall = async () => {
+    if (!user) return;
+    setTestingCall(true);
+    setTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("self-test-call-push");
+      if (error) throw error;
+      const result = data as SelfTestResult;
+      setTestResult(result);
+      if (result.ok) {
+        toast.success(
+          result.conversation_id
+            ? "Test call sent — your device should ring shortly"
+            : "Push sent (no conversation found for deep-link test)"
+        );
+      } else if (result.tokens_on_file === 0) {
+        toast.error("No FCM tokens registered for this device");
+      } else {
+        toast.error(result.hint || "Push delivery failed — see results below");
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      setTestResult({
+        ok: false,
+        tokens_on_file: 0,
+        conversation_id: null,
+        call_id: null,
+        deep_link: "",
+        sent: 0,
+        expired: 0,
+        error: msg,
+      });
+      toast.error("Test call failed: " + msg);
+    } finally {
+      setTestingCall(false);
+    }
   };
 
   if (authLoading) {
@@ -304,6 +357,110 @@ export default function PushDebug() {
               {lastError}
             </div>
           )}
+
+          <div className="pt-2 border-t border-border space-y-2">
+            <div>
+              <h3 className="text-sm font-semibold">One-tap call test</h3>
+              <p className="text-xs text-muted-foreground">
+                Sends a sample incoming-call push to your own device and inserts a
+                real call record on your most recent DM so tapping the
+                notification opens that conversation.
+              </p>
+            </div>
+            <Button
+              onClick={handleTestCall}
+              disabled={testingCall}
+              variant="secondary"
+              className="w-full"
+            >
+              {testingCall ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending test call…
+                </>
+              ) : (
+                <>
+                  <PhoneCall className="w-4 h-4 mr-2" />
+                  Ring my device (test)
+                </>
+              )}
+            </Button>
+
+            {testResult && (
+              <div className="space-y-2 text-xs rounded-lg border border-border p-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Status</span>
+                  {testResult.ok ? (
+                    <Badge>Sent</Badge>
+                  ) : (
+                    <Badge variant="destructive">Failed</Badge>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Tokens on file</span>
+                  <Badge variant={testResult.tokens_on_file > 0 ? "default" : "destructive"}>
+                    {testResult.tokens_on_file}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Delivered / Expired</span>
+                  <span className="font-mono">
+                    {testResult.sent} / {testResult.expired}
+                  </span>
+                </div>
+                {testResult.conversation_id && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Conversation</span>
+                    <Link
+                      to={`/messages/${testResult.conversation_id}`}
+                      className="font-mono text-primary hover:underline truncate flex items-center gap-1"
+                    >
+                      <span className="truncate">{testResult.conversation_id}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0" />
+                    </Link>
+                  </div>
+                )}
+                {testResult.call_id && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Call ID</span>
+                    <span className="font-mono text-xs truncate ml-2">{testResult.call_id}</span>
+                  </div>
+                )}
+                {testResult.deep_link && (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-muted-foreground shrink-0">Deep-link</span>
+                    <button
+                      onClick={() => copy(testResult.deep_link)}
+                      className="font-mono truncate hover:text-primary flex items-center gap-1"
+                    >
+                      <span className="truncate">{testResult.deep_link}</span>
+                      <Copy className="w-3 h-3 shrink-0" />
+                    </button>
+                  </div>
+                )}
+                {testResult.hint && (
+                  <p className="text-xs text-muted-foreground italic pt-1 border-t border-border">
+                    {testResult.hint}
+                  </p>
+                )}
+                {testResult.error && (
+                  <p className="text-xs text-destructive font-mono break-all">
+                    {testResult.error}
+                  </p>
+                )}
+                {testResult.results && testResult.results.length > 0 && (
+                  <details className="pt-1">
+                    <summary className="cursor-pointer text-muted-foreground">
+                      Per-token results ({testResult.results.length})
+                    </summary>
+                    <pre className="mt-2 overflow-auto text-[10px] bg-background p-2 rounded">
+                      {JSON.stringify(testResult.results, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            )}
+          </div>
         </Card>
       </div>
     </div>
