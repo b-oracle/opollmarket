@@ -114,6 +114,22 @@ export default function PushDebug() {
   const [platformFilter, setPlatformFilter] = useState<"all" | "android" | "ios">("all");
   const [rlsDiag, setRlsDiag] = useState<RlsDiagnostic | null>(null);
 
+  // Market deep-link push
+  const [marketQuery, setMarketQuery] = useState("");
+  const [marketResults, setMarketResults] = useState<Array<{ id: string; title: string; image_url: string | null }>>([]);
+  const [searchingMarkets, setSearchingMarkets] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState<{ id: string; title: string } | null>(null);
+  const [sendingMarketPush, setSendingMarketPush] = useState(false);
+  const [marketPushResult, setMarketPushResult] = useState<{
+    ok: boolean;
+    deep_link: string;
+    sent?: number;
+    expired?: number;
+    error?: string;
+    hint?: string | null;
+    results?: Array<{ token?: string; ok?: boolean; status?: number; error_code?: string; hint?: string }>;
+  } | null>(null);
+
   // Detect platform
   useEffect(() => {
     (async () => {
