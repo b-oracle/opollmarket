@@ -116,7 +116,8 @@ const AdminSettings = () => {
   const [settingsId, setSettingsId] = useState<string | null>(null);
   const [fcmTesting, setFcmTesting] = useState(false);
   const [fcmTestToken, setFcmTestToken] = useState("");
-  const [fcmTestResult, setFcmTestResult] = useState<string | null>(null);
+  const [fcmTestResult, setFcmTestResult] = useState<any>(null);
+  const [fcmTestError, setFcmTestError] = useState<string | null>(null);
 
   // Test incoming-call push
   const [callTestQuery, setCallTestQuery] = useState("");
@@ -130,7 +131,8 @@ const AdminSettings = () => {
     username: string | null;
   } | null>(null);
   const [callTestSending, setCallTestSending] = useState(false);
-  const [callTestResult, setCallTestResult] = useState<string | null>(null);
+  const [callTestResult, setCallTestResult] = useState<any>(null);
+  const [callTestError, setCallTestError] = useState<string | null>(null);
 
   const runFcmTest = async () => {
     setFcmTesting(true);
