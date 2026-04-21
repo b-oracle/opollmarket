@@ -285,6 +285,80 @@ export default function PushDebug() {
     }
   };
 
+  // Search markets by title (active first)
+  const searchMarkets = useCallback(async (q: string) => {
+    if (!q.trim()) {
+      setMarketResults([]);
+      return;
+    }
+    setSearchingMarkets(true);
+    const { data, error } = await supabase
+      .from("markets")
+      .select("id, title, image_url, status")
+      .ilike("title", `%${q.trim()}%`)
+      .in("status", ["active", "ended", "resolved"])
+      .order("status", { ascending: true })
+      .limit(8);
+    if (error) {
+      toast.error("Market search failed: " + error.message);
+      setMarketResults([]);
+    } else {
+      setMarketResults(
+        (data || []).map((m: any) => ({ id: m.id, title: m.title, image_url: m.image_url }))
+      );
+    }
+    setSearchingMarkets(false);
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => searchMarkets(marketQuery), 250);
+    return () => clearTimeout(t);
+  }, [marketQuery, searchMarkets]);
+
+  const handleSendMarketPush = async () => {
+    if (!user || !selectedMarket) return;
+    setSendingMarketPush(true);
+    setMarketPushResult(null);
+    const deepLink = `/market/${selectedMarket.id}`;
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-push", {
+        body: {
+          user_id: user.id,
+          title: "Market update 📈",
+          body: selectedMarket.title,
+          url: deepLink,
+          data: {
+            type: "market_deeplink",
+            market_id: selectedMarket.id,
+            url: deepLink,
+          },
+        },
+      });
+      if (error) throw error;
+      const result = data as any;
+      setMarketPushResult({
+        ok: !!result?.ok,
+        deep_link: deepLink,
+        sent: result?.sent,
+        expired: result?.expired,
+        hint: result?.hint,
+        results: result?.results,
+        error: result?.error,
+      });
+      if (result?.ok) {
+        toast.success("Market push sent — tap the notification on your device");
+      } else {
+        toast.error(result?.error || result?.hint || "Push failed — see results below");
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      setMarketPushResult({ ok: false, deep_link: deepLink, error: msg });
+      toast.error("Send failed: " + msg);
+    } finally {
+      setSendingMarketPush(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
