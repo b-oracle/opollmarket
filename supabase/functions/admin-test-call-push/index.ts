@@ -113,10 +113,13 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        ok: fcmRes.ok,
+        ok: fcmRes.ok && (fcmJson?.sent ?? 0) > 0,
         target_user_id: targetUserId,
         tokens_on_file: tokenCount ?? 0,
         call_id: callId,
+        sent: fcmJson?.sent ?? 0,
+        expired: fcmJson?.expired ?? 0,
+        results: fcmJson?.results ?? [],
         fcm_response: fcmJson,
       }),
       {
