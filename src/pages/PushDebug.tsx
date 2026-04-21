@@ -154,6 +154,44 @@ export default function PushDebug() {
     toast.success("Copied");
   };
 
+  const handleTestCall = async () => {
+    if (!user) return;
+    setTestingCall(true);
+    setTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("self-test-call-push");
+      if (error) throw error;
+      const result = data as SelfTestResult;
+      setTestResult(result);
+      if (result.ok) {
+        toast.success(
+          result.conversation_id
+            ? "Test call sent — your device should ring shortly"
+            : "Push sent (no conversation found for deep-link test)"
+        );
+      } else if (result.tokens_on_file === 0) {
+        toast.error("No FCM tokens registered for this device");
+      } else {
+        toast.error(result.hint || "Push delivery failed — see results below");
+      }
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      setTestResult({
+        ok: false,
+        tokens_on_file: 0,
+        conversation_id: null,
+        call_id: null,
+        deep_link: "",
+        sent: 0,
+        expired: 0,
+        error: msg,
+      });
+      toast.error("Test call failed: " + msg);
+    } finally {
+      setTestingCall(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
