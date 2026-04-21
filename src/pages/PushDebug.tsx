@@ -370,6 +370,150 @@ export default function PushDebug() {
     }
   };
 
+  const handleVerifyDevice = async () => {
+    if (!user) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (!Capacitor.isNativePlatform()) {
+        setVerifyResult({
+          deviceToken: null,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "Verification requires the installed Android/iOS app — web browsers don't have an FCM device token.",
+        });
+        setVerifying(false);
+        return;
+      }
+
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      let perm = await PushNotifications.checkPermissions();
+      if (perm.receive !== "granted") {
+        perm = await PushNotifications.requestPermissions();
+        setPermission(perm.receive);
+      }
+      if (perm.receive !== "granted") {
+        setVerifyResult({
+          deviceToken: null,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "Notification permission denied — cannot read this device's FCM token.",
+        });
+        setVerifying(false);
+        return;
+      }
+
+      // Capture this device's current FCM token via a one-shot registration
+      const deviceToken: string | null = await new Promise((resolve) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(null);
+        }, 8000);
+
+        const regSub = PushNotifications.addListener("registration", (tok) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(tok.value);
+        });
+        const errSub = PushNotifications.addListener("registrationError", () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(null);
+        });
+        PushNotifications.register().catch(() => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          regSub.then((s) => s.remove());
+          errSub.then((s) => s.remove());
+          resolve(null);
+        });
+      });
+
+      if (!deviceToken) {
+        setVerifyResult({
+          deviceToken: null,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "Could not retrieve an FCM token from this device. Try Re-register and check Google Play Services.",
+        });
+        setVerifying(false);
+        return;
+      }
+
+      // Pull the latest snapshot from the DB and compare
+      const { data, error } = await supabase
+        .from("user_fcm_tokens" as any)
+        .select("id, token, platform, created_at, updated_at")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        setVerifyResult({
+          deviceToken,
+          matchedRow: null,
+          isNewest: false,
+          newestRow: null,
+          error: "DB read failed: " + error.message,
+        });
+        setRlsDiag(diagnoseRlsError("select", error as any));
+        setVerifying(false);
+        return;
+      }
+
+      const rows = (data || []) as unknown as FcmToken[];
+      setTokens(rows);
+      const matched = rows.find((r) => r.token === deviceToken) || null;
+      const newest = rows[0] || null;
+      const isNewest = !!matched && !!newest && matched.id === newest.id;
+
+      setVerifyResult({
+        deviceToken,
+        matchedRow: matched,
+        isNewest,
+        newestRow: newest,
+        note:
+          matched && !isNewest
+            ? "Token exists but a newer registration is on file — likely from another device. Re-register to make this device the latest."
+            : undefined,
+      });
+
+      if (matched && isNewest) {
+        toast.success("Verified — this device is the latest registration ✓");
+      } else if (matched) {
+        toast.warning("Token found, but it's not the newest registration");
+      } else {
+        toast.error("This device's token is NOT in user_fcm_tokens");
+      }
+    } catch (err) {
+      const msg = (err as Error).message || String(err);
+      setVerifyResult({
+        deviceToken: null,
+        matchedRow: null,
+        isNewest: false,
+        newestRow: null,
+        error: msg,
+      });
+      toast.error("Verification failed: " + msg);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
