@@ -4,9 +4,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, RefreshCw, Copy, PhoneCall, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+
+interface SelfTestResult {
+  ok: boolean;
+  tokens_on_file: number;
+  conversation_id: string | null;
+  call_id: string | null;
+  deep_link: string;
+  sent: number;
+  expired: number;
+  results?: Array<{ token?: string; ok?: boolean; status?: number; error_code?: string; hint?: string }>;
+  hint?: string | null;
+  error?: string;
+}
 
 interface FcmToken {
   id: string;
