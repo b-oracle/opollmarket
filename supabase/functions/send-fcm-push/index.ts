@@ -273,6 +273,17 @@ Deno.serve(async (req) => {
     }
 
     const expired: string[] = [];
+    const results: Array<{
+      token_id: string;
+      token_tail: string;
+      ok: boolean;
+      http_status: number;
+      fcm_error_status: string | null;
+      fcm_error_code: string | null;
+      fcm_error_message: string | null;
+      hint: string | null;
+      removed: boolean;
+    }> = [];
     let sent = 0;
 
     // FCM v1 is single-token per request. Fan out sequentially.
@@ -353,31 +364,50 @@ Deno.serve(async (req) => {
       );
 
       const json = await res.json().catch(() => ({}));
+      const errStatus = json?.error?.status || null;
+      const errCode = json?.error?.details?.[0]?.errorCode || null;
+      const errMessage = json?.error?.message || null;
+      const tokenTail = row.token ? `…${row.token.slice(-12)}` : "";
+      let removed = false;
 
       if (res.ok) {
         sent++;
       } else {
-        const errStatus = json?.error?.status || "";
-        const errCode = json?.error?.details?.[0]?.errorCode || "";
         if (
           errStatus === "NOT_FOUND" ||
           errCode === "UNREGISTERED" ||
           errCode === "INVALID_ARGUMENT"
         ) {
           expired.push(row.id);
+          removed = true;
         } else {
           console.warn("FCM v1 send error:", res.status, JSON.stringify(json));
         }
       }
+
+      results.push({
+        token_id: row.id,
+        token_tail: tokenTail,
+        ok: res.ok,
+        http_status: res.status,
+        fcm_error_status: errStatus,
+        fcm_error_code: errCode,
+        fcm_error_message: errMessage,
+        hint: res.ok ? null : hintForFcmError(res.status, errStatus, errCode),
+        removed,
+      });
     }
 
     if (expired.length > 0) {
       await supabase.from("user_fcm_tokens").delete().in("id", expired);
     }
 
-    return new Response(JSON.stringify({ sent, expired: expired.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ sent, expired: expired.length, results }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error("send-fcm-push error:", err);
     return new Response(JSON.stringify({ error: (err as Error).message }), {
