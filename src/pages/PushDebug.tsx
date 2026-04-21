@@ -40,6 +40,7 @@ export default function PushDebug() {
   const [lastError, setLastError] = useState<string | null>(null);
   const [testingCall, setTestingCall] = useState(false);
   const [testResult, setTestResult] = useState<SelfTestResult | null>(null);
+  const [platformFilter, setPlatformFilter] = useState<"all" | "android" | "ios">("all");
 
   // Detect platform
   useEffect(() => {
