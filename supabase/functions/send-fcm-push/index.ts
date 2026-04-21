@@ -9,6 +9,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// ---- Diagnostics helpers -------------------------------------------------
+
+function hintForFcmError(
+  httpStatus: number,
+  errStatus: string | null,
+  errCode: string | null,
+): string | null {
+  if (httpStatus === 401 || httpStatus === 403) {
+    return "OAuth2 token rejected. Confirm FCM_SERVICE_ACCOUNT_JSON belongs to FCM_PROJECT_ID and that the service account has 'Firebase Cloud Messaging API' enabled in Google Cloud.";
+  }
+  if (errCode === "UNREGISTERED" || errStatus === "NOT_FOUND") {
+    return "Token is no longer valid (uninstalled/cleared). The token will be deleted from user_fcm_tokens automatically on the next live send.";
+  }
+  if (errCode === "INVALID_ARGUMENT") {
+    return "Token format is wrong, or it was registered against a different Firebase project than FCM_PROJECT_ID. Re-register the device or fix FCM_PROJECT_ID.";
+  }
+  if (errCode === "SENDER_ID_MISMATCH") {
+    return "The device token was issued by a different Firebase Sender ID. Make sure google-services.json on the device matches the project owning FCM_SERVICE_ACCOUNT_JSON.";
+  }
+  if (errCode === "QUOTA_EXCEEDED") {
+    return "Per-project send quota hit. Slow down or request a quota increase in Google Cloud.";
+  }
+  if (errCode === "UNAVAILABLE" || errStatus === "UNAVAILABLE") {
+    return "FCM service temporarily unavailable. Retry with backoff.";
+  }
+  if (errCode === "THIRD_PARTY_AUTH_ERROR") {
+    return "APNs auth failed (iOS). Check the APNs key uploaded in Firebase Console matches the bundle ID.";
+  }
+  return null;
+}
+
 // ---- Google OAuth2 token (service-account JWT bearer) --------------------
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
