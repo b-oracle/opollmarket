@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "assets": "node scripts/build-splash-sources.mjs && capacitor-assets generate --android && node scripts/patch-android-splash-theme.mjs",
+    "android:patch-firebase": "node scripts/patch-android-firebase.mjs",
+    "android:sync": "npx cap sync android && npm run android:patch-firebase"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
@@ -69,6 +72,7 @@
     "livekit-client": "^2.18.0",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
+    "opoll-call-plugin": "file:plugins/opoll-call",
     "pptxgenjs": "^4.0.1",
     "qrcode.react": "^4.2.0",
     "react": "^18.3.1",

@@ -29,6 +29,7 @@ import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTuto
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import DeferredMount from "./components/DeferredMount";
 import { VerificationThresholdProvider } from "./components/NftBadge";
+import { initOpollCallNative } from "./lib/mobile/opollCallNative";
 
 const PendingCopyTrades = lazy(() => import("./components/PendingCopyTrades"));
 const AimtellProvider = lazy(() => import("./components/AimtellProvider"));
@@ -458,6 +459,10 @@ const App = () => {
     } catch {
       // ignore storage access errors
     }
+  }, []);
+
+  useEffect(() => {
+    void initOpollCallNative();
   }, []);
 
   return (

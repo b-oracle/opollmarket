@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "552098177241",
+    "project_id": "opollmarket-e7a92",
+    "storage_bucket": "opollmarket-e7a92.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:552098177241:android:efd6cf5f4f621374acdec8",
+        "android_client_info": {
+          "package_name": "com.opollmarket.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArBoCglK_IZzUUZwNydfLzmDpy-OKGY6I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

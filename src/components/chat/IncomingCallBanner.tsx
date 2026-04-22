@@ -19,6 +19,15 @@ interface IncomingCall {
   callerAvatar?: string;
 }
 
+interface NativeCallPayload {
+  callId?: string;
+  conversationId?: string;
+  callerId?: string;
+  callerName?: string;
+  callerAvatar?: string;
+  action?: "accept" | "decline";
+}
+
 interface ActiveCallState {
   callId: string;
   conversationId: string;
@@ -169,6 +178,58 @@ const IncomingCallBanner = () => {
     };
   }, [incomingCall?.id]);
 
+  const answerCallById = useCallback(async (params: {
+    callId: string;
+    conversationId?: string;
+    callerName?: string;
+    callerAvatar?: string;
+  }) => {
+    const { callId } = params;
+    const { data, error } = await supabase.functions.invoke("dm-call-token", {
+      body: { action: "answer", call_id: callId },
+    });
+    if (error || data?.error) throw new Error(data?.error || "Failed to answer");
+
+    let conversationId = params.conversationId;
+    let callerName = params.callerName || "Unknown";
+    let callerAvatar = params.callerAvatar;
+
+    if (!conversationId) {
+      const { data: callRow } = await supabase
+        .from("dm_calls")
+        .select("conversation_id, caller_id")
+        .eq("id", callId)
+        .maybeSingle();
+      conversationId = callRow?.conversation_id;
+
+      if (callRow?.caller_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", callRow.caller_id)
+          .maybeSingle();
+        callerName = profile?.display_name || callerName;
+        callerAvatar = profile?.avatar_url || callerAvatar;
+      }
+    }
+
+    if (!conversationId) throw new Error("Missing conversation id for call");
+
+    setActiveCall({
+      callId,
+      conversationId,
+      token: data.token,
+      url: data.url,
+      room: data.room,
+      passphrase: data.e2ee_passphrase,
+      otherName: callerName,
+      otherAvatar: callerAvatar,
+      isOutgoing: false,
+    });
+    setIncomingCall(null);
+    setCallMinimized(false);
+  }, []);
+
   const handleAnswer = useCallback(async () => {
     if (!incomingCall || answering) return;
     setAnswering(true);
@@ -177,30 +238,18 @@ const IncomingCallBanner = () => {
     if (navigator.vibrate) navigator.vibrate(0);
 
     try {
-      const { data, error } = await supabase.functions.invoke("dm-call-token", {
-        body: { action: "answer", call_id: incomingCall.id },
-      });
-
-      if (error || data?.error) throw new Error(data?.error || "Failed to answer");
-
-      setActiveCall({
+      await answerCallById({
         callId: incomingCall.id,
         conversationId: incomingCall.conversation_id,
-        token: data.token,
-        url: data.url,
-        room: data.room,
-        passphrase: data.e2ee_passphrase,
-        otherName: incomingCall.callerName,
-        otherAvatar: incomingCall.callerAvatar,
-        isOutgoing: false,
+        callerName: incomingCall.callerName,
+        callerAvatar: incomingCall.callerAvatar,
       });
-      setIncomingCall(null);
     } catch (err: any) {
       toast.error(err.message || "Failed to answer call");
     } finally {
       setAnswering(false);
     }
-  }, [incomingCall, answering]);
+  }, [incomingCall, answering, answerCallById]);
 
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
@@ -223,6 +272,59 @@ const IncomingCallBanner = () => {
     window.addEventListener("start-voice-call" as any, handler);
     return () => window.removeEventListener("start-voice-call" as any, handler);
   }, []);
+
+  useEffect(() => {
+    const onNativeIncoming = (event: Event) => {
+      const detail = (event as CustomEvent<NativeCallPayload>).detail;
+      if (!detail?.callId) return;
+      setIncomingCall({
+        id: detail.callId,
+        conversation_id: detail.conversationId || "",
+        caller_id: detail.callerId || "",
+        room_name: "",
+        callerName: detail.callerName || "Unknown",
+        callerAvatar: detail.callerAvatar,
+      });
+    };
+
+    const onNativeAction = async (event: Event) => {
+      const detail = (event as CustomEvent<NativeCallPayload>).detail;
+      if (!detail?.callId || !detail?.action) return;
+
+      if (detail.action === "decline") {
+        try {
+          await supabase.functions.invoke("dm-call-token", {
+            body: { action: "decline", call_id: detail.callId },
+          });
+        } catch {
+          // ignore
+        }
+        setIncomingCall(null);
+        return;
+      }
+
+      setAnswering(true);
+      try {
+        await answerCallById({
+          callId: detail.callId,
+          conversationId: detail.conversationId,
+          callerName: detail.callerName,
+          callerAvatar: detail.callerAvatar,
+        });
+      } catch (err: any) {
+        toast.error(err.message || "Failed to answer call");
+      } finally {
+        setAnswering(false);
+      }
+    };
+
+    window.addEventListener("native-incoming-call", onNativeIncoming);
+    window.addEventListener("native-call-action", onNativeAction);
+    return () => {
+      window.removeEventListener("native-incoming-call", onNativeIncoming);
+      window.removeEventListener("native-call-action", onNativeAction);
+    };
+  }, [answerCallById]);
 
   if (!isFeatureEnabled("voice_calls")) return null;
 

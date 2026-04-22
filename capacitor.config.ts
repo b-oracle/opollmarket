@@ -4,7 +4,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.opollmarket.app',
-  appName: 'opollmarket',
+  appName: 'Opoll',
   webDir: 'dist',
   plugins: {
     SplashScreen: {
