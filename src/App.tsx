@@ -6,6 +6,7 @@ import { SpaceReplayProvider } from "./hooks/useSpaceReplay";
 import SpaceRoom from "./components/social/SpaceRoom";
 const SpaceReplayModal = lazy(() => import("./components/social/SpaceReplayModal"));
 const SpaceReplayMiniPlayer = lazy(() => import("./components/social/SpaceReplayMiniPlayer"));
+const LiveSpaceFloatingButton = lazy(() => import("./components/social/LiveSpaceFloatingButton"));
 const SecurityVerificationModal = lazy(() => import("./components/SecurityVerificationModal"));
 
 import { Navigate } from "react-router-dom";
@@ -29,7 +30,23 @@ import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTuto
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import DeferredMount from "./components/DeferredMount";
 import { VerificationThresholdProvider } from "./components/NftBadge";
+import { useNativePush } from "./hooks/useNativePush";
+import { useCallDeepLink } from "./hooks/useCallDeepLink";
+import { useFirstRun } from "./hooks/useFirstRun";
+import AppSplash from "./components/AppSplash";
+import { bootNativeUI } from "./lib/nativeUI";
 import { initOpollCallNative } from "./lib/mobile/opollCallNative";
+
+const NativePushRegistrar = () => {
+  useNativePush();
+  useCallDeepLink();
+  return null;
+};
+
+const FirstRunRedirector = () => {
+  useFirstRun();
+  return null;
+};
 
 const PendingCopyTrades = lazy(() => import("./components/PendingCopyTrades"));
 const AimtellProvider = lazy(() => import("./components/AimtellProvider"));
@@ -103,6 +120,8 @@ const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const PushDebug = lazy(() => import("./pages/PushDebug"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -459,6 +478,8 @@ const App = () => {
     } catch {
       // ignore storage access errors
     }
+    // Hide native splash + configure status bar (no-op on web)
+    void bootNativeUI();
   }, []);
 
   useEffect(() => {
@@ -475,10 +496,12 @@ const App = () => {
             <SpaceReplayProvider>
             <SidebarStateProvider>
               <TooltipProvider>
+                <AppSplash />
                 <Toaster />
                 <Sonner />
                 <PWAUpdatePrompt />
                 <BrowserRouter>
+                <FirstRunRedirector />
                 {/* IncomingCallBanner must be OUTSIDE ConditionalWagmiProvider so it persists across all route changes */}
                 <Suspense fallback={null}><IncomingCallBanner /></Suspense>
                 <ConditionalWagmiProvider>
@@ -487,10 +510,12 @@ const App = () => {
                   <Suspense fallback={null}><AimtellProvider /></Suspense>
                   <SocialTutorialTrigger />
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
+                  <NativePushRegistrar />
                 </DeferredMount>
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
                 <Suspense fallback={null}><SpaceReplayMiniPlayer /></Suspense>
+                <Suspense fallback={null}><LiveSpaceFloatingButton /></Suspense>
                 <ConditionalSidebar />
                 <ConditionalLayout>
                   <div className="flex-1">
@@ -500,6 +525,8 @@ const App = () => {
                       <LoginSecurityGuard>
                       <Routes>
                         <Route path="/" element={<Index />} />
+                        <Route path="/welcome" element={<Welcome />} />
+                        <Route path="/push-debug" element={<PushDebug />} />
                         <Route path="/index" element={<Navigate to="/" replace />} />
                         <Route path="/market/:id" element={<MarketDetail />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />

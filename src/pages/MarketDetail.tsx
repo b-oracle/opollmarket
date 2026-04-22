@@ -750,6 +750,7 @@ const MarketDetail = () => {
             winningOptionId={market.winningOptionId || null}
             options={market.options}
             marketType={market.marketType}
+            sportPredictedOutcome={market.sportPredictedOutcome || null}
           />
         )}
 

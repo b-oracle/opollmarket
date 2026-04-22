@@ -413,8 +413,9 @@ Deno.serve(async (req) => {
           const isMultiOption = isFootball || isMma;
           const marketType = isMultiOption ? "multi" : "binary";
 
-          // Set auto_resolve_deadline to 2 hours after match start (grace for delays)
-          const autoResolveDeadline = new Date(fixtureDate.getTime() + 2 * 60 * 60 * 1000);
+          // Set auto_resolve_deadline to the EXACT kickoff time — this is the betting cutoff.
+          // Resolution is independent: check-sports-resolve polls API-Football for finished status.
+          const autoResolveDeadline = fixtureDate;
 
           // Set end_date to the DAY AFTER kickoff since end_date is a date-only column
           // and same-day matches would be closed prematurely by the cron job

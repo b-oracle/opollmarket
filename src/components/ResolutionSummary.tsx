@@ -15,6 +15,7 @@ interface ResolutionSummaryProps {
   winningOptionId: string | null;
   options?: { id: string; label: string; price: number; sortOrder: number }[];
   marketType: string;
+  sportPredictedOutcome?: string | null;
 }
 
 interface Position {
@@ -38,18 +39,24 @@ const colorAlpha = (hex: string, alpha: number) => {
   return `rgba(${r},${g},${b},${alpha})`;
 };
 
-export default function ResolutionSummary({ marketId, marketTitle, resolvedSide, winningOptionId, options, marketType }: ResolutionSummaryProps) {
+export default function ResolutionSummary({ marketId, marketTitle, resolvedSide, winningOptionId, options, marketType, sportPredictedOutcome }: ResolutionSummaryProps) {
   const { user } = useAuth();
   const isMulti = marketType === "multi" || marketType === "range";
   const [shareOpen, setShareOpen] = useState(false);
   const profitCardRef = useRef<HTMLDivElement>(null);
 
   const winningOption = options?.find(o => o.id === winningOptionId);
+  // For binary sports markets, prefer the actual team/outcome name over "YES"/"NO"
+  const sportLabel = sportPredictedOutcome?.trim();
   const winningLabel = isMulti && winningOption
     ? winningOption.label
-    : resolvedSide
-      ? resolvedSide.toUpperCase()
-      : "Unknown";
+    : sportLabel && resolvedSide === "yes"
+      ? sportLabel
+      : sportLabel && resolvedSide === "no"
+        ? `Not ${sportLabel}`
+        : resolvedSide
+          ? resolvedSide.toUpperCase()
+          : "Unknown";
 
   const winningOptionIdx = winningOption && options
     ? options.findIndex(o => o.id === winningOptionId)
@@ -196,7 +203,11 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
               const optIdx = optionMatch && options ? options.findIndex(o => o.id === pos.option_id) : -1;
               const posLabel = isMulti && optionMatch
                 ? optionMatch.label
-                : pos.side.toUpperCase();
+                : sportLabel && pos.side === "yes"
+                  ? sportLabel
+                  : sportLabel && pos.side === "no"
+                    ? `Not ${sportLabel}`
+                    : pos.side.toUpperCase();
               const posColor = isMulti && optIdx >= 0
                 ? optionColors[optIdx % optionColors.length]
                 : pos.side === "yes" ? "#22c55e" : "#ef4444";

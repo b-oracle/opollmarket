@@ -6,7 +6,21 @@ const config: CapacitorConfig = {
   appId: 'com.opollmarket.app',
   appName: 'Opoll',
   webDir: 'dist',
+  server: {
+    url: 'https://fbc135e2-c42c-4d3f-bb3e-e7385ced809f.lovableproject.com?forceHideBadge=true',
+    cleartext: true
+  },
+  ios: {
+    backgroundColor: '#000000',
+    contentInset: 'automatic',
+  },
   plugins: {
+    CapacitorBackgroundMode: {
+      enabled: true,
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: false,
@@ -17,6 +31,12 @@ const config: CapacitorConfig = {
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
+      useDialog: false,
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#000000',
+      overlaysWebView: false,
     },
   },
   android: {
@@ -28,7 +48,7 @@ const config: CapacitorConfig = {
       releaseType: 'AAB',
   
     },
-  }
+  },
 };
 
 export default config;

@@ -18,7 +18,9 @@ Deno.serve(async (req) => {
     );
 
     const INACTIVITY_MINUTES = 30;
+    const HARD_TIMEOUT_HOURS = 6;
     const cutoff = new Date(Date.now() - INACTIVITY_MINUTES * 60 * 1000).toISOString();
+    const hardCutoff = new Date(Date.now() - HARD_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString();
 
     // Find live spaces that started more than 30 minutes ago
     const { data: liveSpaces, error: fetchErr } = await supabase
@@ -81,9 +83,14 @@ Deno.serve(async (req) => {
 
       const anyKeyUserActive = (recentKeyMessages ?? 0) > 0;
 
-      // End space if NO key user is connected AND none have recent chat activity
-      // A connected host/speaker is considered active even without chat messages
-      if (!anyKeyUserPresent && !anyKeyUserActive) {
+      // Force-end if space has been live longer than the hard timeout (e.g. 6 hours),
+      // regardless of participant records — DB left_at can be stale if the host disconnected
+      // without a clean leave event.
+      const pastHardTimeout = space.started_at < hardCutoff;
+
+      // End space if NO key user is connected AND none have recent chat activity,
+      // OR if the space exceeded the hard timeout
+      if (pastHardTimeout || (!anyKeyUserPresent && !anyKeyUserActive)) {
         const now = new Date().toISOString();
 
         // End the space
@@ -100,11 +107,15 @@ Deno.serve(async (req) => {
           .eq("space_id", space.id)
           .is("left_at", null);
 
+        const reason = pastHardTimeout
+          ? `exceeded the maximum duration of ${HARD_TIMEOUT_HOURS} hours`
+          : `${INACTIVITY_MINUTES} minutes of no host, co-host, or speaker activity`;
+
         // Notify the host
         await supabase.from("notifications").insert({
           user_id: space.host_id,
-          title: "Space Ended (Inactivity) ⏰",
-          message: `Your space "${space.title}" was automatically ended after ${INACTIVITY_MINUTES} minutes of no host, co-host, or speaker activity.`,
+          title: "Space Ended (Auto-Closed) ⏰",
+          message: `Your space "${space.title}" was automatically ended after ${reason}.`,
           type: "info",
         });
 

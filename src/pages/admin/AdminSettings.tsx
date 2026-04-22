@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +12,8 @@ import { useAdminContext } from "./AdminLayout";
 import { Badge } from "@/components/ui/badge";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { logAuditEvent } from "@/lib/auditLog";
+import { resetOnboarding, hasCompletedOnboarding } from "@/hooks/useFirstRun";
+import { FcmTestDiagnostics, CallTestDiagnostics, RecentDeliveryLogs } from "@/components/admin/FcmDiagnosticsPanel";
 
 const ALL_ASSETS = [
   { symbol: "BTC", label: "Bitcoin" },
@@ -113,6 +115,106 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [fcmTesting, setFcmTesting] = useState(false);
+  const [fcmTestToken, setFcmTestToken] = useState("");
+  const [fcmTestResult, setFcmTestResult] = useState<any>(null);
+  const [fcmTestError, setFcmTestError] = useState<string | null>(null);
+
+  // Test incoming-call push
+  const [callTestQuery, setCallTestQuery] = useState("");
+  const [callTestResults, setCallTestResults] = useState<
+    Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>
+  >([]);
+  const [callTestSearching, setCallTestSearching] = useState(false);
+  const [callTestTarget, setCallTestTarget] = useState<{
+    id: string;
+    display_name: string | null;
+    username: string | null;
+  } | null>(null);
+  const [callTestSending, setCallTestSending] = useState(false);
+  const [callTestResult, setCallTestResult] = useState<any>(null);
+  const [callTestError, setCallTestError] = useState<string | null>(null);
+
+  const runFcmTest = async () => {
+    setFcmTesting(true);
+    setFcmTestResult(null);
+    setFcmTestError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-push", {
+        body: { test: true, token: fcmTestToken.trim() || undefined },
+      });
+      if (error) {
+        setFcmTestError(`Invoke error: ${error.message}`);
+      } else {
+        setFcmTestResult(data);
+        if ((data as any)?.ok) toast.success("FCM credentials valid");
+        else toast.error(`FCM test failed at stage: ${(data as any)?.stage ?? "unknown"}`);
+      }
+    } catch (e) {
+      setFcmTestError(`Error: ${(e as Error).message}`);
+    } finally {
+      setFcmTesting(false);
+    }
+  };
+
+  // Search users for the test-call picker
+  useEffect(() => {
+    const q = callTestQuery.trim();
+    if (q.length < 2) {
+      setCallTestResults([]);
+      return;
+    }
+    let cancelled = false;
+    setCallTestSearching(true);
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, username, avatar_url")
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%,email.ilike.%${q}%`)
+        .limit(8);
+      if (!cancelled) {
+        setCallTestResults((data || []) as any);
+        setCallTestSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [callTestQuery]);
+
+  const sendTestCall = async () => {
+    if (!callTestTarget) return;
+    setCallTestSending(true);
+    setCallTestResult(null);
+    setCallTestError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-test-call-push", {
+        body: { target_user_id: callTestTarget.id },
+      });
+      if (error) {
+        setCallTestError(`Invoke error: ${error.message}`);
+        toast.error(error.message);
+      } else {
+        setCallTestResult(data);
+        const tokens = (data as any)?.tokens_on_file ?? 0;
+        const sent = (data as any)?.sent ?? 0;
+        if (tokens === 0) {
+          toast.warning("No FCM tokens on file — user must open the native app while signed in");
+        } else if (sent > 0) {
+          toast.success(`Test call dispatched to ${sent}/${tokens} device(s)`);
+        } else {
+          toast.error("FCM rejected every token — see per-token diagnostics");
+        }
+      }
+    } catch (e) {
+      setCallTestError(`Error: ${(e as Error).message}`);
+      toast.error((e as Error).message);
+    } finally {
+      setCallTestSending(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -467,6 +569,182 @@ const AdminSettings = () => {
 
       {/* ─── Feature Toggles (always visible) ─── */}
       <FeatureTogglesCard />
+
+      {/* ─── FCM Push Diagnostics (super admin, always visible) ─── */}
+      {isSuperAdmin && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Zap className="w-4 h-4 text-primary" /> FCM Push Diagnostics
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Verify FCM HTTP v1 credentials (service account + project ID) and optionally dry-run a send against a device token.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="fcmTestToken" className="text-xs">Device FCM Token (optional)</Label>
+              <Input
+                id="fcmTestToken"
+                placeholder="Paste a device FCM token to dry-run send"
+                value={fcmTestToken}
+                onChange={(e) => setFcmTestToken(e.target.value)}
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Leave empty to only verify credentials and OAuth2 token. With a token, a <code>validate_only</code> request is sent — no actual notification is delivered.
+              </p>
+            </div>
+            <Button onClick={runFcmTest} disabled={fcmTesting} size="sm">
+              {fcmTesting ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <Zap className="w-3 h-3 mr-2" />}
+              Run FCM Test
+            </Button>
+            {(fcmTestResult || fcmTestError) && (
+              <FcmTestDiagnostics data={fcmTestResult} error={fcmTestError} />
+            )}
+
+            {/* ─── Test Incoming Call ─── */}
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                <p className="text-xs font-semibold">Test Incoming Call Push</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Sends a real <code>is_call: true</code> FCM payload to a selected user. Their native app should ring with the full-screen incoming-call UI.
+              </p>
+
+              {!callTestTarget ? (
+                <>
+                  <Input
+                    placeholder="Search by name, username, or email…"
+                    value={callTestQuery}
+                    onChange={(e) => setCallTestQuery(e.target.value)}
+                    className="text-xs"
+                  />
+                  {callTestSearching && (
+                    <p className="text-[10px] text-muted-foreground">Searching…</p>
+                  )}
+                  {callTestResults.length > 0 && (
+                    <div className="border border-border rounded-md max-h-48 overflow-auto divide-y divide-border">
+                      {callTestResults.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => {
+                            setCallTestTarget(u);
+                            setCallTestQuery("");
+                            setCallTestResults([]);
+                          }}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-muted text-left"
+                        >
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-muted" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">
+                              {u.display_name || "Unnamed"}
+                            </p>
+                            {u.username && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                @{u.username}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between gap-2 p-2 border border-border rounded-md">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">
+                      {callTestTarget.display_name || "Unnamed"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                      {callTestTarget.id}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCallTestTarget(null);
+                      setCallTestResult(null);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              )}
+
+              <Button
+                onClick={sendTestCall}
+                disabled={!callTestTarget || callTestSending}
+                size="sm"
+                className="w-full"
+              >
+                {callTestSending ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    Ringing…
+                  </>
+                ) : (
+                  <>
+                    <Phone className="w-3 h-3 mr-2" />
+                    Send Test Incoming Call
+                  </>
+                )}
+              </Button>
+
+              {(callTestResult || callTestError) && (
+                <CallTestDiagnostics data={callTestResult} error={callTestError} />
+              )}
+            </div>
+
+            {/* ─── Recent Delivery Logs ─── */}
+            <div className="border-t border-border pt-3">
+              <RecentDeliveryLogs targetUserId={callTestTarget?.id ?? null} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ─── Onboarding Reset (super admin) ─── */}
+      {isSuperAdmin && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" /> Onboarding Flow
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Reset the first-run welcome carousel for this device. Next reload will route to <code>/welcome</code>.
+              Current state: <strong>{hasCompletedOnboarding() ? "Onboarded" : "First-run"}</strong>.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  resetOnboarding();
+                  toast.success("Onboarding reset — reload to see /welcome");
+                }}
+              >
+                <RefreshCw className="w-3 h-3 mr-2" /> Reset Onboarding
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => window.open("/welcome", "_blank")}
+              >
+                Preview Welcome
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="fees" className="w-full">
         <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
@@ -1172,6 +1450,7 @@ const AdminSettings = () => {
                 </div>
               </CardContent>
             </Card>
+
           </div>
         </TabsContent>
 

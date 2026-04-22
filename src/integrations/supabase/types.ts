@@ -2120,6 +2120,63 @@ export type Database = {
         }
         Relationships: []
       }
+      push_delivery_logs: {
+        Row: {
+          body: string | null
+          call_id: string | null
+          created_at: string
+          fcm_error_code: string | null
+          fcm_error_message: string | null
+          fcm_error_status: string | null
+          hint: string | null
+          http_status: number | null
+          id: string
+          is_call: boolean
+          ok: boolean
+          removed: boolean
+          title: string | null
+          token_id: string | null
+          token_tail: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          call_id?: string | null
+          created_at?: string
+          fcm_error_code?: string | null
+          fcm_error_message?: string | null
+          fcm_error_status?: string | null
+          hint?: string | null
+          http_status?: number | null
+          id?: string
+          is_call?: boolean
+          ok: boolean
+          removed?: boolean
+          title?: string | null
+          token_id?: string | null
+          token_tail?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          call_id?: string | null
+          created_at?: string
+          fcm_error_code?: string | null
+          fcm_error_message?: string | null
+          fcm_error_status?: string | null
+          hint?: string | null
+          http_status?: number | null
+          id?: string
+          is_call?: boolean
+          ok?: boolean
+          removed?: boolean
+          title?: string | null
+          token_id?: string | null
+          token_tail?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -3435,6 +3492,33 @@ export type Database = {
           id?: string
           refresh_token?: string | null
           scopes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_fcm_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string
+          token?: string
           updated_at?: string
           user_id?: string
         }
