@@ -390,7 +390,11 @@ const Auth = () => {
                 onClick={async () => {
                   try {
                     if (useNativeGoogle) {
-                      await signInWithNativeGoogle();
+                      const nativeAuth = await signInWithNativeGoogle();
+                      if (!nativeAuth.session || !nativeAuth.user) {
+                        toast.error("Google sign-in completed, but no valid session was created.");
+                        return;
+                      }
                       toast.success("Logged in successfully!");
                       const redirectTo = searchParams.get("redirect");
                       navigate(redirectTo || "/");
