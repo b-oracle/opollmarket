@@ -95,18 +95,7 @@ const LandingHero = () => {
           </Button>
         </div>
 
-        {/* Public legal links */}
-        <nav
-          aria-label="Legal and help links"
-          className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-muted-foreground pt-6 border-t border-border"
-        >
-          <Link to="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-          <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
-          <Link to="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link>
-          <Link to="/faq" className="hover:text-primary transition-colors">FAQ</Link>
-          <a href="mailto:support@opoll.org" className="hover:text-primary transition-colors">Contact</a>
-          <span className="ml-auto">© {new Date().getFullYear()} OPoll Market</span>
-        </nav>
+        {/* Privacy link is reachable via the site footer below; no duplicate nav here. */}
       </div>
     </section>
   );
