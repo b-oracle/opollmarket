@@ -8,6 +8,7 @@ import { getCanonicalOrigin } from "@/lib/canonical";
 import { lovable } from "@/integrations/lovable/index";
 import SecurityVerificationModal from "@/components/SecurityVerificationModal";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
+import { isNativeAndroidGoogleSignIn, signInWithNativeGoogle } from "@/lib/nativeGoogleAuth";
 
 const useIsDappBrowser = () =>
   useMemo(() => {
@@ -59,6 +60,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isDapp = useIsDappBrowser();
+  const useNativeGoogle = isNativeAndroidGoogleSignIn();
   const handledInitialRedirect = useRef(false);
 
   // Redirect already-authenticated users away from auth page
@@ -386,10 +388,23 @@ const Auth = () => {
             <div className="space-y-2 mb-4">
               <button
                 onClick={async () => {
-                  const { error } = await lovable.auth.signInWithOAuth("google", {
-                    redirect_uri: window.location.origin,
-                  });
-                  if (error) toast.error("Google sign-in failed");
+                  try {
+                    if (useNativeGoogle) {
+                      await signInWithNativeGoogle();
+                      toast.success("Logged in successfully!");
+                      const redirectTo = searchParams.get("redirect");
+                      navigate(redirectTo || "/");
+                      return;
+                    }
+
+                    const { error } = await lovable.auth.signInWithOAuth("google", {
+                      redirect_uri: window.location.origin,
+                    });
+                    if (error) toast.error("Google sign-in failed");
+                  } catch (err: any) {
+                    const message = String(err?.message || "Google sign-in failed");
+                    if (!message.toLowerCase().includes("cancel")) toast.error(message);
+                  }
                 }}
                 className="w-full glass rounded-xl p-3 flex items-center gap-3 hover:bg-accent/50 transition-colors active:scale-[0.98]"
               >
