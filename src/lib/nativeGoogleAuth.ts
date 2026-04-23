@@ -73,8 +73,8 @@ export const signInWithNativeGoogle = async () => {
   try {
     loginResult = await SocialLogin.login({
       provider: "google",
-      nonce,
       options: {
+        nonce,
         filterByAuthorizedAccounts: false,
         autoSelectEnabled: false,
       },
