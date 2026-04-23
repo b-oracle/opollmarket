@@ -39,6 +39,11 @@ const withTimeout = async <T,>(promiseLike: PromiseLike<T>, timeoutMs: number): 
   }
 };
 
+const isGoogleSignInCancellation = (error: unknown) => {
+  const message = String((error as any)?.message || error || "").toLowerCase();
+  return message.includes("cancel") || message.includes("canceled") || message.includes("cancelled");
+};
+
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [showResetPrompt, setShowResetPrompt] = useState(false);
@@ -110,6 +115,11 @@ const Auth = () => {
       setMode("signup");
     }
   }, [searchParams]);
+
+  const signInWithWebGoogle = async () =>
+    lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -390,16 +400,34 @@ const Auth = () => {
                 onClick={async () => {
                   try {
                     if (useNativeGoogle) {
-                      await signInWithNativeGoogle();
-                      toast.success("Logged in successfully!");
-                      const redirectTo = searchParams.get("redirect");
-                      navigate(redirectTo || "/");
-                      return;
+                      try {
+                        const nativeAuth = await signInWithNativeGoogle();
+                        if (!nativeAuth.session || !nativeAuth.user) {
+                          throw new Error("Google sign-in completed, but no valid session was created.");
+                        }
+                        toast.success("Logged in successfully!");
+                        const redirectTo = searchParams.get("redirect");
+                        navigate(redirectTo || "/");
+                        return;
+                      } catch (nativeError: any) {
+                        if (isGoogleSignInCancellation(nativeError)) return;
+
+                        const existingSession = await withTimeout(Promise.resolve(supabase.auth.getSession()), 2000);
+                        if (existingSession?.data?.session) {
+                          toast.success("Logged in successfully!");
+                          const redirectTo = searchParams.get("redirect");
+                          navigate(redirectTo || "/");
+                          return;
+                        }
+
+                        toast.info("Native Google sign-in could not complete. Opening browser-based Google sign-in instead.");
+                        const { error } = await signInWithWebGoogle();
+                        if (error) toast.error("Google sign-in failed");
+                        return;
+                      }
                     }
 
-                    const { error } = await lovable.auth.signInWithOAuth("google", {
-                      redirect_uri: window.location.origin,
-                    });
+                    const { error } = await signInWithWebGoogle();
                     if (error) toast.error("Google sign-in failed");
                   } catch (err: any) {
                     const message = String(err?.message || "Google sign-in failed");

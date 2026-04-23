@@ -1,80 +1,99 @@
 
 ## Goal
 
-Add native Google sign-in for the Capacitor Android app while keeping the existing web Google OAuth button and flow unchanged.
+Add an Android-only fallback so if native Google sign-in fails, users can still use the existing web-based Google OAuth flow without changing how web/PWA users currently sign in.
 
-Important clarification: the Android OAuth Client ID is not normally pasted into the React web login button. For native Android Google sign-in, the Android client stays in Google Cloud Console and is tied to your app package name + SHA-1 fingerprint. The app code usually uses the Web application Client ID as the native plugin’s `webClientId` / `serverClientId`, then exchanges the returned Google ID token for an app session.
+## What will change
 
-## What I will implement
+### 1. Extract the existing web Google OAuth into a reusable fallback
 
-1. Add a native-only Google sign-in path
-   - Install and use a Capacitor Google/social login plugin.
-   - Detect when the app is running inside native Capacitor on Android.
-   - Show/use the native Google sign-in flow only in that environment.
-   - Leave the current `lovable.auth.signInWithOAuth("google", ...)` web flow untouched for browser/PWA/custom-domain usage.
+In `src/pages/Auth.tsx`, I will create a small helper inside the component, such as:
 
-2. Add a native auth helper
-   - Create a helper such as `src/lib/nativeGoogleAuth.ts`.
-   - Initialize the native plugin with the Web Client ID you already have.
-   - Generate and hash a nonce for secure Google ID-token exchange.
-   - Call native Google login.
-   - Exchange the returned Google `idToken` with the existing backend auth session using `supabase.auth.signInWithIdToken({ provider: "google", token, nonce })`.
-   - Add retry/error handling for cached-token or nonce mismatch issues.
+```ts
+const signInWithWebGoogle = async () => {
+  return lovable.auth.signInWithOAuth("google", {
+    redirect_uri: window.location.origin,
+  });
+};
+```
 
-3. Update the Auth page UI
-   - Keep the current web Google button exactly as-is for web.
-   - On Capacitor Android, route the Google button to the native sign-in helper instead.
-   - Show clear errors if native sign-in is unavailable, cancelled, or misconfigured.
-   - Preserve the existing email/password, signup, referral, and login-security behavior.
+This keeps the current working web OAuth logic intact and makes it reusable after native failure.
 
-4. Add Capacitor configuration
-   - Add the native plugin dependency.
-   - Add any required plugin config in `capacitor.config.ts` if the chosen plugin supports config there.
-   - Store the public Web Client ID in app code/config, not as a secret.
-   - Do not modify generated auth integration files.
+### 2. Add Android fallback behavior after native failure
 
-5. Document the required Android-native setup
-   - Because this repo currently does not include an `android/` directory, I’ll add instructions for the local Android project steps after you run/pull/sync.
-   - Required local Android steps will include:
-     - Ensure Google Cloud Android OAuth Client uses package:
-       ```text
-       app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f
-       ```
-     - Add the correct debug/release/Play Store SHA-1 fingerprints.
-     - Run:
-       ```bash
-       npm install
-       npm run build
-       npx cap sync android
-       ```
-     - If the plugin requires a `MainActivity` patch, add the exact code block/path to patch locally in Android Studio.
+For Android Capacitor only:
+
+```text
+Tap Continue with Google
+  -> try native Google sign-in first
+  -> if native sign-in succeeds, verify session and navigate
+  -> if native sign-in fails or no valid session is created:
+       show a short fallback message
+       launch the existing web Google OAuth flow
+```
+
+The user experience will be:
+
+```text
+Native Google sign-in could not complete. Opening browser-based Google sign-in instead.
+```
+
+Then the app will call the same existing web OAuth flow currently used by browser users.
+
+### 3. Preserve user cancellation behavior
+
+If the user explicitly cancels the native Google picker, I will not force the fallback automatically. Cancellation is an intentional action, so the app should simply show/cancel cleanly.
+
+Fallback will run for real native failures such as:
+
+- native plugin unavailable
+- no ID token returned
+- invalid audience/client mismatch
+- nonce/session exchange failure
+- no verified app session after native exchange
+
+### 4. Avoid duplicate redirects or conflicting sessions
+
+Before launching fallback OAuth, the code will only proceed if the native flow did not create a valid session.
+
+The web OAuth fallback will remain:
+
+```ts
+lovable.auth.signInWithOAuth("google", {
+  redirect_uri: window.location.origin,
+});
+```
+
+I will not modify the generated auth client files.
+
+### 5. Optional user-facing fallback button if automatic launch is blocked
+
+If the web OAuth call returns an error instead of redirecting, the app will show a clear toast message. If needed, I will add a secondary “Use web Google sign-in” button/message for Android users, but the first implementation will attempt the fallback automatically after native failure.
 
 ## What will not change
 
-- The existing web Google OAuth flow will not be disabled or replaced.
-- The generated `src/integrations/lovable/index.ts` file will not be edited.
-- Email/password login and signup will not be changed.
-- The app’s existing auth session provider will continue to listen for backend auth session changes as it does now.
+- Existing web/PWA Google OAuth behavior.
+- Existing email/password login and signup.
+- Existing referral logic.
+- Existing login security modal behavior.
+- Native Google sign-in as the preferred Android path.
 
-## Technical approach
+## Files to update
 
-```text
-Web / PWA / browser:
-Auth Google button
-  -> lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin })
-  -> existing working web OAuth flow
+- `src/pages/Auth.tsx`
+  - Add reusable web Google sign-in helper.
+  - Update the Android Google button handler to try native first, then fallback to web OAuth on non-cancel failures.
 
-Capacitor Android:
-Auth Google button
-  -> native Google plugin
-  -> Google account picker
-  -> returns Google ID token
-  -> supabase.auth.signInWithIdToken({ provider: "google", token, nonce })
-  -> existing app session is established
-```
+Potentially update:
+- `README.md`
+  - Add a short note explaining that Android uses native sign-in first and falls back to web OAuth if native token exchange fails.
 
-## Configuration I will need during implementation
+## Verification
 
-You said you already have the Web application Client ID. During implementation, I’ll need that public Client ID value to place into the native Google sign-in config.
+After implementation, I will verify:
 
-The Android OAuth Client ID you created should remain configured in Google Cloud Console with the package name and SHA-1 fingerprints. It is not the value typically passed as the plugin’s `webClientId` for backend session exchange.
+- TypeScript/build succeeds.
+- Browser/PWA still uses the existing web Google OAuth path directly.
+- Android code path still tries native Google sign-in first.
+- Android fallback path calls the same existing web OAuth flow after native failure.
+- Cancelled native sign-in does not unexpectedly launch fallback.

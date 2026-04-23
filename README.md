@@ -76,7 +76,9 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 
 The Android app uses `@capgo/capacitor-social-login` for native Google account selection while the web app keeps using the existing Lovable Cloud Google OAuth flow.
 
-Before syncing Android, replace `REPLACE_WITH_YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com` in `src/lib/nativeGoogleAuth.ts` with the Web application Client ID from the same Google Cloud project.
+Before syncing Android, replace `REPLACE_WITH_YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com` in `src/lib/nativeGoogleAuth.ts` with the Web application Client ID from the same Google Cloud project. If Google returns an Android-client audience in the ID token, also add that Android Client ID to `GOOGLE_ANDROID_CLIENT_IDS` in the same file.
+
+In Lovable Cloud, keep Google sign-in enabled and add your own Google OAuth credentials if you want to accept native token exchange with your Google project. The accepted Client IDs should include the Web Client ID first, followed by every Android Client ID used for debug, release, or Play App Signing builds.
 
 In Google Cloud Console, keep the Android OAuth Client ID configured with:
 
@@ -84,6 +86,12 @@ In Google Cloud Console, keep the Android OAuth Client ID configured with:
 Package name: app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f
 SHA-1: your debug, release, and Play App Signing fingerprints
 ```
+
+Troubleshooting native token exchange:
+
+- `invalid audience`, `invalid_client`, or client ID errors: add the token audience Client ID to the Google sign-in provider's accepted Client IDs in Lovable Cloud.
+- `nonce` errors: retry sign-in; the native token nonce must match the nonce sent during app-session exchange.
+- No ID token returned: verify the Web Client ID, Android package name, SHA-1 fingerprints, and Google Play Services availability.
 
 After pulling these changes locally, run:
 
