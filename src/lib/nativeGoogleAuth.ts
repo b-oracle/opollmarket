@@ -2,8 +2,10 @@ import { Capacitor } from "@capacitor/core";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 import { supabase } from "@/integrations/supabase/client";
 
-const GOOGLE_WEB_CLIENT_ID = "REPLACE_WITH_YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com";
-const GOOGLE_ANDROID_CLIENT_IDS: string[] = [];
+const GOOGLE_WEB_CLIENT_ID = "552098177241-7hpvqukp60hja50bb3i7tqtitko2afvk.apps.googleusercontent.com";
+const GOOGLE_ANDROID_CLIENT_IDS: string[] = [
+  "552098177241-0ocpct216p33b9vdc7kn07fque8c2knl.apps.googleusercontent.com",
+];
 
 let initializePromise: Promise<void> | null = null;
 
