@@ -25,6 +25,7 @@ import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
+import LandingHero from "@/components/LandingHero";
 
 
 const formatVolume = (v: number) => {
@@ -218,8 +219,10 @@ const Index = () => {
       onTouchMove={pullHandlers.onTouchMove}
       onTouchEnd={pullHandlers.onTouchEnd}
     >
-      <SEOHead description="Predict the future, earn from it. Trade on real-world events across Web, Telegram & WhatsApp with OPoll Market." path="/" />
+      <SEOHead description="OPoll Market is a social prediction platform to trade on real-world events across crypto, sports, politics and culture — on Web, Telegram and WhatsApp." path="/" />
       <TopBar />
+
+      {!authLoading && !user && <LandingHero />}
 
       <PullToRefreshIndicator pulling={pulling} refreshing={refreshing} pullDistance={pullDistance} pullProgress={pullProgress} spinControls={spinControls} />
 
