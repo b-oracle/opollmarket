@@ -9,7 +9,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Preview,
   Text,
 } from 'npm:@react-email/components@0.0.22'
@@ -25,22 +24,16 @@ export const MagicLinkEmail = ({
 }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your OPOLL login link</Preview>
+    <Preview>Your login link for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img
-          src="https://dqtjuhqndncanfwgjwva.supabase.co/storage/v1/object/public/email-assets/logo.png"
-          width="48"
-          height="48"
-          alt="OPOLL"
-          style={{ marginBottom: '24px' }}
-        />
-        <Heading style={h1}>Your login link 🔗</Heading>
+        <Heading style={h1}>Your login link</Heading>
         <Text style={text}>
-          Tap the button below to sign in to OPOLL. This link expires shortly.
+          Click the button below to log in to {siteName}. This link will expire
+          shortly.
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Sign In
+          Log In
         </Button>
         <Text style={footer}>
           If you didn't request this link, you can safely ignore this email.
@@ -52,27 +45,26 @@ export const MagicLinkEmail = ({
 
 export default MagicLinkEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Space Grotesk', Arial, sans-serif" }
-const container = { padding: '32px 28px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const container = { padding: '20px 25px' }
 const h1 = {
-  fontSize: '24px',
+  fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#171a1f',
+  color: '#000000',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#6b6e75',
-  lineHeight: '1.6',
-  margin: '0 0 24px',
+  color: '#55575d',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
 }
 const button = {
-  backgroundColor: '#02C7FC',
-  color: '#0a0c0f',
+  backgroundColor: '#000000',
+  color: '#ffffff',
   fontSize: '14px',
-  fontWeight: 'bold' as const,
-  borderRadius: '12px',
-  padding: '14px 24px',
+  borderRadius: '8px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
+const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
