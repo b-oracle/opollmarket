@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Download } from "lucide-react";
+import { FileText, Shield, AlertTriangle, HelpCircle, ChevronRight, LogIn, Download, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import InstallAppModal from "@/components/InstallAppModal";
@@ -14,6 +14,7 @@ interface MoreMenuProps {
 }
 
 const legalLinks = [
+  { icon: Eye, label: "How We Use Your Data", path: "/data-use" },
   { icon: AlertTriangle, label: "Disclaimer", path: "/disclaimer" },
   { icon: FileText, label: "Terms & Conditions", path: "/terms" },
   { icon: Shield, label: "Privacy Policy", path: "/privacy" },
