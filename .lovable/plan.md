@@ -1,81 +1,99 @@
 
-
 ## Goal
 
-Make `https://opoll.org/` (the public homepage) satisfy Google OAuth verification requirements: clearly identify the brand, describe the app's functionality, explain what user data is requested and why, and surface a visible Privacy Policy link — all without requiring login.
+Add an Android-only fallback so if native Google sign-in fails, users can still use the existing web-based Google OAuth flow without changing how web/PWA users currently sign in.
 
 ## What will change
 
-### 1. Add a public landing hero section to the top of `src/pages/Index.tsx`
+### 1. Extract the existing web Google OAuth into a reusable fallback
 
-A new `LandingHero` section will render **only when the user is signed out**. Signed-in users continue to see the markets feed exactly as today.
+In `src/pages/Auth.tsx`, I will create a small helper inside the component, such as:
 
-Contents of the hero (all visible without login):
+```ts
+const signInWithWebGoogle = async () => {
+  return lovable.auth.signInWithOAuth("google", {
+    redirect_uri: window.location.origin,
+  });
+};
+```
 
-- **Brand identity**: OPoll logo, name "OPoll Market", and tagline "The world's first social prediction platform on Telegram, WhatsApp & Web".
-- **What the app does** (3–4 short bullets):
-  - Predict real-world events across crypto, sports, politics, and culture.
-  - Trade parimutuel rounds in seconds.
-  - Follow and copy top traders, chat in Spaces and DMs.
-  - Earn rewards from accurate predictions.
-- **Data transparency block** titled "What we ask for when you sign in with Google":
-  - Your name and profile picture — to display your public profile.
-  - Your email address — to create and secure your account, send transactional notifications, and recover access.
-  - We do not access your contacts, Drive, Gmail, Calendar, or any other Google data.
-- **Primary CTAs**: "Get started" → `/auth`, "Browse markets" → scrolls to the existing markets list below.
-- **Footer strip** with always-visible links: **Privacy Policy** (`/privacy`), **Terms** (`/terms`), **Disclaimer** (`/disclaimer`), **FAQ** (`/faq`), **Contact** (mailto or support route).
+This keeps the current working web OAuth logic intact and makes it reusable after native failure.
 
-The footer link to **Privacy Policy must be the exact same URL** entered on the Google OAuth consent screen (`https://opoll.org/privacy`).
+### 2. Add Android fallback behavior after native failure
 
-### 2. Ensure the homepage renders for logged-out users
+For Android Capacitor only:
 
-Verified: `/` route in `src/App.tsx` is already public (no auth guard). No router changes needed. The hero will be conditionally rendered based on `useAuth().user` being `null`.
+```text
+Tap Continue with Google
+  -> try native Google sign-in first
+  -> if native sign-in succeeds, verify session and navigate
+  -> if native sign-in fails or no valid session is created:
+       show a short fallback message
+       launch the existing web Google OAuth flow
+```
 
-### 3. Update `index.html` and `SEOHead` defaults
+The user experience will be:
 
-- Refresh the `<title>` and `<meta name="description">` to clearly state what OPoll is in one sentence (currently fine but will be tightened).
-- Add a `<meta name="robots" content="index, follow">` to ensure Google can crawl the homepage during verification.
-- Replace the OG image URL (currently a stale `gpt-engineer-file-uploads` link unrelated to OPoll) with `https://opoll.org/og-image.png` so previews accurately represent the brand.
+```text
+Native Google sign-in could not complete. Opening browser-based Google sign-in instead.
+```
 
-### 4. Make the Privacy Policy reachable from the homepage without login
+Then the app will call the same existing web OAuth flow currently used by browser users.
 
-The `/privacy` route is already public. We will:
+### 3. Preserve user cancellation behavior
 
-- Add a visible "Privacy Policy" link in the new landing footer.
-- Add the same link in `DesktopFooter` if it isn't already there, so it's reachable on every public page.
+If the user explicitly cancels the native Google picker, I will not force the fallback automatically. Cancellation is an intentional action, so the app should simply show/cancel cleanly.
 
-### 5. README note (optional, for your records)
+Fallback will run for real native failures such as:
 
-Add a short section explaining that the homepage hero must not be removed, because Google OAuth verification depends on it.
+- native plugin unavailable
+- no ID token returned
+- invalid audience/client mismatch
+- nonce/session exchange failure
+- no verified app session after native exchange
 
-## What will NOT change
+### 4. Avoid duplicate redirects or conflicting sessions
 
-- Signed-in user experience (markets feed, filters, boosts, search) — unchanged.
-- Routing, auth flow, native Google sign-in, or web Google OAuth fallback.
-- Privacy, Terms, Disclaimer, FAQ page content.
-- Any backend, RLS, or edge function.
+Before launching fallback OAuth, the code will only proceed if the native flow did not create a valid session.
+
+The web OAuth fallback will remain:
+
+```ts
+lovable.auth.signInWithOAuth("google", {
+  redirect_uri: window.location.origin,
+});
+```
+
+I will not modify the generated auth client files.
+
+### 5. Optional user-facing fallback button if automatic launch is blocked
+
+If the web OAuth call returns an error instead of redirecting, the app will show a clear toast message. If needed, I will add a secondary “Use web Google sign-in” button/message for Android users, but the first implementation will attempt the fallback automatically after native failure.
+
+## What will not change
+
+- Existing web/PWA Google OAuth behavior.
+- Existing email/password login and signup.
+- Existing referral logic.
+- Existing login security modal behavior.
+- Native Google sign-in as the preferred Android path.
 
 ## Files to update
 
-- `src/pages/Index.tsx` — add `LandingHero` component, render it when `!user`.
-- `index.html` — refresh meta description, add robots tag, fix OG image URL.
-- `src/components/SEOHead.tsx` — minor default description tightening.
-- `src/components/DesktopFooter.tsx` — ensure Privacy/Terms/Disclaimer links are present.
-- `README.md` — short note on Google OAuth homepage requirement (optional).
+- `src/pages/Auth.tsx`
+  - Add reusable web Google sign-in helper.
+  - Update the Android Google button handler to try native first, then fallback to web OAuth on non-cancel failures.
 
-## Technical notes
-
-- The hero will use existing design tokens (`bg-background`, `text-foreground`, `--primary`) — no new colors.
-- Layout: full-width hero section, max-width container, mobile-first; renders above the existing `TopBar` content area.
-- Conditional render: `{!user && <LandingHero />}` placed at the top of the Index return tree, before the markets grid.
-- All copy will be plain English, no marketing fluff, focused on what Google reviewers need to confirm.
+Potentially update:
+- `README.md`
+  - Add a short note explaining that Android uses native sign-in first and falls back to web OAuth if native token exchange fails.
 
 ## Verification
 
-After implementation:
+After implementation, I will verify:
 
-- Visit `https://opoll.org/` in an incognito window → hero is fully visible, no login wall.
-- Privacy Policy link is clickable and opens `https://opoll.org/privacy` without login.
-- Google's OAuth verification checklist items (brand identity, functionality description, data purpose, privacy link, no login required) are all satisfied on the homepage.
-- Logged-in users see the markets feed unchanged.
-
+- TypeScript/build succeeds.
+- Browser/PWA still uses the existing web Google OAuth path directly.
+- Android code path still tries native Google sign-in first.
+- Android fallback path calls the same existing web OAuth flow after native failure.
+- Cancelled native sign-in does not unexpectedly launch fallback.
