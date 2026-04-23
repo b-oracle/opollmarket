@@ -71,3 +71,24 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Android native Google sign-in
+
+The Android app uses `@capgo/capacitor-social-login` for native Google account selection while the web app keeps using the existing Lovable Cloud Google OAuth flow.
+
+Before syncing Android, replace `REPLACE_WITH_YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com` in `src/lib/nativeGoogleAuth.ts` with the Web application Client ID from the same Google Cloud project.
+
+In Google Cloud Console, keep the Android OAuth Client ID configured with:
+
+```text
+Package name: app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f
+SHA-1: your debug, release, and Play App Signing fingerprints
+```
+
+After pulling these changes locally, run:
+
+```sh
+npm install
+npm run build
+npx cap sync android
+```

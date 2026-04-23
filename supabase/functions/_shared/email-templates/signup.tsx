@@ -9,7 +9,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Text,
@@ -30,32 +29,26 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Welcome to OPOLL — verify your email to start predicting</Preview>
+    <Preview>Confirm your email for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img
-          src="https://dqtjuhqndncanfwgjwva.supabase.co/storage/v1/object/public/email-assets/logo.png"
-          width="48"
-          height="48"
-          alt="OPOLL"
-          style={{ marginBottom: '24px' }}
-        />
-        <Heading style={h1}>Welcome aboard! 🎯</Heading>
+        <Heading style={h1}>Confirm your email</Heading>
         <Text style={text}>
-          You're one step away from predicting outcomes on{' '}
+          Thanks for signing up for{' '}
           <Link href={siteUrl} style={link}>
-            <strong>OPOLL</strong>
+            <strong>{siteName}</strong>
           </Link>
-          . Verify your email to get started.
+          !
         </Text>
         <Text style={text}>
-          Your email:{' '}
+          Please confirm your email address (
           <Link href={`mailto:${recipient}`} style={link}>
             {recipient}
           </Link>
+          ) by clicking the button below:
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Verify & Get Started
+          Verify Email
         </Button>
         <Text style={footer}>
           If you didn't create an account, you can safely ignore this email.
@@ -67,28 +60,27 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Space Grotesk', Arial, sans-serif" }
-const container = { padding: '32px 28px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
+const container = { padding: '20px 25px' }
 const h1 = {
-  fontSize: '24px',
+  fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#171a1f',
+  color: '#000000',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#6b6e75',
-  lineHeight: '1.6',
-  margin: '0 0 24px',
+  color: '#55575d',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
 }
-const link = { color: '#02C7FC', textDecoration: 'underline' }
+const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: '#02C7FC',
-  color: '#0a0c0f',
+  backgroundColor: '#000000',
+  color: '#ffffff',
   fontSize: '14px',
-  fontWeight: 'bold' as const,
-  borderRadius: '12px',
-  padding: '14px 24px',
+  borderRadius: '8px',
+  padding: '12px 20px',
   textDecoration: 'none',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
+const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }

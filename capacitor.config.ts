@@ -18,6 +18,13 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+      },
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: false,
