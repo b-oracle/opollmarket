@@ -68,16 +68,20 @@ export const signInWithNativeGoogle = async () => {
   await initializeGoogleSignIn();
 
   const nonce = createNonce();
-  const loginResult = await SocialLogin.login({
-    provider: "google",
-    options: {
-      scopes: ["email", "profile"],
+  let loginResult;
+
+  try {
+    loginResult = await SocialLogin.login({
+      provider: "google",
       nonce,
-      forceRefreshToken: true,
-      filterByAuthorizedAccounts: false,
-      autoSelectEnabled: false,
-    },
-  });
+      options: {
+        filterByAuthorizedAccounts: false,
+        autoSelectEnabled: false,
+      },
+    });
+  } catch (error) {
+    throw new Error(getNativeGoogleErrorMessage(error));
+  }
 
   if (loginResult.result.responseType !== "online" || !loginResult.result.idToken) {
     throw new Error("Google did not return a valid identity token.");
