@@ -6,10 +6,7 @@ const config: CapacitorConfig = {
   appId: 'com.opollmarket.app',
   appName: 'Opoll',
   webDir: 'dist',
-  server: {
-    url: 'https://fbc135e2-c42c-4d3f-bb3e-e7385ced809f.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+ 
   ios: {
     backgroundColor: '#000000',
     contentInset: 'automatic',

@@ -32,6 +32,7 @@ import DeferredMount from "./components/DeferredMount";
 import { VerificationThresholdProvider } from "./components/NftBadge";
 import { useNativePush } from "./hooks/useNativePush";
 import { useCallDeepLink } from "./hooks/useCallDeepLink";
+import { useNativeAuthDeepLink } from "./hooks/useNativeAuthDeepLink";
 import { useFirstRun } from "./hooks/useFirstRun";
 import AppSplash from "./components/AppSplash";
 import { bootNativeUI } from "./lib/nativeUI";
@@ -40,6 +41,7 @@ import { initOpollCallNative } from "./lib/mobile/opollCallNative";
 const NativePushRegistrar = () => {
   useNativePush();
   useCallDeepLink();
+  useNativeAuthDeepLink();
   return null;
 };
 
