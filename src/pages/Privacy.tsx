@@ -44,6 +44,47 @@ const Privacy = () => {
       </div>
 
       <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
+        {/* At-a-glance summary (matches /data-use disclosure required by Google verification) */}
+        <section
+          id="at-a-glance"
+          aria-label="Privacy at a glance"
+          className="rounded-2xl border border-primary/30 bg-primary/5 p-5 space-y-3 scroll-mt-20"
+        >
+          <h2 className="text-base font-bold text-foreground">Privacy at a glance</h2>
+          <p className="text-foreground/90">
+            OPollMarket collects only the data needed to run the features you use. We <strong>never sell</strong> your
+            personal information. Sensitive permissions (microphone, camera, location, contacts, notifications) are
+            requested only when you tap to use that specific feature, and you can revoke them any time from your device
+            settings.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-foreground mb-1">What we collect</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Account info (email, display name, optional avatar)</li>
+                <li>Trades, balances, deposits and withdrawals</li>
+                <li>Messages, posts, calls and Spaces you join</li>
+                <li>KYC documents (only if you choose to verify)</li>
+                <li>Device, IP and analytics data for security</li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-foreground mb-1">Why we use it</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Sign you in and keep your account secure</li>
+                <li>Execute trades and process payments</li>
+                <li>Deliver messages, notifications and live audio</li>
+                <li>Comply with anti-fraud and AML obligations</li>
+                <li>Improve performance and fix bugs</li>
+              </ul>
+            </div>
+          </div>
+          <p className="pt-1">
+            For a plain-English breakdown of every permission and purpose, see{" "}
+            <a href="/data-use" className="text-primary font-semibold underline">How We Use Your Data</a>.
+          </p>
+        </section>
+
         <LegalTableOfContents items={tocItems} />
 
         <section id="introduction" className="space-y-2 scroll-mt-20">
