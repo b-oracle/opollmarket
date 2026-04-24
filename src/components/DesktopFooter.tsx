@@ -132,23 +132,15 @@ const DesktopFooter = () => {
             © {new Date().getFullYear()} OPOLL. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            {["Terms", "Privacy", "Disclaimer"].map((label) => (
-              <button
-                key={label}
-                onClick={() =>
-                  navigate(
-                    label === "Terms"
-                      ? "/terms"
-                      : label === "Privacy"
-                      ? "/privacy"
-                      : "/disclaimer"
-                  )
-                }
-                className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
-              >
-                {label}
-              </button>
-            ))}
+            <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Terms
+            </a>
+            <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Privacy
+            </a>
+            <a href="/disclaimer" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Disclaimer
+            </a>
           </div>
         </div>
       </div>
