@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken, RoomServiceClient } from "https://esm.sh/livekit-server-sdk@2.15.0?target=deno";
+import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
