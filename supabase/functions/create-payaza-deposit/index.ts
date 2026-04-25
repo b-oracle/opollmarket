@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
 
     // Fetch live USD→NGN rate with admin markup
     let ngnAmount = Math.ceil(amount * configuredFallback);
-    let effectiveRate: number | null = configuredFallback;
+    let effectiveRate: number = configuredFallback;
     try {
       const rateRes = await fetch(
         `${Deno.env.get("SUPABASE_URL")}/functions/v1/get-naira-rate`,
