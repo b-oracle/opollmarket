@@ -47,7 +47,7 @@ async function verifySignature(
   return computed === signature;
 }
 
-async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, userId: string, depositAmount: number) {
+async function processWelcomeBonus(supabase: any, userId: string, depositAmount: number) {
   const { data: toggle } = await supabase.from("feature_toggles").select("enabled").eq("feature_key", "welcome_bonus").maybeSingle();
   if (!toggle?.enabled) return;
   // Idempotency: check if already credited
@@ -71,7 +71,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
   console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${userId}`);
 }
 
-async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
+async function handleDeposit(supabase: any, payload: Record<string, unknown>, orderId: string) {
   const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount, pay_currency, outcome_currency } = payload;
   const paymentIdStr = String(payment_id);
 
@@ -407,7 +407,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   }
 }
 
-async function handleBoost(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
+async function handleBoost(supabase: any, payload: Record<string, unknown>, orderId: string) {
   const { payment_id } = payload;
   const paymentIdStr = String(payment_id);
 
@@ -521,7 +521,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
   console.log(`${isExtension ? "Extended" : "Activated"} ${tier} boost for market ${marketId}`);
 }
 
-async function handleBroadcast(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
+async function handleBroadcast(supabase: any, payload: Record<string, unknown>, orderId: string) {
   const { payment_id } = payload;
   const paymentIdStr = String(payment_id);
 
