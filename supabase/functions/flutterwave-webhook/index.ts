@@ -346,12 +346,14 @@ Deno.serve(async (req) => {
 
     // ─── Handle transfer failure ───
     if (event === "transfer.failed" || (event === "transfer.completed" && data.status === "FAILED")) {
-      const reference = data.reference;
-      if (!reference) {
-        return new Response(JSON.stringify({ status: "no_reference" }), {
+      const xferCheck = validateFlutterwaveTransfer(data);
+      if (!xferCheck.ok) {
+        return new Response(JSON.stringify({ error: xferCheck.error }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const { reference } = xferCheck.value;
 
       // Refund user balance
       const { data: txn } = await adminClient
