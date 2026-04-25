@@ -298,6 +298,10 @@ const AdminDeposits = () => {
                   const net = (d as any).net_amount_usd != null ? Number((d as any).net_amount_usd) : null;
                   // Max admin can credit = gross received (NOT capped by original requested amount).
                   const maxCredit = gross && gross > 0 ? gross : Number(d.amount);
+                  // Preferred one-click credit value: net (after fees) > gross > original amount
+                  const netCredit = net && net > 0 ? net : maxCredit;
+                  const requested = Number(d.amount);
+                  const isOverpayment = gross != null && gross > requested * 1.01;
                   const canConfirm = d.status === "partial" || d.status === "wrong_asset";
                   return (
                     <tr key={d.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
