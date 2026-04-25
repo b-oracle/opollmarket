@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -373,7 +374,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("livekit-token error:", err);
     return new Response(
-      JSON.stringify({ error: (err instanceof Error ? err.message : String(err)) || "Internal error" }),
+      JSON.stringify({ error: (getErrorMessage(err)) || "Internal error" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

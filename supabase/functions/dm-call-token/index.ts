@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -551,6 +552,6 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (err: any) {
     console.error("dm-call-token error:", err);
-    return json({ error: (err instanceof Error ? err.message : String(err)) || "Internal error" }, 500);
+    return json({ error: (getErrorMessage(err)) || "Internal error" }, 500);
   }
 });

@@ -1,5 +1,6 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -288,7 +289,7 @@ Deno.serve(async (req) => {
         }
         totalProcessed++
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error)
+        const errorMsg = getErrorMessage(error)
         console.error('Email send failed', {
           queue,
           msg_id: msg.msg_id,
