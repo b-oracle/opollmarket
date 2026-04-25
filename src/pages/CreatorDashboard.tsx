@@ -75,21 +75,47 @@ const CreatorDashboard = () => {
   const [customTo, setCustomTo] = useState<Date | undefined>();
   const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Derive [from, to] window. `null` from = no lower bound.
+  // Derive [from, to] window in UTC so boundaries are identical for every
+  // client regardless of local timezone. `null` from = no lower bound.
+  // - Day-aligned bounds (presets, custom range) snap to UTC midnight.
+  // - Rolling presets (7d/30d/90d) anchor to today's UTC midnight - N days.
+  // - YTD anchors to Jan 1 00:00:00 UTC of the current UTC year.
   const dateWindow = useMemo<{ from: Date | null; to: Date | null }>(() => {
-    const now = new Date();
     if (rangePreset === "all") return { from: null, to: null };
+
+    const now = new Date();
+    // Today at 00:00:00.000 UTC
+    const utcTodayStart = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    // Inclusive end-of-today in UTC (23:59:59.999)
+    const utcTodayEnd = new Date(utcTodayStart.getTime() + DAY_MS - 1);
+
+    // Treat a user-picked calendar Date as that calendar day in UTC.
+    const toUtcDayStart = (d: Date) =>
+      new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+
     if (rangePreset === "custom") {
       return {
-        from: customFrom ?? null,
-        to: customTo ? new Date(customTo.getTime() + 24 * 60 * 60 * 1000 - 1) : null,
+        from: customFrom ? toUtcDayStart(customFrom) : null,
+        to: customTo ? new Date(toUtcDayStart(customTo).getTime() + DAY_MS - 1) : null,
       };
     }
-    const days = rangePreset === "7d" ? 7 : rangePreset === "30d" ? 30 : rangePreset === "90d" ? 90 : 0;
+
     if (rangePreset === "ytd") {
-      return { from: new Date(now.getFullYear(), 0, 1), to: now };
+      return {
+        from: new Date(Date.UTC(now.getUTCFullYear(), 0, 1)),
+        to: utcTodayEnd,
+      };
     }
-    return { from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000), to: now };
+
+    const days = rangePreset === "7d" ? 7 : rangePreset === "30d" ? 30 : 90;
+    return {
+      // e.g. "Last 7 days" = the last 7 full UTC days including today
+      from: new Date(utcTodayStart.getTime() - (days - 1) * DAY_MS),
+      to: utcTodayEnd,
+    };
   }, [rangePreset, customFrom, customTo]);
 
   const isCustomRangeIncomplete = rangePreset === "custom" && (!customFrom || !customTo);
@@ -379,6 +405,7 @@ const CreatorDashboard = () => {
         {/* Range summary */}
         <p className="text-[10px] text-muted-foreground mb-3">
           Earnings & resolved markets: <span className="font-semibold text-foreground">{rangeLabel}</span>
+          <span className="ml-1 opacity-70">(UTC)</span>
           {isCustomRangeIncomplete && " • pick both start and end dates"}
         </p>
 
