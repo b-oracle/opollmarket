@@ -20,6 +20,7 @@ import {
   Clock,
   Plus,
   X,
+  Sparkles,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -297,6 +298,10 @@ const AdminDeposits = () => {
                   const net = (d as any).net_amount_usd != null ? Number((d as any).net_amount_usd) : null;
                   // Max admin can credit = gross received (NOT capped by original requested amount).
                   const maxCredit = gross && gross > 0 ? gross : Number(d.amount);
+                  // Preferred one-click credit value: net (after fees) > gross > original amount
+                  const netCredit = net && net > 0 ? net : maxCredit;
+                  const requested = Number(d.amount);
+                  const isOverpayment = gross != null && gross > requested * 1.01;
                   const canConfirm = d.status === "partial" || d.status === "wrong_asset";
                   return (
                     <tr key={d.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
@@ -367,26 +372,48 @@ const AdminDeposits = () => {
                                 </>
                               ) : (
                                 <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
-                                    disabled={confirmMutation.isPending}
-                                    onClick={() => {
-                                      if (confirm(`Confirm net received $${maxCredit.toFixed(2)} deposit for ${d.display_name}?`)) {
-                                        confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: maxCredit });
-                                      }
-                                    }}
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Net (${maxCredit.toFixed(2)})
-                                  </Button>
+                                  {isOverpayment && (
+                                    <Button
+                                      size="sm"
+                                      className="text-xs gap-1"
+                                      variant="default"
+                                      disabled={confirmMutation.isPending}
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            `Resolve as Overpayment?\n\nRequested: $${requested.toFixed(2)}\nReceived (gross): $${(gross ?? 0).toFixed(2)}\nNet credit: $${netCredit.toFixed(2)}\n\nThis will confirm the deposit and credit $${netCredit.toFixed(2)} to ${d.display_name}.`,
+                                          )
+                                        ) {
+                                          confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: netCredit });
+                                        }
+                                      }}
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      Resolve as Overpayment (${netCredit.toFixed(2)})
+                                    </Button>
+                                  )}
+                                  {!isOverpayment && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                                      disabled={confirmMutation.isPending}
+                                      onClick={() => {
+                                        if (confirm(`Confirm net received $${netCredit.toFixed(2)} deposit for ${d.display_name}?`)) {
+                                          confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: netCredit });
+                                        }
+                                      }}
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      Net (${netCredit.toFixed(2)})
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="secondary"
                                     className="text-xs gap-1"
                                     disabled={confirmMutation.isPending}
-                                    onClick={() => { setEditingId(d.id); setEditAmount(String(maxCredit)); }}
+                                    onClick={() => { setEditingId(d.id); setEditAmount(String(netCredit)); }}
                                   >
                                     <AlertTriangle className="w-3.5 h-3.5" />
                                     Custom
