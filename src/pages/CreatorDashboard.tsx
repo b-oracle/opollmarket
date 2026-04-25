@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import SEOHead from "@/components/SEOHead";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Loader2,
   BarChart3,
@@ -16,8 +20,12 @@ import {
   ChevronRight,
   ChevronDown,
   Hourglass,
+  CalendarIcon,
+  X,
 } from "lucide-react";
 import ResolvedMarketDetail from "@/components/creator/ResolvedMarketDetail";
+
+type RangePreset = "all" | "7d" | "30d" | "90d" | "ytd" | "custom";
 
 type MarketRow = {
   id: string;
