@@ -72,7 +72,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
 }
 
 async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
-  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount } = payload;
+  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount, pay_currency, outcome_currency } = payload;
   const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
@@ -127,11 +127,27 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
   const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
 
-  // WRONG ASSET DETECTION: if outcome_amount diverges wildly from price_amount,
-  // NP likely confirmed a wrong asset. Do NOT auto-credit — flag for manual review.
+  // OVERPAYMENT DETECTION (correct asset, more than requested):
+  // If the user paid the SAME currency they were invoiced for, and just sent more
+  // than required, treat it as an overpayment — credit the requested amount and
+  // park the excess in bonus_balance (non-withdrawable, usable for fees).
+  const payCur = String(pay_currency || "").toLowerCase();
+  const outCur = String(outcome_currency || pay_currency || "").toLowerCase();
+  const sameAssetOverpay =
+    payCur !== "" &&
+    payCur === outCur &&
+    requestedAmount > 0 &&
+    netReceived >= requestedAmount * 1.02; // >2% over the invoice = overpayment
+
+  // WRONG ASSET DETECTION: only flag as wrong asset when currencies DIFFER
+  // (or are unknown) AND the divergence is large.
   const divergenceRatio = requestedAmount > 0 ? netReceived / requestedAmount : 1;
-  if (divergenceRatio > 2 || (divergenceRatio < 0.3 && netReceived > 0)) {
-    console.warn(`WRONG ASSET DETECTED: outcome=$${netReceived} vs requested=$${requestedAmount} (ratio ${divergenceRatio.toFixed(2)}) for payment ${paymentIdStr}. Skipping auto-credit.`);
+  const isLikelyWrongAsset =
+    !sameAssetOverpay &&
+    (divergenceRatio > 2 || (divergenceRatio < 0.3 && netReceived > 0));
+
+  if (isLikelyWrongAsset) {
+    console.warn(`WRONG ASSET DETECTED: outcome=$${netReceived} vs requested=$${requestedAmount} (ratio ${divergenceRatio.toFixed(2)}, payCur=${payCur}, outCur=${outCur}) for payment ${paymentIdStr}. Skipping auto-credit.`);
 
     // Mark the transaction as needing manual review instead of crediting
     if (matchedTx) {
@@ -173,6 +189,86 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
     return; // Do NOT credit
   }
+
+  // OVERPAYMENT FLOW: credit requested amount + park excess in bonus_balance
+  if (sameAssetOverpay) {
+    const excess = Math.max(0, netReceived - requestedAmount);
+    console.log(`OVERPAYMENT: requested=$${requestedAmount}, received=$${netReceived}, excess=$${excess.toFixed(4)} -> bonus_balance for user ${userId}`);
+
+    // Credit main balance with requested amount + bonus balance with the excess (atomic)
+    const { error: balErr } = await supabase.rpc("adjust_balance", {
+      _user_id: userId,
+      _delta: Number(requestedAmount),
+      _bonus_delta: Number(excess),
+      _insurance_delta: 0,
+    });
+    if (balErr) {
+      console.error("Overpayment credit failed:", balErr);
+      throw new Error(`Overpayment balance adjust failed: ${balErr.message}`);
+    }
+
+    // Update / insert transaction record (confirmed at requested amount)
+    if (matchedTx) {
+      await supabase
+        .from("transactions")
+        .update({
+          status: "confirmed",
+          nowpayments_payment_id: paymentIdStr,
+          amount: Number(requestedAmount),
+          description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
+        })
+        .eq("id", matchedTx.id);
+    } else {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "deposit",
+        amount: Number(requestedAmount),
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+        description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
+      });
+    }
+
+    // Log the overpayment as its own transaction for audit/visibility
+    if (excess > 0) {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "overpayment_bonus",
+        amount: Number(excess),
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+        description: `Overpayment surplus from deposit ${paymentIdStr} — credited to bonus balance.`,
+      });
+    }
+
+    // Notify user
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Deposit Confirmed ✅",
+      message: excess > 0
+        ? `Your $${requestedAmount.toFixed(2)} deposit was credited. You overpaid by $${excess.toFixed(2)} — added to your bonus balance (usable for platform fees).`
+        : `Your $${requestedAmount.toFixed(2)} deposit was credited.`,
+      type: "deposit",
+    });
+
+    // Run welcome-bonus + debt-settlement post-credit hooks (same as normal flow)
+    try { await processWelcomeBonus(supabase, userId, Number(requestedAmount)); } catch (e) { console.error("Welcome bonus error:", e); }
+    try {
+      const { data: debtResult } = await supabase.rpc("settle_user_debts", { _user_id: userId });
+      if (debtResult && Number((debtResult as { amount?: number }).amount ?? 0) > 0) {
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          title: "Outstanding Balance Settled 📋",
+          message: `$${Number((debtResult as { amount: number }).amount).toFixed(2)} was deducted from your deposit to cover outstanding market liquidity fees.`,
+          type: "info",
+        });
+      }
+    } catch (e) { console.error("Debt settle error:", e); }
+
+    return;
+  }
+
+
 
   // Normal credit flow — cap at requested amount as safety net
   const creditAmount = requestedAmount > 0
