@@ -337,6 +337,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = useCallback(async (email: string, password: string, displayName?: string, username?: string) => {
     const referredBy = localStorage.getItem("referral_id");
+    // Anti-abuse: capture device fingerprint so the signup trigger can detect
+    // the same device repeatedly using the same referrer code.
+    let signupUa: string | undefined;
+    try { signupUa = typeof navigator !== "undefined" ? navigator.userAgent : undefined; } catch { /* ignore */ }
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -345,6 +349,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           display_name: displayName,
           ...(username ? { username } : {}),
           ...(referredBy ? { referred_by: referredBy } : {}),
+          ...(signupUa ? { signup_ua: signupUa } : {}),
         },
         emailRedirectTo: getCanonicalOrigin(),
       },
