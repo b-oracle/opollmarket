@@ -96,17 +96,11 @@ async function confirmDeposit(
     if (tx.status === "confirmed") {
       return { ok: false, status: 400, error: "Already confirmed" };
     }
-    const gross = Number(tx.gross_amount_usd) || 0;
-    const original = Number(tx.amount);
-    const maxCredit = gross > 0 ? gross : original;
-    if (Number(args.amount) > maxCredit) {
-      return {
-        ok: false,
-        status: 400,
-        error: `Amount $${args.amount.toFixed(2)} exceeds received amount $${maxCredit.toFixed(2)}`,
-      };
+    const validation = validateDepositCap(tx, args.amount);
+    if (!validation.ok) {
+      return { ok: false, status: validation.status, error: validation.error };
     }
-    const credit = Number(args.amount);
+    const credit = validation.creditAmount;
     if (credit > 0) await db.creditBalance(args.user_id, credit);
     tx.status = "confirmed";
     tx.amount = credit;
