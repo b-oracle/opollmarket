@@ -195,6 +195,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           toast.info("This market has ended and is no longer available for predictions");
         } else {
           const side = dx > 0 ? "yes" : "no";
+          void hapticMedium();
           setBetModal({ open: true, side });
         }
       }
