@@ -135,28 +135,44 @@ const CreatorDashboard = () => {
       }
 
       // Earnings: paid creator commissions + pending creator commissions + liquidity refunds
+      // Scoped by created_at within selected window (when set).
+      const fromIso = dateWindow.from?.toISOString();
+      const toIso = dateWindow.to?.toISOString();
+      const applyWindow = (q: any) => {
+        let next = q;
+        if (fromIso) next = next.gte("created_at", fromIso);
+        if (toIso) next = next.lte("created_at", toIso);
+        return next;
+      };
+
       const [paidRes, pendingRes, refundRes] = await Promise.all([
-        supabase
-          .from("transactions")
-          .select("market_id, amount")
-          .eq("user_id", user.id)
-          .eq("type", "commission")
-          .eq("status", "confirmed")
-          .in("market_id", ids),
-        supabase
-          .from("pending_commissions" as any)
-          .select("market_id, amount, status")
-          .eq("user_id", user.id)
-          .eq("type", "creator")
-          .in("market_id", ids),
-        supabase
-          .from("transactions")
-          .select("market_id, amount")
-          .eq("user_id", user.id)
-          .eq("type", "refund")
-          .eq("side", "liquidity_return")
-          .eq("status", "confirmed")
-          .in("market_id", ids),
+        applyWindow(
+          supabase
+            .from("transactions")
+            .select("market_id, amount")
+            .eq("user_id", user.id)
+            .eq("type", "commission")
+            .eq("status", "confirmed")
+            .in("market_id", ids),
+        ),
+        applyWindow(
+          supabase
+            .from("pending_commissions" as any)
+            .select("market_id, amount, status")
+            .eq("user_id", user.id)
+            .eq("type", "creator")
+            .in("market_id", ids),
+        ),
+        applyWindow(
+          supabase
+            .from("transactions")
+            .select("market_id, amount")
+            .eq("user_id", user.id)
+            .eq("type", "refund")
+            .eq("side", "liquidity_return")
+            .eq("status", "confirmed")
+            .in("market_id", ids),
+        ),
       ]);
 
       const map: EarningsByMarket = {};
