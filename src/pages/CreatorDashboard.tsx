@@ -14,8 +14,10 @@ import {
   TrendingUp,
   PlusCircle,
   ChevronRight,
+  ChevronDown,
   Hourglass,
 } from "lucide-react";
+import ResolvedMarketDetail from "@/components/creator/ResolvedMarketDetail";
 
 type MarketRow = {
   id: string;
@@ -29,6 +31,9 @@ type MarketRow = {
   created_at: string;
   end_date: string | null;
   resolved_at: string | null;
+  resolved_side: string | null;
+  winning_option_id: string | null;
+  market_type: string | null;
 };
 
 type EarningsByMarket = Record<string, { realized: number; pending: number; liquidityReturn: number }>;
@@ -56,6 +61,16 @@ const CreatorDashboard = () => {
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [earningsByMarket, setEarningsByMarket] = useState<EarningsByMarket>({});
   const [filter, setFilter] = useState<"all" | "active" | "resolved" | "pending">("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -71,7 +86,9 @@ const CreatorDashboard = () => {
       // Fetch markets created by this user
       const { data: marketsData } = await supabase
         .from("markets")
-        .select("id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, resolved_at")
+        .select(
+          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, resolved_at, resolved_side, winning_option_id, market_type",
+        )
         .eq("creator_wallet", user.id)
         .order("created_at", { ascending: false });
 
@@ -239,42 +256,91 @@ const CreatorDashboard = () => {
             {filtered.map((m) => {
               const e = earningsByMarket[m.id] || { realized: 0, pending: 0, liquidityReturn: 0 };
               const totalEarned = e.realized + e.liquidityReturn;
+              const isResolved = m.status === "resolved" || m.status === "cancelled";
+              const isOpen = expanded.has(m.id);
+
+              const cardInner = (
+                <>
+                  {m.image_url ? (
+                    <img src={m.image_url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" loading="lazy" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-muted shrink-0 flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <p className="text-sm font-semibold line-clamp-2">{m.title}</p>
+                      {isResolved ? (
+                        <ChevronDown
+                          className={`w-4 h-4 text-muted-foreground shrink-0 mt-0.5 transition-transform ${
+                            isOpen ? "rotate-180" : ""
+                          }`}
+                        />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <StatusBadge status={m.status} />
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(m.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[11px]">
+                      <Metric label="Liquidity" value={`$${(Number(m.liquidity) || 0).toFixed(2)}`} />
+                      <Metric label="Players" value={String(Number(m.participants) || 0)} />
+                      <Metric
+                        label="Earned"
+                        value={`$${totalEarned.toFixed(2)}`}
+                        accent={totalEarned > 0 ? "text-emerald-500" : undefined}
+                        hint={e.pending > 0 ? `+$${e.pending.toFixed(2)} pending` : undefined}
+                      />
+                    </div>
+                  </div>
+                </>
+              );
+
               return (
                 <li key={m.id}>
-                  <Link
-                    to={`/market/${m.id}`}
-                    className="flex gap-3 p-3 bg-card border border-border rounded-xl hover:bg-muted/30 transition-colors"
-                  >
-                    {m.image_url ? (
-                      <img src={m.image_url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" loading="lazy" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg bg-muted shrink-0 flex items-center justify-center">
-                        <BarChart3 className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <p className="text-sm font-semibold line-clamp-2">{m.title}</p>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                      </div>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <StatusBadge status={m.status} />
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(m.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-[11px]">
-                        <Metric label="Liquidity" value={`$${(Number(m.liquidity) || 0).toFixed(2)}`} />
-                        <Metric label="Players" value={String(Number(m.participants) || 0)} />
-                        <Metric
-                          label="Earned"
-                          value={`$${totalEarned.toFixed(2)}`}
-                          accent={totalEarned > 0 ? "text-emerald-500" : undefined}
-                          hint={e.pending > 0 ? `+$${e.pending.toFixed(2)} pending` : undefined}
+                  {isResolved ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(m.id)}
+                        className="w-full flex gap-3 p-3 bg-card border border-border rounded-xl hover:bg-muted/30 transition-colors text-left"
+                        aria-expanded={isOpen}
+                      >
+                        {cardInner}
+                      </button>
+                      {isOpen && user && (
+                        <ResolvedMarketDetail
+                          marketId={m.id}
+                          userId={user.id}
+                          resolvedSide={m.resolved_side}
+                          winningOptionId={m.winning_option_id}
+                          marketType={m.market_type}
                         />
-                      </div>
-                    </div>
-                  </Link>
+                      )}
+                      {isOpen && (
+                        <div className="mt-2 flex justify-end">
+                          <Link
+                            to={`/market/${m.id}`}
+                            className="text-[11px] font-semibold text-primary hover:underline"
+                          >
+                            Open market →
+                          </Link>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      to={`/market/${m.id}`}
+                      className="flex gap-3 p-3 bg-card border border-border rounded-xl hover:bg-muted/30 transition-colors"
+                    >
+                      {cardInner}
+                    </Link>
+                  )}
                 </li>
               );
             })}
