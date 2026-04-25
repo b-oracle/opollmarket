@@ -228,9 +228,38 @@ const CreatorDashboard = () => {
   }, [markets, earningsByMarket]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return markets;
-    return markets.filter((m) => m.status === filter);
-  }, [markets, filter]);
+    const fromMs = dateWindow.from?.getTime();
+    const toMs = dateWindow.to?.getTime();
+    return markets.filter((m) => {
+      if (filter !== "all" && m.status !== filter) return false;
+      // Apply date window only to resolved/cancelled markets (they have resolved_at).
+      // Active/pending/draft markets are always shown regardless of range.
+      if ((m.status === "resolved" || m.status === "cancelled") && (fromMs || toMs)) {
+        if (!m.resolved_at) return false;
+        const t = new Date(m.resolved_at).getTime();
+        if (fromMs && t < fromMs) return false;
+        if (toMs && t > toMs) return false;
+      }
+      return true;
+    });
+  }, [markets, filter, dateWindow.from, dateWindow.to]);
+
+  const rangeActive = rangePreset !== "all";
+
+  const rangeLabel =
+    rangePreset === "all"
+      ? "All time"
+      : rangePreset === "7d"
+        ? "Last 7 days"
+        : rangePreset === "30d"
+          ? "Last 30 days"
+          : rangePreset === "90d"
+            ? "Last 90 days"
+            : rangePreset === "ytd"
+              ? "Year to date"
+              : customFrom && customTo
+                ? `${format(customFrom, "MMM d")} – ${format(customTo, "MMM d, yyyy")}`
+                : "Pick dates";
 
   return (
     <div className="min-h-dvh bg-background pb-24">
