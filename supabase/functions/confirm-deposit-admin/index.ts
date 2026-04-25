@@ -66,10 +66,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the transaction exists and is pending/partial
+    // Verify the transaction exists and is pending/partial/wrong_asset
     const { data: tx, error: txError } = await adminClient
       .from("transactions")
-      .select("id, status, amount")
+      .select("id, status, amount, gross_amount_usd, net_amount_usd")
       .eq("id", transaction_id)
       .eq("user_id", user_id)
       .single();
@@ -88,10 +88,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate: admin cannot credit MORE than the original transaction amount
+    // Cap the credit at the actual received amount (gross), NOT the originally requested invoice.
+    // This allows admin to credit overpayments / wrong-asset deposits at their true received value.
+    const grossReceived = Number((tx as any).gross_amount_usd) || 0;
     const originalAmount = Number(tx.amount);
-    if (Number(amount) > originalAmount) {
-      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds original transaction amount $${originalAmount.toFixed(2)}` }), {
+    const maxCredit = grossReceived > 0 ? grossReceived : originalAmount;
+    if (Number(amount) > maxCredit) {
+      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds received amount $${maxCredit.toFixed(2)}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -120,7 +123,7 @@ Deno.serve(async (req) => {
     // Update transaction
     await adminClient
       .from("transactions")
-      .update({ status: "confirmed", amount: Number(amount) })
+      .update({ status: "confirmed", amount: Number(amount), net_amount_usd: Number(amount) })
       .eq("id", transaction_id);
 
     // Notify user
