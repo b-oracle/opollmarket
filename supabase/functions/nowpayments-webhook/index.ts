@@ -691,6 +691,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Hoisted so the outer catch block can include the body when logging.
+  let rawBodyForLog: unknown = null;
+
   try {
     const ipnSecret = Deno.env.get("NOWPAYMENTS_IPN_SECRET");
     if (!ipnSecret) {
