@@ -252,6 +252,39 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   // OVERPAYMENT FLOW
   if (cls.status === "overpayment") {
     const excess = cls.excess;
+
+    // SAFETY CAP: refuse to auto-credit massive overpayments. Mark as wrong_asset
+    // for admin review when the surplus is unreasonably large (likely a misconfigured
+    // payment or attack). Threshold: excess > min(requested * 5, $5000).
+    const overpayCap = Math.min(Number(requestedAmount) * 5, 5000);
+    if (excess > overpayCap) {
+      console.warn(`OVERPAYMENT EXCEEDS SAFETY CAP: requested=$${requestedAmount} received=$${netReceived} excess=$${excess} cap=$${overpayCap} — routing to admin review`);
+      if (matchedTx) {
+        await supabase.from("transactions").update({
+          status: "wrong_asset",
+          nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
+          gross_amount_usd: netReceived,
+          net_amount_usd: netReceived,
+        }).eq("id", matchedTx.id);
+      } else {
+        await supabase.from("transactions").insert({
+          user_id: userId, type: "deposit", amount: requestedAmount,
+          status: "wrong_asset", nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
+          gross_amount_usd: netReceived, net_amount_usd: netReceived,
+        });
+      }
+      await notifyAdmins(supabase, "🚨 Excessive Overpayment — Manual Review Required",
+        `User ${userId.slice(0,8)}… payment ${paymentIdStr} requested $${requestedAmount.toFixed(2)} but sent $${netReceived.toFixed(2)} (excess $${excess.toFixed(2)}, cap $${overpayCap.toFixed(2)}). Auto-credit blocked.`);
+      await supabase.from("notifications").insert({
+        user_id: userId, title: "Deposit Under Review ⚠️",
+        message: `Your $${requestedAmount.toFixed(2)} deposit received an unexpectedly large amount. It's under review and will be credited shortly.`,
+        type: "deposit",
+      });
+      return;
+    }
+
     console.log(`OVERPAYMENT: requested=$${requestedAmount} received=$${netReceived} excess=$${excess.toFixed(4)} ratio=${cls.ratio.toFixed(2)}`);
 
     const { error: balErr } = await supabase.rpc("adjust_balance", {
