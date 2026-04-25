@@ -46,7 +46,7 @@ async function verifySignature(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  return computed === signature;
+  return safeEqual(computed, signature);
 }
 
 async function processWelcomeBonus(supabase: any, userId: string, depositAmount: number) {
