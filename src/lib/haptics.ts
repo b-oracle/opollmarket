@@ -151,6 +151,7 @@ export const hapticError = async (): Promise<void> => {
 // ── Selection / tick (used for sliders, scrubbing) ───────────────
 
 export const hapticSelection = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics } = await import("@capacitor/haptics");
