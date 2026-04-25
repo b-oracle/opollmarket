@@ -252,7 +252,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     });
 
     // Run welcome-bonus + debt-settlement post-credit hooks (same as normal flow)
-    try { await maybeApplyWelcomeBonus(supabase, userId, Number(requestedAmount)); } catch (e) { console.error("Welcome bonus error:", e); }
+    try { await processWelcomeBonus(supabase, userId, Number(requestedAmount)); } catch (e) { console.error("Welcome bonus error:", e); }
     try {
       const { data: debtResult } = await supabase.rpc("settle_user_debts", { _user_id: userId });
       if (debtResult && Number((debtResult as { amount?: number }).amount ?? 0) > 0) {
