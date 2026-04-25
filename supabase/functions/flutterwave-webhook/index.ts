@@ -179,7 +179,16 @@ Deno.serve(async (req) => {
 
       if (balanceError) {
         console.error("CRITICAL: Failed to credit balance for Flutterwave deposit:", balanceError);
-        // Do NOT mark transaction as confirmed — leave pending for retry
+        await logWebhookEvent(adminClient, {
+          provider: "flutterwave",
+          event_type: "credit_failed",
+          status: "error",
+          reference: txRef,
+          transaction_id: txn.id,
+          user_id: txn.user_id,
+          requested_amount: Number(txn.amount),
+          error: balanceError,
+        });
         return new Response(JSON.stringify({ status: "balance_credit_failed" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -187,6 +196,17 @@ Deno.serve(async (req) => {
       }
 
       console.log(`Credited $${txn.amount} to user ${txn.user_id} via adjust_balance RPC`);
+
+      await logWebhookEvent(adminClient, {
+        provider: "flutterwave",
+        event_type: "credited",
+        status: "success",
+        reference: txRef,
+        transaction_id: txn.id,
+        user_id: txn.user_id,
+        requested_amount: Number(txn.amount),
+        credited_amount: Number(txn.amount),
+      });
 
       // ── STEP 2: Mark transaction as confirmed ONLY after balance credit succeeds ──
       const { error: txUpdateError } = await adminClient
@@ -343,6 +363,18 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("flutterwave-webhook error:", err);
+    try {
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await logWebhookEvent(adminClient, {
+        provider: "flutterwave",
+        event_type: "error",
+        status: "error",
+        error: err,
+      });
+    } catch { /* swallow */ }
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: corsHeaders }

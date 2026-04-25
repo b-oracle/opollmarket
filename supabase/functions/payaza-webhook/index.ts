@@ -292,6 +292,18 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("payaza-webhook error:", err);
+    try {
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "error",
+        status: "error",
+        error: err,
+      });
+    } catch { /* swallow */ }
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: corsHeaders }
