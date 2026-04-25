@@ -1,44 +1,29 @@
-## Wave 1 — Critical (highest risk)
+## Wave 1 — Critical (highest risk) — DONE
 
-1. **Add unique idempotency indices** for external payment IDs.
-   - Migration: `CREATE UNIQUE INDEX CONCURRENTLY transactions_provider_payment_id_uniq ON transactions (payment_provider, nowpayments_payment_id) WHERE nowpayments_payment_id IS NOT NULL;`
-   - Backfill `payment_provider` to `'nowpayments'` for legacy rows that have a numeric `nowpayments_payment_id` and null provider before adding the index.
+1. ✅ Unique idempotency indices on (payment_provider, nowpayments_payment_id) for deposits & withdrawals.
+2. ✅ `confirm-deposit-admin` & `admin-credit-deposit` use shared `_shared/depositCap.ts`.
+3. ✅ `transactions.withdrawal_request_id` populated in both `request-withdrawal` and `request-payaza-withdrawal`; `process-withdrawal` updates by id.
+4. ✅ Crypto `request-withdrawal` now inserts `withdrawal_requests` FIRST (relying on the unique idempotency_key index), then debits balance — no more check-then-act race.
 
-2. **Wire `confirm-deposit-admin` to the shared `_shared/depositCap.ts` validator**, replacing the inline cap (lines 91–101). Reject (don't fall back) when both `gross_amount_usd` and `net_amount_usd` are null on `wrong_asset`/`partial` rows.
+## Wave 2 — High — DONE
 
-3. **Link `transactions` ↔ `withdrawal_requests` via a new `withdrawal_request_id` column** on `transactions`, populate it in `request-withdrawal` and `request-payaza-withdrawal`, and switch `process-withdrawal` to update by id instead of `.order().limit(1)`.
+5. ✅ `claim_webhook_deposit` requires provider; NP/Payaza/Flutterwave webhooks scope by provider.
+6. ✅ Payaza webhook hard-fails (500) when `PAYAZA_WEBHOOK_SECRET` is unset.
+7. ✅ NOWPayments overpayment safety cap (excess > min(invoice*5, $5000) → admin review).
+8. ✅ Withdrawal-fee crediting moved to success/approval path (request-withdrawal success, request-payaza-withdrawal success, process-withdrawal approve).
+9. ✅ `idempotency_key` accepted by `request-payaza-withdrawal`.
+10. ✅ NOWPayments webhook returns 500 when IPN secret is unset (was 200). Bad-signature path already returns 403.
 
-4. **Remove duplicate-by-race in `request-withdrawal` (crypto)**: convert the idempotency check to a single `INSERT … ON CONFLICT (idempotency_key) DO NOTHING RETURNING id` on `withdrawal_requests`, and only call `debit_balance_atomic` if the insert returned a row.
+## Wave 3 — Medium (next pass)
 
-## Wave 2 — High
-
-5. **Add `payment_provider` filter to all webhook claim paths**: update `claim_webhook_deposit` to require provider, change Payaza/Flutterwave/NOWPayments webhooks to pass it, and stop matching on `nowpayments_payment_id` alone.
-
-6. **Hard-fail Payaza webhook when `PAYAZA_WEBHOOK_SECRET` is unset** (mirror Flutterwave pattern).
-
-7. **Cap NOWPayments overpayment auto-credit**: when `excess > min(requested * 5, $5000)`, mark as `wrong_asset` for admin review instead of auto-crediting bonus.
-
-8. **Move withdrawal-fee crediting to `process-withdrawal` approval path** (today it's pre-credited in `request-withdrawal` regardless of payout outcome).
-
-9. **Add `idempotency_key` to `request-payaza-withdrawal`** matching the crypto withdrawal pattern.
-
-10. **Return 403 from NOWPayments webhook on signature failure** (currently swallowed behind a 200 in the catch-all).
-
-## Wave 3 — Medium
-
-11. Drop the 3-arg `adjust_balance` overload (now unused after recent refactors).
+11. Drop the 3-arg `adjust_balance` overload (DONE in Wave 1 migration).
 12. Migrate `create-payaza-deposit` & `create-flutterwave-deposit` from `getClaims` to `getUser()`.
 13. Make pending-deposit cap global across providers.
 14. Add a `processing` claim step in `np-reconcile` `fix_expired` action before crediting.
 15. Move the `$1000` anomaly threshold into `commission_settings`.
 
-## Wave 4 — Low (defense-in-depth, post-critical)
+## Wave 4 — Low (defense-in-depth)
 
-16. Add tests for the new idempotency/uniqueness constraints (extend the existing `concurrency_test.ts`).
-17. Add an admin dashboard panel surfacing the `withdrawal-deposit-audit` outliers (4 users found today).
-18. Consider rate-limiting `admin-credit-deposit` / `confirm-deposit-admin` per actor.
-
-## What I will NOT touch
-
-- Storage bucket listing / search_path / `SECURITY DEFINER` view linter warnings — these are outside the deposit/withdrawal scope. Happy to address in a separate pass.
-- The 4 pre-existing users with withdrawals > deposits (they look legitimate; I'll surface them in an admin view for review rather than auto-clawback).
+16. Tests for new idempotency/uniqueness constraints.
+17. Admin dashboard panel for `withdrawal-deposit-audit` outliers.
+18. Rate-limit `admin-credit-deposit` / `confirm-deposit-admin` per actor.
