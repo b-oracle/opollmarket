@@ -156,6 +156,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Currency sanity: Payaza payouts are NGN-denominated. If the provider
+    // reports any other currency on a "success" event, flag rather than credit.
+    if (reportedCurrency && reportedCurrency !== "NGN") {
+      await adminClient
+        .from("transactions")
+        .update({ status: "wrong_asset" })
+        .eq("id", tx.id);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "wrong_currency",
+        status: "warning",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        message: `Expected NGN, got ${reportedCurrency} (reportedAmount=${reportedAmount ?? "n/a"})`,
+      });
+      return new Response(JSON.stringify({ error: "Unsupported currency" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // ── STEP 1: Credit user balance ATOMICALLY ──
     const depositAmount = Number(tx.amount);
     const { error: balanceError } = await adminClient.rpc("adjust_balance", {
