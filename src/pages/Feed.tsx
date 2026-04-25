@@ -361,9 +361,15 @@ const Feed = () => {
     if (isDesktop) return;
     const container = containerRef.current;
     if (!container) return;
+    let lastIndex = 0;
     const handleScroll = () => {
       const itemHeight = container.clientHeight;
       const index = Math.round(container.scrollTop / itemHeight);
+      if (index !== lastIndex) {
+        // Subtle tick when a new card snaps into view (swipe up/down)
+        void hapticSelection();
+        lastIndex = index;
+      }
       setActiveIndex(index);
 
       const snappedTop = index * itemHeight;
