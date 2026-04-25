@@ -94,6 +94,8 @@ const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminAimtell = lazy(() => import("./pages/admin/AdminAimtell"));
 const AdminNotificationBroadcast = lazy(() => import("./pages/admin/AdminNotificationBroadcast"));
 const AdminApiKeys = lazy(() => import("./pages/admin/AdminApiKeys"));
+const AdminWebhookLogs = lazy(() => import("./pages/admin/AdminWebhookLogs"));
+const AdminWebhookEvents = lazy(() => import("./pages/admin/AdminWebhookEvents"));
 const AdminKyc = lazy(() => import("./pages/admin/AdminKyc"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
@@ -582,6 +584,8 @@ const App = () => {
                           <Route path="aimtell" element={<AdminAimtell />} />
                           <Route path="notification-broadcast" element={<AdminNotificationBroadcast />} />
                           <Route path="api-keys" element={<AdminApiKeys />} />
+                          <Route path="webhook-logs" element={<AdminWebhookLogs />} />
+                          <Route path="webhook-events" element={<AdminWebhookEvents />} />
                           <Route path="kyc" element={<AdminKyc />} />
                           <Route path="support" element={<AdminSupport />} />
                           <Route path="escrows" element={<AdminEscrows />} />
