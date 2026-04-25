@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import LiveScoreBadge from "@/components/LiveScoreBadge";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
+import { hapticLight, hapticMedium, hapticSuccess } from "@/lib/haptics";
 
 interface MarketCardProps {
   market: Market;
@@ -99,6 +100,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const handleToggleLike = useCallback(async () => {
     const prev = liked;
     setLikeDelta(d => d + (prev ? -1 : 1));
+    // Buzz harder when adding a like, lighter when removing
+    void (prev ? hapticLight() : hapticSuccess());
     await toggleLike();
   }, [liked, toggleLike]);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
@@ -192,6 +195,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
           toast.info("This market has ended and is no longer available for predictions");
         } else {
           const side = dx > 0 ? "yes" : "no";
+          void hapticMedium();
           setBetModal({ open: true, side });
         }
       }
@@ -248,6 +252,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       });
       return;
     }
+    void (bookmarked ? hapticLight() : hapticSuccess());
     toggleBookmark();
   };
 
@@ -459,7 +464,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
             <span className="text-[10px] font-semibold text-foreground/90 leading-none">{formatCount(likeCount)}</span>
           </button>
-          <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
+          <button onClick={() => { void hapticLight(); setCommentsOpen(true); }} className="flex flex-col items-center gap-0.5 group">
             <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
               <MessageCircle className="w-5 h-5 text-foreground group-hover:text-primary transition-colors" />
             </div>

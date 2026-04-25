@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBatchCounts } from "@/hooks/useBatchCounts";
 import BoostCountdown from "@/components/BoostCountdown";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
+import { hapticSelection } from "@/lib/haptics";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -360,9 +361,15 @@ const Feed = () => {
     if (isDesktop) return;
     const container = containerRef.current;
     if (!container) return;
+    let lastIndex = 0;
     const handleScroll = () => {
       const itemHeight = container.clientHeight;
       const index = Math.round(container.scrollTop / itemHeight);
+      if (index !== lastIndex) {
+        // Subtle tick when a new card snaps into view (swipe up/down)
+        void hapticSelection();
+        lastIndex = index;
+      }
       setActiveIndex(index);
 
       const snappedTop = index * itemHeight;
