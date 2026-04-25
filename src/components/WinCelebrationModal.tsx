@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Trophy, X, Star } from "lucide-react";
 import { useConfetti } from "@/hooks/useConfetti";
 import { useAuth } from "@/hooks/useAuth";
 import ProfitShareCard from "@/components/ProfitShareCard";
 import ShareModal from "@/components/ShareModal";
+import { hapticSuccess } from "@/lib/haptics";
 
 interface WinCelebrationModalProps {
   open: boolean;
@@ -20,6 +21,11 @@ const WinCelebrationModal = ({ open, onClose, market, side, payout, profit }: Wi
   const { user } = useAuth();
   const [shareOpen, setShareOpen] = useState(false);
   const profitCardRef = useRef<HTMLDivElement>(null);
+
+  // Fire celebratory haptic when the modal opens
+  useEffect(() => {
+    if (open) void hapticSuccess();
+  }, [open]);
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader";
   const referralCode = user?.user_metadata?.display_name || user?.id || "";

@@ -14,6 +14,7 @@ import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useNavigate } from "react-router-dom";
 import TermsAcceptanceModal, { hasAcceptedTerms } from "@/components/TermsAcceptanceModal";
 import useAnalytics from "@/hooks/useAnalytics";
+import { hapticSuccess, hapticError, hapticLight } from "@/lib/haptics";
 import {
   X,
   AlertTriangle,
@@ -164,6 +165,7 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const adjustAmount = (delta: number) => {
     const newVal = Math.max(MIN_AMOUNT, Math.min(MAX_AMOUNT, numAmount + delta));
     setAmount(newVal.toString());
+    void hapticLight();
   };
 
   const handleConfirm = useCallback(async () => {
@@ -199,9 +201,11 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
         track("prediction_confirmed", { marketId, side, amount: numAmount, insuranceTier: insuranceTier || 0 });
       }
       setStep("success");
+      void hapticSuccess();
     } catch (err: any) {
       setErrorMsg(err?.message || "Transaction failed");
       setStep("error");
+      void hapticError();
     }
   }, [marketId, optionId, side, numAmount, price, shares, placeBet, placeLimitOrder, orderType, limitPriceNum, insuranceTier]);
 
