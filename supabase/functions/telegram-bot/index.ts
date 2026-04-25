@@ -665,7 +665,7 @@ async function handleMarkets(
 
   const marketButtons: Array<Array<{ text: string; callback_data: string }>> = [];
 
-  markets.forEach((m, i) => {
+  (markets as any[]).forEach((m: any, i: number) => {
     const num = from + i + 1;
     const yesP = Math.round(m.yes_price * 100);
     const emoji = categoryEmoji(m.category);
