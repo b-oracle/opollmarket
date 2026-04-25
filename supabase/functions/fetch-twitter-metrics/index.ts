@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("fetch-twitter-metrics error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err instanceof Error ? err.message : String(err)) }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -225,7 +225,8 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("balance-reconciliation error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Internal server error" }), {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
