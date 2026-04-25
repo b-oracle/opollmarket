@@ -372,26 +372,47 @@ const AdminDeposits = () => {
                                 </>
                               ) : (
                                 <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
-                                    disabled={confirmMutation.isPending}
-                                    onClick={() => {
-                                      if (confirm(`Confirm net received $${maxCredit.toFixed(2)} deposit for ${d.display_name}?`)) {
-                                        confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: maxCredit });
-                                      }
-                                    }}
-                                  >
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Net (${maxCredit.toFixed(2)})
-                                  </Button>
+                                  {isOverpayment && (
+                                    <Button
+                                      size="sm"
+                                      className="text-xs gap-1 bg-amber-500 hover:bg-amber-600 text-white"
+                                      disabled={confirmMutation.isPending}
+                                      onClick={() => {
+                                        if (
+                                          confirm(
+                                            `Resolve as Overpayment?\n\nRequested: $${requested.toFixed(2)}\nReceived (gross): $${(gross ?? 0).toFixed(2)}\nNet credit: $${netCredit.toFixed(2)}\n\nThis will confirm the deposit and credit $${netCredit.toFixed(2)} to ${d.display_name}.`,
+                                          )
+                                        ) {
+                                          confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: netCredit });
+                                        }
+                                      }}
+                                    >
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      Resolve as Overpayment (${netCredit.toFixed(2)})
+                                    </Button>
+                                  )}
+                                  {!isOverpayment && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                                      disabled={confirmMutation.isPending}
+                                      onClick={() => {
+                                        if (confirm(`Confirm net received $${netCredit.toFixed(2)} deposit for ${d.display_name}?`)) {
+                                          confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: netCredit });
+                                        }
+                                      }}
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      Net (${netCredit.toFixed(2)})
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="secondary"
                                     className="text-xs gap-1"
                                     disabled={confirmMutation.isPending}
-                                    onClick={() => { setEditingId(d.id); setEditAmount(String(maxCredit)); }}
+                                    onClick={() => { setEditingId(d.id); setEditAmount(String(netCredit)); }}
                                   >
                                     <AlertTriangle className="w-3.5 h-3.5" />
                                     Custom
