@@ -375,7 +375,8 @@ const AdminDeposits = () => {
                                   {isOverpayment && (
                                     <Button
                                       size="sm"
-                                      className="text-xs gap-1 bg-amber-500 hover:bg-amber-600 text-white"
+                                      className="text-xs gap-1"
+                                      variant="default"
                                       disabled={confirmMutation.isPending}
                                       onClick={() => {
                                         if (
