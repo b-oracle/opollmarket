@@ -302,13 +302,15 @@ Deno.serve(async (req) => {
 
     // ─── Handle transfer (withdrawal) completion ───
     if (event === "transfer.completed" && data.status === "SUCCESSFUL") {
-      const reference = data.reference;
-      if (!reference) {
-        console.warn("No reference in transfer webhook");
-        return new Response(JSON.stringify({ status: "no_reference" }), {
+      const xferCheck = validateFlutterwaveTransfer(data);
+      if (!xferCheck.ok) {
+        console.warn("Invalid Flutterwave transfer payload:", xferCheck.error);
+        return new Response(JSON.stringify({ error: xferCheck.error }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const { reference } = xferCheck.value;
 
       // Update transaction to confirmed
       await adminClient
