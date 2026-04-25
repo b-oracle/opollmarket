@@ -108,6 +108,12 @@ const AdminSettings = () => {
   const [depositMaxAmount, setDepositMaxAmount] = useState("50000");
   const [pushPromptCooldownDays, setPushPromptCooldownDays] = useState("14");
   const [depositExpiryMinutes, setDepositExpiryMinutes] = useState("60");
+  // Deposit deviation thresholds (NOWPayments classification)
+  const [depositOverpayThreshold, setDepositOverpayThreshold] = useState("1.02");
+  const [depositPartialThreshold, setDepositPartialThreshold] = useState("0.98");
+  const [depositWrongAssetHigh, setDepositWrongAssetHigh] = useState("2.0");
+  const [depositWrongAssetLow, setDepositWrongAssetLow] = useState("0.3");
+  const [depositLargeOverpayAlert, setDepositLargeOverpayAlert] = useState("1.5");
   const [maxDraftsNone, setMaxDraftsNone] = useState("2");
   const [maxDraftsBlue, setMaxDraftsBlue] = useState("5");
   const [maxDraftsGold, setMaxDraftsGold] = useState("10");
