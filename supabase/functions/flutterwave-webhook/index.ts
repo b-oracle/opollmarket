@@ -420,8 +420,10 @@ Deno.serve(async (req) => {
       );
       await logWebhookEvent(adminClient, {
         provider: "flutterwave",
-        event_type: "error",
+        event_type: "handler_exception",
         status: "error",
+        message: err instanceof Error ? err.message : "Unknown handler error",
+        payload: rawBodyForLog,
         error: err,
       });
     } catch { /* swallow */ }
