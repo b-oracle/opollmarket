@@ -251,6 +251,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       });
       return;
     }
+    void (bookmarked ? hapticLight() : hapticSuccess());
     toggleBookmark();
   };
 
