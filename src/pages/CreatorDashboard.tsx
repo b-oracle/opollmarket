@@ -297,7 +297,92 @@ const CreatorDashboard = () => {
           <StatCard label="Resolved" value={String(totals.resolvedCount)} icon={BarChart3} color="text-blue-500" small />
         </div>
 
-        {/* Filters */}
+        {/* Date range filter */}
+        <div className="flex items-center gap-1.5 mb-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+          {([
+            ["all", "All time"],
+            ["7d", "7d"],
+            ["30d", "30d"],
+            ["90d", "90d"],
+            ["ytd", "YTD"],
+          ] as [RangePreset, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setRangePreset(key);
+                if (key !== "custom") {
+                  setCustomFrom(undefined);
+                  setCustomTo(undefined);
+                }
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors",
+                rangePreset === key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                onClick={() => setRangePreset("custom")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors",
+                  rangePreset === "custom"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <CalendarIcon className="w-3.5 h-3.5" />
+                {rangePreset === "custom" && customFrom && customTo
+                  ? `${format(customFrom, "MMM d")} – ${format(customTo, "MMM d")}`
+                  : "Custom"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={{ from: customFrom, to: customTo }}
+                onSelect={(range) => {
+                  setCustomFrom(range?.from);
+                  setCustomTo(range?.to);
+                  setRangePreset("custom");
+                  if (range?.from && range?.to) setCalendarOpen(false);
+                }}
+                numberOfMonths={1}
+                disabled={(d) => d > new Date()}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {rangeActive && (
+            <button
+              onClick={() => {
+                setRangePreset("all");
+                setCustomFrom(undefined);
+                setCustomTo(undefined);
+              }}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Clear date filter"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Range summary */}
+        <p className="text-[10px] text-muted-foreground mb-3">
+          Earnings & resolved markets: <span className="font-semibold text-foreground">{rangeLabel}</span>
+          {isCustomRangeIncomplete && " • pick both start and end dates"}
+        </p>
+
+        {/* Status filters */}
         <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide -mx-1 px-1">
           {(["all", "active", "pending", "resolved"] as const).map((f) => (
             <button
