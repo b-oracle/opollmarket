@@ -274,6 +274,15 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       type: "deposit",
     });
 
+    // Alert admins on unusually large overpayments
+    if (cls.ratio >= LARGE_OVERPAY_ALERT) {
+      await notifyAdmins(
+        supabase,
+        "ℹ️ Large Overpayment Auto-Credited",
+        `User ${userId.slice(0, 8)}… overpaid by $${excess.toFixed(2)} (ratio ${cls.ratio.toFixed(2)}) on payment ${paymentIdStr}. Credited $${requestedAmount.toFixed(2)} to main balance, $${excess.toFixed(2)} to bonus.`,
+      );
+    }
+
     // Run welcome-bonus + debt-settlement post-credit hooks (same as normal flow)
     try { await processWelcomeBonus(supabase, userId, Number(requestedAmount)); } catch (e) { console.error("Welcome bonus error:", e); }
     try {
