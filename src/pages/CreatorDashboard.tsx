@@ -61,6 +61,16 @@ const CreatorDashboard = () => {
   const [markets, setMarkets] = useState<MarketRow[]>([]);
   const [earningsByMarket, setEarningsByMarket] = useState<EarningsByMarket>({});
   const [filter, setFilter] = useState<"all" | "active" | "resolved" | "pending">("all");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
