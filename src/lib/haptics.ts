@@ -16,6 +16,7 @@ import {
   hapticHeavy as despiaHeavy,
   isDespiaNative,
 } from "./despia";
+import { getHapticsEnabled, getVibrationEnabled } from "@/hooks/useDevicePrefs";
 
 const isCapacitorNative = (): boolean => {
   try {
