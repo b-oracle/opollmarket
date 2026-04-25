@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
+import { RoomServiceClient } from "livekit-server-sdk";
 import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
@@ -14,7 +14,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const extractEnvValue = (value: string | null, key: string) => {
+const extractEnvValue = (value: string | null | undefined, key: string) => {
   const normalized = (value || "").trim();
   if (!normalized) return "";
 
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
     const spaces = Object.fromEntries(
       await Promise.all(
-        spaceIds.map(async (spaceId) => {
+        spaceIds.map(async (spaceId: string) => {
           if (!liveVisibleSpaceIds.has(spaceId)) {
             return [spaceId, { participant_count: 0, joined: false }];
           }
