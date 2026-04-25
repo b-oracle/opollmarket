@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
       .from("transactions")
       .select("id")
       .eq("nowpayments_payment_id", reference)
+      .eq("payment_provider", "payaza")
       .eq("type", "deposit")
       .in("status", ["confirmed", "processing"])
       .maybeSingle();

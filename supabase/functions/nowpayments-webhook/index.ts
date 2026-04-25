@@ -164,6 +164,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     .from("transactions")
     .select("id, status")
     .eq("nowpayments_payment_id", paymentIdStr)
+    .eq("payment_provider", "nowpayments")
     .in("status", ["confirmed", "partial", "processing"])
     .maybeSingle();
 
@@ -175,16 +176,17 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   // 2. Atomically claim the transaction (prevents concurrent webhook replays)
   const { data: claimedRows } = await supabase.rpc("claim_webhook_deposit", {
     _payment_id: paymentIdStr,
+    _provider: "nowpayments",
   });
 
   let matchedTx = claimedRows?.[0] || null;
 
   // Fallback: try matching by user + pending status (for txns without payment_id yet)
   if (!matchedTx) {
-    // First try to set the payment_id on a matching pending tx, then claim it
+    // First try to set the payment_id + provider on a matching pending tx, then claim it
     await supabase
       .from("transactions")
-      .update({ nowpayments_payment_id: paymentIdStr })
+      .update({ nowpayments_payment_id: paymentIdStr, payment_provider: "nowpayments" })
       .eq("user_id", userId)
       .eq("type", "deposit")
       .in("status", ["pending", "expired"])
@@ -194,6 +196,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
 
     const { data: retryRows } = await supabase.rpc("claim_webhook_deposit", {
       _payment_id: paymentIdStr,
+      _provider: "nowpayments",
     });
     matchedTx = retryRows?.[0] || null;
   }
