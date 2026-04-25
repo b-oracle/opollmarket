@@ -64,41 +64,85 @@ export const useNativePush = () => {
           console.warn("Push registration error:", err);
         });
 
+        // Build a stable 31-bit notification ID so retried/duplicate FCM
+        // deliveries collapse onto the SAME tray entry instead of stacking.
+        // Android requires a positive 32-bit signed int; we hash any string
+        // identifier (call_id, message_id, push_id) into that range.
+        const stableNotificationId = (key: string): number => {
+          let h = 0;
+          for (let i = 0; i < key.length; i++) {
+            h = ((h << 5) - h + key.charCodeAt(i)) | 0;
+          }
+          // Force positive in 31-bit range; reserve 0 as a sentinel for "no key".
+          const positive = Math.abs(h) % 2_147_483_646;
+          return positive === 0 ? 1 : positive;
+        };
+
+        // Tracks call IDs we've already shown a fallback notification for in
+        // this session so duplicate FCM deliveries (carrier retries, multi-
+        // device fan-out) don't double-buzz.
+        const shownCallIds = new Set<string>();
+
         // Foreground push received — surface a banner notification + buzz.
         // For incoming-call data pushes we additionally trigger a strong
         // vibration so the user notices even if the app is silent.
         const recvSub = await PushNotifications.addListener(
           "pushNotificationReceived",
           async (notification) => {
-            const data = (notification.data || {}) as Record<string, string>;
-            const isCall =
-              data.type === "incoming_call" || data.is_call === "true" || data.is_call === "1";
+            try {
+              const data = (notification.data || {}) as Record<string, string>;
+              const isCall =
+                data.type === "incoming_call" || data.is_call === "true" || data.is_call === "1";
 
-            if (isCall) {
-              void vibrate([500, 500, 500, 500, 500]);
-            }
-
-            // If FCM didn't render a system notification (data-only payload),
-            // fall back to a local one so it appears in the tray + buzzes.
-            const hasSystemNotif = !!notification.title || !!notification.body;
-            if (!hasSystemNotif && LocalNotifications) {
-              try {
-                await LocalNotifications.schedule({
-                  notifications: [
-                    {
-                      id: Math.floor(Math.random() * 2_147_483_647),
-                      title: data.title || (isCall ? "Incoming Call 📞" : "Notification"),
-                      body: data.body || (isCall ? "Tap to answer" : ""),
-                      extra: data,
-                      sound: isCall ? undefined : undefined,
-                      smallIcon: "ic_stat_icon_config_sample",
-                      channelId: isCall ? "incoming_calls" : "default",
-                    },
-                  ],
-                });
-              } catch (err) {
-                console.warn("Local notification fallback failed:", err);
+              // Dedupe per call: same call_id should only ring once per session.
+              const callKey = data.call_id || data.room_name || data.conversation_id || "";
+              if (isCall && callKey && shownCallIds.has(callKey)) {
+                return;
               }
+              if (isCall && callKey) shownCallIds.add(callKey);
+
+              if (isCall) {
+                try {
+                  void vibrate([500, 500, 500, 500, 500]);
+                } catch (vErr) {
+                  console.warn("Call vibrate failed:", vErr);
+                }
+              }
+
+              // If FCM didn't render a system notification (data-only payload),
+              // fall back to a local one so it appears in the tray + buzzes.
+              const hasSystemNotif = !!notification.title || !!notification.body;
+              if (!hasSystemNotif && LocalNotifications) {
+                // Deterministic ID derived from a stable key so retries collapse.
+                const idKey =
+                  callKey ||
+                  data.notification_id ||
+                  data.push_id ||
+                  data.message_id ||
+                  notification.id ||
+                  `${data.type || "notif"}:${data.url || ""}`;
+                const notifId = stableNotificationId(String(idKey));
+
+                try {
+                  await LocalNotifications.schedule({
+                    notifications: [
+                      {
+                        id: notifId,
+                        title: data.title || (isCall ? "Incoming Call 📞" : "Notification"),
+                        body: data.body || (isCall ? "Tap to answer" : ""),
+                        extra: data,
+                        smallIcon: "ic_stat_icon_config_sample",
+                        channelId: isCall ? "incoming_calls" : "default",
+                      },
+                    ],
+                  });
+                } catch (err) {
+                  console.warn("Local notification fallback failed:", err, { notifId, idKey });
+                }
+              }
+            } catch (outerErr) {
+              // Never let a malformed payload kill the push listener.
+              console.warn("pushNotificationReceived handler error:", outerErr);
             }
           }
         );
