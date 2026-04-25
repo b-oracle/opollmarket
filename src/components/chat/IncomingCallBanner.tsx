@@ -81,9 +81,14 @@ const IncomingCallBanner = () => {
   // The pattern fires an initial attention buzz, then loops a WhatsApp-style
   // ring cadence (1s on / 0.5s off / 1s on / 1.5s off). Works on Capacitor
   // native (Android/iOS via Haptics.vibrate) and web (navigator.vibrate).
+  // Also tells useNativePush to stop its own foreground-FCM ring loop so we
+  // don't double-buzz when the FCM data push and the realtime INSERT both
+  // arrive (which is normal — push is the wake-up, realtime is the payload).
   useEffect(() => {
     let cancelVibration: (() => void) | null = null;
     if (incomingCall && !activeCall) {
+      // Silence the FCM-driven foreground ring; the banner now owns vibration.
+      try { window.dispatchEvent(new Event("dm-call-banner-dismissed")); } catch {}
       stopRingtoneRef.current = playRingtone();
       cancelVibration = startIncomingCallVibration();
     } else {
@@ -94,6 +99,8 @@ const IncomingCallBanner = () => {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
       cancelVibration?.();
       stopVibration();
+      // Notify the hook one more time so any leftover loop is cancelled.
+      try { window.dispatchEvent(new Event("dm-call-banner-dismissed")); } catch {}
     };
   }, [incomingCall, activeCall]);
 
