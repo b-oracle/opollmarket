@@ -1,99 +1,44 @@
+## Wave 1 — Critical (highest risk)
 
-## Goal
+1. **Add unique idempotency indices** for external payment IDs.
+   - Migration: `CREATE UNIQUE INDEX CONCURRENTLY transactions_provider_payment_id_uniq ON transactions (payment_provider, nowpayments_payment_id) WHERE nowpayments_payment_id IS NOT NULL;`
+   - Backfill `payment_provider` to `'nowpayments'` for legacy rows that have a numeric `nowpayments_payment_id` and null provider before adding the index.
 
-Add an Android-only fallback so if native Google sign-in fails, users can still use the existing web-based Google OAuth flow without changing how web/PWA users currently sign in.
+2. **Wire `confirm-deposit-admin` to the shared `_shared/depositCap.ts` validator**, replacing the inline cap (lines 91–101). Reject (don't fall back) when both `gross_amount_usd` and `net_amount_usd` are null on `wrong_asset`/`partial` rows.
 
-## What will change
+3. **Link `transactions` ↔ `withdrawal_requests` via a new `withdrawal_request_id` column** on `transactions`, populate it in `request-withdrawal` and `request-payaza-withdrawal`, and switch `process-withdrawal` to update by id instead of `.order().limit(1)`.
 
-### 1. Extract the existing web Google OAuth into a reusable fallback
+4. **Remove duplicate-by-race in `request-withdrawal` (crypto)**: convert the idempotency check to a single `INSERT … ON CONFLICT (idempotency_key) DO NOTHING RETURNING id` on `withdrawal_requests`, and only call `debit_balance_atomic` if the insert returned a row.
 
-In `src/pages/Auth.tsx`, I will create a small helper inside the component, such as:
+## Wave 2 — High
 
-```ts
-const signInWithWebGoogle = async () => {
-  return lovable.auth.signInWithOAuth("google", {
-    redirect_uri: window.location.origin,
-  });
-};
-```
+5. **Add `payment_provider` filter to all webhook claim paths**: update `claim_webhook_deposit` to require provider, change Payaza/Flutterwave/NOWPayments webhooks to pass it, and stop matching on `nowpayments_payment_id` alone.
 
-This keeps the current working web OAuth logic intact and makes it reusable after native failure.
+6. **Hard-fail Payaza webhook when `PAYAZA_WEBHOOK_SECRET` is unset** (mirror Flutterwave pattern).
 
-### 2. Add Android fallback behavior after native failure
+7. **Cap NOWPayments overpayment auto-credit**: when `excess > min(requested * 5, $5000)`, mark as `wrong_asset` for admin review instead of auto-crediting bonus.
 
-For Android Capacitor only:
+8. **Move withdrawal-fee crediting to `process-withdrawal` approval path** (today it's pre-credited in `request-withdrawal` regardless of payout outcome).
 
-```text
-Tap Continue with Google
-  -> try native Google sign-in first
-  -> if native sign-in succeeds, verify session and navigate
-  -> if native sign-in fails or no valid session is created:
-       show a short fallback message
-       launch the existing web Google OAuth flow
-```
+9. **Add `idempotency_key` to `request-payaza-withdrawal`** matching the crypto withdrawal pattern.
 
-The user experience will be:
+10. **Return 403 from NOWPayments webhook on signature failure** (currently swallowed behind a 200 in the catch-all).
 
-```text
-Native Google sign-in could not complete. Opening browser-based Google sign-in instead.
-```
+## Wave 3 — Medium
 
-Then the app will call the same existing web OAuth flow currently used by browser users.
+11. Drop the 3-arg `adjust_balance` overload (now unused after recent refactors).
+12. Migrate `create-payaza-deposit` & `create-flutterwave-deposit` from `getClaims` to `getUser()`.
+13. Make pending-deposit cap global across providers.
+14. Add a `processing` claim step in `np-reconcile` `fix_expired` action before crediting.
+15. Move the `$1000` anomaly threshold into `commission_settings`.
 
-### 3. Preserve user cancellation behavior
+## Wave 4 — Low (defense-in-depth, post-critical)
 
-If the user explicitly cancels the native Google picker, I will not force the fallback automatically. Cancellation is an intentional action, so the app should simply show/cancel cleanly.
+16. Add tests for the new idempotency/uniqueness constraints (extend the existing `concurrency_test.ts`).
+17. Add an admin dashboard panel surfacing the `withdrawal-deposit-audit` outliers (4 users found today).
+18. Consider rate-limiting `admin-credit-deposit` / `confirm-deposit-admin` per actor.
 
-Fallback will run for real native failures such as:
+## What I will NOT touch
 
-- native plugin unavailable
-- no ID token returned
-- invalid audience/client mismatch
-- nonce/session exchange failure
-- no verified app session after native exchange
-
-### 4. Avoid duplicate redirects or conflicting sessions
-
-Before launching fallback OAuth, the code will only proceed if the native flow did not create a valid session.
-
-The web OAuth fallback will remain:
-
-```ts
-lovable.auth.signInWithOAuth("google", {
-  redirect_uri: window.location.origin,
-});
-```
-
-I will not modify the generated auth client files.
-
-### 5. Optional user-facing fallback button if automatic launch is blocked
-
-If the web OAuth call returns an error instead of redirecting, the app will show a clear toast message. If needed, I will add a secondary “Use web Google sign-in” button/message for Android users, but the first implementation will attempt the fallback automatically after native failure.
-
-## What will not change
-
-- Existing web/PWA Google OAuth behavior.
-- Existing email/password login and signup.
-- Existing referral logic.
-- Existing login security modal behavior.
-- Native Google sign-in as the preferred Android path.
-
-## Files to update
-
-- `src/pages/Auth.tsx`
-  - Add reusable web Google sign-in helper.
-  - Update the Android Google button handler to try native first, then fallback to web OAuth on non-cancel failures.
-
-Potentially update:
-- `README.md`
-  - Add a short note explaining that Android uses native sign-in first and falls back to web OAuth if native token exchange fails.
-
-## Verification
-
-After implementation, I will verify:
-
-- TypeScript/build succeeds.
-- Browser/PWA still uses the existing web Google OAuth path directly.
-- Android code path still tries native Google sign-in first.
-- Android fallback path calls the same existing web OAuth flow after native failure.
-- Cancelled native sign-in does not unexpectedly launch fallback.
+- Storage bucket listing / search_path / `SECURITY DEFINER` view linter warnings — these are outside the deposit/withdrawal scope. Happy to address in a separate pass.
+- The 4 pre-existing users with withdrawals > deposits (they look legitimate; I'll surface them in an admin view for review rather than auto-clawback).
