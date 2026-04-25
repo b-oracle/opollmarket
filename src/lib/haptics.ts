@@ -173,6 +173,7 @@ export const hapticSelection = async (): Promise<void> => {
  * On Capacitor uses Haptics.vibrate; on web uses navigator.vibrate.
  */
 export const vibrate = async (pattern: number | number[] = 200): Promise<void> => {
+  if (!getVibrationEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics } = await import("@capacitor/haptics");
