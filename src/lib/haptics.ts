@@ -95,6 +95,7 @@ export const hapticHeavy = async (): Promise<void> => {
 // ── Notification haptics ─────────────────────────────────────────
 
 export const hapticSuccess = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, NotificationType } = await import("@capacitor/haptics");
