@@ -1,5 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logWebhookEvent } from "../_shared/webhookLog.ts";
+import {
+  safeEqual,
+  validateFlutterwavePayload,
+  validateFlutterwaveCharge,
+  validateFlutterwaveTransfer,
+} from "../_shared/webhookValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -94,19 +100,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    console.log("Flutterwave webhook received:", JSON.stringify(body).substring(0, 1000));
-
-    const event = body.event;
-    const data = body.data;
-
-    if (!event || !data) {
-      return new Response(JSON.stringify({ status: "ignored" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Verify webhook by checking the secret hash header
+    // ── Signature verification (constant-time) BEFORE parsing body ──
     const secretHash = Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH");
     if (!secretHash) {
       console.error("FLUTTERWAVE_WEBHOOK_HASH not configured — rejecting webhook");
@@ -115,15 +109,36 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
     const signature = req.headers.get("verif-hash");
-    if (signature !== secretHash) {
+    if (!safeEqual(signature, secretHash)) {
       console.warn("Flutterwave webhook: invalid signature");
       return new Response(JSON.stringify({ error: "Invalid signature" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ── Parse + validate body ──
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    console.log("Flutterwave webhook received:", JSON.stringify(raw).substring(0, 1000));
+
+    const parsed = validateFlutterwavePayload(raw);
+    if (!parsed.ok) {
+      console.warn("Flutterwave webhook validation failed:", parsed.error);
+      return new Response(JSON.stringify({ error: parsed.error }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { event, data } = parsed.value;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -132,10 +147,36 @@ Deno.serve(async (req) => {
 
     // ─── Handle deposit (charge) completion ───
     if (event === "charge.completed" && data.status === "successful") {
-      const txRef = data.tx_ref;
-      if (!txRef) {
-        console.warn("No tx_ref in charge webhook");
-        return new Response(JSON.stringify({ status: "no_tx_ref" }), {
+      const chargeCheck = validateFlutterwaveCharge(data);
+      if (!chargeCheck.ok) {
+        console.warn("Invalid Flutterwave charge payload:", chargeCheck.error);
+        await logWebhookEvent(adminClient, {
+          provider: "flutterwave",
+          event_type: "validation_failed",
+          status: "warning",
+          message: chargeCheck.error,
+          payload: parsed.value.raw,
+        });
+        return new Response(JSON.stringify({ error: chargeCheck.error }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { tx_ref: txRef, currency, amount: reportedAmount } = chargeCheck.value;
+
+      // Strict currency check — Flutterwave deposits are NGN-only in this integration
+      if (currency !== "NGN") {
+        console.warn(`Flutterwave webhook: unexpected currency ${currency} for ${txRef}`);
+        await logWebhookEvent(adminClient, {
+          provider: "flutterwave",
+          event_type: "wrong_currency",
+          status: "warning",
+          reference: txRef,
+          message: `Expected NGN, got ${currency}`,
+          payload: parsed.value.raw,
+        });
+        return new Response(JSON.stringify({ error: "Unsupported currency" }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -261,13 +302,15 @@ Deno.serve(async (req) => {
 
     // ─── Handle transfer (withdrawal) completion ───
     if (event === "transfer.completed" && data.status === "SUCCESSFUL") {
-      const reference = data.reference;
-      if (!reference) {
-        console.warn("No reference in transfer webhook");
-        return new Response(JSON.stringify({ status: "no_reference" }), {
+      const xferCheck = validateFlutterwaveTransfer(data);
+      if (!xferCheck.ok) {
+        console.warn("Invalid Flutterwave transfer payload:", xferCheck.error);
+        return new Response(JSON.stringify({ error: xferCheck.error }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const { reference } = xferCheck.value;
 
       // Update transaction to confirmed
       await adminClient
@@ -303,12 +346,14 @@ Deno.serve(async (req) => {
 
     // ─── Handle transfer failure ───
     if (event === "transfer.failed" || (event === "transfer.completed" && data.status === "FAILED")) {
-      const reference = data.reference;
-      if (!reference) {
-        return new Response(JSON.stringify({ status: "no_reference" }), {
+      const xferCheck = validateFlutterwaveTransfer(data);
+      if (!xferCheck.ok) {
+        return new Response(JSON.stringify({ error: xferCheck.error }), {
+          status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const { reference } = xferCheck.value;
 
       // Refund user balance
       const { data: txn } = await adminClient

@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logWebhookEvent } from "../_shared/webhookLog.ts";
+import { safeEqual, validateNowPaymentsPayload } from "../_shared/webhookValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,7 +46,7 @@ async function verifySignature(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  return computed === signature;
+  return safeEqual(computed, signature);
 }
 
 async function processWelcomeBonus(supabase: any, userId: string, depositAmount: number) {
@@ -706,10 +707,27 @@ Deno.serve(async (req) => {
       return new Response("Invalid signature", { status: 403, headers: corsHeaders });
     }
 
-    const payload = JSON.parse(body);
+    let rawPayload: unknown;
+    try {
+      rawPayload = JSON.parse(body);
+    } catch {
+      console.error("NowPayments IPN: invalid JSON body");
+      return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
+    }
+
+    const validation = validateNowPaymentsPayload(rawPayload);
+    if (!validation.ok) {
+      console.error("NowPayments IPN validation failed:", validation.error);
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const payload = validation.value.raw as Record<string, unknown>;
     console.log("IPN payload:", JSON.stringify(payload));
 
-    const { payment_status, order_id } = payload;
+    const payment_status = validation.value.payment_status;
+    const order_id = validation.value.order_id;
 
     // Handle partially_paid: mark deposit as "partial" for admin review (no balance credit)
     if (payment_status === "partially_paid") {

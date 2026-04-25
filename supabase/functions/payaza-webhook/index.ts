@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logWebhookEvent } from "../_shared/webhookLog.ts";
+import { safeEqual, validatePayazaPayload } from "../_shared/webhookValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,8 @@ Deno.serve(async (req) => {
         req.headers.get("x-webhook-token") ||
         new URL(req.url).searchParams.get("token");
 
-      if (incomingToken !== webhookSecret) {
+      // Constant-time compare to mitigate timing attacks
+      if (!safeEqual(incomingToken, webhookSecret)) {
         console.error("Payaza webhook: invalid or missing webhook token");
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -35,7 +37,7 @@ Deno.serve(async (req) => {
     console.log("Payaza webhook headers:", headerNames.join(", "));
 
     const rawBody = await req.text();
-    let body: any;
+    let body: unknown;
     try {
       body = JSON.parse(rawBody);
     } catch {
@@ -47,37 +49,17 @@ Deno.serve(async (req) => {
 
     console.log("Payaza webhook payload:", JSON.stringify(body).substring(0, 1000));
 
-    // Extract reference — Payaza sends it in multiple possible fields
-    const reference =
-      body.transaction_reference ||
-      body.merchant_reference ||
-      body.account_reference ||
-      body.data?.transaction_reference ||
-      body.data?.merchant_reference ||
-      body.data?.account_reference ||
-      body.response_content?.transaction_reference ||
-      body.response_content?.merchant_reference ||
-      body.response_content?.account_reference;
-
-    // Extract status — normalize to lowercase
-    const rawStatus = (
-      body.status ||
-      body.transaction_status ||
-      body.data?.status ||
-      body.data?.transaction_status ||
-      body.response_content?.status ||
-      body.response_content?.transaction_status ||
-      ""
-    ).toString().toLowerCase().trim();
-
-    console.log(`Payaza webhook: reference=${reference}, rawStatus=${rawStatus}`);
-
-    if (!reference) {
-      console.error("Payaza webhook: no reference found in payload");
-      return new Response(JSON.stringify({ error: "Missing transaction_reference" }), {
+    // Strict shape validation (required reference + status; optional amount/currency)
+    const parsed = validatePayazaPayload(body);
+    if (!parsed.ok) {
+      console.error("Payaza webhook validation failed:", parsed.error);
+      return new Response(JSON.stringify({ error: parsed.error }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const { reference, status: rawStatus, amount: reportedAmount, currency: reportedCurrency } = parsed.value;
+
+    console.log(`Payaza webhook: reference=${reference}, rawStatus=${rawStatus}, reportedAmount=${reportedAmount}, currency=${reportedCurrency}`);
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -171,6 +153,28 @@ Deno.serve(async (req) => {
       console.log("Payment not successful, marked as failed:", tx.id);
       return new Response(JSON.stringify({ success: true, message: "Payment not successful" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Currency sanity: Payaza payouts are NGN-denominated. If the provider
+    // reports any other currency on a "success" event, flag rather than credit.
+    if (reportedCurrency && reportedCurrency !== "NGN") {
+      await adminClient
+        .from("transactions")
+        .update({ status: "wrong_asset" })
+        .eq("id", tx.id);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "wrong_currency",
+        status: "warning",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        message: `Expected NGN, got ${reportedCurrency} (reportedAmount=${reportedAmount ?? "n/a"})`,
+      });
+      return new Response(JSON.stringify({ error: "Unsupported currency" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
