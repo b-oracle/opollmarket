@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import SEOHead from "@/components/SEOHead";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Loader2,
   BarChart3,
@@ -16,8 +20,12 @@ import {
   ChevronRight,
   ChevronDown,
   Hourglass,
+  CalendarIcon,
+  X,
 } from "lucide-react";
 import ResolvedMarketDetail from "@/components/creator/ResolvedMarketDetail";
+
+type RangePreset = "all" | "7d" | "30d" | "90d" | "ytd" | "custom";
 
 type MarketRow = {
   id: string;
@@ -62,6 +70,29 @@ const CreatorDashboard = () => {
   const [earningsByMarket, setEarningsByMarket] = useState<EarningsByMarket>({});
   const [filter, setFilter] = useState<"all" | "active" | "resolved" | "pending">("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [rangePreset, setRangePreset] = useState<RangePreset>("all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Derive [from, to] window. `null` from = no lower bound.
+  const dateWindow = useMemo<{ from: Date | null; to: Date | null }>(() => {
+    const now = new Date();
+    if (rangePreset === "all") return { from: null, to: null };
+    if (rangePreset === "custom") {
+      return {
+        from: customFrom ?? null,
+        to: customTo ? new Date(customTo.getTime() + 24 * 60 * 60 * 1000 - 1) : null,
+      };
+    }
+    const days = rangePreset === "7d" ? 7 : rangePreset === "30d" ? 30 : rangePreset === "90d" ? 90 : 0;
+    if (rangePreset === "ytd") {
+      return { from: new Date(now.getFullYear(), 0, 1), to: now };
+    }
+    return { from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000), to: now };
+  }, [rangePreset, customFrom, customTo]);
+
+  const isCustomRangeIncomplete = rangePreset === "custom" && (!customFrom || !customTo);
 
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => {
@@ -104,28 +135,44 @@ const CreatorDashboard = () => {
       }
 
       // Earnings: paid creator commissions + pending creator commissions + liquidity refunds
+      // Scoped by created_at within selected window (when set).
+      const fromIso = dateWindow.from?.toISOString();
+      const toIso = dateWindow.to?.toISOString();
+      const applyWindow = (q: any) => {
+        let next = q;
+        if (fromIso) next = next.gte("created_at", fromIso);
+        if (toIso) next = next.lte("created_at", toIso);
+        return next;
+      };
+
       const [paidRes, pendingRes, refundRes] = await Promise.all([
-        supabase
-          .from("transactions")
-          .select("market_id, amount")
-          .eq("user_id", user.id)
-          .eq("type", "commission")
-          .eq("status", "confirmed")
-          .in("market_id", ids),
-        supabase
-          .from("pending_commissions" as any)
-          .select("market_id, amount, status")
-          .eq("user_id", user.id)
-          .eq("type", "creator")
-          .in("market_id", ids),
-        supabase
-          .from("transactions")
-          .select("market_id, amount")
-          .eq("user_id", user.id)
-          .eq("type", "refund")
-          .eq("side", "liquidity_return")
-          .eq("status", "confirmed")
-          .in("market_id", ids),
+        applyWindow(
+          supabase
+            .from("transactions")
+            .select("market_id, amount")
+            .eq("user_id", user.id)
+            .eq("type", "commission")
+            .eq("status", "confirmed")
+            .in("market_id", ids),
+        ),
+        applyWindow(
+          supabase
+            .from("pending_commissions" as any)
+            .select("market_id, amount, status")
+            .eq("user_id", user.id)
+            .eq("type", "creator")
+            .in("market_id", ids),
+        ),
+        applyWindow(
+          supabase
+            .from("transactions")
+            .select("market_id, amount")
+            .eq("user_id", user.id)
+            .eq("type", "refund")
+            .eq("side", "liquidity_return")
+            .eq("status", "confirmed")
+            .in("market_id", ids),
+        ),
       ]);
 
       const map: EarningsByMarket = {};
@@ -150,11 +197,12 @@ const CreatorDashboard = () => {
       }
     };
 
-    load();
+    // Skip fetching when user picked Custom but hasn't set both dates yet.
+    if (!isCustomRangeIncomplete) load();
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, dateWindow.from?.getTime(), dateWindow.to?.getTime(), isCustomRangeIncomplete]);
 
   const totals = useMemo(() => {
     let realized = 0;
@@ -180,9 +228,38 @@ const CreatorDashboard = () => {
   }, [markets, earningsByMarket]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return markets;
-    return markets.filter((m) => m.status === filter);
-  }, [markets, filter]);
+    const fromMs = dateWindow.from?.getTime();
+    const toMs = dateWindow.to?.getTime();
+    return markets.filter((m) => {
+      if (filter !== "all" && m.status !== filter) return false;
+      // Apply date window only to resolved/cancelled markets (they have resolved_at).
+      // Active/pending/draft markets are always shown regardless of range.
+      if ((m.status === "resolved" || m.status === "cancelled") && (fromMs || toMs)) {
+        if (!m.resolved_at) return false;
+        const t = new Date(m.resolved_at).getTime();
+        if (fromMs && t < fromMs) return false;
+        if (toMs && t > toMs) return false;
+      }
+      return true;
+    });
+  }, [markets, filter, dateWindow.from, dateWindow.to]);
+
+  const rangeActive = rangePreset !== "all";
+
+  const rangeLabel =
+    rangePreset === "all"
+      ? "All time"
+      : rangePreset === "7d"
+        ? "Last 7 days"
+        : rangePreset === "30d"
+          ? "Last 30 days"
+          : rangePreset === "90d"
+            ? "Last 90 days"
+            : rangePreset === "ytd"
+              ? "Year to date"
+              : customFrom && customTo
+                ? `${format(customFrom, "MMM d")} – ${format(customTo, "MMM d, yyyy")}`
+                : "Pick dates";
 
   return (
     <div className="min-h-dvh bg-background pb-24">
@@ -220,7 +297,92 @@ const CreatorDashboard = () => {
           <StatCard label="Resolved" value={String(totals.resolvedCount)} icon={BarChart3} color="text-blue-500" small />
         </div>
 
-        {/* Filters */}
+        {/* Date range filter */}
+        <div className="flex items-center gap-1.5 mb-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+          {([
+            ["all", "All time"],
+            ["7d", "7d"],
+            ["30d", "30d"],
+            ["90d", "90d"],
+            ["ytd", "YTD"],
+          ] as [RangePreset, string][]).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setRangePreset(key);
+                if (key !== "custom") {
+                  setCustomFrom(undefined);
+                  setCustomTo(undefined);
+                }
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors",
+                rangePreset === key
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                onClick={() => setRangePreset("custom")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors",
+                  rangePreset === "custom"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <CalendarIcon className="w-3.5 h-3.5" />
+                {rangePreset === "custom" && customFrom && customTo
+                  ? `${format(customFrom, "MMM d")} – ${format(customTo, "MMM d")}`
+                  : "Custom"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                selected={{ from: customFrom, to: customTo }}
+                onSelect={(range) => {
+                  setCustomFrom(range?.from);
+                  setCustomTo(range?.to);
+                  setRangePreset("custom");
+                  if (range?.from && range?.to) setCalendarOpen(false);
+                }}
+                numberOfMonths={1}
+                disabled={(d) => d > new Date()}
+                initialFocus
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {rangeActive && (
+            <button
+              onClick={() => {
+                setRangePreset("all");
+                setCustomFrom(undefined);
+                setCustomTo(undefined);
+              }}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground"
+              aria-label="Clear date filter"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Range summary */}
+        <p className="text-[10px] text-muted-foreground mb-3">
+          Earnings & resolved markets: <span className="font-semibold text-foreground">{rangeLabel}</span>
+          {isCustomRangeIncomplete && " • pick both start and end dates"}
+        </p>
+
+        {/* Status filters */}
         <div className="flex gap-1.5 mb-3 overflow-x-auto scrollbar-hide -mx-1 px-1">
           {(["all", "active", "pending", "resolved"] as const).map((f) => (
             <button
@@ -242,14 +404,36 @@ const CreatorDashboard = () => {
         ) : filtered.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-8 text-center">
             <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-sm font-semibold mb-1">No markets yet</p>
-            <p className="text-xs text-muted-foreground mb-4">Create your first market to start earning creator fees.</p>
-            <button
-              onClick={() => navigate("/create")}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
-            >
-              <PlusCircle className="w-4 h-4" /> Create Market
-            </button>
+            {markets.length === 0 ? (
+              <>
+                <p className="text-sm font-semibold mb-1">No markets yet</p>
+                <p className="text-xs text-muted-foreground mb-4">Create your first market to start earning creator fees.</p>
+                <button
+                  onClick={() => navigate("/create")}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
+                >
+                  <PlusCircle className="w-4 h-4" /> Create Market
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold mb-1">No markets in this range</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Try a wider date range or clear the filter.
+                </p>
+                <button
+                  onClick={() => {
+                    setRangePreset("all");
+                    setCustomFrom(undefined);
+                    setCustomTo(undefined);
+                    setFilter("all");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted text-foreground text-xs font-semibold hover:bg-muted/70"
+                >
+                  Clear filters
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <ul className="space-y-2">
