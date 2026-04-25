@@ -7,7 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import { playRingtone } from "@/lib/sounds";
-import { vibrate, stopVibration } from "@/lib/haptics";
+import {
+  startIncomingCallVibration,
+  stopVibration,
+  vibrate,
+  CALL_CONNECTED_PATTERN,
+  CALL_ENDED_PATTERN,
+} from "@/lib/haptics";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
@@ -71,23 +77,22 @@ const IncomingCallBanner = () => {
     }
   }, [activeCall, callMinimized]);
 
-  // Play ringtone + vibrate when incoming call appears (works on Capacitor native + web)
+  // Play ringtone + run the call vibration pattern when the banner appears.
+  // The pattern fires an initial attention buzz, then loops a WhatsApp-style
+  // ring cadence (1s on / 0.5s off / 1s on / 1.5s off). Works on Capacitor
+  // native (Android/iOS via Haptics.vibrate) and web (navigator.vibrate).
   useEffect(() => {
-    let vibrateInterval: ReturnType<typeof setInterval> | null = null;
+    let cancelVibration: (() => void) | null = null;
     if (incomingCall && !activeCall) {
       stopRingtoneRef.current = playRingtone();
-      // Vibrate pattern: 500ms on, 500ms off, repeating every 3s
-      void vibrate([500, 500, 500, 500, 500]);
-      vibrateInterval = setInterval(() => {
-        void vibrate([500, 500, 500, 500, 500]);
-      }, 3000);
+      cancelVibration = startIncomingCallVibration();
     } else {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
       stopVibration();
     }
     return () => {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-      if (vibrateInterval) clearInterval(vibrateInterval);
+      cancelVibration?.();
       stopVibration();
     };
   }, [incomingCall, activeCall]);
@@ -174,6 +179,8 @@ const IncomingCallBanner = () => {
     // Kill ringtone immediately — don't wait for async answer flow
     if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
     stopVibration();
+    // Soft buzz to acknowledge the answer tap
+    void vibrate(CALL_CONNECTED_PATTERN);
 
     try {
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
@@ -220,6 +227,10 @@ const IncomingCallBanner = () => {
 
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
+
+    // Decisive buzz to confirm the decline action
+    stopVibration();
+    void vibrate(CALL_ENDED_PATTERN);
 
     try {
       await supabase.functions.invoke("dm-call-token", {
