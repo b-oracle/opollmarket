@@ -41,7 +41,10 @@ Deno.serve(async (req) => {
     ]);
     if (!isAdmin && !isSuperAdmin) return json({ error: "Forbidden" }, 403);
 
-    // Parse & validate input
+    // Parse & validate input.
+    // NOTE: this flow has no source transaction so the deposit-cap rules in
+    // _shared/depositCap.ts don't apply here. If a future flow credits against
+    // an existing tx, use validateDepositCap from that module.
     const body = await req.json();
     const targetUserId: string | undefined = body.user_id;
     const amount: number | undefined = body.amount;
