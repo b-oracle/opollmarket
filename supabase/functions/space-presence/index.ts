@@ -14,7 +14,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const extractEnvValue = (value: string | null, key: string) => {
+const extractEnvValue = (value: string | null | undefined, key: string) => {
   const normalized = (value || "").trim();
   if (!normalized) return "";
 
