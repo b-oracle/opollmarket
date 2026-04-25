@@ -185,7 +185,15 @@ Deno.serve(async (req) => {
       action: "manual_deposit_confirm",
       target_type: "transaction",
       target_id: transaction_id,
-      details: { amount, user_id, previous_status: tx.status, credit_amount: creditAmount },
+      details: {
+        requested_amount: Number(amount),
+        credit_amount: creditAmount,
+        max_credit: cap.maxCredit,
+        cap_applied: cap.capLabel,
+        is_wrong_asset: cap.isWrongAsset,
+        user_id,
+        previous_status: tx.status,
+      },
     });
 
     return new Response(JSON.stringify({ success: true }), {
