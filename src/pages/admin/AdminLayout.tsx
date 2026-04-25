@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "rea
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle, Lock, Megaphone, RotateCcw,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle, Lock, Megaphone, RotateCcw, AlertTriangle,
 } from "lucide-react";
 
 type NavItem = {
