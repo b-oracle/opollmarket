@@ -730,8 +730,11 @@ Deno.serve(async (req) => {
   try {
     const ipnSecret = Deno.env.get("NOWPAYMENTS_IPN_SECRET");
     if (!ipnSecret) {
-      console.error("IPN secret not configured");
-      return new Response("OK", { status: 200, headers: corsHeaders });
+      // FAIL-SAFE: refuse webhook if signing secret is unset. Returning 200 here
+      // would silently accept unauthenticated payloads — prefer a hard 500 so
+      // NOWPayments retries and on-call notices the misconfiguration.
+      console.error("IPN secret not configured — rejecting webhook");
+      return new Response("Service misconfigured", { status: 500, headers: corsHeaders });
     }
 
     const body = await req.text();
