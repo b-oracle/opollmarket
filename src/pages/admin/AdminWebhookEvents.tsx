@@ -151,8 +151,8 @@ export default function AdminWebhookEvents() {
                       {ev.response_code != null && <span>HTTP {ev.response_code}</span>}
                       <span>{formatDistanceToNow(new Date(ev.created_at), { addSuffix: true })}</span>
                       {ev.next_retry_at && (
-                        <span className="text-amber-600 dark:text-amber-400">
-                          Next retry {formatDistanceToNow(new Date(ev.next_retry_at), { addSuffix: true })}
+                        <span className="font-medium text-foreground">
+                          ⟳ Next retry {formatDistanceToNow(new Date(ev.next_retry_at), { addSuffix: true })}
                         </span>
                       )}
                     </div>
