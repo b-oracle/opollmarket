@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
+import { hapticMedium } from "@/lib/haptics";
 
 interface HoldToConfirmButtonProps {
   onConfirm: () => void;
@@ -29,7 +30,7 @@ const HoldToConfirmButton = ({ onConfirm, label = "Hold to Confirm", duration = 
         intervalRef.current = null;
         confirmedRef.current = true;
         setHolding(false);
-        if (navigator.vibrate) navigator.vibrate(30);
+        void hapticMedium();
         onConfirm();
       }
     }, TICK);
