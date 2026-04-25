@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, userId: string, depositAmount: number) {
+async function processWelcomeBonus(supabase: any, userId: string, depositAmount: number) {
   // 1. Check feature toggle
   const { data: toggle } = await supabase
     .from("feature_toggles")
