@@ -126,7 +126,7 @@ export default function AdminWebhookFailures() {
         </Card>
         <Card className="p-4">
           <div className="text-xs text-muted-foreground">Warnings (visible)</div>
-          <div className="text-2xl font-bold text-yellow-500">{warningCount}</div>
+          <div className="text-2xl font-bold text-warning">{warningCount}</div>
         </Card>
         <Card className="p-4 col-span-2 md:col-span-1">
           <div className="text-xs text-muted-foreground">Total returned</div>
