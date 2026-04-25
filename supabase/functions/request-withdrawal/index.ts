@@ -348,7 +348,42 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Atomic balance debit with row lock (main balance only, not bonus)
+    const payCurrency = crypto_currency || "usdtbsc";
+
+    // Calculate fee and net payout
+    const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
+    const netAmount = amount - feeAmount;
+
+    // ─── Idempotent withdrawal_requests insert ───
+    // Insert FIRST. The unique index on idempotency_key gives us atomic
+    // "single row per submission" semantics — concurrent retries with the
+    // same key collide here and only one proceeds to the balance debit.
+    const { data: wdRow, error: wdInsertErr } = await adminClient
+      .from("withdrawal_requests")
+      .insert({
+        user_id: userId,
+        amount,
+        wallet_address: wallet_address.trim(),
+        crypto_currency: payCurrency,
+        status: "pending",
+        ip_address: clientIp,
+        user_agent: clientUa,
+        idempotency_key: withdrawalIdempotencyKey,
+      })
+      .select("id")
+      .single();
+
+    if (wdInsertErr || !wdRow?.id) {
+      // Most likely a unique-violation on idempotency_key — duplicate submission.
+      const isDup = (wdInsertErr as { code?: string } | null)?.code === "23505";
+      return new Response(
+        JSON.stringify({ error: isDup ? "Duplicate withdrawal request" : "Could not record withdrawal" }),
+        { status: isDup ? 409 : 500, headers: corsHeaders }
+      );
+    }
+    const withdrawalRequestId = wdRow.id as string;
+
+    // Atomic balance debit — only after we have an exclusive withdrawal_requests row.
     const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
       _user_id: userId,
       _main_deduct: amount,
@@ -356,22 +391,17 @@ Deno.serve(async (req) => {
     });
 
     if (!debitResult?.success) {
+      // Roll back the withdrawal_requests row so the idempotency_key can be retried with funds.
+      await adminClient.from("withdrawal_requests").delete().eq("id", withdrawalRequestId);
       return new Response(
         JSON.stringify({ error: "Insufficient balance" }),
         { status: 400, headers: corsHeaders }
       );
     }
 
-    const payCurrency = crypto_currency || "usdtbsc";
-
-    // Calculate fee and net payout
-    const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
-    const netAmount = amount - feeAmount;
-
-    // Credit withdrawal fee to platform pool as tracked revenue
-    if (feeAmount > 0) {
-      await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
-    }
+    // NOTE: Withdrawal fee is NOT credited to the platform pool here. We credit it
+    // only when the payout actually succeeds (or admin approves a manual one) so
+    // rejected/failed withdrawals don't inflate platform revenue.
 
     // JWT-based payout flow
     let payoutSuccess = false;
