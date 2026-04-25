@@ -344,19 +344,12 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       type: "deposit",
     });
 
-    // Notify admins
-    const { data: adminRoles2 } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .in("role", ["admin", "super_admin"]);
-    for (const admin of adminRoles2 || []) {
-      await supabase.from("notifications").insert({
-        user_id: admin.user_id,
-        title: "⚠️ Partial Deposit Flagged",
-        message: `User ${userId.slice(0, 8)}… sent $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (payment ${paymentIdStr}). Not credited — needs manual review.`,
-        type: "info",
-      });
-    }
+    // Notify admins (with recommended credit amount + clear status)
+    await notifyAdmins(
+      supabase,
+      "⚠️ Partial Deposit Flagged",
+      `User ${userId.slice(0, 8)}… payment ${paymentIdStr}: received $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (shortfall $${shortfall.toFixed(2)}, ratio ${(cls.ratio).toFixed(2)}). Status: partial. Recommended credit if approved: $${cls.recommendedCredit.toFixed(2)}.`,
+    );
 
     return; // Do NOT credit
   }
