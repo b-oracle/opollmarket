@@ -17,3 +17,31 @@ export function getErrorMessage(err: unknown, fallback = "Internal server error"
   }
   return fallback;
 }
+
+/**
+ * Build a standard JSON error Response. Type-safe wrapper that accepts `unknown`
+ * errors from `catch` blocks and never throws on serialization.
+ *
+ * Usage:
+ *   } catch (err) {
+ *     return errorResponse(err, 500, corsHeaders);
+ *   }
+ */
+export function errorResponse(
+  err: unknown,
+  status = 500,
+  extraHeaders: Record<string, string> = {},
+  fallback = "Internal server error",
+): Response {
+  const message = getErrorMessage(err, fallback);
+  let body: string;
+  try {
+    body = JSON.stringify({ error: message });
+  } catch {
+    body = `{"error":"${fallback.replace(/"/g, '\\"')}"}`;
+  }
+  return new Response(body, {
+    status,
+    headers: { ...extraHeaders, "Content-Type": "application/json" },
+  });
+}
