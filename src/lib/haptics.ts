@@ -39,6 +39,7 @@ const webVibrate = (pattern: number | number[]): void => {
 // ── Impact haptics ───────────────────────────────────────────────
 
 export const hapticLight = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
