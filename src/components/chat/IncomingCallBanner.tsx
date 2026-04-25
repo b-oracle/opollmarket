@@ -7,7 +7,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import { playRingtone } from "@/lib/sounds";
-import { vibrate, stopVibration } from "@/lib/haptics";
+import {
+  startIncomingCallVibration,
+  stopVibration,
+  vibrate,
+  CALL_CONNECTED_PATTERN,
+  CALL_ENDED_PATTERN,
+} from "@/lib/haptics";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
