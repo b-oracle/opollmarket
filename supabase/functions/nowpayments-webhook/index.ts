@@ -164,6 +164,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     .from("transactions")
     .select("id, status")
     .eq("nowpayments_payment_id", paymentIdStr)
+    .eq("payment_provider", "nowpayments")
     .in("status", ["confirmed", "partial", "processing"])
     .maybeSingle();
 
@@ -175,16 +176,17 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   // 2. Atomically claim the transaction (prevents concurrent webhook replays)
   const { data: claimedRows } = await supabase.rpc("claim_webhook_deposit", {
     _payment_id: paymentIdStr,
+    _provider: "nowpayments",
   });
 
   let matchedTx = claimedRows?.[0] || null;
 
   // Fallback: try matching by user + pending status (for txns without payment_id yet)
   if (!matchedTx) {
-    // First try to set the payment_id on a matching pending tx, then claim it
+    // First try to set the payment_id + provider on a matching pending tx, then claim it
     await supabase
       .from("transactions")
-      .update({ nowpayments_payment_id: paymentIdStr })
+      .update({ nowpayments_payment_id: paymentIdStr, payment_provider: "nowpayments" })
       .eq("user_id", userId)
       .eq("type", "deposit")
       .in("status", ["pending", "expired"])
@@ -194,6 +196,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
 
     const { data: retryRows } = await supabase.rpc("claim_webhook_deposit", {
       _payment_id: paymentIdStr,
+      _provider: "nowpayments",
     });
     matchedTx = retryRows?.[0] || null;
   }
@@ -249,6 +252,39 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   // OVERPAYMENT FLOW
   if (cls.status === "overpayment") {
     const excess = cls.excess;
+
+    // SAFETY CAP: refuse to auto-credit massive overpayments. Mark as wrong_asset
+    // for admin review when the surplus is unreasonably large (likely a misconfigured
+    // payment or attack). Threshold: excess > min(requested * 5, $5000).
+    const overpayCap = Math.min(Number(requestedAmount) * 5, 5000);
+    if (excess > overpayCap) {
+      console.warn(`OVERPAYMENT EXCEEDS SAFETY CAP: requested=$${requestedAmount} received=$${netReceived} excess=$${excess} cap=$${overpayCap} — routing to admin review`);
+      if (matchedTx) {
+        await supabase.from("transactions").update({
+          status: "wrong_asset",
+          nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
+          gross_amount_usd: netReceived,
+          net_amount_usd: netReceived,
+        }).eq("id", matchedTx.id);
+      } else {
+        await supabase.from("transactions").insert({
+          user_id: userId, type: "deposit", amount: requestedAmount,
+          status: "wrong_asset", nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
+          gross_amount_usd: netReceived, net_amount_usd: netReceived,
+        });
+      }
+      await notifyAdmins(supabase, "🚨 Excessive Overpayment — Manual Review Required",
+        `User ${userId.slice(0,8)}… payment ${paymentIdStr} requested $${requestedAmount.toFixed(2)} but sent $${netReceived.toFixed(2)} (excess $${excess.toFixed(2)}, cap $${overpayCap.toFixed(2)}). Auto-credit blocked.`);
+      await supabase.from("notifications").insert({
+        user_id: userId, title: "Deposit Under Review ⚠️",
+        message: `Your $${requestedAmount.toFixed(2)} deposit received an unexpectedly large amount. It's under review and will be credited shortly.`,
+        type: "deposit",
+      });
+      return;
+    }
+
     console.log(`OVERPAYMENT: requested=$${requestedAmount} received=$${netReceived} excess=$${excess.toFixed(4)} ratio=${cls.ratio.toFixed(2)}`);
 
     const { error: balErr } = await supabase.rpc("adjust_balance", {

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateDepositCap } from "../_shared/depositCap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,14 +89,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cap the credit at the actual received amount (gross), NOT the originally requested invoice.
-    // This allows admin to credit overpayments / wrong-asset deposits at their true received value.
-    const grossReceived = Number((tx as any).gross_amount_usd) || 0;
-    const originalAmount = Number(tx.amount);
-    const maxCredit = grossReceived > 0 ? grossReceived : originalAmount;
-    if (Number(amount) > maxCredit) {
-      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds received amount $${maxCredit.toFixed(2)}` }), {
-        status: 400,
+    // Shared cap validator: refuses to fall back to invoice amount on flagged
+    // (partial / wrong_asset) rows where the invoice can't be trusted.
+    const cap = validateDepositCap({
+      grossAmountUsd: (tx as any).gross_amount_usd,
+      netAmountUsd: (tx as any).net_amount_usd,
+      invoiceAmount: tx.amount,
+      requestedCredit: Number(amount),
+      status: tx.status,
+    });
+    if (!cap.ok) {
+      return new Response(JSON.stringify({ error: cap.error }), {
+        status: cap.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

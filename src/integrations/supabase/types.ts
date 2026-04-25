@@ -585,6 +585,7 @@ export type Database = {
           updated_by: string | null
           welcome_bonus_cap: number
           welcome_bonus_percent: number
+          withdrawal_anomaly_threshold: number
           withdrawal_cooldown_minutes: number
           withdrawal_fee_percent: number
           withdrawal_limit_enabled: boolean
@@ -671,6 +672,7 @@ export type Database = {
           updated_by?: string | null
           welcome_bonus_cap?: number
           welcome_bonus_percent?: number
+          withdrawal_anomaly_threshold?: number
           withdrawal_cooldown_minutes?: number
           withdrawal_fee_percent?: number
           withdrawal_limit_enabled?: boolean
@@ -757,6 +759,7 @@ export type Database = {
           updated_by?: string | null
           welcome_bonus_cap?: number
           welcome_bonus_percent?: number
+          withdrawal_anomaly_threshold?: number
           withdrawal_cooldown_minutes?: number
           withdrawal_fee_percent?: number
           withdrawal_limit_enabled?: boolean
@@ -3473,6 +3476,7 @@ export type Database = {
           tx_hash: string | null
           type: string
           user_id: string
+          withdrawal_request_id: string | null
         }
         Insert: {
           amount: number
@@ -3495,6 +3499,7 @@ export type Database = {
           tx_hash?: string | null
           type: string
           user_id: string
+          withdrawal_request_id?: string | null
         }
         Update: {
           amount?: number
@@ -3517,6 +3522,7 @@ export type Database = {
           tx_hash?: string | null
           type?: string
           user_id?: string
+          withdrawal_request_id?: string | null
         }
         Relationships: [
           {
@@ -3538,6 +3544,13 @@ export type Database = {
             columns: ["option_id"]
             isOneToOne: false
             referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawal_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -4429,20 +4442,15 @@ export type Database = {
         Args: { _amount: number; _market_id: string; _user_id: string }
         Returns: Json
       }
-      adjust_balance:
-        | {
-            Args: { _bonus_delta?: number; _delta: number; _user_id: string }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _bonus_delta?: number
-              _delta: number
-              _insurance_delta?: number
-              _user_id: string
-            }
-            Returns: undefined
-          }
+      adjust_balance: {
+        Args: {
+          _bonus_delta?: number
+          _delta: number
+          _insurance_delta?: number
+          _user_id: string
+        }
+        Returns: undefined
+      }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
       admin_update_profile: {
         Args: {
@@ -4494,7 +4502,7 @@ export type Database = {
         }[]
       }
       claim_webhook_deposit: {
-        Args: { _payment_id: string; _provider?: string }
+        Args: { _payment_id: string; _provider: string }
         Returns: {
           amount: number
           id: string

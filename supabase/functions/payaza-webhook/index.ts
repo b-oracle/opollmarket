@@ -15,22 +15,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ── Webhook secret verification ──
+    // ── Webhook secret verification (REQUIRED — hard-fail if unset) ──
     const webhookSecret = Deno.env.get("PAYAZA_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      const incomingToken =
-        req.headers.get("x-payaza-webhook-token") ||
-        req.headers.get("payaza-webhook-token") ||
-        req.headers.get("x-webhook-token") ||
-        new URL(req.url).searchParams.get("token");
+    if (!webhookSecret) {
+      console.error("PAYAZA_WEBHOOK_SECRET not configured — rejecting webhook");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const incomingToken =
+      req.headers.get("x-payaza-webhook-token") ||
+      req.headers.get("payaza-webhook-token") ||
+      req.headers.get("x-webhook-token") ||
+      new URL(req.url).searchParams.get("token");
 
-      // Constant-time compare to mitigate timing attacks
-      if (!safeEqual(incomingToken, webhookSecret)) {
-        console.error("Payaza webhook: invalid or missing webhook token");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // Constant-time compare to mitigate timing attacks
+    if (!safeEqual(incomingToken, webhookSecret)) {
+      console.error("Payaza webhook: invalid or missing webhook token");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Log all incoming headers (names only) for debugging
@@ -86,6 +90,7 @@ Deno.serve(async (req) => {
       .from("transactions")
       .select("id")
       .eq("nowpayments_payment_id", reference)
+      .eq("payment_provider", "payaza")
       .eq("type", "deposit")
       .in("status", ["confirmed", "processing"])
       .maybeSingle();
