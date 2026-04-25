@@ -7,13 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import { playRingtone } from "@/lib/sounds";
-import {
-  startIncomingCallVibration,
-  stopVibration,
-  vibrate,
-  CALL_CONNECTED_PATTERN,
-  CALL_ENDED_PATTERN,
-} from "@/lib/haptics";
+import { vibrate, stopVibration } from "@/lib/haptics";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
@@ -77,30 +71,24 @@ const IncomingCallBanner = () => {
     }
   }, [activeCall, callMinimized]);
 
-  // Play ringtone + run the call vibration pattern when the banner appears.
-  // The pattern fires an initial attention buzz, then loops a WhatsApp-style
-  // ring cadence (1s on / 0.5s off / 1s on / 1.5s off). Works on Capacitor
-  // native (Android/iOS via Haptics.vibrate) and web (navigator.vibrate).
-  // Also tells useNativePush to stop its own foreground-FCM ring loop so we
-  // don't double-buzz when the FCM data push and the realtime INSERT both
-  // arrive (which is normal — push is the wake-up, realtime is the payload).
+  // Play ringtone + vibrate when incoming call appears (works on Capacitor native + web)
   useEffect(() => {
-    let cancelVibration: (() => void) | null = null;
+    let vibrateInterval: ReturnType<typeof setInterval> | null = null;
     if (incomingCall && !activeCall) {
-      // Silence the FCM-driven foreground ring; the banner now owns vibration.
-      try { window.dispatchEvent(new Event("dm-call-banner-dismissed")); } catch {}
       stopRingtoneRef.current = playRingtone();
-      cancelVibration = startIncomingCallVibration();
+      // Vibrate pattern: 500ms on, 500ms off, repeating every 3s
+      void vibrate([500, 500, 500, 500, 500]);
+      vibrateInterval = setInterval(() => {
+        void vibrate([500, 500, 500, 500, 500]);
+      }, 3000);
     } else {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
       stopVibration();
     }
     return () => {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-      cancelVibration?.();
+      if (vibrateInterval) clearInterval(vibrateInterval);
       stopVibration();
-      // Notify the hook one more time so any leftover loop is cancelled.
-      try { window.dispatchEvent(new Event("dm-call-banner-dismissed")); } catch {}
     };
   }, [incomingCall, activeCall]);
 
@@ -186,8 +174,6 @@ const IncomingCallBanner = () => {
     // Kill ringtone immediately — don't wait for async answer flow
     if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
     stopVibration();
-    // Soft buzz to acknowledge the answer tap
-    void vibrate(CALL_CONNECTED_PATTERN);
 
     try {
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
@@ -234,10 +220,6 @@ const IncomingCallBanner = () => {
 
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
-
-    // Decisive buzz to confirm the decline action
-    stopVibration();
-    void vibrate(CALL_ENDED_PATTERN);
 
     try {
       await supabase.functions.invoke("dm-call-token", {
