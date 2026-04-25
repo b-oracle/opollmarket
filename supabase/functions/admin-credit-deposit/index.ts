@@ -207,18 +207,20 @@ Deno.serve(async (req) => {
     }
 
     // Audit log
-    await adminClient.from("audit_logs").insert({
-      actor_id: user.id,
-      action: "admin_credit_deposit",
-      target_type: "user",
-      target_id: targetUserId,
-      details: {
-        amount,
-        description: txDescription,
-        transaction_id: tx?.id || null,
-        target_display_name: profile.display_name,
-      },
-    });
+    await adminClient.from("audit_logs").insert(
+      buildInsert("audit_logs", {
+        actor_id: user.id,
+        action: "admin_credit_deposit",
+        target_type: "user",
+        target_id: targetUserId,
+        details: {
+          amount,
+          description: txDescription,
+          transaction_id: tx?.id || null,
+          target_display_name: profile.display_name,
+        },
+      }),
+    );
 
     console.log(
       `Admin ${user.id} credited $${amount.toFixed(2)} to user ${targetUserId} (${profile.display_name})`,
@@ -231,6 +233,10 @@ Deno.serve(async (req) => {
       user_id: targetUserId,
     });
   } catch (err) {
+    if (err instanceof RpcContractError) {
+      console.error("admin-credit-deposit contract error:", err.message);
+      return json({ error: `Validation failed: ${err.message}` }, 400);
+    }
     console.error("admin-credit-deposit error:", err);
     return json({ error: "Internal server error" }, 500);
   }
