@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
       // Send notification to callee
       const { data: callerProfile } = await admin
         .from("profiles")
-        .select("display_name")
+        .select("display_name, avatar_url")
         .eq("id", user.id)
         .single();
 
