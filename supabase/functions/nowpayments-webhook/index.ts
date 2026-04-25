@@ -511,15 +511,28 @@ async function handleBoost(supabase: any, payload: Record<string, unknown>, orde
   const tier = parts[2];
   const userId = parts[3];
 
-  // Idempotency: check if already activated
-  const { data: existingBoost } = await supabase
-    .from("market_boosts")
-    .select("id, status, ends_at")
-    .eq("nowpayments_payment_id", paymentIdStr)
-    .maybeSingle();
+  // Atomic claim: prevents two concurrent IPN deliveries from both activating
+  // (and thus double-extending) the same boost. The RPC flips a single row from
+  // pending/expired -> processing and returns it; concurrent calls get nothing.
+  const { data: claimedBoosts } = await supabase.rpc("claim_webhook_boost", {
+    _payment_id: paymentIdStr,
+    _market_id: marketId,
+    _payer: userId,
+  });
+  const claimedBoost = claimedBoosts?.[0] || null;
 
-  if (existingBoost?.status === "active") {
-    console.log("Boost already active:", paymentIdStr);
+  // If already active (matched but not claimable) — short-circuit.
+  if (!claimedBoost) {
+    const { data: existingBoost } = await supabase
+      .from("market_boosts")
+      .select("id, status")
+      .eq("nowpayments_payment_id", paymentIdStr)
+      .maybeSingle();
+    if (existingBoost?.status === "active" || existingBoost?.status === "processing") {
+      console.log("Boost already active/processing:", paymentIdStr);
+      return;
+    }
+    console.error("No claimable boost for payment:", paymentIdStr);
     return;
   }
 
@@ -539,56 +552,24 @@ async function handleBoost(supabase: any, payload: Record<string, unknown>, orde
 
   const activeBoost = activeBoosts?.[0];
 
-  // If extending, new ends_at = existing ends_at + new duration
-  // The pending record already has the correct extended ends_at from create-boost-payment,
-  // but use it as stored in the record (which was pre-calculated at creation time).
-  // For the activating record, use the ends_at that was set during creation.
-  const pendingEndsAt = existingBoost?.ends_at;
+  // Use the pre-calculated ends_at from the claimed (pending) record if present,
+  // otherwise extend the currently-active one, otherwise start fresh.
+  const pendingEndsAt = claimedBoost.ends_at;
   const endsAt = pendingEndsAt
     ? new Date(pendingEndsAt)
     : activeBoost
       ? new Date(new Date(activeBoost.ends_at).getTime() + durationHours * 60 * 60 * 1000)
       : new Date(now.getTime() + durationHours * 60 * 60 * 1000);
 
-  if (existingBoost) {
-    await supabase
-      .from("market_boosts")
-      .update({
-        status: "active",
-        starts_at: now.toISOString(),
-        ends_at: endsAt.toISOString(),
-        tx_hash: String(txHash),
-      })
-      .eq("id", existingBoost.id);
-  } else {
-    // Fallback: find by pending/expired + market_id
-    const { data: pendingBoost } = await supabase
-      .from("market_boosts")
-      .select("id, ends_at")
-      .eq("market_id", marketId)
-      .in("status", ["pending", "expired"])
-      .eq("payer_wallet", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (pendingBoost) {
-      const fallbackEndsAt = pendingBoost.ends_at
-        ? new Date(pendingBoost.ends_at)
-        : endsAt;
-
-      await supabase
-        .from("market_boosts")
-        .update({
-          status: "active",
-          starts_at: now.toISOString(),
-          ends_at: fallbackEndsAt.toISOString(),
-          nowpayments_payment_id: paymentIdStr,
-          tx_hash: String(txHash),
-        })
-        .eq("id", pendingBoost.id);
-    }
-  }
+  await supabase
+    .from("market_boosts")
+    .update({
+      status: "active",
+      starts_at: now.toISOString(),
+      ends_at: endsAt.toISOString(),
+      tx_hash: String(txHash),
+    })
+    .eq("id", claimedBoost.id);
 
   // If extending an existing active boost, also update its ends_at
   if (activeBoost) {
@@ -624,43 +605,27 @@ async function handleBroadcast(supabase: any, payload: Record<string, unknown>, 
   const marketId = parts[1];
   const userId = parts[3];
 
-  // Idempotency
-  const { data: existing } = await supabase
-    .from("market_broadcasts")
-    .select("id, status")
-    .eq("nowpayments_payment_id", paymentIdStr)
-    .maybeSingle();
-
-  if (existing?.status === "sent") {
-    console.log("Broadcast already sent:", paymentIdStr);
-    return;
-  }
-
-  // Find the broadcast record
-  const broadcastRecord = existing || (await (async () => {
-    const { data } = await supabase
-      .from("market_broadcasts")
-      .select("id")
-      .eq("market_id", marketId)
-      .eq("user_id", userId)
-      .in("status", ["pending", "expired"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return data;
-  })());
+  // Atomic claim: prevents two concurrent IPN deliveries from both firing the
+  // outbound send-market-broadcast call.
+  const { data: claimedRows } = await supabase.rpc("claim_webhook_broadcast", {
+    _payment_id: paymentIdStr,
+    _market_id: marketId,
+    _user_id: userId,
+  });
+  const broadcastRecord = claimedRows?.[0] || null;
 
   if (!broadcastRecord) {
-    console.error("No broadcast record found for:", orderId);
-    return;
-  }
-
-  // Update payment ID if needed
-  if (!existing) {
-    await supabase
+    const { data: existing } = await supabase
       .from("market_broadcasts")
-      .update({ nowpayments_payment_id: paymentIdStr })
-      .eq("id", broadcastRecord.id);
+      .select("id, status")
+      .eq("nowpayments_payment_id", paymentIdStr)
+      .maybeSingle();
+    if (existing?.status === "sent" || existing?.status === "processing") {
+      console.log(`Broadcast already ${existing.status}:`, paymentIdStr);
+      return;
+    }
+    console.error("No claimable broadcast for:", orderId);
+    return;
   }
 
   // Trigger the send-market-broadcast function
@@ -732,6 +697,33 @@ Deno.serve(async (req) => {
 
     const payment_status = validation.value.payment_status;
     const order_id = validation.value.order_id;
+    const payment_id_str = String(validation.value.payment_id);
+
+    // ── Top-level idempotency: dedupe identical IPN events by (payment_id + status) ──
+    // If the same NowPayments event arrives twice (retry, replay, etc.) we record it
+    // once in webhook_event_ledger; subsequent identical deliveries short-circuit.
+    {
+      const supaDedupe = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: isFirst } = await supaDedupe.rpc("record_webhook_event", {
+        _provider: "nowpayments",
+        _event_key: `${payment_id_str}:${payment_status}`,
+        _payload: payload as unknown as Record<string, unknown>,
+      });
+      if (isFirst === false) {
+        console.log(`Duplicate IPN ignored: ${payment_id_str} status=${payment_status}`);
+        await logWebhookEvent(supaDedupe, {
+          provider: "nowpayments",
+          event_type: "duplicate_ignored",
+          status: "info",
+          reference: payment_id_str,
+          message: `Duplicate IPN for status=${payment_status}`,
+        });
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+    }
 
     // Handle partially_paid: mark deposit as "partial" for admin review (no balance credit)
     if (payment_status === "partially_paid") {
