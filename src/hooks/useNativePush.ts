@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { vibrate } from "@/lib/haptics";
+import { getPushFallbackEnabled } from "./useDevicePrefs";
 
 // Registers the device with FCM (Android) / APNs (iOS) via Capacitor,
 // stores the token in user_fcm_tokens, and routes foreground notification
@@ -112,7 +113,7 @@ export const useNativePush = () => {
               // If FCM didn't render a system notification (data-only payload),
               // fall back to a local one so it appears in the tray + buzzes.
               const hasSystemNotif = !!notification.title || !!notification.body;
-              if (!hasSystemNotif && LocalNotifications) {
+              if (!hasSystemNotif && LocalNotifications && getPushFallbackEnabled()) {
                 // Deterministic ID derived from a stable key so retries collapse.
                 const idKey =
                   callKey ||

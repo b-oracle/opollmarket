@@ -1,11 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff,
+  Copy, Gift, DollarSign, Sparkles, Monitor, Vibrate, Smartphone, Bell, BellRing,
+} from "lucide-react";
 import { toast } from "sonner";
+import { useDevicePrefs } from "@/hooks/useDevicePrefs";
+import {
+  getPushPermission,
+  requestPushPermission,
+  type PushPermissionState,
+} from "@/lib/pushPermission";
+import { hapticSelection } from "@/lib/haptics";
 
 interface UserSettings {
   allow_calls: boolean;
@@ -112,6 +123,38 @@ const SettingsTab = () => {
     updateMutation.mutate({ [key]: !settings[key] });
   };
 
+  // ── Device prefs (haptics / vibration / fallback notifications) ──
+  const { prefs: devicePrefs, update: updateDevicePrefs } = useDevicePrefs();
+  const [pushPerm, setPushPerm] = useState<PushPermissionState>("unsupported");
+  const [requestingPerm, setRequestingPerm] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getPushPermission().then((p) => {
+      if (!cancelled) setPushPerm(p);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleEnablePush = async () => {
+    setRequestingPerm(true);
+    try {
+      const result = await requestPushPermission();
+      setPushPerm(result);
+      if (result === "granted") {
+        toast.success("Notifications enabled");
+      } else if (result === "denied") {
+        toast.error("Notifications blocked", {
+          description: "Open system Settings → Notifications to allow them.",
+        });
+      } else if (result === "unsupported") {
+        toast("Install the mobile app to enable native notifications.");
+      }
+    } finally {
+      setRequestingPerm(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -120,8 +163,86 @@ const SettingsTab = () => {
     );
   }
 
+  const pushStatusLabel: Record<PushPermissionState, string> = {
+    granted: "Allowed",
+    denied: "Blocked",
+    prompt: "Not asked yet",
+    "prompt-with-rationale": "Permission needed",
+    unsupported: "Web only",
+  };
+
   return (
     <div className="p-4 space-y-6">
+      {/* ── Device section (local-only prefs) ── */}
+      <div>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Device
+        </h3>
+        <div className="space-y-1">
+          {/* System push permission */}
+          <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent/30 transition-colors">
+            <Bell className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Label className="text-sm font-medium">System Notifications</Label>
+              <p className="text-[11px] text-muted-foreground">
+                Status: <span className="font-semibold">{pushStatusLabel[pushPerm]}</span>
+              </p>
+            </div>
+            {pushPerm === "granted" ? (
+              <span className="text-[11px] font-semibold text-primary">On</span>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={requestingPerm || pushPerm === "unsupported"}
+                onClick={handleEnablePush}
+              >
+                {requestingPerm ? "…" : pushPerm === "denied" ? "Open Settings" : "Enable"}
+              </Button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent/30 transition-colors">
+            <Smartphone className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Label className="text-sm font-medium cursor-pointer">Haptic Feedback</Label>
+              <p className="text-[11px] text-muted-foreground">Subtle taps for likes, swipes, and confirmations</p>
+            </div>
+            <Switch
+              checked={devicePrefs.hapticsEnabled}
+              onCheckedChange={(v) => {
+                updateDevicePrefs({ hapticsEnabled: v });
+                if (v) void hapticSelection();
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent/30 transition-colors">
+            <Vibrate className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Label className="text-sm font-medium cursor-pointer">Vibration</Label>
+              <p className="text-[11px] text-muted-foreground">Ring pattern for incoming calls and alerts</p>
+            </div>
+            <Switch
+              checked={devicePrefs.vibrationEnabled}
+              onCheckedChange={(v) => updateDevicePrefs({ vibrationEnabled: v })}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-accent/30 transition-colors">
+            <BellRing className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex-1 min-w-0">
+              <Label className="text-sm font-medium cursor-pointer">In-App Notification Banners</Label>
+              <p className="text-[11px] text-muted-foreground">Show a fallback banner if the system one is silent</p>
+            </div>
+            <Switch
+              checked={devicePrefs.pushFallbackEnabled}
+              onCheckedChange={(v) => updateDevicePrefs({ pushFallbackEnabled: v })}
+            />
+          </div>
+        </div>
+      </div>
+
       {SETTING_GROUPS.map((group) => (
         <div key={group.title}>
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">

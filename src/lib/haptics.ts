@@ -16,6 +16,7 @@ import {
   hapticHeavy as despiaHeavy,
   isDespiaNative,
 } from "./despia";
+import { getHapticsEnabled, getVibrationEnabled } from "@/hooks/useDevicePrefs";
 
 const isCapacitorNative = (): boolean => {
   try {
@@ -38,6 +39,7 @@ const webVibrate = (pattern: number | number[]): void => {
 // ── Impact haptics ───────────────────────────────────────────────
 
 export const hapticLight = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
@@ -55,6 +57,7 @@ export const hapticLight = async (): Promise<void> => {
 };
 
 export const hapticMedium = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
@@ -72,6 +75,7 @@ export const hapticMedium = async (): Promise<void> => {
 };
 
 export const hapticHeavy = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
@@ -91,6 +95,7 @@ export const hapticHeavy = async (): Promise<void> => {
 // ── Notification haptics ─────────────────────────────────────────
 
 export const hapticSuccess = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, NotificationType } = await import("@capacitor/haptics");
@@ -108,6 +113,7 @@ export const hapticSuccess = async (): Promise<void> => {
 };
 
 export const hapticWarning = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, NotificationType } = await import("@capacitor/haptics");
@@ -125,6 +131,7 @@ export const hapticWarning = async (): Promise<void> => {
 };
 
 export const hapticError = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, NotificationType } = await import("@capacitor/haptics");
@@ -144,6 +151,7 @@ export const hapticError = async (): Promise<void> => {
 // ── Selection / tick (used for sliders, scrubbing) ───────────────
 
 export const hapticSelection = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics } = await import("@capacitor/haptics");
@@ -165,6 +173,7 @@ export const hapticSelection = async (): Promise<void> => {
  * On Capacitor uses Haptics.vibrate; on web uses navigator.vibrate.
  */
 export const vibrate = async (pattern: number | number[] = 200): Promise<void> => {
+  if (!getVibrationEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics } = await import("@capacitor/haptics");
