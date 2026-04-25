@@ -1,5 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logWebhookEvent } from "../_shared/webhookLog.ts";
+import {
+  safeEqual,
+  validateFlutterwavePayload,
+  validateFlutterwaveCharge,
+  validateFlutterwaveTransfer,
+} from "../_shared/webhookValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
