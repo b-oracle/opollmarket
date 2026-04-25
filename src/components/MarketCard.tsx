@@ -464,7 +464,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </div>
             <span className="text-[10px] font-semibold text-foreground/90 leading-none">{formatCount(likeCount)}</span>
           </button>
-          <button onClick={() => setCommentsOpen(true)} className="flex flex-col items-center gap-0.5 group">
+          <button onClick={() => { void hapticLight(); setCommentsOpen(true); }} className="flex flex-col items-center gap-0.5 group">
             <div className={`${actionIconSizeClass} rounded-full glass bg-background/70 border border-border shadow-md flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
               <MessageCircle className="w-5 h-5 text-foreground group-hover:text-primary transition-colors" />
             </div>
