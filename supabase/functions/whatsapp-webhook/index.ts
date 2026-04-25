@@ -519,7 +519,7 @@ async function handlePortfolio(supabase: any, phone: string) {
 
   const marketIds = [...new Set(positions.map((p: any) => p.market_id))];
   const { data: marketsData } = await supabase.from("markets").select("id, title, yes_price, no_price, status, category").in("id", marketIds);
-  const marketMap = new Map((marketsData || []).map((m: any) => [m.id, m]));
+  const marketMap = new Map<string, any>(((marketsData || []) as any[]).map((m: any) => [m.id, m]));
 
   let totalValue = 0;
   let totalPnl = 0;
