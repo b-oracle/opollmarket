@@ -89,21 +89,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cap the credit at the actual received amount (gross), NOT the originally requested invoice.
-    // This allows admin to credit overpayments / wrong-asset deposits at their true received value.
-    const grossReceived = Number((tx as any).gross_amount_usd) || 0;
-    const originalAmount = Number(tx.amount);
-    const maxCredit = grossReceived > 0 ? grossReceived : originalAmount;
-    if (Number(amount) > maxCredit) {
-      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds received amount $${maxCredit.toFixed(2)}` }), {
-        status: 400,
+    // Cap enforcement (shared rule across all admin deposit flows).
+    const validation = validateDepositCap(tx as any, Number(amount));
+    if (!validation.ok) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: validation.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Credit the user's balance atomically
-    // Partial deposits were NOT credited by the webhook, so credit the full approved amount
-    const creditAmount = Number(amount);
+    const creditAmount = validation.creditAmount;
+    const { cap } = validation;
 
     if (creditAmount > 0) {
       const { error: balError } = await adminClient.rpc("adjust_balance", {
