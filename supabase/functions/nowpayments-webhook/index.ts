@@ -732,6 +732,33 @@ Deno.serve(async (req) => {
 
     const payment_status = validation.value.payment_status;
     const order_id = validation.value.order_id;
+    const payment_id_str = String(validation.value.payment_id);
+
+    // ── Top-level idempotency: dedupe identical IPN events by (payment_id + status) ──
+    // If the same NowPayments event arrives twice (retry, replay, etc.) we record it
+    // once in webhook_event_ledger; subsequent identical deliveries short-circuit.
+    {
+      const supaDedupe = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      const { data: isFirst } = await supaDedupe.rpc("record_webhook_event", {
+        _provider: "nowpayments",
+        _event_key: `${payment_id_str}:${payment_status}`,
+        _payload: payload as unknown as Record<string, unknown>,
+      });
+      if (isFirst === false) {
+        console.log(`Duplicate IPN ignored: ${payment_id_str} status=${payment_status}`);
+        await logWebhookEvent(supaDedupe, {
+          provider: "nowpayments",
+          event_type: "duplicate_ignored",
+          status: "info",
+          reference: payment_id_str,
+          message: `Duplicate IPN for status=${payment_status}`,
+        });
+        return new Response("OK", { status: 200, headers: corsHeaders });
+      }
+    }
 
     // Handle partially_paid: mark deposit as "partial" for admin review (no balance credit)
     if (payment_status === "partially_paid") {
