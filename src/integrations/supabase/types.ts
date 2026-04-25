@@ -3802,6 +3802,8 @@ export type Database = {
           event_type: string
           id: string
           last_attempt_at: string | null
+          last_error: string | null
+          next_retry_at: string | null
           payload: Json
           response_code: number | null
           status: string
@@ -3813,6 +3815,8 @@ export type Database = {
           event_type: string
           id?: string
           last_attempt_at?: string | null
+          last_error?: string | null
+          next_retry_at?: string | null
           payload: Json
           response_code?: number | null
           status?: string
@@ -3824,6 +3828,8 @@ export type Database = {
           event_type?: string
           id?: string
           last_attempt_at?: string | null
+          last_error?: string | null
+          next_retry_at?: string | null
           payload?: Json
           response_code?: number | null
           status?: string
@@ -4644,6 +4650,7 @@ export type Database = {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
       }
+      requeue_webhook_event: { Args: { _event_id: string }; Returns: Json }
       sell_update_market_prices: {
         Args: {
           _gross_proceeds: number
