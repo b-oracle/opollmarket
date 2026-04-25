@@ -72,7 +72,7 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
 }
 
 async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
-  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount } = payload;
+  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount, pay_currency, outcome_currency } = payload;
   const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
