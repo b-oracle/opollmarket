@@ -71,15 +71,41 @@ async function processWelcomeBonus(supabase: any, userId: string, depositAmount:
   console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${userId}`);
 }
 
-// ===== Deviation thresholds (centralized) =====
+// ===== Deviation thresholds (admin-configurable, with safe defaults) =====
 // All ratios are netReceived / requestedAmount.
-const OVERPAY_THRESHOLD = 1.02;       // >2% over invoice -> overpayment flow
-const PARTIAL_THRESHOLD = 0.98;       // <98% of invoice -> partial (rejected)
-const WRONG_ASSET_HIGH = 2.0;         // >200% of invoice w/ different currency
-const WRONG_ASSET_LOW = 0.3;          // <30% of invoice w/ different currency
-const LARGE_OVERPAY_ALERT = 1.5;      // >150% of invoice -> alert admins even on success
+type Thresholds = {
+  overpay: number;       // >this * invoice -> overpayment flow (same asset)
+  partial: number;       // <this * invoice -> partial (rejected)
+  wrongHigh: number;     // >this * invoice w/ different currency -> wrong_asset
+  wrongLow: number;      // <this * invoice w/ different currency -> wrong_asset
+  largeAlert: number;    // >this * invoice -> alert admins even on success
+};
+const DEFAULT_THRESHOLDS: Thresholds = {
+  overpay: 1.02, partial: 0.98, wrongHigh: 2.0, wrongLow: 0.3, largeAlert: 1.5,
+};
 
-function classifyDeposit(requested: number, received: number, payCur: string, outCur: string): {
+async function loadThresholds(supabase: any): Promise<Thresholds> {
+  try {
+    const { data } = await supabase
+      .from("commission_settings")
+      .select("deposit_overpay_threshold, deposit_partial_threshold, deposit_wrong_asset_high, deposit_wrong_asset_low, deposit_large_overpay_alert")
+      .limit(1)
+      .maybeSingle();
+    if (!data) return DEFAULT_THRESHOLDS;
+    const d = data as any;
+    return {
+      overpay: Number(d.deposit_overpay_threshold) || DEFAULT_THRESHOLDS.overpay,
+      partial: Number(d.deposit_partial_threshold) || DEFAULT_THRESHOLDS.partial,
+      wrongHigh: Number(d.deposit_wrong_asset_high) || DEFAULT_THRESHOLDS.wrongHigh,
+      wrongLow: Number(d.deposit_wrong_asset_low) || DEFAULT_THRESHOLDS.wrongLow,
+      largeAlert: Number(d.deposit_large_overpay_alert) || DEFAULT_THRESHOLDS.largeAlert,
+    };
+  } catch (_e) {
+    return DEFAULT_THRESHOLDS;
+  }
+}
+
+function classifyDeposit(requested: number, received: number, payCur: string, outCur: string, t: Thresholds): {
   status: "wrong_asset" | "overpayment" | "partial" | "normal";
   ratio: number;
   recommendedCredit: number;
@@ -88,8 +114,10 @@ function classifyDeposit(requested: number, received: number, payCur: string, ou
 } {
   const ratio = requested > 0 ? received / requested : 1;
   const sameAsset = payCur !== "" && payCur === outCur;
-  const sameAssetOverpay = sameAsset && requested > 0 && received >= requested * OVERPAY_THRESHOLD;
-  const wrongAsset = !sameAssetOverpay && (ratio > WRONG_ASSET_HIGH || (ratio < WRONG_ASSET_LOW && received > 0));
+  const sameAssetOverpay = sameAsset && requested > 0 && received >= requested * t.overpay;
+  // Wrong-asset only triggers on different currencies AND extreme deviation.
+  // Same-asset minor over/underpayment never triggers wrong_asset.
+  const wrongAsset = !sameAsset && (ratio > t.wrongHigh || (ratio < t.wrongLow && received > 0));
 
   if (wrongAsset) {
     return { status: "wrong_asset", ratio, recommendedCredit: Math.min(received, requested), excess: 0, shortfall: 0 };
@@ -98,7 +126,7 @@ function classifyDeposit(requested: number, received: number, payCur: string, ou
     return { status: "overpayment", ratio, recommendedCredit: requested, excess: received - requested, shortfall: 0 };
   }
   const credit = requested > 0 ? Math.min(received > 0 ? received : requested, requested) : received;
-  if (credit < requested * PARTIAL_THRESHOLD) {
+  if (credit < requested * t.partial) {
     return { status: "partial", ratio, recommendedCredit: credit, excess: 0, shortfall: requested - credit };
   }
   return { status: "normal", ratio, recommendedCredit: credit, excess: 0, shortfall: 0 };
