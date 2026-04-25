@@ -405,6 +405,7 @@ const CreatorDashboard = () => {
         {/* Range summary */}
         <p className="text-[10px] text-muted-foreground mb-3">
           Earnings & resolved markets: <span className="font-semibold text-foreground">{rangeLabel}</span>
+          <span className="ml-1 opacity-70">(UTC)</span>
           {isCustomRangeIncomplete && " • pick both start and end dates"}
         </p>
 
