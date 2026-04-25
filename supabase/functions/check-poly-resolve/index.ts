@@ -138,7 +138,8 @@ Deno.serve(async (req) => {
         totalResolved++;
         totalPaidOut += marketPaidOut;
       } catch (err) {
-        errors.push(`Error resolving ${localMarket.id}: ${err.message}`);
+        const message = err instanceof Error ? err.message : String(err);
+        errors.push(`Error resolving ${localMarket.id}: ${message}`);
       }
     }
 
@@ -153,7 +154,8 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
