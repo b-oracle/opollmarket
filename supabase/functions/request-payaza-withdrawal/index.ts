@@ -428,17 +428,17 @@ Deno.serve(async (req) => {
       await adminClient
         .from("withdrawal_requests")
         .update({ status: "completed", updated_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .eq("crypto_currency", "NGN")
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .eq("id", withdrawalRequestId);
 
       await adminClient
         .from("transactions")
         .update({ status: "confirmed", payment_provider: successProvider })
-        .eq("nowpayments_payment_id", transactionReference)
-        .eq("type", "withdrawal");
+        .eq("withdrawal_request_id", withdrawalRequestId);
+
+      // Credit fee to platform pool ONLY now that payout succeeded
+      if (feeAmount > 0) {
+        await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
+      }
     }
 
     const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
