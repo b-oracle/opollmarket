@@ -57,6 +57,7 @@ export const hapticLight = async (): Promise<void> => {
 };
 
 export const hapticMedium = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, ImpactStyle } = await import("@capacitor/haptics");
