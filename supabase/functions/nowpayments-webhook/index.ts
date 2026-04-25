@@ -605,43 +605,27 @@ async function handleBroadcast(supabase: any, payload: Record<string, unknown>, 
   const marketId = parts[1];
   const userId = parts[3];
 
-  // Idempotency
-  const { data: existing } = await supabase
-    .from("market_broadcasts")
-    .select("id, status")
-    .eq("nowpayments_payment_id", paymentIdStr)
-    .maybeSingle();
-
-  if (existing?.status === "sent") {
-    console.log("Broadcast already sent:", paymentIdStr);
-    return;
-  }
-
-  // Find the broadcast record
-  const broadcastRecord = existing || (await (async () => {
-    const { data } = await supabase
-      .from("market_broadcasts")
-      .select("id")
-      .eq("market_id", marketId)
-      .eq("user_id", userId)
-      .in("status", ["pending", "expired"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return data;
-  })());
+  // Atomic claim: prevents two concurrent IPN deliveries from both firing the
+  // outbound send-market-broadcast call.
+  const { data: claimedRows } = await supabase.rpc("claim_webhook_broadcast", {
+    _payment_id: paymentIdStr,
+    _market_id: marketId,
+    _user_id: userId,
+  });
+  const broadcastRecord = claimedRows?.[0] || null;
 
   if (!broadcastRecord) {
-    console.error("No broadcast record found for:", orderId);
-    return;
-  }
-
-  // Update payment ID if needed
-  if (!existing) {
-    await supabase
+    const { data: existing } = await supabase
       .from("market_broadcasts")
-      .update({ nowpayments_payment_id: paymentIdStr })
-      .eq("id", broadcastRecord.id);
+      .select("id, status")
+      .eq("nowpayments_payment_id", paymentIdStr)
+      .maybeSingle();
+    if (existing?.status === "sent" || existing?.status === "processing") {
+      console.log(`Broadcast already ${existing.status}:`, paymentIdStr);
+      return;
+    }
+    console.error("No claimable broadcast for:", orderId);
+    return;
   }
 
   // Trigger the send-market-broadcast function
