@@ -100,9 +100,13 @@ Deno.serve(async (req) => {
       }
     } catch { /* use default */ }
 
-    // Fetch live USD→NGN rate with admin markup
-    let ngnAmount = Math.ceil(amount * configuredFallback);
-    let effectiveRate: number = configuredFallback;
+    // Fetch live USD→NGN rate with admin markup.
+    // Always start from a guaranteed-numeric fallback so ngnAmount can never be NaN/null.
+    const safeFallback = Number.isFinite(configuredFallback) && configuredFallback > 0
+      ? configuredFallback
+      : 1500;
+    let effectiveRate: number = safeFallback;
+    let ngnAmount = Math.ceil(amount * safeFallback);
     try {
       const rateRes = await fetch(
         `${Deno.env.get("SUPABASE_URL")}/functions/v1/get-naira-rate`,
@@ -114,14 +118,27 @@ Deno.serve(async (req) => {
       );
       if (rateRes.ok) {
         const rateData = await rateRes.json();
-        effectiveRate = rateData.effective_rate;
-        ngnAmount = Math.ceil(amount * effectiveRate);
-        console.log(`[Payaza] USD ${amount} → NGN ${ngnAmount} (rate: ${effectiveRate})`);
+        const fetchedRate = Number(rateData?.effective_rate);
+        if (Number.isFinite(fetchedRate) && fetchedRate > 0) {
+          effectiveRate = fetchedRate;
+          ngnAmount = Math.ceil(amount * effectiveRate);
+          console.log(`[Payaza] USD ${amount} → NGN ${ngnAmount} (rate: ${effectiveRate})`);
+        } else {
+          console.warn(`[Payaza] Rate service returned invalid effective_rate (${rateData?.effective_rate}), using fallback ${safeFallback}`);
+        }
       } else {
-        console.warn(`[Payaza] Rate service returned ${rateRes.status}, using fallback rate ${configuredFallback}`);
+        console.warn(`[Payaza] Rate service returned ${rateRes.status}, using fallback rate ${safeFallback}`);
       }
     } catch (e) {
-      console.warn(`[Payaza] Rate fetch failed, using fallback rate ${configuredFallback}:`, e);
+      console.warn(`[Payaza] Rate fetch failed, using fallback rate ${safeFallback}:`, e);
+    }
+
+    // Final guard: ensure ngnAmount and effectiveRate are valid positive numbers before proceeding.
+    if (!Number.isFinite(effectiveRate) || effectiveRate <= 0) {
+      effectiveRate = safeFallback;
+    }
+    if (!Number.isFinite(ngnAmount) || ngnAmount <= 0) {
+      ngnAmount = Math.ceil(amount * effectiveRate);
     }
 
     const secretKey = Deno.env.get("PAYAZA_SECRET_KEY");
