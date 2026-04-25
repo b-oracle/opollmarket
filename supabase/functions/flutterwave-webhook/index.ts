@@ -6,6 +6,7 @@ import {
   validateFlutterwaveCharge,
   validateFlutterwaveTransfer,
 } from "../_shared/webhookValidation.ts";
+import { errorResponse } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
