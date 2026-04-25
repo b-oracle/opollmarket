@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
     const spaces = Object.fromEntries(
       await Promise.all(
-        spaceIds.map(async (spaceId) => {
+        spaceIds.map(async (spaceId: string) => {
           if (!liveVisibleSpaceIds.has(spaceId)) {
             return [spaceId, { participant_count: 0, joined: false }];
           }
