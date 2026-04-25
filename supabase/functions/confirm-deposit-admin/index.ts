@@ -88,53 +88,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Server-side credit cap, enforced by transaction status:
-    //   • wrong_asset / wrong_asset_low / wrong_asset_high  → may credit up to gross_amount_usd
-    //     (the user paid in a non-invoice asset, so net is meaningless; admin assigns USD value
-    //      capped at what the chain actually received).
-    //   • all other flows (pending, partial, expired, overpaid, etc.) → may credit up to
-    //     net_amount_usd (post-fee value the platform actually received). If net is missing,
-    //     fall back to gross, then to the originally requested invoice amount.
-    const requested = Number(amount);
-    if (!Number.isFinite(requested) || requested <= 0) {
-      return new Response(JSON.stringify({ error: "Amount must be a positive number" }), {
+    // Cap the credit at the actual received amount (gross), NOT the originally requested invoice.
+    // This allows admin to credit overpayments / wrong-asset deposits at their true received value.
+    const grossReceived = Number((tx as any).gross_amount_usd) || 0;
+    const originalAmount = Number(tx.amount);
+    const maxCredit = grossReceived > 0 ? grossReceived : originalAmount;
+    if (Number(amount) > maxCredit) {
+      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds received amount $${maxCredit.toFixed(2)}` }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
-
-    const grossReceived = Number((tx as any).gross_amount_usd) || 0;
-    const netReceived = Number((tx as any).net_amount_usd) || 0;
-    const originalAmount = Number(tx.amount) || 0;
-    const status = String(tx.status || "");
-    const isWrongAsset = status.startsWith("wrong_asset");
-
-    let maxCredit: number;
-    let capLabel: string;
-    if (isWrongAsset) {
-      maxCredit = grossReceived > 0 ? grossReceived : originalAmount;
-      capLabel = grossReceived > 0 ? "received gross amount" : "invoice amount";
-    } else {
-      if (netReceived > 0) {
-        maxCredit = netReceived;
-        capLabel = "received net amount";
-      } else if (grossReceived > 0) {
-        maxCredit = grossReceived;
-        capLabel = "received gross amount";
-      } else {
-        maxCredit = originalAmount;
-        capLabel = "invoice amount";
-      }
-    }
-
-    // Tolerate sub-cent rounding (1¢) so admin can confirm exact-net amounts safely.
-    if (requested > maxCredit + 0.01) {
-      return new Response(
-        JSON.stringify({
-          error: `Amount $${requested.toFixed(2)} exceeds ${capLabel} $${maxCredit.toFixed(2)} for status "${status}"`,
-        }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
     }
 
     // Credit the user's balance atomically
@@ -226,14 +189,7 @@ Deno.serve(async (req) => {
       action: "manual_deposit_confirm",
       target_type: "transaction",
       target_id: transaction_id,
-      details: {
-        amount,
-        user_id,
-        previous_status: tx.status,
-        credit_amount: creditAmount,
-        cap_applied: capLabel,
-        max_credit: maxCredit,
-      },
+      details: { amount, user_id, previous_status: tx.status, credit_amount: creditAmount },
     });
 
     return new Response(JSON.stringify({ success: true }), {
