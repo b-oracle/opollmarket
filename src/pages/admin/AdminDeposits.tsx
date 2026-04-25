@@ -27,6 +27,7 @@ const PAGE_SIZE = 20;
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   pending: { label: "Pending", variant: "outline", icon: Clock },
   partial: { label: "Partial", variant: "secondary", icon: AlertTriangle },
+  wrong_asset: { label: "Wrong Asset", variant: "destructive", icon: AlertTriangle },
   expired: { label: "Expired", variant: "destructive", icon: Clock },
   confirmed: { label: "Confirmed", variant: "default", icon: CheckCircle2 },
 };
@@ -59,7 +60,7 @@ const AdminDeposits = () => {
 
       let query = supabase
         .from("transactions")
-        .select("id, user_id, amount, status, nowpayments_payment_id, payment_provider, created_at", { count: "exact" })
+        .select("id, user_id, amount, gross_amount_usd, net_amount_usd, status, nowpayments_payment_id, payment_provider, created_at", { count: "exact" })
         .eq("type", "deposit");
 
       if (statusFilter !== "all") {
@@ -239,12 +240,13 @@ const AdminDeposits = () => {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           {[
             { value: "all", label: "All" },
-            { value: "pending,partial", label: "Active" },
+            { value: "pending,partial,wrong_asset", label: "Active" },
             { value: "pending", label: "Pending" },
             { value: "partial", label: "Partial" },
+            { value: "wrong_asset", label: "Wrong Asset" },
             { value: "expired", label: "Expired" },
             { value: "confirmed", label: "Confirmed" },
           ].map((f) => (
