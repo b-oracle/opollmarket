@@ -713,6 +713,7 @@ Deno.serve(async (req) => {
     let rawPayload: unknown;
     try {
       rawPayload = JSON.parse(body);
+      rawBodyForLog = rawPayload;
     } catch {
       console.error("NowPayments IPN: invalid JSON body");
       return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
