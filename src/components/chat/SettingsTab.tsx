@@ -1,11 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles, Monitor } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff,
+  Copy, Gift, DollarSign, Sparkles, Monitor, Vibrate, Smartphone, Bell, BellRing,
+} from "lucide-react";
 import { toast } from "sonner";
+import { useDevicePrefs } from "@/hooks/useDevicePrefs";
+import {
+  getPushPermission,
+  requestPushPermission,
+  type PushPermissionState,
+} from "@/lib/pushPermission";
+import { hapticSelection } from "@/lib/haptics";
 
 interface UserSettings {
   allow_calls: boolean;
