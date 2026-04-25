@@ -119,14 +119,14 @@ Deno.serve(async (req) => {
     // Update transaction
     await adminClient
       .from("transactions")
-      .update({ status: "confirmed", amount: Number(amount), net_amount_usd: Number(amount) })
+      .update({ status: "confirmed", amount: creditAmount, net_amount_usd: creditAmount })
       .eq("id", transaction_id);
 
     // Notify user
     await adminClient.from("notifications").insert({
       user_id,
       title: "Deposit Confirmed ✅",
-      message: `Your deposit of $${Number(amount).toFixed(2)} has been manually confirmed.`,
+      message: `Your deposit of $${creditAmount.toFixed(2)} has been manually confirmed.`,
       type: "deposit",
     });
 
