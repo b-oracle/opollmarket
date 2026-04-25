@@ -258,6 +258,24 @@ const IncomingCallBanner = () => {
     return () => window.removeEventListener("start-voice-call" as any, handler);
   }, []);
 
+  // Cross-surface call action events (fired by useCallDeepLink when the user
+  // taps Accept/Decline on the native lockscreen notification). Lets the
+  // banner dismiss instantly without waiting on realtime.
+  useEffect(() => {
+    const onAction = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { action?: string; call_id?: string } | undefined;
+      if (!detail) return;
+      if (detail.action === "decline" || detail.action === "missed" || detail.action === "ended") {
+        // Only clear if the event matches the current call (or no id supplied).
+        if (!detail.call_id || !incomingCall || detail.call_id === incomingCall.id) {
+          setIncomingCall(null);
+        }
+      }
+    };
+    window.addEventListener("dm-call-action", onAction);
+    return () => window.removeEventListener("dm-call-action", onAction);
+  }, [incomingCall]);
+
   if (!isFeatureEnabled("voice_calls")) return null;
 
   return (
