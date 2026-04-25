@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk";
 import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
