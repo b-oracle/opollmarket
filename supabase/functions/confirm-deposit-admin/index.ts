@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateDepositCap } from "../_shared/depositCap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,21 +89,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Cap the credit at the actual received amount (gross), NOT the originally requested invoice.
-    // This allows admin to credit overpayments / wrong-asset deposits at their true received value.
-    const grossReceived = Number((tx as any).gross_amount_usd) || 0;
-    const originalAmount = Number(tx.amount);
-    const maxCredit = grossReceived > 0 ? grossReceived : originalAmount;
-    if (Number(amount) > maxCredit) {
-      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds received amount $${maxCredit.toFixed(2)}` }), {
-        status: 400,
+    // Cap enforcement (shared rule across all admin deposit flows).
+    const validation = validateDepositCap(tx as any, Number(amount));
+    if (!validation.ok) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: validation.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Credit the user's balance atomically
-    // Partial deposits were NOT credited by the webhook, so credit the full approved amount
-    const creditAmount = Number(amount);
+    const creditAmount = validation.creditAmount;
+    const { cap } = validation;
 
     if (creditAmount > 0) {
       const { error: balError } = await adminClient.rpc("adjust_balance", {
@@ -123,14 +119,14 @@ Deno.serve(async (req) => {
     // Update transaction
     await adminClient
       .from("transactions")
-      .update({ status: "confirmed", amount: Number(amount), net_amount_usd: Number(amount) })
+      .update({ status: "confirmed", amount: creditAmount, net_amount_usd: creditAmount })
       .eq("id", transaction_id);
 
     // Notify user
     await adminClient.from("notifications").insert({
       user_id,
       title: "Deposit Confirmed ✅",
-      message: `Your deposit of $${Number(amount).toFixed(2)} has been manually confirmed.`,
+      message: `Your deposit of $${creditAmount.toFixed(2)} has been manually confirmed.`,
       type: "deposit",
     });
 
@@ -148,9 +144,9 @@ Deno.serve(async (req) => {
               const { data: settings } = await adminClient.from("commission_settings").select("welcome_bonus_percent, welcome_bonus_cap").limit(1).single();
               if (settings) {
                 const percent = Number(settings.welcome_bonus_percent) || 0;
-                const cap = Number(settings.welcome_bonus_cap) || 0;
-                if (percent > 0 && cap > 0) {
-                  const bonus = Math.min(Number(amount) * percent / 100, cap);
+                const bonusCap = Number(settings.welcome_bonus_cap) || 0;
+                if (percent > 0 && bonusCap > 0) {
+                  const bonus = Math.min(creditAmount * percent / 100, bonusCap);
                   if (bonus > 0) {
                     await adminClient.rpc("adjust_balance", { _user_id: user_id, _delta: 0, _bonus_delta: bonus, _insurance_delta: 0 });
                     await adminClient.from("transactions").insert({ user_id, type: "welcome_bonus", amount: bonus, status: "confirmed" });
@@ -189,7 +185,15 @@ Deno.serve(async (req) => {
       action: "manual_deposit_confirm",
       target_type: "transaction",
       target_id: transaction_id,
-      details: { amount, user_id, previous_status: tx.status, credit_amount: creditAmount },
+      details: {
+        requested_amount: Number(amount),
+        credit_amount: creditAmount,
+        max_credit: cap.maxCredit,
+        cap_applied: cap.capLabel,
+        is_wrong_asset: cap.isWrongAsset,
+        user_id,
+        previous_status: tx.status,
+      },
     });
 
     return new Response(JSON.stringify({ success: true }), {
