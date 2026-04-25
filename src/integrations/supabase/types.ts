@@ -522,9 +522,14 @@ export type Database = {
           creator_fee_gold_percent: number
           creator_fee_percent: number
           deposit_expiry_minutes: number
+          deposit_large_overpay_alert: number
           deposit_max_amount: number
           deposit_min_amount: number
+          deposit_overpay_threshold: number
+          deposit_partial_threshold: number
           deposit_provider: string
+          deposit_wrong_asset_high: number
+          deposit_wrong_asset_low: number
           exit_fee_percent: number
           fallback_naira_rate: number
           fallback_payout_naira_rate: number
@@ -603,9 +608,14 @@ export type Database = {
           creator_fee_gold_percent?: number
           creator_fee_percent?: number
           deposit_expiry_minutes?: number
+          deposit_large_overpay_alert?: number
           deposit_max_amount?: number
           deposit_min_amount?: number
+          deposit_overpay_threshold?: number
+          deposit_partial_threshold?: number
           deposit_provider?: string
+          deposit_wrong_asset_high?: number
+          deposit_wrong_asset_low?: number
           exit_fee_percent?: number
           fallback_naira_rate?: number
           fallback_payout_naira_rate?: number
@@ -684,9 +694,14 @@ export type Database = {
           creator_fee_gold_percent?: number
           creator_fee_percent?: number
           deposit_expiry_minutes?: number
+          deposit_large_overpay_alert?: number
           deposit_max_amount?: number
           deposit_min_amount?: number
+          deposit_overpay_threshold?: number
+          deposit_partial_threshold?: number
           deposit_provider?: string
+          deposit_wrong_asset_high?: number
+          deposit_wrong_asset_low?: number
           exit_fee_percent?: number
           fallback_naira_rate?: number
           fallback_payout_naira_rate?: number
