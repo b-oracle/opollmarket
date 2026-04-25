@@ -185,12 +185,33 @@ Deno.serve(async (req) => {
 
     if (balanceError) {
       console.error("CRITICAL: Failed to credit balance for Payaza deposit:", balanceError);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "credit_failed",
+        status: "error",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        error: balanceError,
+      });
       return new Response(JSON.stringify({ error: "Balance credit failed" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     console.log(`Credited $${depositAmount} to user ${tx.user_id}`);
+
+    await logWebhookEvent(adminClient, {
+      provider: "payaza",
+      event_type: "credited",
+      status: "success",
+      reference,
+      transaction_id: tx.id,
+      user_id: tx.user_id,
+      requested_amount: Number(tx.amount),
+      credited_amount: depositAmount,
+    });
 
     // ── STEP 2: Mark transaction as confirmed ──
     const { error: txUpdateError } = await adminClient
