@@ -78,6 +78,12 @@ Deno.serve(async (req) => {
       ...(market_id && { market_id }),
     };
 
+    if (!apiKeys || apiKeys.length === 0) {
+      return new Response(JSON.stringify({ dispatched: 0, total: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let dispatched = 0;
 
     for (const key of apiKeys) {
