@@ -96,6 +96,7 @@ const AdminNotificationBroadcast = lazy(() => import("./pages/admin/AdminNotific
 const AdminApiKeys = lazy(() => import("./pages/admin/AdminApiKeys"));
 const AdminWebhookLogs = lazy(() => import("./pages/admin/AdminWebhookLogs"));
 const AdminWebhookEvents = lazy(() => import("./pages/admin/AdminWebhookEvents"));
+const AdminWebhookFailures = lazy(() => import("./pages/admin/AdminWebhookFailures"));
 const AdminKyc = lazy(() => import("./pages/admin/AdminKyc"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
