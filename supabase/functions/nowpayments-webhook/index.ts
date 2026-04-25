@@ -201,10 +201,11 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
   const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
 
-  // Classify deposit deviation
+  // Classify deposit deviation using admin-configurable thresholds
   const payCur = String(pay_currency || "").toLowerCase();
   const outCur = String(outcome_currency || pay_currency || "").toLowerCase();
-  const cls = classifyDeposit(requestedAmount, netReceived, payCur, outCur);
+  const thresholds = await loadThresholds(supabase);
+  const cls = classifyDeposit(requestedAmount, netReceived, payCur, outCur, thresholds);
 
   if (cls.status === "wrong_asset") {
     console.warn(`WRONG ASSET: payment ${paymentIdStr} ratio=${cls.ratio.toFixed(2)} payCur=${payCur} outCur=${outCur}`);
