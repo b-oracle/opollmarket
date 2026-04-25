@@ -179,6 +179,8 @@ const IncomingCallBanner = () => {
     // Kill ringtone immediately — don't wait for async answer flow
     if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
     stopVibration();
+    // Soft buzz to acknowledge the answer tap
+    void vibrate(CALL_CONNECTED_PATTERN);
 
     try {
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
@@ -225,6 +227,10 @@ const IncomingCallBanner = () => {
 
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
+
+    // Decisive buzz to confirm the decline action
+    stopVibration();
+    void vibrate(CALL_ENDED_PATTERN);
 
     try {
       await supabase.functions.invoke("dm-call-token", {
