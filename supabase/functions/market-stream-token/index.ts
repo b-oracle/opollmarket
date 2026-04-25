@@ -141,6 +141,6 @@ Deno.serve(async (req) => {
     return json({ error: "Invalid action" }, 400);
   } catch (err: any) {
     console.error("market-stream-token error:", err);
-    return json({ error: err.message || "Internal error" }, 500);
+    return json({ error: (err instanceof Error ? err.message : String(err)) || "Internal error" }, 500);
   }
 });

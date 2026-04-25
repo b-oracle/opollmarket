@@ -51,8 +51,8 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     return await handleResolve(req, userId, supabaseUrl, serviceRoleKey);
   } catch (err) {
-    console.error("resolve-market: Unhandled error", err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error("resolve-market: Unhandled error", (err instanceof Error ? err.message : String(err)));
+    return new Response(JSON.stringify({ error: (err instanceof Error ? err.message : String(err)) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

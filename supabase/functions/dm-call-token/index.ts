@@ -551,6 +551,6 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (err: any) {
     console.error("dm-call-token error:", err);
-    return json({ error: err.message || "Internal error" }, 500);
+    return json({ error: (err instanceof Error ? err.message : String(err)) || "Internal error" }, 500);
   }
 });
