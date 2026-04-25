@@ -587,6 +587,7 @@ const App = () => {
                           <Route path="api-keys" element={<AdminApiKeys />} />
                           <Route path="webhook-logs" element={<AdminWebhookLogs />} />
                           <Route path="webhook-events" element={<AdminWebhookEvents />} />
+                          <Route path="webhook-failures" element={<AdminWebhookFailures />} />
                           <Route path="kyc" element={<AdminKyc />} />
                           <Route path="support" element={<AdminSupport />} />
                           <Route path="escrows" element={<AdminEscrows />} />
