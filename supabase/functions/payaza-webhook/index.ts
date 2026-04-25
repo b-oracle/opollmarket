@@ -84,6 +84,14 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    await logWebhookEvent(adminClient, {
+      provider: "payaza",
+      event_type: "received",
+      reference: reference,
+      message: `rawStatus=${rawStatus}`,
+      payload: body,
+    });
+
     // ── SECURITY: Verify this reference belongs to a real pending Payaza deposit ──
     // Only references starting with "payaza_" or "promo_" that were created by our
     // create-payaza-deposit / create-promotion-payaza functions will match.
