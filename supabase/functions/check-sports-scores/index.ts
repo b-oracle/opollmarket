@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -247,7 +248,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("check-sports-scores error:", err);
-    return new Response(JSON.stringify({ error: (err instanceof Error ? err.message : String(err)) }), {
+    return new Response(JSON.stringify({ error: (getErrorMessage(err)) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

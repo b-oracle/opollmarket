@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +67,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("cleanup-expired-stories error:", err);
     return new Response(
-      JSON.stringify({ error: (err instanceof Error ? err.message : String(err)) }),
+      JSON.stringify({ error: (getErrorMessage(err)) }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

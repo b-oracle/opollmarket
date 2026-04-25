@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
           } catch (error) {
             console.error("space-presence listParticipants error", {
               spaceId,
-              message: error instanceof Error ? error.message : String(error),
+              message: getErrorMessage(error),
             });
 
             return [spaceId, { participant_count: 0, joined: false }];
@@ -132,6 +133,6 @@ Deno.serve(async (req) => {
     return json({ configured: true, spaces });
   } catch (error) {
     console.error("space-presence error", error);
-    return json({ error: error instanceof Error ? error.message : "Internal error" });
+    return json({ error: getErrorMessage(error) });
   }
 });

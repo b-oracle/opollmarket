@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,8 +52,8 @@ Deno.serve(async (req) => {
     const userId = claimsData.claims.sub as string;
     return await handleResolve(req, userId, supabaseUrl, serviceRoleKey);
   } catch (err) {
-    console.error("resolve-market: Unhandled error", (err instanceof Error ? err.message : String(err)));
-    return new Response(JSON.stringify({ error: (err instanceof Error ? err.message : String(err)) }), {
+    console.error("resolve-market: Unhandled error", (getErrorMessage(err)));
+    return new Response(JSON.stringify({ error: (getErrorMessage(err)) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
