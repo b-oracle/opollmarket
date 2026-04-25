@@ -197,11 +197,12 @@ const CreatorDashboard = () => {
       }
     };
 
-    load();
+    // Skip fetching when user picked Custom but hasn't set both dates yet.
+    if (!isCustomRangeIncomplete) load();
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, dateWindow.from?.getTime(), dateWindow.to?.getTime(), isCustomRangeIncomplete]);
 
   const totals = useMemo(() => {
     let realized = 0;
