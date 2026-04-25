@@ -2,11 +2,10 @@
 // to public.webhook_logs. Failures are swallowed so logging never
 // breaks the actual webhook flow.
 
-type SupabaseLike = {
-  from: (table: string) => {
-    insert: (rows: Record<string, unknown> | Record<string, unknown>[]) => Promise<{ error: unknown }>;
-  };
-};
+// Use a permissive type so the Supabase JS client (whose `insert` returns a
+// thenable PostgrestBuilder, not a real Promise) is accepted without TS friction.
+// deno-lint-ignore no-explicit-any
+type SupabaseLike = any;
 
 export type WebhookLogStatus = "info" | "success" | "warning" | "error";
 
