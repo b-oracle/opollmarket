@@ -61,6 +61,7 @@ const Create = lazy(() => import("./pages/Create"));
 const Rankings = lazy(() => import("./pages/Rankings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
+const CreatorDashboard = lazy(() => import("./pages/CreatorDashboard"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -533,6 +534,7 @@ const App = () => {
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
                         <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
+                        <Route path="/creator" element={<CreatorDashboard />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/transactions" element={<TransactionHistory />} />
                         <Route path="/messages" element={<FeatureGate featureKey="dm_chat"><Messages /></FeatureGate>} />
