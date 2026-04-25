@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken, RoomServiceClient } from "https://esm.sh/livekit-server-sdk@2.15.0";
+import { AccessToken, RoomServiceClient } from "https://esm.sh/livekit-server-sdk@2.15.0?target=deno";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const extractEnvValue = (value: string | null, key: string) => {
+const extractEnvValue = (value: string | null | undefined, key: string) => {
   const normalized = (value || "").trim();
   if (!normalized) return "";
   const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

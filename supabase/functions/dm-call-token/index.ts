@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { AccessToken, RoomServiceClient } from "https://esm.sh/livekit-server-sdk@2.15.0";
+import { AccessToken, RoomServiceClient } from "https://esm.sh/livekit-server-sdk@2.15.0?target=deno";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
       // Send notification to callee
       const { data: callerProfile } = await admin
         .from("profiles")
-        .select("display_name")
+        .select("display_name, avatar_url")
         .eq("id", user.id)
         .single();
 

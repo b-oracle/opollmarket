@@ -337,7 +337,7 @@ async function handleHelp(token: string, chatId: number) {
 
 async function handleStats(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   try {
@@ -401,7 +401,7 @@ async function handleLinkStart(token: string, chatId: number) {
 // Handle the interactive linking session (email → password steps)
 async function handleLinkSession(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   text: string,
   username: string | null,
@@ -487,7 +487,7 @@ async function handleLinkSession(
 // Legacy support: /link email password (still works but warns user)
 async function handleLinkLegacy(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   text: string,
   username: string | null,
@@ -517,7 +517,7 @@ async function handleLinkLegacy(
 // Shared authentication + linking logic
 async function completeLink(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   email: string,
   password: string,
@@ -604,7 +604,7 @@ async function completeLink(
 
 async function handleUnlink(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   await supabase.from("telegram_users").delete().eq("telegram_chat_id", chatId);
@@ -620,7 +620,7 @@ async function handleUnlink(
 }
 
 async function getUserId(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ): Promise<string | null> {
   const { data } = await supabase
@@ -635,7 +635,7 @@ const MARKETS_PER_PAGE = 5;
 
 async function handleMarkets(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   page = 0
 ) {
@@ -665,7 +665,7 @@ async function handleMarkets(
 
   const marketButtons: Array<Array<{ text: string; callback_data: string }>> = [];
 
-  markets.forEach((m, i) => {
+  (markets as any[]).forEach((m: any, i: number) => {
     const num = from + i + 1;
     const yesP = Math.round(m.yes_price * 100);
     const emoji = categoryEmoji(m.category);
@@ -717,7 +717,7 @@ async function handleMarkets(
 
 async function handlePortfolio(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   const userId = await getUserId(supabase, chatId);
@@ -772,13 +772,13 @@ async function handlePortfolio(
   }
 
   // Get market titles
-  const marketIds = [...new Set(positions.map((p) => p.market_id))];
+  const marketIds = [...new Set((positions as any[]).map((p: any) => p.market_id))];
   const { data: marketsData } = await supabase
     .from("markets")
     .select("id, title, yes_price, no_price, status, category")
     .in("id", marketIds);
 
-  const marketMap = new Map((marketsData || []).map((m) => [m.id, m]));
+  const marketMap = new Map<string, any>(((marketsData || []) as any[]).map((m: any) => [m.id, m]));
 
   let totalValue = 0;
   let totalPnl = 0;
@@ -842,7 +842,7 @@ async function handlePortfolio(
 
 async function handleBalance(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   const userId = await getUserId(supabase, chatId);
@@ -902,7 +902,7 @@ async function handleBalance(
 
 async function handleQuickTrade(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   const userId = await getUserId(supabase, chatId);
@@ -993,7 +993,7 @@ async function handleQuickTrade(
 
 async function handleCallback(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   callback: any
 ) {
   const chatId = callback.message.chat.id;
@@ -1056,7 +1056,7 @@ async function handleCallback(
 
 async function handleMarketDetail(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   data: string
 ) {
@@ -1137,7 +1137,7 @@ async function handleMarketDetail(
 
 async function handleBetConfirm(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   data: string
 ) {
@@ -1275,7 +1275,7 @@ async function handleBetConfirm(
 }
 
 async function executeBetInline(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   marketId: string,
   optionId: string | null,
@@ -1553,7 +1553,7 @@ async function handleQTAssetSelected(token: string, chatId: number, data: string
 
 async function handleQTSideSelected(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   data: string
 ) {
@@ -1689,7 +1689,7 @@ async function handleQTSideSelected(
 // Handle "Custom Amount" button click — prompt user to type an amount
 async function handleQTCustomAmount(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   data: string
 ) {
@@ -1735,7 +1735,7 @@ async function handleQTCustomAmount(
 // Handle numeric input for custom amount (QT or Market)
 async function handleQTCustomInput(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   text: string
 ): Promise<boolean> {
@@ -1871,7 +1871,7 @@ async function handleQTCustomInput(
 // Handle "Custom Amount" for market predictions
 async function handleMarketCustomAmount(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   data: string
 ) {
@@ -1906,7 +1906,7 @@ async function handleMarketCustomAmount(
 
 async function handleFaqStart(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   // Store FAQ session
@@ -1936,7 +1936,7 @@ async function handleFaqStart(
 
 async function handleFaqSession(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   question: string
 ): Promise<boolean> {
@@ -2066,7 +2066,7 @@ const NOTIF_TYPE_EMOJI: Record<string, string> = {
 
 async function handleNotifications(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   const userId = await getUserId(supabase, chatId);
@@ -2137,7 +2137,7 @@ const PREF_KEYS = [
 
 async function handleSettings(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number
 ) {
   const userId = await getUserId(supabase, chatId);
@@ -2185,7 +2185,7 @@ async function handleSettings(
 
 async function handleSettingsToggle(
   token: string,
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   chatId: number,
   data: string
 ) {
