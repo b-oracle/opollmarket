@@ -304,7 +304,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     });
 
     // Alert admins on unusually large overpayments
-    if (cls.ratio >= LARGE_OVERPAY_ALERT) {
+    if (cls.ratio >= thresholds.largeAlert) {
       await notifyAdmins(
         supabase,
         "ℹ️ Large Overpayment Auto-Credited",
