@@ -3838,6 +3838,72 @@ export type Database = {
           },
         ]
       }
+      webhook_logs: {
+        Row: {
+          bonus_amount: number | null
+          created_at: string
+          credited_amount: number | null
+          error: string | null
+          event_type: string
+          id: string
+          message: string | null
+          payload: Json | null
+          provider: string
+          reference: string | null
+          requested_amount: number | null
+          status: string
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bonus_amount?: number | null
+          created_at?: string
+          credited_amount?: number | null
+          error?: string | null
+          event_type: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          provider: string
+          reference?: string | null
+          requested_amount?: number | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bonus_amount?: number | null
+          created_at?: string
+          credited_amount?: number | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          provider?: string
+          reference?: string | null
+          requested_amount?: number | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "public_market_trades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_notification_prefs: {
         Row: {
           copy_trade: boolean

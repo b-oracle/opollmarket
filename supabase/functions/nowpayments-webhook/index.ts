@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logWebhookEvent } from "../_shared/webhookLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -394,8 +395,30 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   });
   if (balanceError) {
     console.error("Failed to adjust balance:", balanceError);
+    await logWebhookEvent(supabase, {
+      provider: "nowpayments",
+      event_type: "credit_failed",
+      status: "error",
+      reference: paymentIdStr,
+      transaction_id: matchedTx?.id ?? null,
+      user_id: userId,
+      requested_amount: Number(requestedAmount),
+      credited_amount: Number(creditAmount),
+      error: balanceError,
+    });
     throw new Error(`Balance adjustment failed: ${balanceError.message}`);
   }
+
+  await logWebhookEvent(supabase, {
+    provider: "nowpayments",
+    event_type: "credited",
+    status: "success",
+    reference: paymentIdStr,
+    transaction_id: matchedTx?.id ?? null,
+    user_id: userId,
+    requested_amount: Number(requestedAmount),
+    credited_amount: Number(creditAmount),
+  });
 
   // 4. Update the transaction record
   if (matchedTx) {
@@ -797,6 +820,18 @@ Deno.serve(async (req) => {
     return new Response("OK", { status: 200, headers: corsHeaders });
   } catch (err) {
     console.error("Webhook error:", err);
+    try {
+      const supa = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await logWebhookEvent(supa, {
+        provider: "nowpayments",
+        event_type: "error",
+        status: "error",
+        error: err,
+      });
+    } catch { /* swallow */ }
     return new Response("OK", { status: 200, headers: corsHeaders });
   }
 });
