@@ -14,8 +14,10 @@ import {
   TrendingUp,
   PlusCircle,
   ChevronRight,
+  ChevronDown,
   Hourglass,
 } from "lucide-react";
+import ResolvedMarketDetail from "@/components/creator/ResolvedMarketDetail";
 
 type MarketRow = {
   id: string;
@@ -29,6 +31,9 @@ type MarketRow = {
   created_at: string;
   end_date: string | null;
   resolved_at: string | null;
+  resolved_side: string | null;
+  winning_option_id: string | null;
+  market_type: string | null;
 };
 
 type EarningsByMarket = Record<string, { realized: number; pending: number; liquidityReturn: number }>;
