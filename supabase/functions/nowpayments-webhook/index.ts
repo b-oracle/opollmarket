@@ -511,15 +511,28 @@ async function handleBoost(supabase: any, payload: Record<string, unknown>, orde
   const tier = parts[2];
   const userId = parts[3];
 
-  // Idempotency: check if already activated
-  const { data: existingBoost } = await supabase
-    .from("market_boosts")
-    .select("id, status, ends_at")
-    .eq("nowpayments_payment_id", paymentIdStr)
-    .maybeSingle();
+  // Atomic claim: prevents two concurrent IPN deliveries from both activating
+  // (and thus double-extending) the same boost. The RPC flips a single row from
+  // pending/expired -> processing and returns it; concurrent calls get nothing.
+  const { data: claimedBoosts } = await supabase.rpc("claim_webhook_boost", {
+    _payment_id: paymentIdStr,
+    _market_id: marketId,
+    _payer: userId,
+  });
+  const claimedBoost = claimedBoosts?.[0] || null;
 
-  if (existingBoost?.status === "active") {
-    console.log("Boost already active:", paymentIdStr);
+  // If already active (matched but not claimable) — short-circuit.
+  if (!claimedBoost) {
+    const { data: existingBoost } = await supabase
+      .from("market_boosts")
+      .select("id, status")
+      .eq("nowpayments_payment_id", paymentIdStr)
+      .maybeSingle();
+    if (existingBoost?.status === "active" || existingBoost?.status === "processing") {
+      console.log("Boost already active/processing:", paymentIdStr);
+      return;
+    }
+    console.error("No claimable boost for payment:", paymentIdStr);
     return;
   }
 
@@ -539,56 +552,24 @@ async function handleBoost(supabase: any, payload: Record<string, unknown>, orde
 
   const activeBoost = activeBoosts?.[0];
 
-  // If extending, new ends_at = existing ends_at + new duration
-  // The pending record already has the correct extended ends_at from create-boost-payment,
-  // but use it as stored in the record (which was pre-calculated at creation time).
-  // For the activating record, use the ends_at that was set during creation.
-  const pendingEndsAt = existingBoost?.ends_at;
+  // Use the pre-calculated ends_at from the claimed (pending) record if present,
+  // otherwise extend the currently-active one, otherwise start fresh.
+  const pendingEndsAt = claimedBoost.ends_at;
   const endsAt = pendingEndsAt
     ? new Date(pendingEndsAt)
     : activeBoost
       ? new Date(new Date(activeBoost.ends_at).getTime() + durationHours * 60 * 60 * 1000)
       : new Date(now.getTime() + durationHours * 60 * 60 * 1000);
 
-  if (existingBoost) {
-    await supabase
-      .from("market_boosts")
-      .update({
-        status: "active",
-        starts_at: now.toISOString(),
-        ends_at: endsAt.toISOString(),
-        tx_hash: String(txHash),
-      })
-      .eq("id", existingBoost.id);
-  } else {
-    // Fallback: find by pending/expired + market_id
-    const { data: pendingBoost } = await supabase
-      .from("market_boosts")
-      .select("id, ends_at")
-      .eq("market_id", marketId)
-      .in("status", ["pending", "expired"])
-      .eq("payer_wallet", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (pendingBoost) {
-      const fallbackEndsAt = pendingBoost.ends_at
-        ? new Date(pendingBoost.ends_at)
-        : endsAt;
-
-      await supabase
-        .from("market_boosts")
-        .update({
-          status: "active",
-          starts_at: now.toISOString(),
-          ends_at: fallbackEndsAt.toISOString(),
-          nowpayments_payment_id: paymentIdStr,
-          tx_hash: String(txHash),
-        })
-        .eq("id", pendingBoost.id);
-    }
-  }
+  await supabase
+    .from("market_boosts")
+    .update({
+      status: "active",
+      starts_at: now.toISOString(),
+      ends_at: endsAt.toISOString(),
+      tx_hash: String(txHash),
+    })
+    .eq("id", claimedBoost.id);
 
   // If extending an existing active boost, also update its ends_at
   if (activeBoost) {
