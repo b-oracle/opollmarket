@@ -94,15 +94,30 @@ Deno.serve(async (req) => {
         })
         .eq("id", withdrawal_id);
 
-      // Update transaction
+      // Update the transaction linked to THIS withdrawal_request — no more order/limit guessing.
       await adminClient
         .from("transactions")
         .update({ status: "confirmed", tx_hash: tx_hash || null })
-        .eq("user_id", withdrawal.user_id)
+        .eq("withdrawal_request_id", withdrawal_id)
         .eq("type", "withdrawal")
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .eq("status", "pending");
+
+      // Credit withdrawal fee to platform pool now that the payout is approved.
+      // (request-withdrawal / request-payaza-withdrawal no longer pre-credit it.)
+      try {
+        const { data: settings } = await adminClient
+          .from("commission_settings")
+          .select("withdrawal_fee_percent")
+          .limit(1)
+          .single();
+        const feePct = Math.max(0, Math.min(100, Number(settings?.withdrawal_fee_percent) || 0));
+        const feeAmount = feePct > 0 ? (Number(withdrawal.amount) * feePct) / 100 : 0;
+        if (feeAmount > 0) {
+          await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
+        }
+      } catch (e) {
+        console.warn("process-withdrawal: fee credit skipped", e);
+      }
 
       // Notify user
       await adminClient.from("notifications").insert({
@@ -112,7 +127,7 @@ Deno.serve(async (req) => {
         type: "withdrawal",
       });
     } else {
-      // Reject: refund balance atomically
+      // Reject: refund balance atomically (no fee was credited yet, so nothing to reverse).
       await adminClient.rpc("adjust_balance", {
         _user_id: withdrawal.user_id,
         _delta: Number(withdrawal.amount),
@@ -128,15 +143,12 @@ Deno.serve(async (req) => {
         })
         .eq("id", withdrawal_id);
 
-      // Update transaction
       await adminClient
         .from("transactions")
         .update({ status: "failed" })
-        .eq("user_id", withdrawal.user_id)
+        .eq("withdrawal_request_id", withdrawal_id)
         .eq("type", "withdrawal")
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .eq("status", "pending");
 
       // Notify user
       await adminClient.from("notifications").insert({
