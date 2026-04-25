@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildInsert, callRpc, RpcContractError } from "../_shared/rpcContracts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
