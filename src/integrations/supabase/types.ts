@@ -3857,6 +3857,7 @@ export type Database = {
           provider: string
           reference: string | null
           requested_amount: number | null
+          stack: string | null
           status: string
           transaction_id: string | null
           user_id: string | null
@@ -3873,6 +3874,7 @@ export type Database = {
           provider: string
           reference?: string | null
           requested_amount?: number | null
+          stack?: string | null
           status?: string
           transaction_id?: string | null
           user_id?: string | null
@@ -3889,6 +3891,7 @@ export type Database = {
           provider?: string
           reference?: string | null
           requested_amount?: number | null
+          stack?: string | null
           status?: string
           transaction_id?: string | null
           user_id?: string | null
