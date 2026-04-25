@@ -294,6 +294,11 @@ const AdminSettings = () => {
         setDepositMaxAmount(String(d.deposit_max_amount ?? 50000));
         setPushPromptCooldownDays(String(d.push_prompt_cooldown_days ?? 14));
         setDepositExpiryMinutes(String(d.deposit_expiry_minutes ?? 60));
+        setDepositOverpayThreshold(String((d as any).deposit_overpay_threshold ?? 1.02));
+        setDepositPartialThreshold(String((d as any).deposit_partial_threshold ?? 0.98));
+        setDepositWrongAssetHigh(String((d as any).deposit_wrong_asset_high ?? 2.0));
+        setDepositWrongAssetLow(String((d as any).deposit_wrong_asset_low ?? 0.3));
+        setDepositLargeOverpayAlert(String((d as any).deposit_large_overpay_alert ?? 1.5));
         setMaxDraftsNone(String((d as any).max_drafts_none ?? 2));
         setMaxDraftsBlue(String((d as any).max_drafts_blue ?? 5));
         setMaxDraftsGold(String((d as any).max_drafts_gold ?? 10));
