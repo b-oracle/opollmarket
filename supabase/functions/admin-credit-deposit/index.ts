@@ -68,8 +68,8 @@ Deno.serve(async (req) => {
       return json({ error: "User not found" }, 404);
     }
 
-    // Credit the user's main balance
-    const { error: balError } = await adminClient.rpc("adjust_balance", {
+    // Credit the user's main balance (validated payload)
+    const { error: balError } = await callRpc(adminClient, "adjust_balance", {
       _user_id: targetUserId,
       _delta: amount,
       _bonus_delta: 0,
@@ -87,14 +87,16 @@ Deno.serve(async (req) => {
 
     const { data: tx, error: txError } = await adminClient
       .from("transactions")
-      .insert({
-        user_id: targetUserId,
-        type: "deposit",
-        amount,
-        status: "confirmed",
-        payment_provider: "admin_credit",
-        description: txDescription,
-      })
+      .insert(
+        buildInsert("transactions", {
+          user_id: targetUserId,
+          type: "deposit",
+          amount,
+          status: "confirmed",
+          payment_provider: "admin_credit",
+          description: txDescription,
+        }),
+      )
       .select("id")
       .single();
 
@@ -104,12 +106,14 @@ Deno.serve(async (req) => {
     }
 
     // Notify the user
-    await adminClient.from("notifications").insert({
-      user_id: targetUserId,
-      title: "Deposit Credited ✅",
-      message: `$${amount.toFixed(2)} has been credited to your account.${description ? ` (${description})` : ""}`,
-      type: "deposit",
-    });
+    await adminClient.from("notifications").insert(
+      buildInsert("notifications", {
+        user_id: targetUserId,
+        title: "Deposit Credited ✅",
+        message: `$${amount.toFixed(2)} has been credited to your account.${description ? ` (${description})` : ""}`,
+        type: "deposit",
+      }),
+    );
 
     // Welcome bonus check (same logic as confirm-deposit-admin)
     try {
