@@ -113,7 +113,7 @@ export const useNativePush = () => {
               // If FCM didn't render a system notification (data-only payload),
               // fall back to a local one so it appears in the tray + buzzes.
               const hasSystemNotif = !!notification.title || !!notification.body;
-              if (!hasSystemNotif && LocalNotifications) {
+              if (!hasSystemNotif && LocalNotifications && getPushFallbackEnabled()) {
                 // Deterministic ID derived from a stable key so retries collapse.
                 const idKey =
                   callKey ||
