@@ -772,13 +772,13 @@ async function handlePortfolio(
   }
 
   // Get market titles
-  const marketIds = [...new Set(positions.map((p) => p.market_id))];
+  const marketIds = [...new Set((positions as any[]).map((p: any) => p.market_id))];
   const { data: marketsData } = await supabase
     .from("markets")
     .select("id, title, yes_price, no_price, status, category")
     .in("id", marketIds);
 
-  const marketMap = new Map((marketsData || []).map((m) => [m.id, m]));
+  const marketMap = new Map<string, any>(((marketsData || []) as any[]).map((m: any) => [m.id, m]));
 
   let totalValue = 0;
   let totalPnl = 0;
