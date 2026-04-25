@@ -100,6 +100,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const handleToggleLike = useCallback(async () => {
     const prev = liked;
     setLikeDelta(d => d + (prev ? -1 : 1));
+    // Buzz harder when adding a like, lighter when removing
+    void (prev ? hapticLight() : hapticSuccess());
     await toggleLike();
   }, [liked, toggleLike]);
   const { bookmarked, toggleBookmark } = useBookmark(market.id);
