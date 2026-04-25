@@ -3794,6 +3794,30 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_event_ledger: {
+        Row: {
+          event_key: string
+          first_seen_at: string
+          id: string
+          payload: Json | null
+          provider: string
+        }
+        Insert: {
+          event_key: string
+          first_seen_at?: string
+          id?: string
+          payload?: Json | null
+          provider: string
+        }
+        Update: {
+          event_key?: string
+          first_seen_at?: string
+          id?: string
+          payload?: Json | null
+          provider?: string
+        }
+        Relationships: []
+      }
       webhook_events: {
         Row: {
           api_key_id: string
@@ -3844,6 +3868,63 @@ export type Database = {
           },
         ]
       }
+      webhook_failures: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string | null
+          external_reference: string | null
+          id: string
+          last_error: string | null
+          last_stack: string | null
+          next_run_at: string | null
+          payload: Json
+          payload_hash: string
+          provider: string
+          resolved_at: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type?: string | null
+          external_reference?: string | null
+          id?: string
+          last_error?: string | null
+          last_stack?: string | null
+          next_run_at?: string | null
+          payload: Json
+          payload_hash: string
+          provider: string
+          resolved_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string | null
+          external_reference?: string | null
+          id?: string
+          last_error?: string | null
+          last_stack?: string | null
+          next_run_at?: string | null
+          payload?: Json
+          payload_hash?: string
+          provider?: string
+          resolved_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           bonus_amount: number | null
@@ -3857,6 +3938,7 @@ export type Database = {
           provider: string
           reference: string | null
           requested_amount: number | null
+          stack: string | null
           status: string
           transaction_id: string | null
           user_id: string | null
@@ -3873,6 +3955,7 @@ export type Database = {
           provider: string
           reference?: string | null
           requested_amount?: number | null
+          stack?: string | null
           status?: string
           transaction_id?: string | null
           user_id?: string | null
@@ -3889,6 +3972,7 @@ export type Database = {
           provider?: string
           reference?: string | null
           requested_amount?: number | null
+          stack?: string | null
           status?: string
           transaction_id?: string | null
           user_id?: string | null
@@ -4394,6 +4478,21 @@ export type Database = {
         Args: { _market_id: string }
         Returns: Json
       }
+      claim_webhook_boost: {
+        Args: { _market_id: string; _payer: string; _payment_id: string }
+        Returns: {
+          ends_at: string
+          id: string
+          status: string
+        }[]
+      }
+      claim_webhook_broadcast: {
+        Args: { _market_id: string; _payment_id: string; _user_id: string }
+        Returns: {
+          id: string
+          status: string
+        }[]
+      }
       claim_webhook_deposit: {
         Args: { _payment_id: string; _provider?: string }
         Returns: {
@@ -4407,6 +4506,7 @@ export type Database = {
         Args: { _action: string; _withdrawal_id: string }
         Returns: Json
       }
+      cleanup_webhook_event_ledger: { Args: never; Returns: undefined }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
@@ -4645,12 +4745,32 @@ export type Database = {
           read_ct: number
         }[]
       }
+      record_webhook_event: {
+        Args: { _event_key: string; _payload?: Json; _provider: string }
+        Returns: boolean
+      }
+      record_webhook_failure: {
+        Args: {
+          _error?: string
+          _event_type?: string
+          _external_reference?: string
+          _next_run_at?: string
+          _payload: Json
+          _payload_hash: string
+          _provider: string
+          _stack?: string
+          _transaction_id?: string
+          _user_id?: string
+        }
+        Returns: string
+      }
       reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
       }
       requeue_webhook_event: { Args: { _event_id: string }; Returns: Json }
+      resolve_webhook_failure: { Args: { _id: string }; Returns: boolean }
       sell_update_market_prices: {
         Args: {
           _gross_proceeds: number
