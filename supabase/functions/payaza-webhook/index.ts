@@ -123,10 +123,27 @@ Deno.serve(async (req) => {
 
     if (!tx) {
       console.error("No claimable transaction for reference:", reference);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "not_found",
+        status: "warning",
+        reference,
+        message: "No claimable transaction for reference",
+      });
       return new Response(JSON.stringify({ error: "Transaction not found or already claimed" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await logWebhookEvent(adminClient, {
+      provider: "payaza",
+      event_type: "claimed",
+      reference,
+      transaction_id: tx.id,
+      user_id: tx.user_id,
+      requested_amount: Number(tx.amount),
+      message: `claimed for processing (rawStatus=${rawStatus})`,
+    });
 
     // Check if payment was successful
     const successStatuses = ["approved", "successful", "completed", "funds received", "success"];
@@ -139,6 +156,17 @@ Deno.serve(async (req) => {
         .from("transactions")
         .update({ status: "failed" })
         .eq("id", tx.id);
+
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "failed",
+        status: "warning",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        message: `Payment not successful (rawStatus=${rawStatus})`,
+      });
 
       console.log("Payment not successful, marked as failed:", tx.id);
       return new Response(JSON.stringify({ success: true, message: "Payment not successful" }), {
