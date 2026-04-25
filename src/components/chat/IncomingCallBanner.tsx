@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import { playRingtone } from "@/lib/sounds";
+import { vibrate, stopVibration } from "@/lib/haptics";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
@@ -70,26 +71,24 @@ const IncomingCallBanner = () => {
     }
   }, [activeCall, callMinimized]);
 
-  // Play ringtone when incoming call appears
+  // Play ringtone + vibrate when incoming call appears (works on Capacitor native + web)
   useEffect(() => {
     let vibrateInterval: ReturnType<typeof setInterval> | null = null;
     if (incomingCall && !activeCall) {
       stopRingtoneRef.current = playRingtone();
-      // Vibrate pattern: 500ms on, 500ms off, repeating
-      if (navigator.vibrate) {
-        navigator.vibrate([500, 500, 500, 500, 500]);
-        vibrateInterval = setInterval(() => {
-          navigator.vibrate([500, 500, 500, 500, 500]);
-        }, 3000);
-      }
+      // Vibrate pattern: 500ms on, 500ms off, repeating every 3s
+      void vibrate([500, 500, 500, 500, 500]);
+      vibrateInterval = setInterval(() => {
+        void vibrate([500, 500, 500, 500, 500]);
+      }, 3000);
     } else {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-      if (navigator.vibrate) navigator.vibrate(0);
+      stopVibration();
     }
     return () => {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
       if (vibrateInterval) clearInterval(vibrateInterval);
-      if (navigator.vibrate) navigator.vibrate(0);
+      stopVibration();
     };
   }, [incomingCall, activeCall]);
 
@@ -174,7 +173,7 @@ const IncomingCallBanner = () => {
     setAnswering(true);
     // Kill ringtone immediately — don't wait for async answer flow
     if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-    if (navigator.vibrate) navigator.vibrate(0);
+    stopVibration();
 
     try {
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
