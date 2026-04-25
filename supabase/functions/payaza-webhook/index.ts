@@ -308,9 +308,6 @@ Deno.serve(async (req) => {
         error: err,
       });
     } catch { /* swallow */ }
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: corsHeaders }
-    );
+    return errorResponse(err, 500, corsHeaders);
   }
 });
