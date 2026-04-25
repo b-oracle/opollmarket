@@ -157,7 +157,8 @@ function safePayload(value: unknown): unknown {
         preview: str.slice(0, MAX_PAYLOAD_BYTES),
       };
     }
-    return { _redacted: true, ...(redacted as Record<string, unknown>) };
+    // Wrap so admin UI can show a "redacted" notice without losing original shape.
+    return { _redacted: true, data: redacted };
   } catch {
     return { _unserializable: true, _redacted: true };
   }
