@@ -182,11 +182,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check if already processed (idempotency)
+      // Check if already processed (idempotency) — scope to provider
       const { data: alreadyDone } = await adminClient
         .from("transactions")
         .select("id")
         .eq("nowpayments_payment_id", txRef)
+        .eq("payment_provider", "flutterwave")
         .eq("type", "deposit")
         .in("status", ["confirmed", "processing"])
         .maybeSingle();
@@ -201,6 +202,7 @@ Deno.serve(async (req) => {
       // Atomically claim the transaction (prevents concurrent webhook replays)
       const { data: claimedRows } = await adminClient.rpc("claim_webhook_deposit", {
         _payment_id: txRef,
+        _provider: "flutterwave",
       });
       const txn = claimedRows?.[0] || null;
 
