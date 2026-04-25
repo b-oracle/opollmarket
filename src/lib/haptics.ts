@@ -131,6 +131,7 @@ export const hapticWarning = async (): Promise<void> => {
 };
 
 export const hapticError = async (): Promise<void> => {
+  if (!getHapticsEnabled()) return;
   if (isCapacitorNative()) {
     try {
       const { Haptics, NotificationType } = await import("@capacitor/haptics");
