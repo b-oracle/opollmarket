@@ -144,9 +144,9 @@ Deno.serve(async (req) => {
               const { data: settings } = await adminClient.from("commission_settings").select("welcome_bonus_percent, welcome_bonus_cap").limit(1).single();
               if (settings) {
                 const percent = Number(settings.welcome_bonus_percent) || 0;
-                const cap = Number(settings.welcome_bonus_cap) || 0;
-                if (percent > 0 && cap > 0) {
-                  const bonus = Math.min(Number(amount) * percent / 100, cap);
+                const bonusCap = Number(settings.welcome_bonus_cap) || 0;
+                if (percent > 0 && bonusCap > 0) {
+                  const bonus = Math.min(creditAmount * percent / 100, bonusCap);
                   if (bonus > 0) {
                     await adminClient.rpc("adjust_balance", { _user_id: user_id, _delta: 0, _bonus_delta: bonus, _insurance_delta: 0 });
                     await adminClient.from("transactions").insert({ user_id, type: "welcome_bonus", amount: bonus, status: "confirmed" });
