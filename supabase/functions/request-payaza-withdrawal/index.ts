@@ -43,7 +43,12 @@ Deno.serve(async (req) => {
     const clientUa = req.headers.get("user-agent") || "unknown";
     console.log(`[NGN Withdrawal] user=${userId} ip=${clientIp} ua=${clientUa}`);
 
-    const { amount, bank_code, account_number, account_name } = await req.json();
+    const { amount, bank_code, account_number, account_name, idempotency_key } = await req.json();
+
+    // Idempotency key — relies on the unique index on withdrawal_requests.idempotency_key
+    // for race protection (see insert below).
+    const withdrawalIdempotencyKey =
+      idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
