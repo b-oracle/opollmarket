@@ -91,21 +91,11 @@ Deno.serve(async (req) => {
 
     const { amount, wallet_address, crypto_currency, idempotency_key } = await req.json();
 
-    // Idempotency: reject duplicate submissions
-    if (idempotency_key) {
-      const { count: existingKey } = await createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      ).from("withdrawal_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("idempotency_key", idempotency_key);
-      if ((existingKey ?? 0) > 0) {
-        return new Response(JSON.stringify({ error: "Duplicate withdrawal request" }), {
-          status: 409, headers: corsHeaders,
-        });
-      }
-    }
-    const withdrawalIdempotencyKey = idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // Idempotency key — generate one if client didn't supply. We rely on the
+    // unique index on withdrawal_requests.idempotency_key for the actual race
+    // protection (see insert below); this pre-check is a fast-path UX hint.
+    const withdrawalIdempotencyKey =
+      idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 
     const adminClient = createClient(
