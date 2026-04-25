@@ -49,13 +49,24 @@ export async function logWebhookEvent(
     }
     if (entry.message !== undefined) row.message = entry.message;
     if (entry.payload !== undefined) row.payload = safePayload(entry.payload);
-    if (entry.error !== undefined) row.error = stringifyError(entry.error);
+    if (entry.error !== undefined) {
+      row.error = stringifyError(entry.error);
+      const stack = extractStack(entry.error);
+      if (stack) row.stack = stack;
+    }
 
     const { error } = await supabase.from("webhook_logs").insert(row);
     if (error) console.error("logWebhookEvent insert failed:", error);
   } catch (e) {
     console.error("logWebhookEvent threw:", e);
   }
+}
+
+function extractStack(err: unknown): string | null {
+  if (err instanceof Error && err.stack) {
+    return err.stack.length > 6000 ? err.stack.slice(0, 6000) + "\n…(truncated)" : err.stack;
+  }
+  return null;
 }
 
 function safePayload(value: unknown): unknown {

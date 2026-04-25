@@ -100,6 +100,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Hoisted so the outer catch block can include the body when logging.
+  let rawBodyForLog: unknown = null;
+
   try {
     // ── Signature verification (constant-time) BEFORE parsing body ──
     const secretHash = Deno.env.get("FLUTTERWAVE_WEBHOOK_HASH");
@@ -123,6 +126,7 @@ Deno.serve(async (req) => {
     let raw: unknown;
     try {
       raw = await req.json();
+      rawBodyForLog = raw;
     } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON" }), {
         status: 400,
@@ -416,8 +420,10 @@ Deno.serve(async (req) => {
       );
       await logWebhookEvent(adminClient, {
         provider: "flutterwave",
-        event_type: "error",
+        event_type: "handler_exception",
         status: "error",
+        message: err instanceof Error ? err.message : "Unknown handler error",
+        payload: rawBodyForLog,
         error: err,
       });
     } catch { /* swallow */ }
