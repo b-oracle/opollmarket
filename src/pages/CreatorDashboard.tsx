@@ -404,14 +404,36 @@ const CreatorDashboard = () => {
         ) : filtered.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-8 text-center">
             <BarChart3 className="w-10 h-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-sm font-semibold mb-1">No markets yet</p>
-            <p className="text-xs text-muted-foreground mb-4">Create your first market to start earning creator fees.</p>
-            <button
-              onClick={() => navigate("/create")}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
-            >
-              <PlusCircle className="w-4 h-4" /> Create Market
-            </button>
+            {markets.length === 0 ? (
+              <>
+                <p className="text-sm font-semibold mb-1">No markets yet</p>
+                <p className="text-xs text-muted-foreground mb-4">Create your first market to start earning creator fees.</p>
+                <button
+                  onClick={() => navigate("/create")}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold"
+                >
+                  <PlusCircle className="w-4 h-4" /> Create Market
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold mb-1">No markets in this range</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Try a wider date range or clear the filter.
+                </p>
+                <button
+                  onClick={() => {
+                    setRangePreset("all");
+                    setCustomFrom(undefined);
+                    setCustomTo(undefined);
+                    setFilter("all");
+                  }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted text-foreground text-xs font-semibold hover:bg-muted/70"
+                >
+                  Clear filters
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <ul className="space-y-2">
