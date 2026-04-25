@@ -168,45 +168,21 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     matchedTx = retryRows?.[0] || null;
   }
 
-  // price_amount = the USD amount the user requested to deposit.
-  // outcome_amount = NP's reported net received — but can be wildly wrong
-  // (e.g. "Wrong Asset Confirmed" can return inflated/deflated values).
-  const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
-  const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
-
-  // OVERPAYMENT DETECTION (correct asset, more than requested):
-  // If the user paid the SAME currency they were invoiced for, and just sent more
-  // than required, treat it as an overpayment — credit the requested amount and
-  // park the excess in bonus_balance (non-withdrawable, usable for fees).
+  // Classify deposit deviation
   const payCur = String(pay_currency || "").toLowerCase();
   const outCur = String(outcome_currency || pay_currency || "").toLowerCase();
-  const sameAssetOverpay =
-    payCur !== "" &&
-    payCur === outCur &&
-    requestedAmount > 0 &&
-    netReceived >= requestedAmount * 1.02; // >2% over the invoice = overpayment
+  const cls = classifyDeposit(requestedAmount, netReceived, payCur, outCur);
 
-  // WRONG ASSET DETECTION: only flag as wrong asset when currencies DIFFER
-  // (or are unknown) AND the divergence is large.
-  const divergenceRatio = requestedAmount > 0 ? netReceived / requestedAmount : 1;
-  const isLikelyWrongAsset =
-    !sameAssetOverpay &&
-    (divergenceRatio > 2 || (divergenceRatio < 0.3 && netReceived > 0));
+  if (cls.status === "wrong_asset") {
+    console.warn(`WRONG ASSET: payment ${paymentIdStr} ratio=${cls.ratio.toFixed(2)} payCur=${payCur} outCur=${outCur}`);
 
-  if (isLikelyWrongAsset) {
-    console.warn(`WRONG ASSET DETECTED: outcome=$${netReceived} vs requested=$${requestedAmount} (ratio ${divergenceRatio.toFixed(2)}, payCur=${payCur}, outCur=${outCur}) for payment ${paymentIdStr}. Skipping auto-credit.`);
-
-    // Mark the transaction as needing manual review instead of crediting
     if (matchedTx) {
-      await supabase
-        .from("transactions")
-        .update({
-          status: "wrong_asset",
-          nowpayments_payment_id: paymentIdStr,
-          gross_amount_usd: netReceived,
-          net_amount_usd: netReceived,
-        })
-        .eq("id", matchedTx.id);
+      await supabase.from("transactions").update({
+        status: "wrong_asset",
+        nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: netReceived,
+        net_amount_usd: netReceived,
+      }).eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
         user_id: userId,
@@ -219,37 +195,26 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       });
     }
 
-    // Notify admins
-    const { data: adminRoles } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .in("role", ["admin", "super_admin"]);
-    for (const admin of adminRoles || []) {
-      await supabase.from("notifications").insert({
-        user_id: admin.user_id,
-        title: "⚠️ Wrong Asset Deposit Detected",
-        message: `User ${userId.slice(0, 8)}… sent wrong asset for payment ${paymentIdStr}. Requested $${requestedAmount}, NP reported $${netReceived.toFixed(2)}. Manual review required.`,
-        type: "info",
-      });
-    }
+    await notifyAdmins(
+      supabase,
+      "⚠️ Wrong Asset Deposit",
+      `User ${userId.slice(0, 8)}… payment ${paymentIdStr}. Requested $${requestedAmount.toFixed(2)}, NP reported $${netReceived.toFixed(2)} (ratio ${cls.ratio.toFixed(2)}). Recommended credit: $${cls.recommendedCredit.toFixed(2)}. Manual review required.`,
+    );
 
-    // Notify user
     await supabase.from("notifications").insert({
       user_id: userId,
       title: "Deposit Issue ⚠️",
       message: `Your $${requestedAmount.toFixed(2)} deposit was flagged because the wrong cryptocurrency was sent. Please contact support for assistance.`,
       type: "deposit",
     });
-
-    return; // Do NOT credit
+    return;
   }
 
-  // OVERPAYMENT FLOW: credit requested amount + park excess in bonus_balance
-  if (sameAssetOverpay) {
-    const excess = Math.max(0, netReceived - requestedAmount);
-    console.log(`OVERPAYMENT: requested=$${requestedAmount}, received=$${netReceived}, excess=$${excess.toFixed(4)} -> bonus_balance for user ${userId}`);
+  // OVERPAYMENT FLOW
+  if (cls.status === "overpayment") {
+    const excess = cls.excess;
+    console.log(`OVERPAYMENT: requested=$${requestedAmount} received=$${netReceived} excess=$${excess.toFixed(4)} ratio=${cls.ratio.toFixed(2)}`);
 
-    // Credit main balance with requested amount + bonus balance with the excess (atomic)
     const { error: balErr } = await supabase.rpc("adjust_balance", {
       _user_id: userId,
       _delta: Number(requestedAmount),
@@ -261,19 +226,15 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       throw new Error(`Overpayment balance adjust failed: ${balErr.message}`);
     }
 
-    // Update / insert transaction record (confirmed at requested amount)
     if (matchedTx) {
-      await supabase
-        .from("transactions")
-        .update({
-          status: "confirmed",
-          nowpayments_payment_id: paymentIdStr,
-          amount: Number(requestedAmount),
-          gross_amount_usd: Number(netReceived),
-          net_amount_usd: Number(requestedAmount),
-          description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
-        })
-        .eq("id", matchedTx.id);
+      await supabase.from("transactions").update({
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+        amount: Number(requestedAmount),
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(requestedAmount),
+        description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
+      }).eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
         user_id: userId,
@@ -287,7 +248,6 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       });
     }
 
-    // Log the overpayment as its own transaction for audit/visibility
     if (excess > 0) {
       await supabase.from("transactions").insert({
         user_id: userId,
