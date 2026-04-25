@@ -168,6 +168,11 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     matchedTx = retryRows?.[0] || null;
   }
 
+  // price_amount = the USD amount the user requested to deposit.
+  // outcome_amount = NP-reported net received (can be inflated/deflated for wrong-asset cases).
+  const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
+  const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
+
   // Classify deposit deviation
   const payCur = String(pay_currency || "").toLowerCase();
   const outCur = String(outcome_currency || pay_currency || "").toLowerCase();
