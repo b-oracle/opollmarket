@@ -153,7 +153,12 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     if (matchedTx) {
       await supabase
         .from("transactions")
-        .update({ status: "wrong_asset", nowpayments_payment_id: paymentIdStr })
+        .update({
+          status: "wrong_asset",
+          nowpayments_payment_id: paymentIdStr,
+          gross_amount_usd: netReceived,
+          net_amount_usd: netReceived,
+        })
         .eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
@@ -162,6 +167,8 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: requestedAmount,
         status: "wrong_asset",
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: netReceived,
+        net_amount_usd: netReceived,
       });
     }
 
@@ -215,6 +222,8 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
           status: "confirmed",
           nowpayments_payment_id: paymentIdStr,
           amount: Number(requestedAmount),
+          gross_amount_usd: Number(netReceived),
+          net_amount_usd: Number(requestedAmount),
           description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
         })
         .eq("id", matchedTx.id);
@@ -225,6 +234,8 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(requestedAmount),
         status: "confirmed",
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(requestedAmount),
         description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
       });
     }
@@ -283,7 +294,13 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     if (matchedTx) {
       await supabase
         .from("transactions")
-        .update({ status: "partial", nowpayments_payment_id: paymentIdStr, amount: Number(creditAmount) })
+        .update({
+          status: "partial",
+          nowpayments_payment_id: paymentIdStr,
+          amount: Number(creditAmount),
+          gross_amount_usd: Number(netReceived),
+          net_amount_usd: Number(creditAmount),
+        })
         .eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
@@ -292,6 +309,8 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(creditAmount),
         status: "partial",
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(creditAmount),
       });
     }
 
@@ -343,6 +362,8 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
         amount: Number(creditAmount),
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(creditAmount),
       })
       .eq("id", matchedTx.id);
     if (txUpdateError) {
@@ -357,6 +378,8 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(creditAmount),
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(creditAmount),
       });
     if (txInsertError) {
       console.error("WARNING: Balance credited but tx insert failed:", txInsertError);

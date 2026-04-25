@@ -27,6 +27,7 @@ const PAGE_SIZE = 20;
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: any }> = {
   pending: { label: "Pending", variant: "outline", icon: Clock },
   partial: { label: "Partial", variant: "secondary", icon: AlertTriangle },
+  wrong_asset: { label: "Wrong Asset", variant: "destructive", icon: AlertTriangle },
   expired: { label: "Expired", variant: "destructive", icon: Clock },
   confirmed: { label: "Confirmed", variant: "default", icon: CheckCircle2 },
 };
@@ -59,7 +60,7 @@ const AdminDeposits = () => {
 
       let query = supabase
         .from("transactions")
-        .select("id, user_id, amount, status, nowpayments_payment_id, payment_provider, created_at", { count: "exact" })
+        .select("id, user_id, amount, gross_amount_usd, net_amount_usd, status, nowpayments_payment_id, payment_provider, created_at", { count: "exact" })
         .eq("type", "deposit");
 
       if (statusFilter !== "all") {
@@ -239,12 +240,13 @@ const AdminDeposits = () => {
             className="pl-9"
           />
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           {[
             { value: "all", label: "All" },
-            { value: "pending,partial", label: "Active" },
+            { value: "pending,partial,wrong_asset", label: "Active" },
             { value: "pending", label: "Pending" },
             { value: "partial", label: "Partial" },
+            { value: "wrong_asset", label: "Wrong Asset" },
             { value: "expired", label: "Expired" },
             { value: "confirmed", label: "Confirmed" },
           ].map((f) => (
@@ -279,6 +281,7 @@ const AdminDeposits = () => {
                 <tr className="border-b bg-muted/30">
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">User</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Amount</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Received (Gross / Net)</th>
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Provider</th>
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
@@ -290,6 +293,11 @@ const AdminDeposits = () => {
                 {data.deposits.map((d) => {
                   const sc = statusConfig[d.status] || statusConfig.pending;
                   const StatusIcon = sc.icon;
+                  const gross = (d as any).gross_amount_usd != null ? Number((d as any).gross_amount_usd) : null;
+                  const net = (d as any).net_amount_usd != null ? Number((d as any).net_amount_usd) : null;
+                  // Max admin can credit = gross received (NOT capped by original requested amount).
+                  const maxCredit = gross && gross > 0 ? gross : Number(d.amount);
+                  const canConfirm = d.status === "partial" || d.status === "wrong_asset";
                   return (
                     <tr key={d.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3">
@@ -297,6 +305,16 @@ const AdminDeposits = () => {
                         <div className="text-[10px] text-muted-foreground font-mono truncate max-w-[140px]">{d.email || d.user_id.slice(0, 8)}</div>
                       </td>
                       <td className="px-4 py-3 font-bold">${Number(d.amount).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-xs whitespace-nowrap">
+                        {gross != null ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-mono">G: ${gross.toFixed(2)}</span>
+                            <span className="font-mono text-muted-foreground">N: ${(net ?? gross).toFixed(2)}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge variant={sc.variant} className="gap-1">
                           <StatusIcon className="w-3 h-3" />
@@ -318,7 +336,7 @@ const AdminDeposits = () => {
                       </td>
                       {canEdit && (
                         <td className="px-4 py-3 text-right">
-                          {d.status === "partial" && (
+                          {canConfirm && (
                             <div className="flex items-center justify-end gap-1.5">
                               {editingId === d.id ? (
                                 <>
@@ -326,7 +344,7 @@ const AdminDeposits = () => {
                                     type="number"
                                     step="0.01"
                                     min="0.01"
-                                    max={Number(d.amount)}
+                                    max={maxCredit}
                                     value={editAmount}
                                     onChange={(e) => setEditAmount(e.target.value)}
                                     className="w-24 h-8 text-xs"
@@ -335,9 +353,9 @@ const AdminDeposits = () => {
                                   <Button
                                     size="sm"
                                     className="text-xs h-8"
-                                    disabled={confirmMutation.isPending || !editAmount || Number(editAmount) <= 0 || Number(editAmount) > Number(d.amount)}
+                                    disabled={confirmMutation.isPending || !editAmount || Number(editAmount) <= 0 || Number(editAmount) > maxCredit}
                                     onClick={() => {
-                                      if (confirm(`Credit $${Number(editAmount).toFixed(2)} for ${d.display_name}?`)) {
+                                      if (confirm(`Credit $${Number(editAmount).toFixed(2)} for ${d.display_name}? (Max received: $${maxCredit.toFixed(2)})`)) {
                                         confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: Number(editAmount) });
                                         setEditingId(null);
                                       }
@@ -355,23 +373,23 @@ const AdminDeposits = () => {
                                     className="text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
                                     disabled={confirmMutation.isPending}
                                     onClick={() => {
-                                      if (confirm(`Confirm FULL $${Number(d.amount).toFixed(2)} deposit for ${d.display_name}?`)) {
-                                        confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: Number(d.amount) });
+                                      if (confirm(`Confirm net received $${maxCredit.toFixed(2)} deposit for ${d.display_name}?`)) {
+                                        confirmMutation.mutate({ txId: d.id, userId: d.user_id, amount: maxCredit });
                                       }
                                     }}
                                   >
                                     <CheckCircle2 className="w-3.5 h-3.5" />
-                                    Full
+                                    Net (${maxCredit.toFixed(2)})
                                   </Button>
                                   <Button
                                     size="sm"
                                     variant="secondary"
                                     className="text-xs gap-1"
                                     disabled={confirmMutation.isPending}
-                                    onClick={() => { setEditingId(d.id); setEditAmount(String(d.amount)); }}
+                                    onClick={() => { setEditingId(d.id); setEditAmount(String(maxCredit)); }}
                                   >
                                     <AlertTriangle className="w-3.5 h-3.5" />
-                                    Partial
+                                    Custom
                                   </Button>
                                 </>
                               )}

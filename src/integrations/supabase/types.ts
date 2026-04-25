@@ -3443,9 +3443,11 @@ export type Database = {
           bonus_amount: number
           created_at: string
           description: string | null
+          gross_amount_usd: number | null
           id: string
           is_copy_trade: boolean
           market_id: string | null
+          net_amount_usd: number | null
           nowpayments_payment_id: string | null
           option_id: string | null
           payment_provider: string | null
@@ -3463,9 +3465,11 @@ export type Database = {
           bonus_amount?: number
           created_at?: string
           description?: string | null
+          gross_amount_usd?: number | null
           id?: string
           is_copy_trade?: boolean
           market_id?: string | null
+          net_amount_usd?: number | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
           payment_provider?: string | null
@@ -3483,9 +3487,11 @@ export type Database = {
           bonus_amount?: number
           created_at?: string
           description?: string | null
+          gross_amount_usd?: number | null
           id?: string
           is_copy_trade?: boolean
           market_id?: string | null
+          net_amount_usd?: number | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
           payment_provider?: string | null
