@@ -70,6 +70,29 @@ const CreatorDashboard = () => {
   const [earningsByMarket, setEarningsByMarket] = useState<EarningsByMarket>({});
   const [filter, setFilter] = useState<"all" | "active" | "resolved" | "pending">("all");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [rangePreset, setRangePreset] = useState<RangePreset>("all");
+  const [customFrom, setCustomFrom] = useState<Date | undefined>();
+  const [customTo, setCustomTo] = useState<Date | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Derive [from, to] window. `null` from = no lower bound.
+  const dateWindow = useMemo<{ from: Date | null; to: Date | null }>(() => {
+    const now = new Date();
+    if (rangePreset === "all") return { from: null, to: null };
+    if (rangePreset === "custom") {
+      return {
+        from: customFrom ?? null,
+        to: customTo ? new Date(customTo.getTime() + 24 * 60 * 60 * 1000 - 1) : null,
+      };
+    }
+    const days = rangePreset === "7d" ? 7 : rangePreset === "30d" ? 30 : rangePreset === "90d" ? 90 : 0;
+    if (rangePreset === "ytd") {
+      return { from: new Date(now.getFullYear(), 0, 1), to: now };
+    }
+    return { from: new Date(now.getTime() - days * 24 * 60 * 60 * 1000), to: now };
+  }, [rangePreset, customFrom, customTo]);
+
+  const isCustomRangeIncomplete = rangePreset === "custom" && (!customFrom || !customTo);
 
   const toggleExpanded = (id: string) => {
     setExpanded((prev) => {
