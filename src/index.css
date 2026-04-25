@@ -40,9 +40,6 @@
     --destructive: 0 85% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 220 15% 10%;
-
     --border: 210 12% 88%;
     --input: 210 12% 88%;
     --ring: 193 98% 50%;
@@ -90,9 +87,6 @@
 
     --destructive: 0 85% 55%;
     --destructive-foreground: 0 0% 100%;
-
-    --warning: 38 92% 55%;
-    --warning-foreground: 220 20% 4%;
 
     --border: 220 12% 16%;
     --input: 220 12% 16%;

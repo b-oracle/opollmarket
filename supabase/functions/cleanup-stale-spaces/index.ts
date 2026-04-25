@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
           const apiSecret = Deno.env.get("LIVEKIT_API_SECRET") || "";
 
           if (livekitUrl && apiKey && apiSecret) {
-            const { RoomServiceClient } = await import("livekit-server-sdk");
+            const { RoomServiceClient } = await import("npm:livekit-server-sdk@2.15.0");
             const httpUrl = livekitUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
             const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
             await svc.deleteRoom(`space-${space.id}`);

@@ -691,9 +691,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Hoisted so the outer catch block can include the body when logging.
-  let rawBodyForLog: unknown = null;
-
   try {
     const ipnSecret = Deno.env.get("NOWPAYMENTS_IPN_SECRET");
     if (!ipnSecret) {
@@ -713,7 +710,6 @@ Deno.serve(async (req) => {
     let rawPayload: unknown;
     try {
       rawPayload = JSON.parse(body);
-      rawBodyForLog = rawPayload;
     } catch {
       console.error("NowPayments IPN: invalid JSON body");
       return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
@@ -849,10 +845,8 @@ Deno.serve(async (req) => {
       );
       await logWebhookEvent(supa, {
         provider: "nowpayments",
-        event_type: "handler_exception",
+        event_type: "error",
         status: "error",
-        message: err instanceof Error ? err.message : "Unknown handler error",
-        payload: rawBodyForLog,
         error: err,
       });
     } catch { /* swallow */ }

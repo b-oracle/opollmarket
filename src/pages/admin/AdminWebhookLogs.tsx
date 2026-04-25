@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
-import { formatRedactedPayload, wasServerRedacted } from "@/lib/payloadRedaction";
 
 type WebhookLog = {
   id: string;
@@ -152,16 +151,8 @@ export default function AdminWebhookLogs() {
                     {log.transaction_id && <div><span className="text-muted-foreground">Transaction ID:</span> <code>{log.transaction_id}</code></div>}
                     {log.payload != null && (
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-muted-foreground">Payload</span>
-                          <Badge variant="outline" className="text-[10px] py-0 px-1.5">
-                            {wasServerRedacted(log.payload) ? "redacted server-side" : "redacted on display"}
-                          </Badge>
-                        </div>
-                        <pre className="p-2 bg-muted rounded overflow-x-auto max-h-72">{formatRedactedPayload(log.payload)}</pre>
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          Sensitive fields (secrets, signatures, PII) are masked.
-                        </p>
+                        <div className="text-muted-foreground mb-1">Payload</div>
+                        <pre className="p-2 bg-muted rounded overflow-x-auto max-h-72">{JSON.stringify(log.payload, null, 2)}</pre>
                       </div>
                     )}
                   </div>
