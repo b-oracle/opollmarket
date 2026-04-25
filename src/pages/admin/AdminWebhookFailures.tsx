@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { formatRedactedPayload, wasServerRedacted } from "@/lib/payloadRedaction";
 
 type WebhookFailure = {
   id: string;
@@ -241,10 +242,20 @@ export default function AdminWebhookFailures() {
                         <CodeBlock label="Stack trace" content={row.stack} />
                       )}
                       {row.payload != null && (
-                        <CodeBlock
-                          label="Payload"
-                          content={JSON.stringify(row.payload, null, 2)}
-                        />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-muted-foreground">Payload</span>
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5">
+                              {wasServerRedacted(row.payload) ? "redacted server-side" : "redacted on display"}
+                            </Badge>
+                          </div>
+                          <pre className="text-xs p-3 rounded-md overflow-x-auto whitespace-pre-wrap break-words max-h-80 overflow-y-auto bg-background border">
+                            {formatRedactedPayload(row.payload)}
+                          </pre>
+                          <p className="text-[11px] text-muted-foreground">
+                            Sensitive fields (secrets, signatures, PII) are masked. Use the provider dashboard for full data.
+                          </p>
+                        </div>
                       )}
                     </div>
                   </CollapsibleContent>

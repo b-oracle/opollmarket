@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { RefreshCw, RotateCcw, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { formatRedactedPayload } from "@/lib/payloadRedaction";
 
 type Status = "pending" | "delivered" | "failed" | "dead_letter" | "all";
 
@@ -188,9 +189,18 @@ export default function AdminWebhookEvents() {
                   </div>
                 </div>
                 {isExpanded && (
-                  <pre className="mt-3 max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
-                    {JSON.stringify(ev.payload, null, 2)}
-                  </pre>
+                  <div className="mt-3 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Outbound payload</span>
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5">redacted on display</Badge>
+                    </div>
+                    <pre className="max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
+                      {formatRedactedPayload(ev.payload)}
+                    </pre>
+                    <p className="text-[11px] text-muted-foreground">
+                      Sensitive fields (secrets, signatures, PII) are masked for safe preview.
+                    </p>
+                  </div>
                 )}
               </Card>
             );
