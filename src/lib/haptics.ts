@@ -160,29 +160,119 @@ export const hapticSelection = async (): Promise<void> => {
 
 // ── Raw vibration (for incoming-call ring, alerts) ───────────────
 
+// Tracks the active pattern timer so stopVibration() can cancel it.
+let activePatternTimer: ReturnType<typeof setTimeout> | null = null;
+const clearActivePattern = () => {
+  if (activePatternTimer) {
+    clearTimeout(activePatternTimer);
+    activePatternTimer = null;
+  }
+};
+
 /**
  * Vibrate with a custom pattern (ms). Use for ringtone-style buzzing.
- * On Capacitor uses Haptics.vibrate; on web uses navigator.vibrate.
+ *
+ * Pattern semantics (matches navigator.vibrate):
+ *   [vibrateMs, pauseMs, vibrateMs, pauseMs, …]
+ *
+ * On Capacitor we honor the on/off rhythm by chaining `Haptics.vibrate`
+ * calls with timed gaps (the plugin only takes a single duration per call).
+ * On web we delegate to navigator.vibrate which understands the array.
  */
 export const vibrate = async (pattern: number | number[] = 200): Promise<void> => {
+  clearActivePattern();
+  const arr = Array.isArray(pattern) ? pattern : [pattern];
+
   if (isCapacitorNative()) {
     try {
       const { Haptics } = await import("@capacitor/haptics");
-      const duration = Array.isArray(pattern)
-        ? pattern.reduce((a, b) => a + b, 0)
-        : pattern;
-      await Haptics.vibrate({ duration });
+      // Walk the pattern: even indices = vibrate, odd indices = pause.
+      let offset = 0;
+      const runStep = (idx: number) => {
+        if (idx >= arr.length) return;
+        const ms = Math.max(0, Math.floor(arr[idx]));
+        if (idx % 2 === 0 && ms > 0) {
+          // vibrate slot
+          Haptics.vibrate({ duration: ms }).catch(() => {});
+        }
+        if (idx + 1 < arr.length) {
+          activePatternTimer = setTimeout(() => runStep(idx + 1), ms);
+        }
+      };
+      runStep(0);
       return;
     } catch {
-      // fall through
+      // fall through to web vibrate
     }
   }
   webVibrate(pattern);
 };
 
 /**
- * Stop any ongoing vibration.
+ * Stop any ongoing vibration / pattern.
  */
 export const stopVibration = (): void => {
+  clearActivePattern();
   webVibrate(0);
 };
+
+// ── Pre-built call vibration patterns ────────────────────────────
+
+/**
+ * Initial attention buzz when the call banner first appears.
+ * Two firm taps so the user notices instantly.
+ */
+export const CALL_ATTENTION_PATTERN: number[] = [120, 80, 120];
+
+/**
+ * WhatsApp-style ringing cadence — long buzz, short pause, long buzz,
+ * longer silence. Looped while the banner is showing.
+ *   buzz 1000ms · pause 500ms · buzz 1000ms · pause 1500ms
+ */
+export const CALL_RING_PATTERN: number[] = [1000, 500, 1000, 1500];
+
+/**
+ * Total cycle length (ms) for CALL_RING_PATTERN — used as the loop interval.
+ */
+export const CALL_RING_PATTERN_DURATION =
+  CALL_RING_PATTERN.reduce((a, b) => a + b, 0);
+
+/**
+ * Soft buzz when a call is answered/connected.
+ */
+export const CALL_CONNECTED_PATTERN: number[] = [40, 60, 40];
+
+/**
+ * Decisive buzz when a call ends or is declined.
+ */
+export const CALL_ENDED_PATTERN: number[] = [200];
+
+/**
+ * Start the looping incoming-call vibration. Returns a cancel function
+ * that stops the loop and any in-flight vibration.
+ *
+ * Sequence:
+ *   1. Initial CALL_ATTENTION_PATTERN to get attention.
+ *   2. Then loops CALL_RING_PATTERN every CALL_RING_PATTERN_DURATION ms.
+ */
+export const startIncomingCallVibration = (): (() => void) => {
+  // Kick off with the attention buzz immediately.
+  void vibrate(CALL_ATTENTION_PATTERN);
+
+  // After the attention buzz finishes, start the ringing cadence.
+  const attentionMs = CALL_ATTENTION_PATTERN.reduce((a, b) => a + b, 0);
+  let ringInterval: ReturnType<typeof setInterval> | null = null;
+  const startTimer = setTimeout(() => {
+    void vibrate(CALL_RING_PATTERN);
+    ringInterval = setInterval(() => {
+      void vibrate(CALL_RING_PATTERN);
+    }, CALL_RING_PATTERN_DURATION);
+  }, attentionMs + 80);
+
+  return () => {
+    clearTimeout(startTimer);
+    if (ringInterval) clearInterval(ringInterval);
+    stopVibration();
+  };
+};
+
