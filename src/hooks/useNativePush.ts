@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { vibrate } from "@/lib/haptics";
+import { getPushFallbackEnabled } from "./useDevicePrefs";
 
 // Registers the device with FCM (Android) / APNs (iOS) via Capacitor,
 // stores the token in user_fcm_tokens, and routes foreground notification
