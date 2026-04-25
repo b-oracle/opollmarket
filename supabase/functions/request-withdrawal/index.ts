@@ -569,26 +569,18 @@ Deno.serve(async (req) => {
     }
 
     if (!payoutSuccess) {
-      // Fallback: create a pending withdrawal for manual admin processing
-      // Balance stays deducted — admin will approve/reject via process-withdrawal
+      // Fallback: leave the withdrawal_requests row as 'pending' for manual admin processing.
+      // Balance stays deducted — admin will approve/reject via process-withdrawal.
+      // (No second insert: the row was created up-front for idempotency.)
       console.warn("Payout failed, falling back to manual processing. Error:", payoutError);
-
-      await adminClient.from("withdrawal_requests").insert({
-        user_id: userId,
-        amount,
-        wallet_address: wallet_address.trim(),
-        crypto_currency: payCurrency,
-        status: "pending",
-        ip_address: clientIp,
-        user_agent: clientUa,
-        idempotency_key: withdrawalIdempotencyKey,
-      });
 
       await adminClient.from("transactions").insert({
         user_id: userId,
         type: "withdrawal",
         amount,
         status: "pending",
+        payment_provider: "nowpayments",
+        withdrawal_request_id: withdrawalRequestId,
       });
 
       const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
@@ -605,29 +597,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Record withdrawal request as completed
-    await adminClient.from("withdrawal_requests").insert({
-      user_id: userId,
-      amount,
-      wallet_address: wallet_address.trim(),
-      crypto_currency: payCurrency,
-      status: "completed",
-      nowpayments_id: payoutId ? String(payoutId) : null,
-      tx_hash: payoutTxHash,
-      ip_address: clientIp,
-      user_agent: clientUa,
-      idempotency_key: withdrawalIdempotencyKey,
-    });
+    // Mark the existing withdrawal_requests row as completed (no second insert).
+    await adminClient
+      .from("withdrawal_requests")
+      .update({
+        status: "completed",
+        nowpayments_id: payoutId ? String(payoutId) : null,
+        tx_hash: payoutTxHash,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", withdrawalRequestId);
 
-    // Insert confirmed withdrawal transaction
+    // Insert confirmed withdrawal transaction linked to the request row
     await adminClient.from("transactions").insert({
       user_id: userId,
       type: "withdrawal",
       amount,
       status: "confirmed",
+      payment_provider: "nowpayments",
       nowpayments_payment_id: payoutId ? String(payoutId) : null,
       tx_hash: payoutTxHash,
+      withdrawal_request_id: withdrawalRequestId,
     });
+
+    // Credit fee to platform pool ONLY now that payout succeeded
+    if (feeAmount > 0) {
+      await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
+    }
 
     // If tx hash wasn't available yet, schedule a background fetch
     if (!payoutTxHash && payoutId) {
