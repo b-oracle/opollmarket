@@ -22,6 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBatchCounts } from "@/hooks/useBatchCounts";
 import BoostCountdown from "@/components/BoostCountdown";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
+import { hapticSelection } from "@/lib/haptics";
 
 const useIsDesktop = () => {
   const [isDesktop, setIsDesktop] = useState(false);
