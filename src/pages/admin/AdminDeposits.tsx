@@ -20,6 +20,7 @@ import {
   Clock,
   Plus,
   X,
+  Sparkles,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
