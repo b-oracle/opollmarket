@@ -108,6 +108,12 @@ const AdminSettings = () => {
   const [depositMaxAmount, setDepositMaxAmount] = useState("50000");
   const [pushPromptCooldownDays, setPushPromptCooldownDays] = useState("14");
   const [depositExpiryMinutes, setDepositExpiryMinutes] = useState("60");
+  // Deposit deviation thresholds (NOWPayments classification)
+  const [depositOverpayThreshold, setDepositOverpayThreshold] = useState("1.02");
+  const [depositPartialThreshold, setDepositPartialThreshold] = useState("0.98");
+  const [depositWrongAssetHigh, setDepositWrongAssetHigh] = useState("2.0");
+  const [depositWrongAssetLow, setDepositWrongAssetLow] = useState("0.3");
+  const [depositLargeOverpayAlert, setDepositLargeOverpayAlert] = useState("1.5");
   const [maxDraftsNone, setMaxDraftsNone] = useState("2");
   const [maxDraftsBlue, setMaxDraftsBlue] = useState("5");
   const [maxDraftsGold, setMaxDraftsGold] = useState("10");
@@ -288,6 +294,11 @@ const AdminSettings = () => {
         setDepositMaxAmount(String(d.deposit_max_amount ?? 50000));
         setPushPromptCooldownDays(String(d.push_prompt_cooldown_days ?? 14));
         setDepositExpiryMinutes(String(d.deposit_expiry_minutes ?? 60));
+        setDepositOverpayThreshold(String((d as any).deposit_overpay_threshold ?? 1.02));
+        setDepositPartialThreshold(String((d as any).deposit_partial_threshold ?? 0.98));
+        setDepositWrongAssetHigh(String((d as any).deposit_wrong_asset_high ?? 2.0));
+        setDepositWrongAssetLow(String((d as any).deposit_wrong_asset_low ?? 0.3));
+        setDepositLargeOverpayAlert(String((d as any).deposit_large_overpay_alert ?? 1.5));
         setMaxDraftsNone(String((d as any).max_drafts_none ?? 2));
         setMaxDraftsBlue(String((d as any).max_drafts_blue ?? 5));
         setMaxDraftsGold(String((d as any).max_drafts_gold ?? 10));
@@ -470,6 +481,11 @@ const AdminSettings = () => {
                     deposit_max_amount: depositMaxAmountNum,
                     push_prompt_cooldown_days: pushPromptCooldownDaysNum,
                     deposit_expiry_minutes: depositExpiryMinutesNum,
+                    deposit_overpay_threshold: parseFloat(depositOverpayThreshold) || 1.02,
+                    deposit_partial_threshold: parseFloat(depositPartialThreshold) || 0.98,
+                    deposit_wrong_asset_high: parseFloat(depositWrongAssetHigh) || 2.0,
+                    deposit_wrong_asset_low: parseFloat(depositWrongAssetLow) || 0.3,
+                    deposit_large_overpay_alert: parseFloat(depositLargeOverpayAlert) || 1.5,
                     max_drafts_none: parseInt(maxDraftsNone) || 2,
                     max_drafts_blue: parseInt(maxDraftsBlue) || 5,
                     max_drafts_gold: parseInt(maxDraftsGold) || 10,
@@ -1447,6 +1463,51 @@ const AdminSettings = () => {
                       <Input type="number" min={1} max={50} step={1} value={maxDraftsGold} onChange={(e) => setMaxDraftsGold(e.target.value)} disabled={!canEdit} />
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Deposit Deviation Thresholds */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Banknote className="w-4 h-4 text-primary" /> Deposit Deviation Thresholds
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Tune how strictly NOWPayments deposits are classified. Ratios are <span className="font-mono">received / requested</span>. Minor differences within these bands are auto-credited; only significant deviations get flagged.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositPartialThreshold" className="text-xs">Partial Threshold (ratio)</Label>
+                    <Input id="depositPartialThreshold" type="number" min={0.5} max={1} step={0.01} value={depositPartialThreshold} onChange={(e) => setDepositPartialThreshold(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Below this ratio of the invoice → flagged <span className="font-semibold">partial</span>. Default 0.98 (≥98% auto-credited).</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositOverpayThreshold" className="text-xs">Overpay Threshold (ratio)</Label>
+                    <Input id="depositOverpayThreshold" type="number" min={1} max={2} step={0.01} value={depositOverpayThreshold} onChange={(e) => setDepositOverpayThreshold(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Above this ratio (same asset) → excess goes to bonus balance. Default 1.02 (≤102% normal).</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositWrongAssetLow" className="text-xs">Wrong-Asset Low (ratio)</Label>
+                    <Input id="depositWrongAssetLow" type="number" min={0} max={1} step={0.05} value={depositWrongAssetLow} onChange={(e) => setDepositWrongAssetLow(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Different asset and below this ratio → <span className="font-semibold">wrong_asset</span>. Default 0.30.</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="depositWrongAssetHigh" className="text-xs">Wrong-Asset High (ratio)</Label>
+                    <Input id="depositWrongAssetHigh" type="number" min={1} max={10} step={0.1} value={depositWrongAssetHigh} onChange={(e) => setDepositWrongAssetHigh(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Different asset and above this ratio → <span className="font-semibold">wrong_asset</span>. Default 2.00.</p>
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label htmlFor="depositLargeOverpayAlert" className="text-xs">Large Overpayment Alert (ratio)</Label>
+                    <Input id="depositLargeOverpayAlert" type="number" min={1} max={5} step={0.1} value={depositLargeOverpayAlert} onChange={(e) => setDepositLargeOverpayAlert(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Auto-credited overpayments above this ratio still notify admins for visibility. Default 1.50 (150%).</p>
+                  </div>
+                </div>
+                <div className="rounded-lg bg-muted/40 border border-border p-2.5 text-[10px] text-muted-foreground space-y-1">
+                  <p><span className="font-semibold text-foreground">Same-asset deposits</span> never get flagged as wrong_asset — only different-asset payments outside the high/low bounds do.</p>
+                  <p>Tighten the partial/overpay bands to be stricter; widen them to reduce manual reviews.</p>
                 </div>
               </CardContent>
             </Card>
