@@ -23,6 +23,7 @@ import {
   assert,
   assertEquals,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { validateDepositCap } from "../_shared/depositCap.ts";
 
 // ---------- Mock DB ----------
 
