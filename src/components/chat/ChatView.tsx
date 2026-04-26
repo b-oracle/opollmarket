@@ -98,6 +98,33 @@ const ChatView = () => {
     } catch { /* ignore quota / privacy mode */ }
   }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
 
+  // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
+  // when the retry loop kicks off, used to drive a live countdown in the
+  // banner. Null when there is no active attempt. We store the deadline (not
+  // the seconds remaining) so the visible value stays accurate even if the
+  // browser throttles our 1s tick (e.g., backgrounded tab).
+  const [rejoinDeadlineAt, setRejoinDeadlineAt] = useState<number | null>(null);
+  const [rejoinSecondsLeft, setRejoinSecondsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (rejoinStatus !== "reconnecting" || !rejoinDeadlineAt) {
+      setRejoinSecondsLeft(null);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((rejoinDeadlineAt - Date.now()) / 1000));
+      setRejoinSecondsLeft(remaining);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [rejoinStatus, rejoinDeadlineAt]);
+
+  // Clear the countdown deadline as soon as we leave the reconnecting state.
+  useEffect(() => {
+    if (rejoinStatus !== "reconnecting") setRejoinDeadlineAt(null);
+  }, [rejoinStatus]);
+
+
   // Helper to update the failed-call ref AND its persisted mirror together.
   const setLastFailedCallId = useCallback((id: string | null) => {
     lastFailedCallIdRef.current = id;
@@ -468,6 +495,8 @@ const ChatView = () => {
       autoAcceptedRef.current = null;
       setLastFailedCallId(null);
       setRejoinStatus("reconnecting");
+      // 15s matches HARD_TIMEOUT_MS in the auto-accept effect below.
+      setRejoinDeadlineAt(Date.now() + 15_000);
       setSearchParams(
         (current) => {
           const next = new URLSearchParams(current);
@@ -605,6 +634,9 @@ const ChatView = () => {
       // — avoids a flash for the common case where everything is ready on the
       // first synchronous attempt.
       setRejoinStatus("reconnecting");
+      // Set/refresh the deadline used by the countdown banner. We anchor it
+      // once at first surfacing so the displayed seconds tick down smoothly.
+      setRejoinDeadlineAt((prev) => prev ?? Date.now() + HARD_TIMEOUT_MS);
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
         failWithToast("attempts");
@@ -716,7 +748,11 @@ const ChatView = () => {
             <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
           )}
           <p className="text-xs text-foreground flex-1">
-            {isOffline ? "Offline — waiting for network…" : "Reconnecting call…"}
+            {isOffline
+              ? "Offline — waiting for network…"
+              : rejoinSecondsLeft != null && rejoinSecondsLeft > 0
+                ? `Reconnecting… ${rejoinSecondsLeft}s`
+                : "Reconnecting call…"}
           </p>
         </div>
       )}
