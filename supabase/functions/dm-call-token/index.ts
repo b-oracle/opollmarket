@@ -319,6 +319,12 @@ Deno.serve(async (req) => {
         .update({ status: "active", started_at: new Date().toISOString() })
         .eq("id", call_id);
 
+      // Lifecycle: callee accepted — call transitions ringing → active
+      await logCallEvent(admin, call_id, call.conversation_id, "accepted", user.id, {
+        caller_id: call.caller_id,
+        room_name: call.room_name,
+      });
+
       const { data: profile } = await admin
         .from("profiles")
         .select("display_name")
@@ -365,6 +371,12 @@ Deno.serve(async (req) => {
         .from("dm_calls")
         .update({ status: "declined", ended_at: new Date().toISOString() })
         .eq("id", call_id);
+
+      // Lifecycle: callee declined — call transitions ringing → declined
+      await logCallEvent(admin, call_id, call.conversation_id, "declined", user.id, {
+        caller_id: call.caller_id,
+        room_name: call.room_name,
+      });
 
       // Insert system message
       await admin.from("dm_messages").insert({
