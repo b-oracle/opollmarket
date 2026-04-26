@@ -53,6 +53,7 @@ const ChatView = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [resolvedConvoId, setResolvedConvoId] = useState<string | null>(null);
   const resolvedRef = useRef(false);
+  const autoAcceptedRef = useRef<string | null>(null);
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
