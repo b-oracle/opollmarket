@@ -384,19 +384,20 @@ const ChatView = () => {
 
   // Auto-accept incoming call when arriving via native notification deep link
   // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
-  // Uses a retry loop because conversation/convo data may load after the
-  // params are read. Caps attempts and total wait time to avoid loops.
+  // Polls until conversation/convo data is ready, then joins.
+  // Strips ONLY auto_accept + call_id from the URL after the attempt resolves
+  // — preserves utm_*, ref, and any other tracking/query params untouched.
   useEffect(() => {
     const autoAccept = searchParams.get("auto_accept");
     const callId = searchParams.get("call_id");
     if (autoAccept !== "1" || !callId) return;
     if (autoAcceptedRef.current === callId) return;
 
-    // Strip the params immediately so a refresh / re-render doesn't re-trigger
-    const next = new URLSearchParams(searchParams);
-    next.delete("auto_accept");
-    next.delete("call_id");
-    setSearchParams(next, { replace: true });
+    // Mark as in-flight immediately so re-renders don't re-enter this effect
+    // for the same callId. We still wait to clear the URL params until after
+    // the join attempt resolves (success or timeout) so a mid-flight unmount
+    // doesn't lose context.
+    autoAcceptedRef.current = callId;
 
     let attempts = 0;
     const MAX_ATTEMPTS = 10;        // ~10s of polling (1s interval)
@@ -405,24 +406,42 @@ const ChatView = () => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let done = false;
 
-    const stop = () => {
+    const stripCallParams = () => {
+      // Use the functional form so we merge against the LATEST params,
+      // not the snapshot captured when the effect ran. This preserves any
+      // utm_*, ref, or other params that may have been added meanwhile.
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.delete("auto_accept");
+          next.delete("call_id");
+          return next;
+        },
+        { replace: true },
+      );
+    };
+
+    const stop = (opts: { strip: boolean }) => {
+      if (done) return;
       done = true;
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
+      if (opts.strip) stripCallParams();
     };
 
     const tryAccept = () => {
       if (done) return;
       attempts += 1;
       if (conversationId && user && convo) {
-        autoAcceptedRef.current = callId;
         handleRejoinCall(callId, false);
-        stop();
+        stop({ strip: true });
         return;
       }
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
-        stop();
+        // Reset so a future deep link with the same callId could retry
+        autoAcceptedRef.current = null;
+        stop({ strip: true });
       }
     };
 
@@ -431,13 +450,22 @@ const ChatView = () => {
     if (!done) {
       intervalId = setInterval(tryAccept, 1000);
       timeoutId = setTimeout(() => {
-        if (!done) console.warn("auto_accept: hard timeout reached");
-        stop();
+        if (!done) {
+          console.warn("auto_accept: hard timeout reached");
+          autoAcceptedRef.current = null;
+        }
+        stop({ strip: true });
       }, HARD_TIMEOUT_MS);
     }
 
-    return stop;
+    // Cleanup on unmount: stop timers but DON'T strip params, so if the user
+    // navigates back the deep-link intent is still respected.
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall]);
+
 
 
   return (
