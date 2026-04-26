@@ -117,6 +117,8 @@ const ChatView = () => {
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
+  }, [rejoinStatus, rejoinDeadlineAt]);
+
   // Clear the countdown deadline as soon as we leave the reconnecting state.
   useEffect(() => {
     if (rejoinStatus !== "reconnecting") setRejoinDeadlineAt(null);
