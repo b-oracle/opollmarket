@@ -37,6 +37,7 @@ interface ReplyTo {
 
 const ChatView = () => {
   const { conversationId: paramId } = useParams<{ conversationId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
