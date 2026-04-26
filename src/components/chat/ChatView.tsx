@@ -527,6 +527,38 @@ const ChatView = () => {
         )}
       </div>
 
+      {/* Auto-rejoin status banner — shown while we wait for conversation
+          data to load before joining a call from a native deep link.
+          Uses semantic tokens so it adapts to light/dark themes. */}
+      {rejoinStatus === "reconnecting" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-2"
+        >
+          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+          <p className="text-xs text-foreground flex-1">Reconnecting call…</p>
+        </div>
+      )}
+      {rejoinStatus === "failed" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center gap-2"
+        >
+          <X className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-xs text-foreground flex-1">
+            Couldn't reconnect to the call. Try again from the chat.
+          </p>
+          <button
+            onClick={() => setRejoinStatus(null)}
+            className="text-xs font-semibold text-destructive hover:text-destructive/80"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Pending request banner for recipient */}
       {isRecipientOfRequest && (
         <div className="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center gap-3">
