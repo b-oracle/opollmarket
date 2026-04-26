@@ -15,6 +15,7 @@ import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
+import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
 
 interface Message {
   id: string;
