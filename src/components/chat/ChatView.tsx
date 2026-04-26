@@ -15,6 +15,11 @@ import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
+import {
+  writePendingRejoin,
+  readPendingRejoin,
+  clearPendingRejoin,
+} from "@/lib/pendingRejoin";
 
 interface Message {
   id: string;
