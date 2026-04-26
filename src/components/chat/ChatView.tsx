@@ -18,7 +18,7 @@ import { logCallEvent } from "@/lib/callEvents";
 import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
 import {
   getCachedCallConversation,
-  setCachedCallConversation,
+  dedupeCallConversationLookup,
 } from "@/lib/dmCallLookupCache";
 
 interface Message {
@@ -493,19 +493,9 @@ const ChatView = () => {
   // Re-arms the auto-accept retry loop after a failure. Resets the dedupe
   // ref so the effect below re-enters, then re-adds auto_accept + call_id
   // to the URL (preserving any other params) so the same flow runs again.
-  //
-  // Guarded against rapid double-taps via retryInFlightRef: setRejoinStatus
-  // is async (React batches), so without a synchronous ref guard two clicks
-  // fired in the same tick could both pass the disabled check and stack
-  // duplicate URL updates / state writes. The ref clears as soon as the
-  // auto-accept effect transitions out of "reconnecting" (success, failure,
-  // or dismiss).
-  const retryInFlightRef = useRef(false);
   const retryAutoAccept = useCallback(
     (callId: string) => {
       if (!callId) return;
-      if (retryInFlightRef.current) return;
-      retryInFlightRef.current = true;
       autoAcceptedRef.current = null;
       setLastFailedCallId(null);
       setRejoinStatus("reconnecting");
@@ -523,14 +513,6 @@ const ChatView = () => {
     },
     [setSearchParams, setLastFailedCallId],
   );
-
-  // Release the in-flight guard whenever we leave the "reconnecting" state,
-  // so the user can tap "Try reconnecting" again after a subsequent failure.
-  useEffect(() => {
-    if (rejoinStatus !== "reconnecting") {
-      retryInFlightRef.current = false;
-    }
-  }, [rejoinStatus]);
 
   // Auto-accept incoming call when arriving via native notification deep link
   // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
@@ -605,35 +587,49 @@ const ChatView = () => {
     const ensureLookup = () => {
       if (expectedConvoId || lookupFailed || lookupInFlight) return;
 
-      // Cache hit: skip the network round-trip entirely. Call IDs are
-      // immutable once issued by the server, so a cached mapping is always
-      // safe to reuse — even across remounts and full reloads.
+      // Fast path: in-memory / localStorage cache from a prior lookup.
       const cached = getCachedCallConversation(callId);
       if (cached) {
         expectedConvoId = cached;
         return;
       }
 
+      // Slow path: route through the module-level dedupe registry so that
+      // concurrent ensureLookup callers (rapid retry clicks, overlapping
+      // poll ticks, multiple mounted ChatView instances) share ONE supabase
+      // query for the same call_id instead of stampeding the database.
       lookupInFlight = true;
-      (async () => {
+      dedupeCallConversationLookup(callId, async () => {
         const { data, error } = await supabase
           .from("dm_calls" as any)
           .select("conversation_id")
           .eq("id", callId)
           .maybeSingle() as any;
-        lookupInFlight = false;
-        if (done) return;
-        if (error || !data?.conversation_id) {
-          lookupFailed = true;
+        if (error) {
           console.warn("auto_accept: call lookup failed", error);
+          return null;
+        }
+        return (data?.conversation_id as string | undefined) ?? null;
+      })
+        .then((conversationId) => {
+          lookupInFlight = false;
+          if (done) return;
+          if (!conversationId) {
+            lookupFailed = true;
+            failWithToast("lookup");
+            stop({ strip: true });
+            return;
+          }
+          expectedConvoId = conversationId;
+        })
+        .catch((err) => {
+          lookupInFlight = false;
+          if (done) return;
+          lookupFailed = true;
+          console.warn("auto_accept: call lookup threw", err);
           failWithToast("lookup");
           stop({ strip: true });
-          return;
-        }
-        expectedConvoId = data.conversation_id as string;
-        // Cache for subsequent retries / remounts of the same call_id.
-        setCachedCallConversation(callId, expectedConvoId);
-      })();
+        });
     };
 
     const tryAccept = () => {
@@ -805,10 +801,6 @@ const ChatView = () => {
               session), but disable it when there's nothing to retry so the
               user still gets a clear, consistent affordance instead of the
               banner silently having no actionable path. */}
-          {/* Rapid double-taps are blocked by the synchronous retryInFlightRef
-              guard inside retryAutoAccept — once the first click sets
-              rejoinStatus to "reconnecting" this banner unmounts on the
-              next render, so a second tap can't reach this handler. */}
           <button
             onClick={() => {
               const id = lastFailedCallIdRef.current;
@@ -821,35 +813,8 @@ const ChatView = () => {
           </button>
           <button
             onClick={() => {
-              // Cancel any pending auto-rejoin retries for this call_id:
-              //   1. Lock autoAcceptedRef to this id so if the URL still
-              //      carries auto_accept+call_id (race with a freshly
-              //      requeued retry), the effect's early-return guard
-              //      short-circuits before scheduling new timers.
-              //   2. Strip auto_accept + call_id from the URL — that
-              //      changes the searchParams dep of the auto-accept
-              //      effect, triggering its cleanup which clears the
-              //      pending interval + hard-timeout (the "deep link
-              //      handling cancelled" path).
-              //   3. Clear the failed/deadline state so the banner and
-               //      countdown disappear immediately.
-              const dismissedId =
-                lastFailedCallIdRef.current ?? searchParams.get("call_id");
-              if (dismissedId) {
-                autoAcceptedRef.current = dismissedId;
-              }
               setLastFailedCallId(null);
               setRejoinStatus(null);
-              setRejoinDeadlineAt(null);
-              if (
-                searchParams.get("auto_accept") ||
-                searchParams.get("call_id")
-              ) {
-                setSearchParams(
-                  (current) => stripCallDeepLinkParams(current),
-                  { replace: true },
-                );
-              }
             }}
             aria-label="Dismiss"
             className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
