@@ -90,13 +90,18 @@ async function getAccessToken(sa: {
   const keyDer = pemToDer(sa.private_key.replace(/\\n/g, "\n"));
   const cryptoKey = await crypto.subtle.importKey(
     "pkcs8",
-    keyDer,
+    keyDer.buffer.slice(keyDer.byteOffset, keyDer.byteOffset + keyDer.byteLength) as ArrayBuffer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"],
   );
+  const toSignBytes = strToBytes(toSign);
   const sig = new Uint8Array(
-    await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, strToBytes(toSign)),
+    await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      cryptoKey,
+      toSignBytes.buffer.slice(toSignBytes.byteOffset, toSignBytes.byteOffset + toSignBytes.byteLength) as ArrayBuffer,
+    ),
   );
   const jwt = `${toSign}.${base64url(sig)}`;
 
