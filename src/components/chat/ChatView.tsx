@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ChatDoodleBackground from "./ChatDoodleBackground";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,7 @@ interface ReplyTo {
 
 const ChatView = () => {
   const { conversationId: paramId } = useParams<{ conversationId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -52,6 +53,7 @@ const ChatView = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [resolvedConvoId, setResolvedConvoId] = useState<string | null>(null);
   const resolvedRef = useRef(false);
+  const autoAcceptedRef = useRef<string | null>(null);
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
@@ -379,6 +381,26 @@ const ChatView = () => {
       setCalling(false);
     }
   }, [calling, conversationId, user, otherName, convo, handleRejoinCall]);
+
+  // Auto-accept incoming call when arriving via native notification deep link
+  // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
+  useEffect(() => {
+    if (!conversationId || !user || !convo) return;
+    const autoAccept = searchParams.get("auto_accept");
+    const callId = searchParams.get("call_id");
+    if (autoAccept !== "1" || !callId) return;
+    if (autoAcceptedRef.current === callId) return;
+    autoAcceptedRef.current = callId;
+
+    // Strip the params so a refresh doesn't re-trigger the join
+    const next = new URLSearchParams(searchParams);
+    next.delete("auto_accept");
+    next.delete("call_id");
+    setSearchParams(next, { replace: true });
+
+    // Rejoin the active call (server validates participant membership)
+    handleRejoinCall(callId, false);
+  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall]);
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
