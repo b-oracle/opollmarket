@@ -35,11 +35,15 @@ import { useCallDeepLink } from "./hooks/useCallDeepLink";
 import { useFirstRun } from "./hooks/useFirstRun";
 import AppSplash from "./components/AppSplash";
 import { bootNativeUI } from "./lib/nativeUI";
+import { initNativeAuthCache } from "./lib/nativeAuthCache";
 
 // Tiny mount-only component so the native push hook runs inside providers (AuthProvider)
 const NativePushRegistrar = () => {
   useNativePush();
   useCallDeepLink();
+  // Mirrors the Supabase access token into Capacitor Preferences so the
+  // native CallActionReceiver can call dm-call-token with the app killed.
+  useEffect(() => { initNativeAuthCache(); }, []);
   return null;
 };
 
