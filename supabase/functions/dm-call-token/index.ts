@@ -216,6 +216,12 @@ Deno.serve(async (req) => {
 
       if (callErr) throw callErr;
 
+      // Lifecycle: call created — recipient will be notified next
+      await logCallEvent(admin, callData.id, conversation_id, "received", user.id, {
+        callee_id: calleeId,
+        room_name: roomName,
+      });
+
       // Send notification to callee
       const { data: callerProfile } = await admin
         .from("profiles")
