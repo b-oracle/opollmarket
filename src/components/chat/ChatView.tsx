@@ -16,6 +16,10 @@ import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
+import {
+  getCachedCallConversation,
+  setCachedCallConversation,
+} from "@/lib/dmCallLookupCache";
 
 interface Message {
   id: string;
