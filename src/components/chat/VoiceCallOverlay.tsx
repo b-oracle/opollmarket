@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Maximize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
+import { logCallEvent } from "@/lib/callEvents";
 
 interface VoiceCallOverlayProps {
   callId: string;
@@ -134,6 +135,11 @@ const VoiceCallOverlay = ({
     setShowRejoin(false);
     try { roomRef.current?.disconnect(); } catch {}
 
+    const durationSec = startTimeRef.current
+      ? Math.round((Date.now() - startTimeRef.current) / 1000)
+      : 0;
+    logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
+
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
       body: { action: "end", call_id: callId },
@@ -156,6 +162,8 @@ const VoiceCallOverlay = ({
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
     try { roomRef.current?.disconnect(); } catch {}
+
+    logCallEvent(callId, "cancelled", { via: "caller_cancel" });
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -258,8 +266,10 @@ const VoiceCallOverlay = ({
         gracePeriodRef.current = null;
         setWaitingReconnect(false);
       }
+      logCallEvent(callId, "joined", { role: isOutgoing ? "caller" : "callee" });
       inactivityTimeoutRef.current = setTimeout(() => {
         if (statusRef.current === "active" && !remoteTrackReceivedRef.current) {
+          logCallEvent(callId, "timeout", { reason: "no_remote_track_60s" });
           handleEnd();
         }
       }, 60_000);
@@ -383,6 +393,7 @@ const VoiceCallOverlay = ({
       .catch((err) => {
         if (!intentionalDisconnectRef.current) {
           console.error("Failed to connect to call:", err);
+          logCallEvent(callId, "failed", { stage: "livekit_connect", error: err?.message });
           toast.error("Failed to connect to call");
           handleEnd();
         }
