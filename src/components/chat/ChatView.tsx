@@ -587,11 +587,22 @@ const ChatView = () => {
         >
           <X className="w-4 h-4 text-destructive shrink-0" />
           <p className="text-xs text-foreground flex-1">
-            Couldn't reconnect to the call. Try again from the chat.
+            Couldn't reconnect to the call.
           </p>
+          {lastFailedCallIdRef.current && (
+            <button
+              onClick={() => retryAutoAccept(lastFailedCallIdRef.current!)}
+              className="text-xs font-semibold text-primary hover:text-primary/80 px-2 py-1 rounded-md hover:bg-primary/10"
+            >
+              Try again
+            </button>
+          )}
           <button
-            onClick={() => setRejoinStatus(null)}
-            className="text-xs font-semibold text-destructive hover:text-destructive/80"
+            onClick={() => {
+              lastFailedCallIdRef.current = null;
+              setRejoinStatus(null);
+            }}
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
           >
             Dismiss
           </button>
