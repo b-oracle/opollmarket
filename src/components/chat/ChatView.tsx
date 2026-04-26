@@ -437,6 +437,13 @@ const ChatView = () => {
     let intervalId: ReturnType<typeof setInterval> | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let done = false;
+    // Cached server-side conversation_id for this callId. We refuse to
+    // auto-join until the loaded conversationId matches this value, so a
+    // race where another conversation finishes loading first can't pull
+    // the user into the wrong thread.
+    let expectedConvoId: string | null = null;
+    let lookupInFlight = false;
+    let lookupFailed = false;
 
     const stripCallParams = () => {
       // Use the functional form so we merge against the LATEST params,
@@ -461,15 +468,20 @@ const ChatView = () => {
       if (opts.strip) stripCallParams();
     };
 
-    const failWithToast = (reason: "attempts" | "timeout") => {
+    const failWithToast = (reason: "attempts" | "timeout" | "mismatch" | "lookup") => {
       autoAcceptedRef.current = null;
       lastFailedCallIdRef.current = callId;
       setRejoinStatus("failed");
+      const description =
+        reason === "timeout"
+          ? "Took too long to load the conversation."
+          : reason === "mismatch"
+          ? "This call belongs to a different conversation."
+          : reason === "lookup"
+          ? "Couldn't verify the call. Please try again."
+          : "We tried a few times but couldn't join.";
       toast.error("Couldn't reconnect to the call", {
-        description:
-          reason === "timeout"
-            ? "Took too long to load the conversation."
-            : "We tried a few times but couldn't join.",
+        description,
         action: {
           label: "Try again",
           onClick: () => retryAutoAccept(callId),
@@ -477,13 +489,53 @@ const ChatView = () => {
       });
     };
 
+    const ensureLookup = () => {
+      if (expectedConvoId || lookupFailed || lookupInFlight) return;
+      lookupInFlight = true;
+      (async () => {
+        const { data, error } = await supabase
+          .from("dm_calls" as any)
+          .select("conversation_id")
+          .eq("id", callId)
+          .maybeSingle() as any;
+        lookupInFlight = false;
+        if (done) return;
+        if (error || !data?.conversation_id) {
+          lookupFailed = true;
+          console.warn("auto_accept: call lookup failed", error);
+          failWithToast("lookup");
+          stop({ strip: true });
+          return;
+        }
+        expectedConvoId = data.conversation_id as string;
+      })();
+    };
+
     const tryAccept = () => {
       if (done) return;
       attempts += 1;
-      if (conversationId && user && convo) {
+      ensureLookup();
+      // Only join when (a) we know which conversation the call belongs to,
+      // (b) the currently-loaded conversation matches it, and (c) convo data
+      // is ready. This prevents a misroute if a different convo loads first.
+      if (
+        expectedConvoId &&
+        conversationId === expectedConvoId &&
+        user &&
+        convo &&
+        (convo as any).id === expectedConvoId
+      ) {
         setRejoinStatus(null);
         lastFailedCallIdRef.current = null;
         handleRejoinCall(callId, false);
+        stop({ strip: true });
+        return;
+      }
+      // If we've resolved a conversation but it's the wrong one, fail fast
+      // — polling won't change which thread the user opened.
+      if (expectedConvoId && conversationId && conversationId !== expectedConvoId) {
+        console.warn("auto_accept: conversation mismatch", { conversationId, expectedConvoId });
+        failWithToast("mismatch");
         stop({ strip: true });
         return;
       }
@@ -517,7 +569,7 @@ const ChatView = () => {
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall]);
+  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, retryAutoAccept]);
 
 
 
