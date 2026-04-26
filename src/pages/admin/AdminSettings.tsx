@@ -141,6 +141,25 @@ const AdminSettings = () => {
   const [callTestResult, setCallTestResult] = useState<any>(null);
   const [callTestError, setCallTestError] = useState<string | null>(null);
 
+  // ─── Test plain (non-call) push notification ───
+  // Mirrors the call-test picker but uses send-fcm-push directly so admins
+  // can verify normal notifications land in the system tray on Android/iOS.
+  const [pushTestQuery, setPushTestQuery] = useState("");
+  const [pushTestResults, setPushTestResults] = useState<
+    Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>
+  >([]);
+  const [pushTestSearching, setPushTestSearching] = useState(false);
+  const [pushTestTarget, setPushTestTarget] = useState<{
+    id: string;
+    display_name: string | null;
+    username: string | null;
+  } | null>(null);
+  const [pushTestTitle, setPushTestTitle] = useState("🔔 Test from Admin");
+  const [pushTestBody, setPushTestBody] = useState("This is a test push from the Pollmarket admin panel.");
+  const [pushTestSending, setPushTestSending] = useState(false);
+  const [pushTestResult, setPushTestResult] = useState<any>(null);
+  const [pushTestError, setPushTestError] = useState<string | null>(null);
+
   const runFcmTest = async () => {
     setFcmTesting(true);
     setFcmTestResult(null);
