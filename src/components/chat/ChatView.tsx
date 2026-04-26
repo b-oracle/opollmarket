@@ -15,6 +15,7 @@ import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
+import { parseAutoAcceptIntent, stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
 
 interface Message {
   id: string;
@@ -420,9 +421,32 @@ const ChatView = () => {
   // Strips ONLY auto_accept + call_id from the URL after the attempt resolves
   // — preserves utm_*, ref, and any other tracking/query params untouched.
   useEffect(() => {
-    const autoAccept = searchParams.get("auto_accept");
-    const callId = searchParams.get("call_id");
-    if (autoAccept !== "1" || !callId) return;
+    // Validate the deep-link intent up front. Anything malformed (missing
+    // call_id, non-UUID call_id, wrong auto_accept value) is treated as
+    // "no intent": we silently strip the params from the URL so they don't
+    // re-trigger on every render and never attempt a rejoin against an
+    // unverifiable id.
+    const rawAutoAccept = searchParams.get("auto_accept");
+    const rawCallId = searchParams.get("call_id");
+    const intent = parseAutoAcceptIntent(searchParams);
+
+    if (!intent) {
+      if (rawAutoAccept !== null || rawCallId !== null) {
+        if (rawCallId !== null) {
+          console.warn("auto_accept: ignoring malformed deep link", {
+            auto_accept: rawAutoAccept,
+            call_id_length: rawCallId.length,
+          });
+        }
+        setSearchParams(
+          (current) => stripCallDeepLinkParams(current),
+          { replace: true },
+        );
+      }
+      return;
+    }
+
+    const callId = intent.callId;
     if (autoAcceptedRef.current === callId) return;
 
     // Mark as in-flight immediately so re-renders don't re-enter this effect
@@ -450,12 +474,7 @@ const ChatView = () => {
       // not the snapshot captured when the effect ran. This preserves any
       // utm_*, ref, or other params that may have been added meanwhile.
       setSearchParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          next.delete("auto_accept");
-          next.delete("call_id");
-          return next;
-        },
+        (current) => stripCallDeepLinkParams(current),
         { replace: true },
       );
     };
