@@ -15,6 +15,7 @@ import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
+import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
 
 interface Message {
   id: string;
@@ -450,12 +451,7 @@ const ChatView = () => {
       // not the snapshot captured when the effect ran. This preserves any
       // utm_*, ref, or other params that may have been added meanwhile.
       setSearchParams(
-        (current) => {
-          const next = new URLSearchParams(current);
-          next.delete("auto_accept");
-          next.delete("call_id");
-          return next;
-        },
+        (current) => stripCallDeepLinkParams(current),
         { replace: true },
       );
     };
