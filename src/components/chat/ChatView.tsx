@@ -559,11 +559,28 @@ const ChatView = () => {
       }, HARD_TIMEOUT_MS);
     }
 
-    // Cleanup on unmount: stop timers but DON'T strip params, so if the user
-    // navigates back the deep-link intent is still respected.
+    // Cleanup on unmount / dependency change.
+    //
+    // "Deep link handling cancelled" path: if the user leaves the page (or this
+    // effect re-runs) BEFORE the join attempt resolves, we must:
+    //   1. Stop pending timers so no late join fires against a stale conversation.
+    //   2. Preserve auto_accept + call_id in the URL untouched, so navigating
+    //      back (or the next mount) re-enters this effect and retries the join.
+    //   3. Reset autoAcceptedRef for this callId so the early-return guard
+    //      doesn't permanently swallow the intent on remount.
+    //   4. Clear any "reconnecting" banner state — the cancelled attempt is
+    //      no longer in flight and showing a stale spinner is misleading.
     return () => {
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
+      if (!done) {
+        // Attempt was cancelled mid-flight (unmount / nav / dep change).
+        console.info("auto_accept: deep link handling cancelled, preserving params", { callId });
+        if (autoAcceptedRef.current === callId) {
+          autoAcceptedRef.current = null;
+        }
+        setRejoinStatus((prev) => (prev === "reconnecting" ? null : prev));
+      }
     };
   }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, retryAutoAccept]);
 
