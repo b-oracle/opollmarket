@@ -748,7 +748,11 @@ const ChatView = () => {
             <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
           )}
           <p className="text-xs text-foreground flex-1">
-            {isOffline ? "Offline — waiting for network…" : "Reconnecting call…"}
+            {isOffline
+              ? "Offline — waiting for network…"
+              : rejoinSecondsLeft != null && rejoinSecondsLeft > 0
+                ? `Reconnecting… ${rejoinSecondsLeft}s`
+                : "Reconnecting call…"}
           </p>
         </div>
       )}
