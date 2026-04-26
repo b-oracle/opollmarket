@@ -14,6 +14,31 @@ const json = (data: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+// Fire-and-forget event logger — uses service role bypassing RLS.
+// Never throws; logs warnings if insertion fails.
+const logCallEvent = async (
+  admin: ReturnType<typeof createClient>,
+  callId: string,
+  conversationId: string | null,
+  eventType: string,
+  actorId: string | null,
+  metadata: Record<string, unknown> = {},
+) => {
+  try {
+    const { error } = await admin.from("dm_call_events").insert({
+      call_id: callId,
+      conversation_id: conversationId,
+      event_type: eventType,
+      actor_id: actorId,
+      source: "edge",
+      metadata,
+    });
+    if (error) console.warn("logCallEvent insert error:", eventType, error.message);
+  } catch (err) {
+    console.warn("logCallEvent threw:", err);
+  }
+};
+
 function getLivekitConfig() {
   const apiKey = (Deno.env.get("LIVEKIT_API_KEY") || "").trim();
   const apiSecret = (Deno.env.get("LIVEKIT_API_SECRET") || "").trim();
