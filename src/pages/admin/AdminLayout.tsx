@@ -49,6 +49,7 @@ const navItems: NavItem[] = [
   { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin", "support"] },
   { to: "/admin/support", label: "Support Tickets", icon: HelpCircle, roles: ["super_admin", "admin", "support"] },
   { to: "/admin/escrows", label: "Escrows", icon: Lock, roles: ["super_admin"] },
+  { to: "/admin/call-events", label: "Call Events", icon: Phone, roles: ["super_admin", "admin"] },
 ];
 
 const AdminLayout = () => {
