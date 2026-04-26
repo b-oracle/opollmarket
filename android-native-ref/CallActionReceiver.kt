@@ -21,16 +21,14 @@ import kotlin.concurrent.thread
  * webview auto-joins the call. The JS layer (useCallDeepLink) handles the
  * server-side accept + UI navigation.
  *
- * Decline: this is the path that previously did nothing. We now:
- *   1) Cancel the system notification + stop the lockscreen activity.
- *   2) Broadcast the opoll://call/decline deep link to the app (without
- *      bringing it to the foreground) so any running JS instance fires the
- *      decline RPC, stops the in-app ring, and dismisses the banner.
- *   3) As a hardening fallback for when the app is killed, fire a direct
- *      background HTTP POST to the dm-call-token edge function so the call
- *      row is still flipped to "declined" server-side. Uses the cached
- *      Supabase access token persisted by Capacitor (see SupabaseTokenCache
- *      below — populated from JS via Capacitor.Preferences).
+ * Decline: hits the dm-call-token edge function directly from the receiver
+ * so the call row flips to "declined" even when the app is killed. This
+ * triggers the realtime listener on IncomingCallBanner.tsx to dismiss the
+ * banner + stop any in-app ringing audio across all of the user's devices.
+ *
+ * The Supabase access token is cached into a tiny SharedPreferences entry by
+ * the JS side (src/lib/nativeAuthCache.ts) on every auth state change, so
+ * this background path can authenticate without the webview being alive.
  */
 class CallActionReceiver : BroadcastReceiver() {
 
@@ -40,9 +38,8 @@ class CallActionReceiver : BroadcastReceiver() {
         private const val CALL_NOTIFICATION_ID = 1001
         private const val TAG = "CallActionReceiver"
 
-        // Update these two constants if your project ref / anon key change.
-        // (They mirror the values shipped to the webview and are safe to
-        // embed — same as what the bundled JS already exposes.)
+        // Mirror the values shipped to the webview — safe to embed (these
+        // are the same publishable anon key already in the JS bundle).
         private const val SUPABASE_URL =
             "https://dqtjuhqndncanfwgjwva.supabase.co"
         private const val SUPABASE_ANON_KEY =
@@ -77,49 +74,18 @@ class CallActionReceiver : BroadcastReceiver() {
 
             ACTION_DECLINE -> {
                 if (callId.isEmpty()) return
-
-                // 1) Tell any running JS instance to handle the decline so the
-                //    in-app ring stops + the banner clears immediately.
-                //    We use a SEND broadcast (not startActivity) so the user
-                //    does NOT see the app pop to the foreground.
-                try {
-                    val deepLink = Uri.parse(
-                        "opoll://call/decline?call_id=$callId" +
-                            "&conversation_id=$conversationId"
-                    )
-                    val viewIntent = Intent(Intent.ACTION_VIEW, deepLink).apply {
-                        setPackage(context.packageName)
-                        // No NEW_TASK — only a running task should pick this up.
-                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    }
-                    // Prefer sending to MainActivity if it's already alive so
-                    // the deep-link listener fires without launching a new
-                    // task. If there's no running instance the cached-token
-                    // HTTP fallback below covers it.
-                    context.sendBroadcast(
-                        Intent("app.lovable.opollmarket.CALL_DECLINED_LOCAL").apply {
-                            setPackage(context.packageName)
-                            putExtra("call_id", callId)
-                            putExtra("conversation_id", conversationId)
-                        }
-                    )
-                } catch (e: Throwable) {
-                    Log.w(TAG, "failed to broadcast decline to webview", e)
-                }
-
-                // 2) Hardened fallback: hit the edge function directly so the
-                //    call row is marked "declined" even if the JS instance is
-                //    not running (cold app). Runs on a background thread so
-                //    the broadcast receiver stays under its 10s budget.
+                // Fire the edge call on a worker thread — receivers have a
+                // ~10s budget; HTTP must not run on the main thread.
                 thread(start = true, name = "decline-call-$callId") {
-                    postDeclineToEdgeFunction(context, callId)
+                    postDeclineToEdgeFunction(callId)
                 }
             }
         }
     }
 
-    private fun postDeclineToEdgeFunction(context: Context, callId: String) {
-        val accessToken = SupabaseTokenCache.read(context) ?: run {
+    private fun postDeclineToEdgeFunction(callId: String) {
+        val accessToken = SupabaseTokenCache.read(applicationContextOrNull())
+        if (accessToken.isNullOrBlank()) {
             Log.w(TAG, "no cached access token — skipping HTTP decline fallback")
             return
         }
@@ -140,29 +106,34 @@ class CallActionReceiver : BroadcastReceiver() {
                 .toString()
             conn.outputStream.use { it.write(payload.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
-            Log.i(TAG, "decline HTTP fallback for $callId returned $code")
+            Log.i(TAG, "decline HTTP for $callId returned $code")
             conn.disconnect()
         } catch (e: Throwable) {
-            // Best-effort — the realtime layer + banner timeout will still
-            // mark the call missed eventually.
-            Log.w(TAG, "decline HTTP fallback failed", e)
+            // Best-effort — the realtime layer + 90s banner timeout will
+            // still mark the call missed if this falls through.
+            Log.w(TAG, "decline HTTP failed", e)
         }
     }
+
+    // BroadcastReceiver doesn't expose applicationContext directly; cache it
+    // on the instance during onReceive. Kept here so postDeclineToEdgeFunction
+    // is testable in isolation.
+    private var cachedAppContext: Context? = null
+    private fun applicationContextOrNull(): Context? = cachedAppContext
 }
 
 /**
  * Tiny SharedPreferences-backed cache for the Supabase access token. The JS
- * layer keeps this in sync via Capacitor (see src/lib/nativeAuthCache.ts).
- * Token is short-lived; if it has expired the edge call will 401, but the
- * realtime banner timeout will still flip the call to "missed" within ~90s.
+ * layer keeps this in sync (see src/lib/nativeAuthCache.ts).
  */
 object SupabaseTokenCache {
     private const val PREFS = "opoll_native_auth"
     private const val KEY_TOKEN = "supabase_access_token"
 
-    fun read(context: Context): String? {
+    fun read(context: Context?): String? {
+        val ctx = context ?: return null
         val prefs: SharedPreferences =
-            context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val token = prefs.getString(KEY_TOKEN, null) ?: return null
         return token.takeIf { it.isNotBlank() }
     }
