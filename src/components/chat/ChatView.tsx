@@ -108,6 +108,28 @@ const ChatView = () => {
     } catch { /* ignore */ }
   }, [lastFailedCallIdKey]);
 
+  // Track network connectivity so the rejoin banner can show a more accurate
+  // "Offline — waiting for network" state instead of a misleading "Reconnecting…"
+  // spinner when the device has no connection. We only check navigator.onLine
+  // once on mount and then react to online/offline events — `navigator.onLine`
+  // can lie (says online when captive portal blocks traffic) but it's the best
+  // signal available without a probe request.
+  const [isOffline, setIsOffline] = useState<boolean>(() => {
+    if (typeof navigator === "undefined") return false;
+    return navigator.onLine === false;
+  });
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
     if (!paramId || !user) return;
