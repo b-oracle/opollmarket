@@ -489,9 +489,19 @@ const ChatView = () => {
   // Re-arms the auto-accept retry loop after a failure. Resets the dedupe
   // ref so the effect below re-enters, then re-adds auto_accept + call_id
   // to the URL (preserving any other params) so the same flow runs again.
+  //
+  // Guarded against rapid double-taps via retryInFlightRef: setRejoinStatus
+  // is async (React batches), so without a synchronous ref guard two clicks
+  // fired in the same tick could both pass the disabled check and stack
+  // duplicate URL updates / state writes. The ref clears as soon as the
+  // auto-accept effect transitions out of "reconnecting" (success, failure,
+  // or dismiss).
+  const retryInFlightRef = useRef(false);
   const retryAutoAccept = useCallback(
     (callId: string) => {
       if (!callId) return;
+      if (retryInFlightRef.current) return;
+      retryInFlightRef.current = true;
       autoAcceptedRef.current = null;
       setLastFailedCallId(null);
       setRejoinStatus("reconnecting");
@@ -509,6 +519,14 @@ const ChatView = () => {
     },
     [setSearchParams, setLastFailedCallId],
   );
+
+  // Release the in-flight guard whenever we leave the "reconnecting" state,
+  // so the user can tap "Try reconnecting" again after a subsequent failure.
+  useEffect(() => {
+    if (rejoinStatus !== "reconnecting") {
+      retryInFlightRef.current = false;
+    }
+  }, [rejoinStatus]);
 
   // Auto-accept incoming call when arriving via native notification deep link
   // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
@@ -771,6 +789,10 @@ const ChatView = () => {
               session), but disable it when there's nothing to retry so the
               user still gets a clear, consistent affordance instead of the
               banner silently having no actionable path. */}
+          {/* Rapid double-taps are blocked by the synchronous retryInFlightRef
+              guard inside retryAutoAccept — once the first click sets
+              rejoinStatus to "reconnecting" this banner unmounts on the
+              next render, so a second tap can't reach this handler. */}
           <button
             onClick={() => {
               const id = lastFailedCallIdRef.current;
