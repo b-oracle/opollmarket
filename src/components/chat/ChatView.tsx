@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video, WifiOff } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -107,6 +107,28 @@ const ChatView = () => {
       else window.sessionStorage.removeItem(lastFailedCallIdKey);
     } catch { /* ignore */ }
   }, [lastFailedCallIdKey]);
+
+  // Track network connectivity so the rejoin banner can show a more accurate
+  // "Offline — waiting for network" state instead of a misleading "Reconnecting…"
+  // spinner when the device has no connection. We only check navigator.onLine
+  // once on mount and then react to online/offline events — `navigator.onLine`
+  // can lie (says online when captive portal blocks traffic) but it's the best
+  // signal available without a probe request.
+  const [isOffline, setIsOffline] = useState<boolean>(() => {
+    if (typeof navigator === "undefined") return false;
+    return navigator.onLine === false;
+  });
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
@@ -682,10 +704,20 @@ const ChatView = () => {
         <div
           role="status"
           aria-live="polite"
-          className="shrink-0 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-2"
+          className={`shrink-0 border-b px-4 py-2 flex items-center gap-2 ${
+            isOffline
+              ? "bg-warning/10 border-warning/20"
+              : "bg-primary/10 border-primary/20"
+          }`}
         >
-          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
-          <p className="text-xs text-foreground flex-1">Reconnecting call…</p>
+          {isOffline ? (
+            <WifiOff className="w-4 h-4 text-warning shrink-0" />
+          ) : (
+            <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+          )}
+          <p className="text-xs text-foreground flex-1">
+            {isOffline ? "Offline — waiting for network…" : "Reconnecting call…"}
+          </p>
         </div>
       )}
       {rejoinStatus === "failed" && (
