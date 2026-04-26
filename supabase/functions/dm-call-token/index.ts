@@ -17,7 +17,7 @@ const json = (data: unknown, status = 200) =>
 // Fire-and-forget event logger — uses service role bypassing RLS.
 // Never throws; logs warnings if insertion fails.
 const logCallEvent = async (
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   callId: string,
   conversationId: string | null,
   eventType: string,
