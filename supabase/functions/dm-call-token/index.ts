@@ -507,6 +507,13 @@ Deno.serve(async (req) => {
         })
         .eq("id", call_id);
 
+      // Lifecycle: a participant ended the call — active → ended
+      await logCallEvent(admin, call_id, call.conversation_id, "ended", user.id, {
+        duration_seconds: duration,
+        ended_by_role: call.caller_id === user.id ? "caller" : "callee",
+        room_name: call.room_name,
+      });
+
       // Insert system message
       await admin.from("dm_messages").insert({
         conversation_id: call.conversation_id,
@@ -551,18 +558,32 @@ Deno.serve(async (req) => {
 
       // Verify room still exists in LiveKit
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      let rejoinParticipantCount = 0;
       try {
         const participants = await svc.listParticipants(call.room_name);
+        rejoinParticipantCount = participants?.length || 0;
         // Room exists — generate a new token for the rejoining user
-        console.log("Rejoin: room has", participants?.length || 0, "participants");
+        console.log("Rejoin: room has", rejoinParticipantCount, "participants");
       } catch {
         // Room is gone — cannot rejoin
         await admin
           .from("dm_calls")
           .update({ status: "ended", ended_at: new Date().toISOString() })
           .eq("id", call_id);
+        // Lifecycle: rejoin attempted but room was gone — auto-closed as ended
+        await logCallEvent(admin, call_id, call.conversation_id, "ended", user.id, {
+          reason: "rejoin_room_missing",
+          room_name: call.room_name,
+        });
         return json({ error: "Call room no longer exists" }, 410);
       }
+
+      // Lifecycle: participant successfully rejoined the active call
+      await logCallEvent(admin, call_id, call.conversation_id, "rejoin", user.id, {
+        rejoiner_role: call.caller_id === user.id ? "caller" : "callee",
+        room_name: call.room_name,
+        participants_at_rejoin: rejoinParticipantCount,
+      });
 
       const { data: profile } = await admin
         .from("profiles")
