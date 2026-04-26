@@ -138,6 +138,7 @@ const IncomingCallBanner = () => {
             callerName: profile?.display_name || "Unknown",
             callerAvatar: profile?.avatar_url || undefined,
           });
+          logCallEvent(call.id, "received", { source: "realtime" });
         }
       )
       .subscribe();
@@ -153,6 +154,7 @@ const IncomingCallBanner = () => {
 
     // Auto-dismiss after 90 seconds (matches caller's auto-cancel timeout)
     const dismissTimer = setTimeout(() => {
+      logCallEvent(incomingCall.id, "missed", { reason: "auto_dismiss_90s" });
       setIncomingCall(null);
     }, 90_000);
 
@@ -191,6 +193,7 @@ const IncomingCallBanner = () => {
     void vibrate(CALL_CONNECTED_PATTERN);
 
     try {
+      logCallEvent(incomingCall.id, "accepted", { via: "banner_tap" });
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "answer", call_id: incomingCall.id },
       });
@@ -210,6 +213,7 @@ const IncomingCallBanner = () => {
       });
       setIncomingCall(null);
     } catch (err: any) {
+      logCallEvent(incomingCall.id, "failed", { stage: "answer", error: err?.message });
       toast.error(err.message || "Failed to answer call");
     } finally {
       setAnswering(false);
@@ -241,6 +245,7 @@ const IncomingCallBanner = () => {
     void vibrate(CALL_ENDED_PATTERN);
 
     try {
+      logCallEvent(incomingCall.id, "declined", { via: "banner_tap" });
       await supabase.functions.invoke("dm-call-token", {
         body: { action: "decline", call_id: incomingCall.id },
       });
