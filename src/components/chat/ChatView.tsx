@@ -708,7 +708,7 @@ const ChatView = () => {
           )}
           <button
             onClick={() => {
-              lastFailedCallIdRef.current = null;
+              setLastFailedCallId(null);
               setRejoinStatus(null);
             }}
             className="text-xs font-semibold text-muted-foreground hover:text-foreground"
