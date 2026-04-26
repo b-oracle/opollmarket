@@ -282,7 +282,19 @@ const AdminSettings = () => {
         setPushTestError(`Invoke error: ${error.message}`);
         toast.error(error.message);
       } else {
-        setPushTestResult(data);
+        // CallTestDiagnostics expects tokens_on_file — derive from sent + expired + per-token result count.
+        const enriched = data && typeof data === "object"
+          ? {
+              ...(data as any),
+              tokens_on_file:
+                (data as any).tokens_on_file ??
+                (Array.isArray((data as any).results)
+                  ? (data as any).results.length
+                  : ((data as any).sent ?? 0) + ((data as any).expired ?? 0)),
+              target_user_id: pushTestTarget.id,
+            }
+          : data;
+        setPushTestResult(enriched);
         const sent = (data as any)?.sent ?? 0;
         const reason = (data as any)?.reason as string | undefined;
         if (sent > 0) toast.success(`Test push delivered to ${sent} device(s)`);
