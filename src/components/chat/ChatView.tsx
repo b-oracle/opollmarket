@@ -382,6 +382,26 @@ const ChatView = () => {
     }
   }, [calling, conversationId, user, otherName, convo, handleRejoinCall]);
 
+  // Auto-accept incoming call when arriving via native notification deep link
+  // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
+  useEffect(() => {
+    if (!conversationId || !user || !convo) return;
+    const autoAccept = searchParams.get("auto_accept");
+    const callId = searchParams.get("call_id");
+    if (autoAccept !== "1" || !callId) return;
+    if (autoAcceptedRef.current === callId) return;
+    autoAcceptedRef.current = callId;
+
+    // Strip the params so a refresh doesn't re-trigger the join
+    const next = new URLSearchParams(searchParams);
+    next.delete("auto_accept");
+    next.delete("call_id");
+    setSearchParams(next, { replace: true });
+
+    // Rejoin the active call (server validates participant membership)
+    handleRejoinCall(callId, false);
+  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall]);
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
       {isFeatureEnabled("chat_doodle_bg") && <ChatDoodleBackground />}
