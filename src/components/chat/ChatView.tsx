@@ -404,7 +404,6 @@ const ChatView = () => {
   // restoration can pick the rejoin flow back up. The entry is keyed by
   // conversationId, time-boxed (PENDING_TTL_MS), and cleared on resolution.
   useEffect(() => {
-  useEffect(() => {
     let autoAccept = searchParams.get("auto_accept");
     let callId = searchParams.get("call_id");
 
