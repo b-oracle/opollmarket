@@ -789,27 +789,19 @@ const ChatView = () => {
               session), but disable it when there's nothing to retry so the
               user still gets a clear, consistent affordance instead of the
               banner silently having no actionable path. */}
-          {/* Disabled while a retry is in flight (rejoinStatus === "reconnecting")
-              — combined with the synchronous retryInFlightRef guard inside
-              retryAutoAccept this prevents stacking duplicate retry loops
-              from rapid double-taps. */}
+          {/* Rapid double-taps are blocked by the synchronous retryInFlightRef
+              guard inside retryAutoAccept — once the first click sets
+              rejoinStatus to "reconnecting" this banner unmounts on the
+              next render, so a second tap can't reach this handler. */}
           <button
             onClick={() => {
               const id = lastFailedCallIdRef.current;
               if (id) retryAutoAccept(id);
             }}
-            disabled={!lastFailedCallIdRef.current || rejoinStatus === "reconnecting"}
-            aria-busy={rejoinStatus === "reconnecting"}
-            className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+            disabled={!lastFailedCallIdRef.current}
+            className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {rejoinStatus === "reconnecting" ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Reconnecting…
-              </>
-            ) : (
-              "Try reconnecting"
-            )}
+            Try reconnecting
           </button>
           <button
             onClick={() => {
