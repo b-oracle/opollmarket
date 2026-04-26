@@ -49,6 +49,7 @@ class CallActionReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        cachedAppContext = context.applicationContext
         val callId = intent.getStringExtra("call_id").orEmpty()
         val conversationId = intent.getStringExtra("conversation_id").orEmpty()
 
