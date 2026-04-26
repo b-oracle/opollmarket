@@ -440,14 +440,20 @@ const ChatView = () => {
       if (done) return;
       attempts += 1;
       if (conversationId && user && convo) {
+        setRejoinStatus(null);
         handleRejoinCall(callId, false);
         stop({ strip: true });
         return;
       }
+      // Surface the reconnecting banner once we've waited at least one tick
+      // — avoids a flash for the common case where everything is ready on the
+      // first synchronous attempt.
+      setRejoinStatus("reconnecting");
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
         // Reset so a future deep link with the same callId could retry
         autoAcceptedRef.current = null;
+        setRejoinStatus("failed");
         stop({ strip: true });
       }
     };
@@ -460,6 +466,7 @@ const ChatView = () => {
         if (!done) {
           console.warn("auto_accept: hard timeout reached");
           autoAcceptedRef.current = null;
+          setRejoinStatus("failed");
         }
         stop({ strip: true });
       }, HARD_TIMEOUT_MS);
