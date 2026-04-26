@@ -510,7 +510,7 @@ const ChatView = () => {
 
     const failWithToast = (reason: "attempts" | "timeout" | "mismatch" | "lookup") => {
       autoAcceptedRef.current = null;
-      lastFailedCallIdRef.current = callId;
+      setLastFailedCallId(callId);
       setRejoinStatus("failed");
       const description =
         reason === "timeout"
