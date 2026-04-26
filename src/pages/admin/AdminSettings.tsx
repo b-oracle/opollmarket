@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets, Phone } from "lucide-react";
+import { Loader2, Save, Percent, Gift, Coins, ArrowUpFromLine, LogOut, Zap, Flame, DollarSign, Timer, Globe, Plus, Trash2, RefreshCw, ToggleLeft, Copy, ShieldCheck, Sparkles, Banknote, Shield, Droplets, Phone, Bell } from "lucide-react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -141,6 +141,25 @@ const AdminSettings = () => {
   const [callTestResult, setCallTestResult] = useState<any>(null);
   const [callTestError, setCallTestError] = useState<string | null>(null);
 
+  // ─── Test plain (non-call) push notification ───
+  // Mirrors the call-test picker but uses send-fcm-push directly so admins
+  // can verify normal notifications land in the system tray on Android/iOS.
+  const [pushTestQuery, setPushTestQuery] = useState("");
+  const [pushTestResults, setPushTestResults] = useState<
+    Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>
+  >([]);
+  const [pushTestSearching, setPushTestSearching] = useState(false);
+  const [pushTestTarget, setPushTestTarget] = useState<{
+    id: string;
+    display_name: string | null;
+    username: string | null;
+  } | null>(null);
+  const [pushTestTitle, setPushTestTitle] = useState("🔔 Test from Admin");
+  const [pushTestBody, setPushTestBody] = useState("This is a test push from the Pollmarket admin panel.");
+  const [pushTestSending, setPushTestSending] = useState(false);
+  const [pushTestResult, setPushTestResult] = useState<any>(null);
+  const [pushTestError, setPushTestError] = useState<string | null>(null);
+
   const runFcmTest = async () => {
     setFcmTesting(true);
     setFcmTestResult(null);
@@ -221,6 +240,74 @@ const AdminSettings = () => {
     }
   };
 
+  // ─── Plain push test: search users (debounced) ───
+  useEffect(() => {
+    const q = pushTestQuery.trim();
+    if (q.length < 2) {
+      setPushTestResults([]);
+      return;
+    }
+    let cancelled = false;
+    setPushTestSearching(true);
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, username, avatar_url")
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%,email.ilike.%${q}%`)
+        .limit(8);
+      if (!cancelled) {
+        setPushTestResults((data || []) as any);
+        setPushTestSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [pushTestQuery]);
+
+  // ─── Plain push test: send ───
+  const sendTestPush = async () => {
+    if (!pushTestTarget) return;
+    const title = pushTestTitle.trim() || "🔔 Test from Admin";
+    const body = pushTestBody.trim() || "This is a test push from the Pollmarket admin panel.";
+    setPushTestSending(true);
+    setPushTestResult(null);
+    setPushTestError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-push", {
+        body: { user_id: pushTestTarget.id, title, body, url: "/" },
+      });
+      if (error) {
+        setPushTestError(`Invoke error: ${error.message}`);
+        toast.error(error.message);
+      } else {
+        // CallTestDiagnostics expects tokens_on_file — derive from sent + expired + per-token result count.
+        const enriched = data && typeof data === "object"
+          ? {
+              ...(data as any),
+              tokens_on_file:
+                (data as any).tokens_on_file ??
+                (Array.isArray((data as any).results)
+                  ? (data as any).results.length
+                  : ((data as any).sent ?? 0) + ((data as any).expired ?? 0)),
+              target_user_id: pushTestTarget.id,
+            }
+          : data;
+        setPushTestResult(enriched);
+        const sent = (data as any)?.sent ?? 0;
+        const reason = (data as any)?.reason as string | undefined;
+        if (sent > 0) toast.success(`Test push delivered to ${sent} device(s)`);
+        else if (reason) toast.warning(reason);
+        else toast.error("FCM rejected every token — see per-token diagnostics");
+      }
+    } catch (e) {
+      setPushTestError(`Error: ${(e as Error).message}`);
+      toast.error((e as Error).message);
+    } finally {
+      setPushTestSending(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -715,6 +802,125 @@ const AdminSettings = () => {
 
               {(callTestResult || callTestError) && (
                 <CallTestDiagnostics data={callTestResult} error={callTestError} />
+              )}
+            </div>
+
+            {/* ─── Test Plain Push Notification ─── */}
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Bell className="w-3.5 h-3.5 text-primary" />
+                <p className="text-xs font-semibold">Test Native Push Notification</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Sends a real (non-call) FCM payload with title + body to a selected user. Their native Android/iOS app should display it in the system tray.
+              </p>
+
+              {!pushTestTarget ? (
+                <>
+                  <Input
+                    placeholder="Search by name, username, or email…"
+                    value={pushTestQuery}
+                    onChange={(e) => setPushTestQuery(e.target.value)}
+                    className="text-xs"
+                  />
+                  {pushTestSearching && (
+                    <p className="text-[10px] text-muted-foreground">Searching…</p>
+                  )}
+                  {pushTestResults.length > 0 && (
+                    <div className="border border-border rounded-md max-h-48 overflow-auto divide-y divide-border">
+                      {pushTestResults.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => {
+                            setPushTestTarget(u);
+                            setPushTestQuery("");
+                            setPushTestResults([]);
+                          }}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-muted text-left"
+                        >
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-muted" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">
+                              {u.display_name || "Unnamed"}
+                            </p>
+                            {u.username && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                @{u.username}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between gap-2 p-2 border border-border rounded-md">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">
+                      {pushTestTarget.display_name || "Unnamed"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                      {pushTestTarget.id}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPushTestTarget(null);
+                      setPushTestResult(null);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="pushTestTitle" className="text-xs">Title</Label>
+                <Input
+                  id="pushTestTitle"
+                  value={pushTestTitle}
+                  onChange={(e) => setPushTestTitle(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pushTestBody" className="text-xs">Body</Label>
+                <Input
+                  id="pushTestBody"
+                  value={pushTestBody}
+                  onChange={(e) => setPushTestBody(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+
+              <Button
+                onClick={sendTestPush}
+                disabled={!pushTestTarget || pushTestSending}
+                size="sm"
+                className="w-full"
+              >
+                {pushTestSending ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-3 h-3 mr-2" />
+                    Send Test Push
+                  </>
+                )}
+              </Button>
+
+              {(pushTestResult || pushTestError) && (
+                <CallTestDiagnostics data={pushTestResult} error={pushTestError} />
               )}
             </div>
 
