@@ -392,6 +392,28 @@ const ChatView = () => {
     }
   }, [calling, conversationId, user, otherName, convo, handleRejoinCall]);
 
+  // Re-arms the auto-accept retry loop after a failure. Resets the dedupe
+  // ref so the effect below re-enters, then re-adds auto_accept + call_id
+  // to the URL (preserving any other params) so the same flow runs again.
+  const retryAutoAccept = useCallback(
+    (callId: string) => {
+      if (!callId) return;
+      autoAcceptedRef.current = null;
+      lastFailedCallIdRef.current = null;
+      setRejoinStatus("reconnecting");
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.set("auto_accept", "1");
+          next.set("call_id", callId);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
   // Auto-accept incoming call when arriving via native notification deep link
   // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
   // Polls until conversation/convo data is ready, then joins.
