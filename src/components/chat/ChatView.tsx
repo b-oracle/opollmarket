@@ -98,6 +98,28 @@ const ChatView = () => {
     } catch { /* ignore quota / privacy mode */ }
   }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
 
+  // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
+  // when the retry loop kicks off, used to drive a live countdown in the
+  // banner. Null when there is no active attempt. We store the deadline (not
+  // the seconds remaining) so the visible value stays accurate even if the
+  // browser throttles our 1s tick (e.g., backgrounded tab).
+  const [rejoinDeadlineAt, setRejoinDeadlineAt] = useState<number | null>(null);
+  const [rejoinSecondsLeft, setRejoinSecondsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (rejoinStatus !== "reconnecting" || !rejoinDeadlineAt) {
+      setRejoinSecondsLeft(null);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((rejoinDeadlineAt - Date.now()) / 1000));
+      setRejoinSecondsLeft(remaining);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [rejoinStatus, rejoinDeadlineAt]);
+
+
   // Helper to update the failed-call ref AND its persisted mirror together.
   const setLastFailedCallId = useCallback((id: string | null) => {
     lastFailedCallIdRef.current = id;
