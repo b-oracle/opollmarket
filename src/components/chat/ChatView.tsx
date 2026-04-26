@@ -730,22 +730,30 @@ const ChatView = () => {
           <p className="text-xs text-foreground flex-1">
             Couldn't reconnect to the call.
           </p>
-          {lastFailedCallIdRef.current && (
-            <button
-              onClick={() => retryAutoAccept(lastFailedCallIdRef.current!)}
-              className="text-xs font-semibold text-primary hover:text-primary/80 px-2 py-1 rounded-md hover:bg-primary/10"
-            >
-              Try again
-            </button>
-          )}
+          {/* Primary action: re-run the auto-join retry loop. We always render
+              this button (even if we've lost the call_id from a previous
+              session), but disable it when there's nothing to retry so the
+              user still gets a clear, consistent affordance instead of the
+              banner silently having no actionable path. */}
+          <button
+            onClick={() => {
+              const id = lastFailedCallIdRef.current;
+              if (id) retryAutoAccept(id);
+            }}
+            disabled={!lastFailedCallIdRef.current}
+            className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Try reconnecting
+          </button>
           <button
             onClick={() => {
               setLastFailedCallId(null);
               setRejoinStatus(null);
             }}
-            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
+            aria-label="Dismiss"
+            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
           >
-            Dismiss
+            <X className="w-4 h-4" />
           </button>
         </div>
       )}
