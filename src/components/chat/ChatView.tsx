@@ -16,6 +16,10 @@ import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
+import {
+  getCachedCallConversation,
+  setCachedCallConversation,
+} from "@/lib/dmCallLookupCache";
 
 interface Message {
   id: string;
@@ -600,6 +604,16 @@ const ChatView = () => {
 
     const ensureLookup = () => {
       if (expectedConvoId || lookupFailed || lookupInFlight) return;
+
+      // Cache hit: skip the network round-trip entirely. Call IDs are
+      // immutable once issued by the server, so a cached mapping is always
+      // safe to reuse — even across remounts and full reloads.
+      const cached = getCachedCallConversation(callId);
+      if (cached) {
+        expectedConvoId = cached;
+        return;
+      }
+
       lookupInFlight = true;
       (async () => {
         const { data, error } = await supabase
@@ -617,6 +631,8 @@ const ChatView = () => {
           return;
         }
         expectedConvoId = data.conversation_id as string;
+        // Cache for subsequent retries / remounts of the same call_id.
+        setCachedCallConversation(callId, expectedConvoId);
       })();
     };
 
