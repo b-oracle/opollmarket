@@ -456,7 +456,7 @@ const ChatView = () => {
         { replace: true },
       );
     },
-    [setSearchParams],
+    [setSearchParams, setLastFailedCallId],
   );
 
   // Auto-accept incoming call when arriving via native notification deep link
