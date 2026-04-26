@@ -629,6 +629,9 @@ const ChatView = () => {
       // — avoids a flash for the common case where everything is ready on the
       // first synchronous attempt.
       setRejoinStatus("reconnecting");
+      // Set/refresh the deadline used by the countdown banner. We anchor it
+      // once at first surfacing so the displayed seconds tick down smoothly.
+      setRejoinDeadlineAt((prev) => prev ?? Date.now() + HARD_TIMEOUT_MS);
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
         failWithToast("attempts");
