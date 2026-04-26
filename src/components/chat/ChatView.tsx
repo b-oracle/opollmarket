@@ -490,6 +490,8 @@ const ChatView = () => {
       autoAcceptedRef.current = null;
       setLastFailedCallId(null);
       setRejoinStatus("reconnecting");
+      // 15s matches HARD_TIMEOUT_MS in the auto-accept effect below.
+      setRejoinDeadlineAt(Date.now() + 15_000);
       setSearchParams(
         (current) => {
           const next = new URLSearchParams(current);
