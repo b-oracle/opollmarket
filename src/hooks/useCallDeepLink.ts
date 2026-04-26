@@ -6,6 +6,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const useCallDeepLink = () => {
   const navigate = useNavigate();
@@ -43,14 +44,25 @@ export const useCallDeepLink = () => {
               // Fire the decline RPC immediately — no UI navigation needed.
               // The realtime listener on IncomingCallBanner will receive the
               // status update and dismiss the banner across all devices.
+              let declineOk = false;
+              let declineErrMsg: string | null = null;
               if (callId) {
                 try {
-                  await supabase.functions.invoke("dm-call-token", {
+                  const { error } = await supabase.functions.invoke("dm-call-token", {
                     body: { action: "decline", call_id: callId },
                   });
-                } catch (declineErr) {
+                  if (error) {
+                    declineErrMsg = error.message || "decline_failed";
+                    console.warn("decline RPC returned error", error);
+                  } else {
+                    declineOk = true;
+                  }
+                } catch (declineErr: any) {
+                  declineErrMsg = declineErr?.message || "decline_failed";
                   console.warn("decline RPC failed", declineErr);
                 }
+              } else {
+                declineErrMsg = "missing_call_id";
               }
               // Also broadcast so the banner can dismiss instantly even if
               // realtime is briefly disconnected.
@@ -63,6 +75,22 @@ export const useCallDeepLink = () => {
                 window.dispatchEvent(new Event("dm-call-banner-dismissed"));
               } catch {
                 // ignore
+              }
+              // Local confirmation so the user knows the tap registered, even
+              // when the deep link arrived with the app in the background.
+              try {
+                if (declineOk) {
+                  toast.success("Call declined");
+                } else {
+                  toast.error("Couldn't decline the call", {
+                    description:
+                      declineErrMsg === "missing_call_id"
+                        ? "The notification was missing call info."
+                        : "Please try again from the chat.",
+                  });
+                }
+              } catch {
+                // toast unavailable — non-fatal
               }
               return;
             }
