@@ -399,11 +399,11 @@ const ChatView = () => {
   // Polls until conversation/convo data is ready, then joins.
   // Strips ONLY auto_accept + call_id from the URL after the attempt resolves
   // — preserves utm_*, ref, and any other tracking/query params untouched.
-  useEffect(() => {
   // Persistence: while the retry loop is in flight we mirror the pending
   // call_id into localStorage so a refresh / app-resume / OS-killed webview
   // restoration can pick the rejoin flow back up. The entry is keyed by
   // conversationId, time-boxed (PENDING_TTL_MS), and cleared on resolution.
+  useEffect(() => {
   useEffect(() => {
     let autoAccept = searchParams.get("auto_accept");
     let callId = searchParams.get("call_id");
