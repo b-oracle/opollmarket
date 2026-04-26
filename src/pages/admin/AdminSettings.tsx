@@ -793,6 +793,125 @@ const AdminSettings = () => {
               )}
             </div>
 
+            {/* ─── Test Plain Push Notification ─── */}
+            <div className="border-t border-border pt-3 space-y-2">
+              <div className="flex items-center gap-2">
+                <Bell className="w-3.5 h-3.5 text-primary" />
+                <p className="text-xs font-semibold">Test Native Push Notification</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Sends a real (non-call) FCM payload with title + body to a selected user. Their native Android/iOS app should display it in the system tray.
+              </p>
+
+              {!pushTestTarget ? (
+                <>
+                  <Input
+                    placeholder="Search by name, username, or email…"
+                    value={pushTestQuery}
+                    onChange={(e) => setPushTestQuery(e.target.value)}
+                    className="text-xs"
+                  />
+                  {pushTestSearching && (
+                    <p className="text-[10px] text-muted-foreground">Searching…</p>
+                  )}
+                  {pushTestResults.length > 0 && (
+                    <div className="border border-border rounded-md max-h-48 overflow-auto divide-y divide-border">
+                      {pushTestResults.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => {
+                            setPushTestTarget(u);
+                            setPushTestQuery("");
+                            setPushTestResults([]);
+                          }}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-muted text-left"
+                        >
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-muted" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">
+                              {u.display_name || "Unnamed"}
+                            </p>
+                            {u.username && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                @{u.username}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center justify-between gap-2 p-2 border border-border rounded-md">
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">
+                      {pushTestTarget.display_name || "Unnamed"}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground font-mono truncate">
+                      {pushTestTarget.id}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setPushTestTarget(null);
+                      setPushTestResult(null);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="pushTestTitle" className="text-xs">Title</Label>
+                <Input
+                  id="pushTestTitle"
+                  value={pushTestTitle}
+                  onChange={(e) => setPushTestTitle(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pushTestBody" className="text-xs">Body</Label>
+                <Input
+                  id="pushTestBody"
+                  value={pushTestBody}
+                  onChange={(e) => setPushTestBody(e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+
+              <Button
+                onClick={sendTestPush}
+                disabled={!pushTestTarget || pushTestSending}
+                size="sm"
+                className="w-full"
+              >
+                {pushTestSending ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-3 h-3 mr-2" />
+                    Send Test Push
+                  </>
+                )}
+              </Button>
+
+              {(pushTestResult || pushTestError) && (
+                <CallTestDiagnostics data={pushTestResult} error={pushTestError} />
+              )}
+            </div>
+
             {/* ─── Recent Delivery Logs ─── */}
             <div className="border-t border-border pt-3">
               <RecentDeliveryLogs targetUserId={callTestTarget?.id ?? null} />
