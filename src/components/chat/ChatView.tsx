@@ -444,7 +444,7 @@ const ChatView = () => {
     (callId: string) => {
       if (!callId) return;
       autoAcceptedRef.current = null;
-      lastFailedCallIdRef.current = null;
+      setLastFailedCallId(null);
       setRejoinStatus("reconnecting");
       setSearchParams(
         (current) => {
