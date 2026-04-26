@@ -676,7 +676,7 @@ const ChatView = () => {
 
       {/* Pending request banner for recipient */}
       {isRecipientOfRequest && (
-        <div className="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center gap-3">
+        <div className="shrink-0 bg-warning/10 border-b border-warning/20 px-4 py-3 flex items-center gap-3">
           <p className="text-sm text-foreground flex-1">
             <span className="font-semibold">{otherName}</span> wants to message you
           </p>
