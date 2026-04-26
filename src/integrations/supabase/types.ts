@@ -965,6 +965,39 @@ export type Database = {
         }
         Relationships: []
       }
+      dm_call_events: {
+        Row: {
+          actor_id: string | null
+          call_id: string
+          conversation_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          source: string
+        }
+        Insert: {
+          actor_id?: string | null
+          call_id: string
+          conversation_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          source?: string
+        }
+        Update: {
+          actor_id?: string | null
+          call_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          source?: string
+        }
+        Relationships: []
+      }
       dm_calls: {
         Row: {
           callee_id: string
@@ -4754,6 +4787,10 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      log_dm_call_event: {
+        Args: { _call_id: string; _event_type: string; _metadata?: Json }
+        Returns: string
+      }
       mark_dm_messages_read: {
         Args: { _conversation_id: string }
         Returns: number
