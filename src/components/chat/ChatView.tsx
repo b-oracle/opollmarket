@@ -439,11 +439,28 @@ const ChatView = () => {
       if (opts.strip) stripCallParams();
     };
 
+    const failWithToast = (reason: "attempts" | "timeout") => {
+      autoAcceptedRef.current = null;
+      lastFailedCallIdRef.current = callId;
+      setRejoinStatus("failed");
+      toast.error("Couldn't reconnect to the call", {
+        description:
+          reason === "timeout"
+            ? "Took too long to load the conversation."
+            : "We tried a few times but couldn't join.",
+        action: {
+          label: "Try again",
+          onClick: () => retryAutoAccept(callId),
+        },
+      });
+    };
+
     const tryAccept = () => {
       if (done) return;
       attempts += 1;
       if (conversationId && user && convo) {
         setRejoinStatus(null);
+        lastFailedCallIdRef.current = null;
         handleRejoinCall(callId, false);
         stop({ strip: true });
         return;
@@ -454,9 +471,7 @@ const ChatView = () => {
       setRejoinStatus("reconnecting");
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
-        // Reset so a future deep link with the same callId could retry
-        autoAcceptedRef.current = null;
-        setRejoinStatus("failed");
+        failWithToast("attempts");
         stop({ strip: true });
       }
     };
@@ -468,8 +483,7 @@ const ChatView = () => {
       timeoutId = setTimeout(() => {
         if (!done) {
           console.warn("auto_accept: hard timeout reached");
-          autoAcceptedRef.current = null;
-          setRejoinStatus("failed");
+          failWithToast("timeout");
         }
         stop({ strip: true });
       }, HARD_TIMEOUT_MS);
