@@ -14,6 +14,7 @@ import {
   CALL_CONNECTED_PATTERN,
   CALL_ENDED_PATTERN,
 } from "@/lib/haptics";
+import { logCallEvent } from "@/lib/callEvents";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
