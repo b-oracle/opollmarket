@@ -55,6 +55,10 @@ const ChatView = () => {
   const [resolvedConvoId, setResolvedConvoId] = useState<string | null>(null);
   const resolvedRef = useRef(false);
   const autoAcceptedRef = useRef<string | null>(null);
+  // null = idle, "reconnecting" = retry loop running, "failed" = gave up.
+  // Drives the slim banner shown under the header so users get visible
+  // feedback while we wait for conversation/convo data before auto-joining.
+  const [rejoinStatus, setRejoinStatus] = useState<null | "reconnecting" | "failed">(null);
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
@@ -436,14 +440,20 @@ const ChatView = () => {
       if (done) return;
       attempts += 1;
       if (conversationId && user && convo) {
+        setRejoinStatus(null);
         handleRejoinCall(callId, false);
         stop({ strip: true });
         return;
       }
+      // Surface the reconnecting banner once we've waited at least one tick
+      // — avoids a flash for the common case where everything is ready on the
+      // first synchronous attempt.
+      setRejoinStatus("reconnecting");
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
         // Reset so a future deep link with the same callId could retry
         autoAcceptedRef.current = null;
+        setRejoinStatus("failed");
         stop({ strip: true });
       }
     };
@@ -456,6 +466,7 @@ const ChatView = () => {
         if (!done) {
           console.warn("auto_accept: hard timeout reached");
           autoAcceptedRef.current = null;
+          setRejoinStatus("failed");
         }
         stop({ strip: true });
       }, HARD_TIMEOUT_MS);
@@ -515,6 +526,38 @@ const ChatView = () => {
           </>
         )}
       </div>
+
+      {/* Auto-rejoin status banner — shown while we wait for conversation
+          data to load before joining a call from a native deep link.
+          Uses semantic tokens so it adapts to light/dark themes. */}
+      {rejoinStatus === "reconnecting" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-2"
+        >
+          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+          <p className="text-xs text-foreground flex-1">Reconnecting call…</p>
+        </div>
+      )}
+      {rejoinStatus === "failed" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center gap-2"
+        >
+          <X className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-xs text-foreground flex-1">
+            Couldn't reconnect to the call. Try again from the chat.
+          </p>
+          <button
+            onClick={() => setRejoinStatus(null)}
+            className="text-xs font-semibold text-destructive hover:text-destructive/80"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Pending request banner for recipient */}
       {isRecipientOfRequest && (
