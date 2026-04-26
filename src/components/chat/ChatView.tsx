@@ -586,24 +586,50 @@ const ChatView = () => {
 
     const ensureLookup = () => {
       if (expectedConvoId || lookupFailed || lookupInFlight) return;
+
+      // Fast path: in-memory / localStorage cache from a prior lookup.
+      const cached = getCachedCallConversation(callId);
+      if (cached) {
+        expectedConvoId = cached;
+        return;
+      }
+
+      // Slow path: route through the module-level dedupe registry so that
+      // concurrent ensureLookup callers (rapid retry clicks, overlapping
+      // poll ticks, multiple mounted ChatView instances) share ONE supabase
+      // query for the same call_id instead of stampeding the database.
       lookupInFlight = true;
-      (async () => {
+      dedupeCallConversationLookup(callId, async () => {
         const { data, error } = await supabase
           .from("dm_calls" as any)
           .select("conversation_id")
           .eq("id", callId)
           .maybeSingle() as any;
-        lookupInFlight = false;
-        if (done) return;
-        if (error || !data?.conversation_id) {
-          lookupFailed = true;
+        if (error) {
           console.warn("auto_accept: call lookup failed", error);
+          return null;
+        }
+        return (data?.conversation_id as string | undefined) ?? null;
+      })
+        .then((conversationId) => {
+          lookupInFlight = false;
+          if (done) return;
+          if (!conversationId) {
+            lookupFailed = true;
+            failWithToast("lookup");
+            stop({ strip: true });
+            return;
+          }
+          expectedConvoId = conversationId;
+        })
+        .catch((err) => {
+          lookupInFlight = false;
+          if (done) return;
+          lookupFailed = true;
+          console.warn("auto_accept: call lookup threw", err);
           failWithToast("lookup");
           stop({ strip: true });
-          return;
-        }
-        expectedConvoId = data.conversation_id as string;
-      })();
+        });
     };
 
     const tryAccept = () => {
