@@ -240,6 +240,62 @@ const AdminSettings = () => {
     }
   };
 
+  // ─── Plain push test: search users (debounced) ───
+  useEffect(() => {
+    const q = pushTestQuery.trim();
+    if (q.length < 2) {
+      setPushTestResults([]);
+      return;
+    }
+    let cancelled = false;
+    setPushTestSearching(true);
+    const handle = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, username, avatar_url")
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%,email.ilike.%${q}%`)
+        .limit(8);
+      if (!cancelled) {
+        setPushTestResults((data || []) as any);
+        setPushTestSearching(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [pushTestQuery]);
+
+  // ─── Plain push test: send ───
+  const sendTestPush = async () => {
+    if (!pushTestTarget) return;
+    const title = pushTestTitle.trim() || "🔔 Test from Admin";
+    const body = pushTestBody.trim() || "This is a test push from the Pollmarket admin panel.";
+    setPushTestSending(true);
+    setPushTestResult(null);
+    setPushTestError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-fcm-push", {
+        body: { user_id: pushTestTarget.id, title, body, url: "/" },
+      });
+      if (error) {
+        setPushTestError(`Invoke error: ${error.message}`);
+        toast.error(error.message);
+      } else {
+        setPushTestResult(data);
+        const sent = (data as any)?.sent ?? 0;
+        const reason = (data as any)?.reason as string | undefined;
+        if (sent > 0) toast.success(`Test push delivered to ${sent} device(s)`);
+        else if (reason) toast.warning(reason);
+        else toast.error("FCM rejected every token — see per-token diagnostics");
+      }
+    } catch (e) {
+      setPushTestError(`Error: ${(e as Error).message}`);
+      toast.error((e as Error).message);
+    } finally {
+      setPushTestSending(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSettings = async () => {
