@@ -566,7 +566,7 @@ const ChatView = () => {
         (convo as any).id === expectedConvoId
       ) {
         setRejoinStatus(null);
-        lastFailedCallIdRef.current = null;
+        setLastFailedCallId(null);
         handleRejoinCall(callId, false);
         stop({ strip: true });
         return;
