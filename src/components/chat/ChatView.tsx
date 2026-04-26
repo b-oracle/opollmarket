@@ -14,6 +14,7 @@ import ChatMessageBubble from "./ChatMessageBubble";
 import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
+import { logCallEvent } from "@/lib/callEvents";
 
 interface Message {
   id: string;
