@@ -287,6 +287,7 @@ const ChatView = () => {
     if (!conversationId || !user) return;
     setCalling(true);
     try {
+      logCallEvent(callId, "rejoin", { with_video: withVideo });
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "rejoin", call_id: callId },
       });
@@ -310,6 +311,7 @@ const ChatView = () => {
         })
       );
     } catch (err: any) {
+      logCallEvent(callId, "failed", { stage: "rejoin", error: err?.message });
       toast.error(err.message || "Failed to rejoin call");
     } finally {
       setCalling(false);
