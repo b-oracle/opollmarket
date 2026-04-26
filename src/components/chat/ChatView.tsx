@@ -15,6 +15,11 @@ import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
+import {
+  writePendingRejoin,
+  readPendingRejoin,
+  clearPendingRejoin,
+} from "@/lib/pendingRejoin";
 
 interface Message {
   id: string;
@@ -394,9 +399,35 @@ const ChatView = () => {
   // Polls until conversation/convo data is ready, then joins.
   // Strips ONLY auto_accept + call_id from the URL after the attempt resolves
   // — preserves utm_*, ref, and any other tracking/query params untouched.
+  // Persistence: while the retry loop is in flight we mirror the pending
+  // call_id into localStorage so a refresh / app-resume / OS-killed webview
+  // restoration can pick the rejoin flow back up. The entry is keyed by
+  // conversationId, time-boxed (PENDING_TTL_MS), and cleared on resolution.
   useEffect(() => {
-    const autoAccept = searchParams.get("auto_accept");
-    const callId = searchParams.get("call_id");
+  useEffect(() => {
+    let autoAccept = searchParams.get("auto_accept");
+    let callId = searchParams.get("call_id");
+
+    // No URL intent? Try restoring from localStorage. Only resume when the
+    // entry matches the current conversation and isn't expired (handled by
+    // readPendingRejoin). We re-add the URL params and bail this run — the
+    // setSearchParams below retriggers the effect with intent populated.
+    if ((autoAccept !== "1" || !callId) && conversationId) {
+      const restored = readPendingRejoin(conversationId);
+      if (restored && autoAcceptedRef.current !== restored.callId) {
+        setSearchParams(
+          (current) => {
+            const next = new URLSearchParams(current);
+            next.set("auto_accept", "1");
+            next.set("call_id", restored.callId);
+            return next;
+          },
+          { replace: true },
+        );
+        return;
+      }
+    }
+
     if (autoAccept !== "1" || !callId) return;
     if (autoAcceptedRef.current === callId) return;
 
@@ -405,6 +436,9 @@ const ChatView = () => {
     // the join attempt resolves (success or timeout) so a mid-flight unmount
     // doesn't lose context.
     autoAcceptedRef.current = callId;
+
+    // Persist before we begin polling so a mid-flight refresh can resume.
+    if (conversationId) writePendingRejoin(conversationId, callId);
 
     let attempts = 0;
     const MAX_ATTEMPTS = 10;        // ~10s of polling (1s interval)
@@ -428,12 +462,15 @@ const ChatView = () => {
       );
     };
 
-    const stop = (opts: { strip: boolean }) => {
+    const stop = (opts: { strip: boolean; clearPersisted: boolean }) => {
       if (done) return;
       done = true;
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
       if (opts.strip) stripCallParams();
+      if (opts.clearPersisted && conversationId) {
+        clearPendingRejoin(conversationId);
+      }
     };
 
     const tryAccept = () => {
@@ -441,8 +478,8 @@ const ChatView = () => {
       attempts += 1;
       if (conversationId && user && convo) {
         setRejoinStatus(null);
-        handleRejoinCall(callId, false);
-        stop({ strip: true });
+        handleRejoinCall(callId!, false);
+        stop({ strip: true, clearPersisted: true });
         return;
       }
       // Surface the reconnecting banner once we've waited at least one tick
@@ -454,7 +491,7 @@ const ChatView = () => {
         // Reset so a future deep link with the same callId could retry
         autoAcceptedRef.current = null;
         setRejoinStatus("failed");
-        stop({ strip: true });
+        stop({ strip: true, clearPersisted: true });
       }
     };
 
@@ -468,12 +505,13 @@ const ChatView = () => {
           autoAcceptedRef.current = null;
           setRejoinStatus("failed");
         }
-        stop({ strip: true });
+        stop({ strip: true, clearPersisted: true });
       }, HARD_TIMEOUT_MS);
     }
 
-    // Cleanup on unmount: stop timers but DON'T strip params, so if the user
-    // navigates back the deep-link intent is still respected.
+    // Cleanup on unmount: stop timers but DON'T strip params or clear the
+    // persisted entry. If the user navigates back / the app resumes, both
+    // the URL intent and the localStorage entry let us pick up the rejoin.
     return () => {
       if (intervalId) clearInterval(intervalId);
       if (timeoutId) clearTimeout(timeoutId);
