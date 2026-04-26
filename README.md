@@ -83,7 +83,7 @@ In Lovable Cloud, keep Google sign-in enabled and add your own Google OAuth cred
 In Google Cloud Console, keep the Android OAuth Client ID configured with:
 
 ```text
-Package name: app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f
+Package name: com.opollmarket.app
 SHA-1: your debug, release, and Play App Signing fingerprints
 ```
 

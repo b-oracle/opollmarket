@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.fbc135e2c42c4d3fbb3ee7385ced809f',
+  appId: 'com.opollmarket.app',
   appName: 'opollmarket',
   webDir: 'dist',
   server: {
