@@ -59,10 +59,54 @@ const ChatView = () => {
   // null = idle, "reconnecting" = retry loop running, "failed" = gave up.
   // Drives the slim banner shown under the header so users get visible
   // feedback while we wait for conversation/convo data before auto-joining.
-  const [rejoinStatus, setRejoinStatus] = useState<null | "reconnecting" | "failed">(null);
+  // Persisted in sessionStorage (keyed by conversation id) so the banner
+  // survives navigation away and back to the chat view — without this, the
+  // user loses all visibility into a still-pending or failed reconnect the
+  // moment they tap the back button or open another tab.
+  const rejoinStorageKey = paramId ? `dm-rejoin-status:${paramId}` : null;
+  const [rejoinStatus, setRejoinStatus] = useState<null | "reconnecting" | "failed">(() => {
+    if (!rejoinStorageKey) return null;
+    try {
+      const raw = window.sessionStorage.getItem(rejoinStorageKey);
+      if (raw === "reconnecting" || raw === "failed") return raw;
+    } catch { /* ignore */ }
+    return null;
+  });
   // Holds the call_id from the last failed auto-accept attempt so the
   // "Try again" affordance (banner button + toast action) can re-invoke it.
-  const lastFailedCallIdRef = useRef<string | null>(null);
+  // Also persisted alongside rejoinStatus so "Try again" still works after
+  // returning to the page.
+  const lastFailedCallIdKey = paramId ? `dm-rejoin-failed-call:${paramId}` : null;
+  const lastFailedCallIdRef = useRef<string | null>((() => {
+    if (!lastFailedCallIdKey) return null;
+    try {
+      return window.sessionStorage.getItem(lastFailedCallIdKey);
+    } catch { return null; }
+  })());
+
+  // Mirror rejoinStatus + last failed call id to sessionStorage so they
+  // survive remounts. Cleared when status returns to idle.
+  useEffect(() => {
+    if (!rejoinStorageKey) return;
+    try {
+      if (rejoinStatus) {
+        window.sessionStorage.setItem(rejoinStorageKey, rejoinStatus);
+      } else {
+        window.sessionStorage.removeItem(rejoinStorageKey);
+        if (lastFailedCallIdKey) window.sessionStorage.removeItem(lastFailedCallIdKey);
+      }
+    } catch { /* ignore quota / privacy mode */ }
+  }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
+
+  // Helper to update the failed-call ref AND its persisted mirror together.
+  const setLastFailedCallId = useCallback((id: string | null) => {
+    lastFailedCallIdRef.current = id;
+    if (!lastFailedCallIdKey) return;
+    try {
+      if (id) window.sessionStorage.setItem(lastFailedCallIdKey, id);
+      else window.sessionStorage.removeItem(lastFailedCallIdKey);
+    } catch { /* ignore */ }
+  }, [lastFailedCallIdKey]);
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
