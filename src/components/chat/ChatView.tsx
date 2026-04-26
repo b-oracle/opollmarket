@@ -59,6 +59,9 @@ const ChatView = () => {
   // Drives the slim banner shown under the header so users get visible
   // feedback while we wait for conversation/convo data before auto-joining.
   const [rejoinStatus, setRejoinStatus] = useState<null | "reconnecting" | "failed">(null);
+  // Holds the call_id from the last failed auto-accept attempt so the
+  // "Try again" affordance (banner button + toast action) can re-invoke it.
+  const lastFailedCallIdRef = useRef<string | null>(null);
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
@@ -389,6 +392,28 @@ const ChatView = () => {
     }
   }, [calling, conversationId, user, otherName, convo, handleRejoinCall]);
 
+  // Re-arms the auto-accept retry loop after a failure. Resets the dedupe
+  // ref so the effect below re-enters, then re-adds auto_accept + call_id
+  // to the URL (preserving any other params) so the same flow runs again.
+  const retryAutoAccept = useCallback(
+    (callId: string) => {
+      if (!callId) return;
+      autoAcceptedRef.current = null;
+      lastFailedCallIdRef.current = null;
+      setRejoinStatus("reconnecting");
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.set("auto_accept", "1");
+          next.set("call_id", callId);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
   // Auto-accept incoming call when arriving via native notification deep link
   // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
   // Polls until conversation/convo data is ready, then joins.
@@ -436,11 +461,28 @@ const ChatView = () => {
       if (opts.strip) stripCallParams();
     };
 
+    const failWithToast = (reason: "attempts" | "timeout") => {
+      autoAcceptedRef.current = null;
+      lastFailedCallIdRef.current = callId;
+      setRejoinStatus("failed");
+      toast.error("Couldn't reconnect to the call", {
+        description:
+          reason === "timeout"
+            ? "Took too long to load the conversation."
+            : "We tried a few times but couldn't join.",
+        action: {
+          label: "Try again",
+          onClick: () => retryAutoAccept(callId),
+        },
+      });
+    };
+
     const tryAccept = () => {
       if (done) return;
       attempts += 1;
       if (conversationId && user && convo) {
         setRejoinStatus(null);
+        lastFailedCallIdRef.current = null;
         handleRejoinCall(callId, false);
         stop({ strip: true });
         return;
@@ -451,9 +493,7 @@ const ChatView = () => {
       setRejoinStatus("reconnecting");
       if (attempts >= MAX_ATTEMPTS) {
         console.warn("auto_accept: gave up after", attempts, "attempts");
-        // Reset so a future deep link with the same callId could retry
-        autoAcceptedRef.current = null;
-        setRejoinStatus("failed");
+        failWithToast("attempts");
         stop({ strip: true });
       }
     };
@@ -465,8 +505,7 @@ const ChatView = () => {
       timeoutId = setTimeout(() => {
         if (!done) {
           console.warn("auto_accept: hard timeout reached");
-          autoAcceptedRef.current = null;
-          setRejoinStatus("failed");
+          failWithToast("timeout");
         }
         stop({ strip: true });
       }, HARD_TIMEOUT_MS);
@@ -548,11 +587,22 @@ const ChatView = () => {
         >
           <X className="w-4 h-4 text-destructive shrink-0" />
           <p className="text-xs text-foreground flex-1">
-            Couldn't reconnect to the call. Try again from the chat.
+            Couldn't reconnect to the call.
           </p>
+          {lastFailedCallIdRef.current && (
+            <button
+              onClick={() => retryAutoAccept(lastFailedCallIdRef.current!)}
+              className="text-xs font-semibold text-primary hover:text-primary/80 px-2 py-1 rounded-md hover:bg-primary/10"
+            >
+              Try again
+            </button>
+          )}
           <button
-            onClick={() => setRejoinStatus(null)}
-            className="text-xs font-semibold text-destructive hover:text-destructive/80"
+            onClick={() => {
+              lastFailedCallIdRef.current = null;
+              setRejoinStatus(null);
+            }}
+            className="text-xs font-semibold text-muted-foreground hover:text-foreground"
           >
             Dismiss
           </button>
