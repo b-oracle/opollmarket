@@ -124,12 +124,14 @@ class CallActionReceiver : BroadcastReceiver() {
 }
 
 /**
- * Tiny SharedPreferences-backed cache for the Supabase access token. The JS
- * layer keeps this in sync (see src/lib/nativeAuthCache.ts).
+ * Reads the Supabase access token from Capacitor Preferences storage.
+ * The JS layer (src/lib/nativeAuthCache.ts) writes it on every auth state
+ * change via @capacitor/preferences, which on Android is backed by the
+ * "CapacitorStorage" SharedPreferences file with keys prefixed "_cap_".
  */
 object SupabaseTokenCache {
-    private const val PREFS = "opoll_native_auth"
-    private const val KEY_TOKEN = "supabase_access_token"
+    private const val PREFS = "CapacitorStorage"
+    private const val KEY_TOKEN = "_cap_supabase_access_token"
 
     fun read(context: Context?): String? {
         val ctx = context ?: return null
