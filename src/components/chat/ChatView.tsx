@@ -704,10 +704,20 @@ const ChatView = () => {
         <div
           role="status"
           aria-live="polite"
-          className="shrink-0 bg-primary/10 border-b border-primary/20 px-4 py-2 flex items-center gap-2"
+          className={`shrink-0 border-b px-4 py-2 flex items-center gap-2 ${
+            isOffline
+              ? "bg-warning/10 border-warning/20"
+              : "bg-primary/10 border-primary/20"
+          }`}
         >
-          <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
-          <p className="text-xs text-foreground flex-1">Reconnecting call…</p>
+          {isOffline ? (
+            <WifiOff className="w-4 h-4 text-warning shrink-0" />
+          ) : (
+            <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+          )}
+          <p className="text-xs text-foreground flex-1">
+            {isOffline ? "Offline — waiting for network…" : "Reconnecting call…"}
+          </p>
         </div>
       )}
       {rejoinStatus === "failed" && (
