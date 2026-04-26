@@ -11,9 +11,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "assets": "node scripts/build-splash-sources.mjs && capacitor-assets generate --android && node scripts/patch-android-splash-theme.mjs",
+    "android:build:prod": "npm run build && npx cap sync android && npx cap build android --release --androidreleasetype AAB",
+    "android:build:preview": "npm run build:dev && npx cap sync android && npx cap build android --androidreleasetype APK",
+    "assets": "node scripts/build-splash-sources.mjs && capacitor-assets generate --android && node scripts/patch-android-resources.mjs",
     "android:patch-firebase": "node scripts/patch-android-firebase.mjs",
-    "android:sync": "npx cap sync android && npm run android:patch-firebase"
+    "android:patch-main-activity": "node scripts/patch-android-main-activity.mjs",
+    "android:sync": "npx cap sync android && npm run android:patch-firebase && npm run android:patch-main-activity"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.0",
@@ -24,6 +27,7 @@
     "@capacitor/haptics": "^8.0.0",
     "@capacitor/ios": "^8.3.0",
     "@capacitor/push-notifications": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.0",
     "@capgo/capacitor-social-login": "^8.3.17",
     "@hookform/resolvers": "^3.10.0",

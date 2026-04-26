@@ -421,14 +421,14 @@ const Auth = () => {
                         }
 
                         toast.info("Native Google sign-in could not complete. Opening browser-based Google sign-in instead.");
-                        const { error } = await signInWithWebGoogle();
-                        if (error) toast.error("Google sign-in failed");
-                        return;
+                        // const { error } = await signInWithWebGoogle();
+                        // if (error) toast.error("Google sign-in failed");
+                        // return;
                       }
                     }
 
-                    const { error } = await signInWithWebGoogle();
-                    if (error) toast.error("Google sign-in failed");
+                    // const { error } = await signInWithWebGoogle();
+                    // if (error) toast.error("Google sign-in failed");
                   } catch (err: any) {
                     const message = String(err?.message || "Google sign-in failed");
                     if (!message.toLowerCase().includes("cancel")) toast.error(message);
