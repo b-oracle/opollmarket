@@ -384,23 +384,61 @@ const ChatView = () => {
 
   // Auto-accept incoming call when arriving via native notification deep link
   // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
+  // Uses a retry loop because conversation/convo data may load after the
+  // params are read. Caps attempts and total wait time to avoid loops.
   useEffect(() => {
-    if (!conversationId || !user || !convo) return;
     const autoAccept = searchParams.get("auto_accept");
     const callId = searchParams.get("call_id");
     if (autoAccept !== "1" || !callId) return;
     if (autoAcceptedRef.current === callId) return;
-    autoAcceptedRef.current = callId;
 
-    // Strip the params so a refresh doesn't re-trigger the join
+    // Strip the params immediately so a refresh / re-render doesn't re-trigger
     const next = new URLSearchParams(searchParams);
     next.delete("auto_accept");
     next.delete("call_id");
     setSearchParams(next, { replace: true });
 
-    // Rejoin the active call (server validates participant membership)
-    handleRejoinCall(callId, false);
+    let attempts = 0;
+    const MAX_ATTEMPTS = 10;        // ~10s of polling (1s interval)
+    const HARD_TIMEOUT_MS = 15_000; // absolute upper bound
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let done = false;
+
+    const stop = () => {
+      done = true;
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    const tryAccept = () => {
+      if (done) return;
+      attempts += 1;
+      if (conversationId && user && convo) {
+        autoAcceptedRef.current = callId;
+        handleRejoinCall(callId, false);
+        stop();
+        return;
+      }
+      if (attempts >= MAX_ATTEMPTS) {
+        console.warn("auto_accept: gave up after", attempts, "attempts");
+        stop();
+      }
+    };
+
+    // Try immediately, then poll
+    tryAccept();
+    if (!done) {
+      intervalId = setInterval(tryAccept, 1000);
+      timeoutId = setTimeout(() => {
+        if (!done) console.warn("auto_accept: hard timeout reached");
+        stop();
+      }, HARD_TIMEOUT_MS);
+    }
+
+    return stop;
   }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall]);
+
 
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
