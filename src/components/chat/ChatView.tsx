@@ -783,8 +783,35 @@ const ChatView = () => {
           </button>
           <button
             onClick={() => {
+              // Cancel any pending auto-rejoin retries for this call_id:
+              //   1. Lock autoAcceptedRef to this id so if the URL still
+              //      carries auto_accept+call_id (race with a freshly
+              //      requeued retry), the effect's early-return guard
+              //      short-circuits before scheduling new timers.
+              //   2. Strip auto_accept + call_id from the URL — that
+              //      changes the searchParams dep of the auto-accept
+              //      effect, triggering its cleanup which clears the
+              //      pending interval + hard-timeout (the "deep link
+              //      handling cancelled" path).
+              //   3. Clear the failed/deadline state so the banner and
+               //      countdown disappear immediately.
+              const dismissedId =
+                lastFailedCallIdRef.current ?? searchParams.get("call_id");
+              if (dismissedId) {
+                autoAcceptedRef.current = dismissedId;
+              }
               setLastFailedCallId(null);
               setRejoinStatus(null);
+              setRejoinDeadlineAt(null);
+              if (
+                searchParams.get("auto_accept") ||
+                searchParams.get("call_id")
+              ) {
+                setSearchParams(
+                  (current) => stripCallDeepLinkParams(current),
+                  { replace: true },
+                );
+              }
             }}
             aria-label="Dismiss"
             className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
