@@ -59,6 +59,9 @@ const ChatView = () => {
   // Drives the slim banner shown under the header so users get visible
   // feedback while we wait for conversation/convo data before auto-joining.
   const [rejoinStatus, setRejoinStatus] = useState<null | "reconnecting" | "failed">(null);
+  // Holds the call_id from the last failed auto-accept attempt so the
+  // "Try again" affordance (banner button + toast action) can re-invoke it.
+  const lastFailedCallIdRef = useRef<string | null>(null);
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
