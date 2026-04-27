@@ -38,7 +38,7 @@ type MarketRow = {
   participants: number | null;
   created_at: string;
   end_date: string | null;
-  resolved_at: string | null;
+  updated_at: string | null;
   resolved_side: string | null;
   winning_option_id: string | null;
   market_type: string | null;
@@ -144,7 +144,7 @@ const CreatorDashboard = () => {
       const { data: marketsData } = await supabase
         .from("markets")
         .select(
-          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, resolved_at, resolved_side, winning_option_id, market_type",
+          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, updated_at, resolved_side, winning_option_id, market_type",
         )
         .eq("creator_wallet", user.id)
         .order("created_at", { ascending: false });
@@ -275,11 +275,11 @@ const CreatorDashboard = () => {
     const toMs = dateWindow.to?.getTime();
     return markets.filter((m) => {
       if (filter !== "all" && m.status !== filter) return false;
-      // Apply date window only to resolved/cancelled markets (they have resolved_at).
-      // Active/pending/draft markets are always shown regardless of range.
+      // Apply date window only to resolved/cancelled markets (using updated_at as
+      // the resolution timestamp proxy). Active/pending/draft markets are always shown.
       if ((m.status === "resolved" || m.status === "cancelled") && (fromMs || toMs)) {
-        if (!m.resolved_at) return false;
-        const t = new Date(m.resolved_at).getTime();
+        if (!m.updated_at) return false;
+        const t = new Date(m.updated_at).getTime();
         if (fromMs && t < fromMs) return false;
         if (toMs && t > toMs) return false;
       }
