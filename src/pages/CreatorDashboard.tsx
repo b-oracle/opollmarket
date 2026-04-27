@@ -24,7 +24,6 @@ import {
   X,
 } from "lucide-react";
 import ResolvedMarketDetail from "@/components/creator/ResolvedMarketDetail";
-import { useSidebarState } from "@/hooks/useSidebarState";
 
 type RangePreset = "all" | "7d" | "30d" | "90d" | "ytd" | "custom";
 
@@ -65,7 +64,6 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 const CreatorDashboard = () => {
   const { user, loading: authLoading } = useAuth();
-  const { collapsed: sidebarCollapsed } = useSidebarState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [markets, setMarkets] = useState<MarketRow[]>([]);
@@ -297,12 +295,7 @@ const CreatorDashboard = () => {
       />
       <TopBar />
 
-      <main
-        className={cn(
-          "max-w-3xl mx-auto px-4 pt-20 lg:pt-24 lg:max-w-none lg:mr-0 lg:pl-8 lg:pr-8",
-          sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-60",
-        )}
-      >
+      <main className="w-full max-w-none mx-0 px-3 sm:px-4 lg:px-6 pt-20 lg:pt-24">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold">Creator Dashboard</h1>
