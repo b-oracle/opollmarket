@@ -171,22 +171,28 @@ const CreatorDashboard = () => {
         return next;
       };
 
-      const [paidRes, pendingRes, refundRes] = await Promise.all([
-        applyWindow(
-          supabase
-            .from("transactions")
-            .select("market_id, amount")
-            .eq("user_id", user.id)
-            .eq("type", "commission")
-            .eq("status", "confirmed")
-            .in("market_id", ids),
-        ),
+      // Single source of truth for creator commissions: `pending_commissions`
+      // (rows are inserted as `pending` and updated to `released` when paid out;
+      // matching `transactions` rows for the released payout would double-count).
+      // Plus a fallback for legacy commissions that exist only in `transactions`
+      // (older markets where pending_commissions wasn't yet wired up).
+      const [pendingRes, legacyPaidRes, refundRes] = await Promise.all([
         applyWindow(
           supabase
             .from("pending_commissions" as any)
             .select("market_id, amount, status")
             .eq("user_id", user.id)
             .eq("type", "creator")
+            .in("market_id", ids),
+        ),
+        applyWindow(
+          supabase
+            .from("transactions")
+            .select("market_id, amount, created_at")
+            .eq("user_id", user.id)
+            .eq("type", "commission")
+            .eq("side", "creator")
+            .eq("status", "confirmed")
             .in("market_id", ids),
         ),
         applyWindow(
@@ -204,15 +210,26 @@ const CreatorDashboard = () => {
       const map: EarningsByMarket = {};
       const ensure = (id: string) => (map[id] ||= { realized: 0, pending: 0, liquidityReturn: 0 });
 
-      ((paidRes.data as any[]) || []).forEach((t) => {
-        if (t.market_id) ensure(t.market_id).realized += Number(t.amount) || 0;
-      });
+      // Track which (market_id) have pending_commissions data so we don't
+      // double-count legacy transactions for the same markets.
+      const marketsWithPendingData = new Set<string>();
+
       ((pendingRes.data as any[]) || []).forEach((c) => {
         if (!c.market_id) return;
+        marketsWithPendingData.add(c.market_id);
         const bucket = ensure(c.market_id);
-        if (c.status === "released") bucket.realized += Number(c.amount) || 0;
-        else if (c.status === "pending") bucket.pending += Number(c.amount) || 0;
+        const amt = Number(c.amount) || 0;
+        if (c.status === "released") bucket.realized += amt;
+        else if (c.status === "pending") bucket.pending += amt;
       });
+
+      // Legacy fallback: include `transactions` only for markets without
+      // any pending_commissions rows (those have already been counted above).
+      ((legacyPaidRes.data as any[]) || []).forEach((t) => {
+        if (!t.market_id || marketsWithPendingData.has(t.market_id)) return;
+        ensure(t.market_id).realized += Number(t.amount) || 0;
+      });
+
       ((refundRes.data as any[]) || []).forEach((t) => {
         if (t.market_id) ensure(t.market_id).liquidityReturn += Number(t.amount) || 0;
       });
