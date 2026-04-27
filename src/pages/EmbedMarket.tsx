@@ -28,7 +28,7 @@ interface BrandConfig {
 }
 
 const DEFAULT_BRAND: BrandConfig = {
-  name: "OPOLL",
+  name: "OPollmarket",
   logoUrl: null,
   primaryColor: "#3b82f6",
   darkBg: "#0a0a0f",
