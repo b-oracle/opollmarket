@@ -263,7 +263,8 @@ const CreatorDashboard = () => {
         liquidityReturned += e.liquidityReturn;
       }
       participants += Number(m.participants) || 0;
-      liquidity += Number(m.liquidity) || 0;
+      // Active Liquidity = creator's own contributed liquidity (initial_liquidity) for active markets only
+      if (m.status === "active") liquidity += Number(m.initial_liquidity) || 0;
       if (m.status === "resolved") resolvedCount++;
       if (m.status === "active") activeCount++;
     }
