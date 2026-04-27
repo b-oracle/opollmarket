@@ -59,7 +59,7 @@ const EmbedMarket = () => {
         if (keyData) {
           const k = keyData as any;
           setBrand({
-            name: k.brand_name || "OPOLL",
+            name: k.brand_name || "OPollmarket",
             logoUrl: k.brand_logo_url || null,
             primaryColor: k.brand_primary_color || "#3b82f6",
             darkBg: k.brand_dark_bg || "#0a0a0f",
