@@ -65,6 +65,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 const CreatorDashboard = () => {
   const { user, loading: authLoading } = useAuth();
+  const { collapsed: sidebarCollapsed } = useSidebarState();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [markets, setMarkets] = useState<MarketRow[]>([]);
