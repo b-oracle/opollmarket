@@ -144,7 +144,7 @@ const CreatorDashboard = () => {
       const { data: marketsData } = await supabase
         .from("markets")
         .select(
-          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, resolved_at, resolved_side, winning_option_id, market_type",
+          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, updated_at, resolved_side, winning_option_id, market_type",
         )
         .eq("creator_wallet", user.id)
         .order("created_at", { ascending: false });
