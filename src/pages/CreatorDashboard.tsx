@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import ResolvedMarketDetail from "@/components/creator/ResolvedMarketDetail";
+import { useSidebarState } from "@/hooks/useSidebarState";
 
 type RangePreset = "all" | "7d" | "30d" | "90d" | "ytd" | "custom";
 
