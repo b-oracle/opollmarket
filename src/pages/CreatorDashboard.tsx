@@ -295,7 +295,7 @@ const CreatorDashboard = () => {
       />
       <TopBar />
 
-      <main className="max-w-3xl mx-auto px-4 pt-4 lg:pl-64">
+      <main className="max-w-3xl lg:max-w-6xl mx-auto px-4 pt-4 lg:pl-[17rem] lg:pr-8">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold">Creator Dashboard</h1>
@@ -310,7 +310,7 @@ const CreatorDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <StatCard label="Total Earned" value={`$${totals.realized.toFixed(2)}`} icon={DollarSign} color="text-emerald-500" />
           <StatCard label="Pending Earnings" value={`$${totals.pending.toFixed(2)}`} icon={Hourglass} color="text-amber-500" />
           <StatCard label="Active Liquidity" value={`$${totals.liquidity.toFixed(2)}`} icon={Droplets} color="text-blue-500" />
