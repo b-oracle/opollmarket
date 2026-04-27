@@ -38,7 +38,7 @@ type MarketRow = {
   participants: number | null;
   created_at: string;
   end_date: string | null;
-  resolved_at: string | null;
+  updated_at: string | null;
   resolved_side: string | null;
   winning_option_id: string | null;
   market_type: string | null;
