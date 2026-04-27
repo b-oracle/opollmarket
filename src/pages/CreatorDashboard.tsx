@@ -295,7 +295,7 @@ const CreatorDashboard = () => {
       />
       <TopBar />
 
-      <main className="max-w-3xl lg:max-w-6xl mx-auto px-4 pt-4 lg:pl-[17rem] lg:pr-8">
+      <main className="max-w-3xl lg:max-w-6xl mx-auto px-4 pt-20 lg:pt-24 lg:pl-[17rem] lg:pr-8">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold">Creator Dashboard</h1>
