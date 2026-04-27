@@ -275,11 +275,11 @@ const CreatorDashboard = () => {
     const toMs = dateWindow.to?.getTime();
     return markets.filter((m) => {
       if (filter !== "all" && m.status !== filter) return false;
-      // Apply date window only to resolved/cancelled markets (they have resolved_at).
-      // Active/pending/draft markets are always shown regardless of range.
+      // Apply date window only to resolved/cancelled markets (using updated_at as
+      // the resolution timestamp proxy). Active/pending/draft markets are always shown.
       if ((m.status === "resolved" || m.status === "cancelled") && (fromMs || toMs)) {
-        if (!m.resolved_at) return false;
-        const t = new Date(m.resolved_at).getTime();
+        if (!m.updated_at) return false;
+        const t = new Date(m.updated_at).getTime();
         if (fromMs && t < fromMs) return false;
         if (toMs && t > toMs) return false;
       }
