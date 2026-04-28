@@ -238,7 +238,7 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   // Track whether the user intentionally muted, so we can auto-restore on app switch
-  const userIntentMutedRef = useRef(false);
+  const userIntentMutedRef = useRef(persistedPrefs?.muted ?? false);
 
   // Connect to LiveKit room
   useEffect(() => {
