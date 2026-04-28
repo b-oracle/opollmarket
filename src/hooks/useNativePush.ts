@@ -247,7 +247,12 @@ export const useNativePush = () => {
                   id: "INCOMING_CALL",
                   actions: [
                     { id: "accept", title: "Accept" },
-                    { id: "mute", title: "Mute" },
+                    // Snooze options — local-only mute for the chosen duration.
+                    // iOS/Android notifications don't support nested submenus,
+                    // so we expose each duration as its own button.
+                    { id: "snooze_10s", title: "Snooze 10s" },
+                    { id: "snooze_1m", title: "Snooze 1m" },
+                    { id: "snooze_5m", title: "Snooze 5m" },
                     { id: "decline", title: "Decline", destructive: true },
                   ],
                 },
