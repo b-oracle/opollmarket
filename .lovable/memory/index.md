@@ -39,6 +39,7 @@
 - [Draft Management](mem://features/market-creation/draft-management) — LocalStorage drafts, tier limits, JSONB RPC typing.
 - [Portfolio PnL](mem://features/portfolio/pnl-and-display) — Active vs resolved categories, simulated AMM price impact.
 - [Push Notifications](mem://tech/push-notifications) — Multi-channel architecture, deduplication, deep-linking.
+- [iOS Call Stack](mem://features/messaging/ios-call-stack) — PushKit + CallKit native lockscreen UI; direct APNs VoIP delivery; ios-native-ref/ blueprint.
 - [Resolution Audit](mem://tech/blockchain-integration/resolution-audit) — On-chain market resolution logging.
 - [Twitter Engagement Tracking](mem://features/market-mechanics/twitter-engagement-tracking) — Live engagement UI parsing.
 - [Promotions System](mem://features/promotions/system-overview) — Boosts/Broadcasts/Ads with 4h expiry.
