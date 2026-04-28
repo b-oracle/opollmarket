@@ -379,6 +379,70 @@ const ChatView = () => {
     }
   }, []);
 
+  // Deep-link: when arriving via `?missed_call_id=<id>` look up the call's
+  // `ended_at` timestamp, then find the matching `[CALL:missed:0]` system
+  // message (sent by the caller within a few seconds of `ended_at`) and
+  // scroll/highlight it. Runs once per call_id and waits until both the
+  // messages list and the call row are available.
+  useEffect(() => {
+    if (!missedCallId || !conversationId) return;
+    if (scrolledMissedCallRef.current === missedCallId) return;
+    if (!messages || messages.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: callRow, error } = await supabase
+          .from("dm_calls")
+          .select("ended_at, caller_id, conversation_id, status")
+          .eq("id", missedCallId)
+          .maybeSingle();
+        if (cancelled || error || !callRow) return;
+        if (callRow.conversation_id !== conversationId) return;
+
+        const endedAtMs = callRow.ended_at ? new Date(callRow.ended_at).getTime() : null;
+        // Find the closest [CALL:missed:*] message from the caller.
+        // dm_messages.created_at is written in the same RPC call that flips
+        // the status, so the gap is < ~2s in practice. Use a 60s window to
+        // be safe against clock skew.
+        const candidates = messages.filter(
+          (m) =>
+            m.sender_id === callRow.caller_id &&
+            typeof m.content === "string" &&
+            /^\[CALL:missed:/.test(m.content),
+        );
+        if (candidates.length === 0) return;
+
+        let target = candidates[candidates.length - 1];
+        if (endedAtMs != null) {
+          let bestDelta = Number.POSITIVE_INFINITY;
+          for (const m of candidates) {
+            const delta = Math.abs(new Date(m.created_at).getTime() - endedAtMs);
+            if (delta < bestDelta) {
+              bestDelta = delta;
+              target = m;
+            }
+          }
+          // Reject obviously unrelated matches.
+          if (bestDelta > 60_000) return;
+        }
+
+        scrolledMissedCallRef.current = missedCallId;
+        // Defer to next tick so the bubble is mounted by the time we scroll.
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          handleScrollToMessage(target.id);
+        });
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [missedCallId, conversationId, messages, handleScrollToMessage]);
+
   const handleAccept = async () => {
     if (!conversationId) return;
     setAccepting(true);
