@@ -876,6 +876,7 @@ const VoiceCallOverlay = ({
     userIntentMutedRef.current = newMuted;
     await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
     setMuted(newMuted);
+    saveCallPreferences(callId, { muted: newMuted });
   };
 
   const toggleCamera = async () => {
