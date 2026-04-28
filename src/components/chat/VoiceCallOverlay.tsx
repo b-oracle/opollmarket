@@ -9,6 +9,7 @@ import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Max
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { recordCallLifecycle } from "@/lib/callLifecycleLog";
+import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
 import CallDebugOverlay from "./CallDebugOverlay";
 
 interface VoiceCallOverlayProps {
@@ -68,12 +69,15 @@ const VoiceCallOverlay = ({
   });
 
   const screenShareEnabled = globalScreenShareEnabled && userScreenShareAllowed;
+  // Hydrate from any persisted preferences for this call so reloads /
+  // overlay remounts retain the last mic/camera intent.
+  const persistedPrefs = loadCallPreferences(callId);
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(persistedPrefs?.muted ?? false);
   const [speakerOn, setSpeakerOn] = useState(false);
-  const [cameraOn, setCameraOn] = useState(startWithVideo);
+  const [cameraOn, setCameraOn] = useState(persistedPrefs?.cameraOn ?? startWithVideo);
   const [screenShareOn, setScreenShareOn] = useState(false);
   const [duration, setDuration] = useState(0);
   const [remoteAudioLevel, setRemoteAudioLevel] = useState(0);
@@ -88,7 +92,7 @@ const VoiceCallOverlay = ({
   const screenShareRef = useRef<HTMLVideoElement>(null);
   const [hasRemoteVideo, setHasRemoteVideo] = useState(false);
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState(false);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+  const [facingMode, setFacingMode] = useState<"user" | "environment">(persistedPrefs?.facingMode ?? "user");
   const [pipPos, setPipPos] = useState({ x: 16, y: 112 });
   const [pipDragging, setPipDragging] = useState(false);
   const pipDragStart = useRef<{ x: number; y: number; startX: number; startY: number } | null>(null);
@@ -170,6 +174,7 @@ const VoiceCallOverlay = ({
       : 0;
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
+    clearCallPreferences(callId);
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -196,6 +201,7 @@ const VoiceCallOverlay = ({
 
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
+    clearCallPreferences(callId);
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -224,6 +230,7 @@ const VoiceCallOverlay = ({
 
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
     recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
+    clearCallPreferences(callId);
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -234,7 +241,7 @@ const VoiceCallOverlay = ({
   }, [callId, onClose]);
 
   // Track whether the user intentionally muted, so we can auto-restore on app switch
-  const userIntentMutedRef = useRef(false);
+  const userIntentMutedRef = useRef(persistedPrefs?.muted ?? false);
 
   // Connect to LiveKit room
   useEffect(() => {
@@ -467,10 +474,21 @@ const VoiceCallOverlay = ({
               data: { attempt },
             });
             await room.connect(currentUrlRef.current, currentTokenRef.current);
-            try { await room.localParticipant.setMicrophoneEnabled(!muted); } catch {}
-            if (cameraOn) {
+            // Restore the user's last mic/camera intent. Read from the
+            // persisted store so we always honor the most recent toggle —
+            // even if the closure captured a stale `muted`/`cameraOn`.
+            const restored = loadCallPreferences(callId);
+            const wantMuted = restored?.muted ?? muted;
+            const wantCameraOn = restored?.cameraOn ?? cameraOn;
+            try { await room.localParticipant.setMicrophoneEnabled(!wantMuted); } catch {}
+            if (wantCameraOn) {
               try { await room.localParticipant.setCameraEnabled(true); } catch {}
             }
+            recordCallLifecycle(callId, "info", {
+              status: statusRef.current,
+              message: "Restored media preferences after auto-reconnect",
+              data: { muted: wantMuted, cameraOn: wantCameraOn, attempt },
+            });
             setReconnecting(false);
             reconnectAttemptsRef.current = 0;
             recordCallLifecycle(callId, "auto_reconnect_ok", {
@@ -566,8 +584,19 @@ const VoiceCallOverlay = ({
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
         try {
-          await room.localParticipant.setMicrophoneEnabled(true);
-          recordCallLifecycle(callId, "mic_enable_ok", { status: statusRef.current });
+          // Honor any persisted muted intent for this call (e.g., user
+          // muted before a reload or before the overlay remounted).
+          const restored = loadCallPreferences(callId);
+          const wantMuted = restored?.muted ?? false;
+          await room.localParticipant.setMicrophoneEnabled(!wantMuted);
+          if (wantMuted) {
+            setMuted(true);
+            userIntentMutedRef.current = true;
+          }
+          recordCallLifecycle(callId, "mic_enable_ok", {
+            status: statusRef.current,
+            data: { muted: wantMuted, restored: !!restored },
+          });
         } catch (micErr: any) {
           console.warn("Microphone enable failed:", micErr);
           logCallEvent(callId, "failed", { stage: "mic_enable", error: micErr?.message });
@@ -590,10 +619,13 @@ const VoiceCallOverlay = ({
             toast.warning("Joined muted — mic unavailable");
           }
         }
-        // Enable camera if starting with video
-        if (startWithVideo) {
+        // Enable camera if starting with video OR persisted preference says on
+        const restoredPrefs = loadCallPreferences(callId);
+        const shouldStartCamera = restoredPrefs?.cameraOn ?? startWithVideo;
+        if (shouldStartCamera) {
           try {
             await room.localParticipant.setCameraEnabled(true);
+            setCameraOn(true);
           } catch (e: any) {
             console.warn("Failed to enable camera:", e);
             recordCallLifecycle(callId, "camera_enable_failed", {
@@ -847,6 +879,7 @@ const VoiceCallOverlay = ({
     userIntentMutedRef.current = newMuted;
     await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
     setMuted(newMuted);
+    saveCallPreferences(callId, { muted: newMuted });
   };
 
   const toggleCamera = async () => {
@@ -856,6 +889,7 @@ const VoiceCallOverlay = ({
       const newState = !cameraOn;
       await room.localParticipant.setCameraEnabled(newState);
       setCameraOn(newState);
+      saveCallPreferences(callId, { cameraOn: newState });
       if (newState) {
         // Retry attachment up to 3 times with increasing delay
         const attachLocal = (attempt: number) => {
@@ -891,6 +925,7 @@ const VoiceCallOverlay = ({
           resolution: { width: 640, height: 480, frameRate: 24 },
         });
         setFacingMode(newFacing);
+        saveCallPreferences(callId, { facingMode: newFacing });
         // Re-attach after restart
         setTimeout(() => {
           if (localVideoRef.current && camPub.track) {
@@ -905,6 +940,7 @@ const VoiceCallOverlay = ({
           resolution: { width: 640, height: 480, frameRate: 24 },
         });
         setFacingMode(newFacing);
+        saveCallPreferences(callId, { facingMode: newFacing });
         setTimeout(() => {
           const pub = room.localParticipant.getTrackPublication(Track.Source.Camera);
           if (pub?.track && localVideoRef.current) {
@@ -991,14 +1027,27 @@ const VoiceCallOverlay = ({
       });
 
       await room.connect(data.url, data.token);
-      await room.localParticipant.setMicrophoneEnabled(!muted);
-      if (cameraOn) {
+      // Restore the user's last mic/camera intent (persisted store wins
+      // over stale closure captures).
+      const restored = loadCallPreferences(callId);
+      const wantMuted = restored?.muted ?? muted;
+      const wantCameraOn = restored?.cameraOn ?? cameraOn;
+      await room.localParticipant.setMicrophoneEnabled(!wantMuted);
+      setMuted(wantMuted);
+      userIntentMutedRef.current = wantMuted;
+      if (wantCameraOn) {
         await room.localParticipant.setCameraEnabled(true);
+        setCameraOn(true);
         setTimeout(() => {
           const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
           if (camPub?.track && localVideoRef.current) camPub.track.attach(localVideoRef.current);
         }, 200);
       }
+      recordCallLifecycle(callId, "info", {
+        status: statusRef.current,
+        message: "Restored media preferences after manual rejoin",
+        data: { muted: wantMuted, cameraOn: wantCameraOn },
+      });
       setReconnecting(false);
       setStatus("active");
       if (!startTimeRef.current) startTimeRef.current = Date.now();
