@@ -1024,14 +1024,27 @@ const VoiceCallOverlay = ({
       });
 
       await room.connect(data.url, data.token);
-      await room.localParticipant.setMicrophoneEnabled(!muted);
-      if (cameraOn) {
+      // Restore the user's last mic/camera intent (persisted store wins
+      // over stale closure captures).
+      const restored = loadCallPreferences(callId);
+      const wantMuted = restored?.muted ?? muted;
+      const wantCameraOn = restored?.cameraOn ?? cameraOn;
+      await room.localParticipant.setMicrophoneEnabled(!wantMuted);
+      setMuted(wantMuted);
+      userIntentMutedRef.current = wantMuted;
+      if (wantCameraOn) {
         await room.localParticipant.setCameraEnabled(true);
+        setCameraOn(true);
         setTimeout(() => {
           const camPub = room.localParticipant.getTrackPublication(Track.Source.Camera);
           if (camPub?.track && localVideoRef.current) camPub.track.attach(localVideoRef.current);
         }, 200);
       }
+      recordCallLifecycle(callId, "info", {
+        status: statusRef.current,
+        message: "Restored media preferences after manual rejoin",
+        data: { muted: wantMuted, cameraOn: wantCameraOn },
+      });
       setReconnecting(false);
       setStatus("active");
       if (!startTimeRef.current) startTimeRef.current = Date.now();
