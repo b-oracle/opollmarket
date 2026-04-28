@@ -848,7 +848,10 @@ const VoiceCallOverlay = ({
         videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
         disconnectOnPageLeave: false,
       });
-      roomRef.current?.disconnect();
+      const previousRoom = roomRef.current;
+      intentionalDisconnectRef.current = true;
+      previousRoom?.disconnect();
+      intentionalDisconnectRef.current = false;
       roomRef.current = room;
       // Re-bind events
       room.on(RoomEvent.TrackSubscribed, (track) => {
