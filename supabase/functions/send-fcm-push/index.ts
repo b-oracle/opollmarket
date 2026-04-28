@@ -128,6 +128,107 @@ async function getAccessToken(sa: {
   return cachedToken.token;
 }
 
+// ---- Direct APNs (HTTP/2) — required for VoIP/PushKit -------------------
+//
+// FCM cannot relay VoIP pushes. To wake a killed iOS app and trigger CallKit
+// you must POST directly to api.push.apple.com with `apns-push-type: voip`
+// and the `<bundleId>.voip` topic. We sign with a JWT (ES256) using an APNs
+// auth key (.p8) so we don't have to manage a TLS client certificate.
+//
+// Required secrets (only needed for iOS VoIP delivery; non-VoIP paths still
+// work fine through FCM without these):
+//   APNS_AUTH_KEY_P8 — contents of the AuthKey_<KeyID>.p8 file
+//   APNS_KEY_ID      — 10-char Key ID from Apple Developer
+//   APNS_TEAM_ID     — 10-char Team ID from Apple Developer
+//   APNS_BUNDLE_ID   — iOS bundle id (defaults to com.opollmarket.app)
+//   APNS_USE_SANDBOX — "1" to use api.sandbox.push.apple.com (debug builds)
+
+let cachedApnsJwt: { token: string; expiresAt: number } | null = null;
+
+async function getApnsJwt(): Promise<string | null> {
+  const p8 = Deno.env.get("APNS_AUTH_KEY_P8");
+  const keyId = Deno.env.get("APNS_KEY_ID");
+  const teamId = Deno.env.get("APNS_TEAM_ID");
+  if (!p8 || !keyId || !teamId) return null;
+
+  // APNs JWTs MUST be refreshed at least every 60 minutes (and cannot be
+  // refreshed more often than every 20 minutes).
+  if (cachedApnsJwt && cachedApnsJwt.expiresAt > Date.now() + 5 * 60_000) {
+    return cachedApnsJwt.token;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "ES256", kid: keyId, typ: "JWT" };
+  const claim = { iss: teamId, iat: now };
+  const encHeader = base64url(strToBytes(JSON.stringify(header)));
+  const encClaim = base64url(strToBytes(JSON.stringify(claim)));
+  const toSign = `${encHeader}.${encClaim}`;
+
+  const keyDer = pemToDer(p8.replace(/\\n/g, "\n"));
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    keyDer.buffer.slice(keyDer.byteOffset, keyDer.byteOffset + keyDer.byteLength) as ArrayBuffer,
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"],
+  );
+  const toSignBytes = strToBytes(toSign);
+  const sig = new Uint8Array(
+    await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      cryptoKey,
+      toSignBytes.buffer.slice(toSignBytes.byteOffset, toSignBytes.byteOffset + toSignBytes.byteLength) as ArrayBuffer,
+    ),
+  );
+  const jwt = `${toSign}.${base64url(sig)}`;
+  cachedApnsJwt = { token: jwt, expiresAt: Date.now() + 50 * 60_000 };
+  return jwt;
+}
+
+async function sendVoipApns(opts: {
+  deviceToken: string;
+  bundleId: string;
+  payload: Record<string, unknown>;
+}): Promise<{ ok: boolean; status: number; reason?: string; error?: string }> {
+  const jwt = await getApnsJwt();
+  if (!jwt) {
+    return {
+      ok: false,
+      status: 0,
+      reason: "MissingApnsCredentials",
+      error: "APNS_AUTH_KEY_P8 / APNS_KEY_ID / APNS_TEAM_ID not configured",
+    };
+  }
+  const host = Deno.env.get("APNS_USE_SANDBOX") === "1"
+    ? "api.sandbox.push.apple.com"
+    : "api.push.apple.com";
+  const url = `https://${host}/3/device/${opts.deviceToken}`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: `bearer ${jwt}`,
+        "apns-topic": `${opts.bundleId}.voip`,
+        "apns-push-type": "voip",
+        "apns-priority": "10",
+        "apns-expiration": "0",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(opts.payload),
+    });
+    if (res.ok) return { ok: true, status: res.status };
+    const body = await res.text().catch(() => "");
+    let reason: string | undefined;
+    try {
+      reason = JSON.parse(body)?.reason;
+    } catch { /* not JSON */ }
+    return { ok: false, status: res.status, reason, error: body.slice(0, 500) };
+  } catch (e) {
+    return { ok: false, status: 0, error: (e as Error).message };
+  }
+}
+
 // ---- Handler -------------------------------------------------------------
 
 Deno.serve(async (req) => {
