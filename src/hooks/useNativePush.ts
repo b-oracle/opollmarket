@@ -124,7 +124,7 @@ const isCallStillRinging = async (callId: string): Promise<boolean> => {
   }
 };
 
-const scheduleSnoozeRearm = (callId: string) => {
+const scheduleSnoozeRearm = (callId: string, durationMs: number = SNOOZE_MS) => {
   clearSnoozeTimer();
   if (!callId) return;
   snoozedCallId = callId;
@@ -174,14 +174,14 @@ const scheduleSnoozeRearm = (callId: string) => {
       // Notify any listeners (banner, overlays) that we re-armed the ring.
       window.dispatchEvent(
         new CustomEvent("dm-call-action", {
-          detail: { action: "snooze_expired", call_id: target },
+          detail: { action: "snooze_expired", call_id: target, duration_ms: durationMs },
         }),
       );
-      logCallEvent(target, "received", { source: "snooze_rearm" });
+      logCallEvent(target, "received", { source: "snooze_rearm", duration_ms: durationMs });
     } catch {
       // ignore
     }
-  }, SNOOZE_MS);
+  }, durationMs);
 };
 
 if (typeof window !== "undefined") {
