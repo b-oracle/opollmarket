@@ -254,6 +254,70 @@ const ChatView = () => {
 
   const conversationId = resolvedConvoId;
 
+  // Validate deep-link call ids. Strips bad params from the URL so the chat
+  // still opens cleanly to the conversation. Considered invalid when:
+  //   • missing / malformed UUID
+  //   • call row not found (deleted / wrong project)
+  //   • call belongs to a different conversation than the one we're viewing
+  //   • call is "expired": older than 24h (any status) — past that point a
+  //     "Call back" CTA is more noise than signal.
+  //   • for incoming_call_id: status is no longer "ringing" (already
+  //     answered/declined/missed elsewhere)
+  useEffect(() => {
+    if (!conversationId) return;
+    let cancelled = false;
+
+    const stripParams = (keys: string[]) => {
+      const next = new URLSearchParams(searchParams);
+      let changed = false;
+      for (const k of keys) {
+        if (next.has(k)) { next.delete(k); changed = true; }
+      }
+      if (changed) setSearchParams(next, { replace: true });
+    };
+
+    const validate = async (id: string | null, kind: "missed" | "incoming"): Promise<string | null> => {
+      if (!id) return null;
+      if (!isValidUuid(id)) return null;
+      try {
+        const { data, error } = await supabase
+          .from("dm_calls")
+          .select("id, conversation_id, created_at, ended_at, status")
+          .eq("id", id)
+          .maybeSingle();
+        if (error || !data) return null;
+        if (data.conversation_id !== conversationId) return null;
+        const refTs = (data as any).ended_at || (data as any).created_at;
+        if (refTs) {
+          const ageMs = Date.now() - new Date(refTs).getTime();
+          if (ageMs > 24 * 60 * 60 * 1000) return null; // expired
+        }
+        if (kind === "incoming" && data.status && data.status !== "ringing") {
+          return null;
+        }
+        return id;
+      } catch {
+        return null;
+      }
+    };
+
+    (async () => {
+      const [missedOk, incomingOk] = await Promise.all([
+        validate(rawMissedCallId, "missed"),
+        validate(rawIncomingCallId, "incoming"),
+      ]);
+      if (cancelled) return;
+      setValidatedMissedCallId(missedOk);
+      const toStrip: string[] = [];
+      if (rawMissedCallId && !missedOk) toStrip.push("missed_call_id");
+      if (rawIncomingCallId && !incomingOk) toStrip.push("incoming_call_id");
+      if (toStrip.length) stripParams(toStrip);
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawMissedCallId, rawIncomingCallId, conversationId]);
+
   const { data: convo } = useQuery({
     queryKey: ["dm-conversation", conversationId],
     queryFn: async () => {
