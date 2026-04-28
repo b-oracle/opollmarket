@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "android:build:prod": "npm run build && npx cap sync android && npx cap build android --release --androidreleasetype AAB",
+    "android:build:prod": "npm run build && npx cap sync android && npx cap build android --androidreleasetype AAB",
     "android:build:preview": "npm run build:dev && npx cap sync android && npx cap build android --androidreleasetype APK",
     "assets": "node scripts/build-splash-sources.mjs && capacitor-assets generate --android && node scripts/patch-android-resources.mjs",
     "android:patch-firebase": "node scripts/patch-android-firebase.mjs",
