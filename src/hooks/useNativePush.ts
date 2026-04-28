@@ -80,6 +80,7 @@ export const useNativePush = () => {
                   id: "INCOMING_CALL",
                   actions: [
                     { id: "accept", title: "Accept" },
+                    { id: "mute", title: "Mute" },
                     { id: "decline", title: "Decline", destructive: true },
                   ],
                 },
