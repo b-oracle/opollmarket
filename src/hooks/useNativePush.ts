@@ -70,6 +70,25 @@ export const useNativePush = () => {
             await LocalNotifications.requestPermissions();
           }
 
+          // Register Accept/Decline action buttons that appear on the
+          // incoming-call notification. Tapping a button fires
+          // `localNotificationActionPerformed` with actionId = "accept" | "decline".
+          try {
+            await LocalNotifications.registerActionTypes({
+              types: [
+                {
+                  id: "INCOMING_CALL",
+                  actions: [
+                    { id: "accept", title: "Accept" },
+                    { id: "decline", title: "Decline", destructive: true },
+                  ],
+                },
+              ],
+            });
+          } catch (err) {
+            console.warn("Failed to register call action types:", err);
+          }
+
           if (platform === "android") {
             try {
               await LocalNotifications.createChannel({
