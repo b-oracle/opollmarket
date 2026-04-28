@@ -239,6 +239,7 @@ export const useNativePush = () => {
 
                 // Accept button → navigate to chat with auto_accept flag
                 if (actionId === "accept") {
+                  logCallEvent(callId, "accepted", { source: "notification_action" });
                   if (convId && typeof window !== "undefined") {
                     window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
                   }
@@ -250,6 +251,7 @@ export const useNativePush = () => {
                 // can still tap Accept/Decline within the call's TTL.
                 if (actionId === "mute") {
                   stopForegroundCallRing();
+                  logCallEvent(callId, "muted", { source: "notification_action" });
                   try {
                     window.dispatchEvent(
                       new CustomEvent("dm-call-action", {
@@ -264,6 +266,7 @@ export const useNativePush = () => {
 
                 // Decline button → fire decline RPC, no navigation
                 if (actionId === "decline") {
+                  logCallEvent(callId, "declined", { source: "notification_action" });
                   if (callId) {
                     try {
                       await supabase.functions.invoke("dm-call-token", {
