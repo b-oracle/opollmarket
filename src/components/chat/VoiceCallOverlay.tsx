@@ -404,27 +404,107 @@ const VoiceCallOverlay = ({
       // handshake was making calls drop the instant they were picked up.
       recordCallLifecycle(callId, "auto_reconnect_start", { status: statusRef.current });
       setReconnecting(true);
-      room.connect(livekitUrl, token)
-        .then(async () => {
-          try { await room.localParticipant.setMicrophoneEnabled(!muted); } catch {}
-          if (cameraOn) {
-            try { await room.localParticipant.setCameraEnabled(true); } catch {}
-          }
-          setReconnecting(false);
-          recordCallLifecycle(callId, "auto_reconnect_ok", { status: statusRef.current });
-        })
-        .catch((err) => {
-          setReconnecting(false);
-          logCallEvent(callId, "failed", { stage: "auto_reconnect", error: err?.message });
-          recordCallLifecycle(callId, "auto_reconnect_failed", {
-            status: statusRef.current,
-            message: err?.message,
-            data: { error_name: err?.name },
-            level: "error",
-          });
-          setShowRejoin(true);
-        });
+      void attemptAutoReconnect();
     });
+
+    // Exponential-backoff reconnect with fresh-token fallback. Tries up to
+    // MAX_AUTO_RECONNECT times: first the cached token, then on each retry
+    // it asks the edge function for a new token (in case the original
+    // expired or the LiveKit room was rotated). On Android, transient
+    // backgrounding kills the WSS, so this loop is what keeps the call alive.
+    const fetchFreshToken = async (): Promise<{ url: string; token: string } | null> => {
+      try {
+        const { data, error } = await supabase.functions.invoke("dm-call-token", {
+          body: { action: "rejoin", call_id: callId },
+        });
+        if (error || data?.error || !data?.token || !data?.url) return null;
+        return { url: data.url, token: data.token };
+      } catch {
+        return null;
+      }
+    };
+
+    const attemptAutoReconnect = async () => {
+      if (reconnectInFlightRef.current) return;
+      if (endingRef.current || intentionalDisconnectRef.current) return;
+      reconnectInFlightRef.current = true;
+      try {
+        while (
+          reconnectAttemptsRef.current < MAX_AUTO_RECONNECT &&
+          !endingRef.current &&
+          !intentionalDisconnectRef.current
+        ) {
+          const attempt = reconnectAttemptsRef.current + 1;
+          reconnectAttemptsRef.current = attempt;
+          // Backoff: 0ms, 1500ms, 3500ms
+          const delay = attempt === 1 ? 0 : attempt === 2 ? 1500 : 3500;
+          if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+          if (endingRef.current || intentionalDisconnectRef.current) break;
+
+          // On retries (attempt >= 2) request a brand-new token in case the
+          // current one has expired (common cause of "ended right after pickup").
+          if (attempt >= 2) {
+            const fresh = await fetchFreshToken();
+            if (fresh) {
+              currentTokenRef.current = fresh.token;
+              currentUrlRef.current = fresh.url;
+              recordCallLifecycle(callId, "auto_reconnect_fresh_token", {
+                status: statusRef.current,
+                data: { attempt },
+              });
+            } else {
+              recordCallLifecycle(callId, "auto_reconnect_fresh_token_failed", {
+                status: statusRef.current,
+                data: { attempt },
+                level: "warn",
+              });
+            }
+          }
+
+          try {
+            recordCallLifecycle(callId, "auto_reconnect_attempt", {
+              status: statusRef.current,
+              data: { attempt },
+            });
+            await room.connect(currentUrlRef.current, currentTokenRef.current);
+            try { await room.localParticipant.setMicrophoneEnabled(!muted); } catch {}
+            if (cameraOn) {
+              try { await room.localParticipant.setCameraEnabled(true); } catch {}
+            }
+            setReconnecting(false);
+            reconnectAttemptsRef.current = 0;
+            recordCallLifecycle(callId, "auto_reconnect_ok", {
+              status: statusRef.current,
+              data: { attempt },
+            });
+            reconnectInFlightRef.current = false;
+            return;
+          } catch (err: any) {
+            logCallEvent(callId, "failed", {
+              stage: "auto_reconnect",
+              attempt,
+              error: err?.message,
+            });
+            recordCallLifecycle(callId, "auto_reconnect_failed", {
+              status: statusRef.current,
+              message: err?.message,
+              data: { error_name: err?.name, attempt },
+              level: "warn",
+            });
+            // Loop continues to the next attempt
+          }
+        }
+        // All attempts exhausted — surface the manual rejoin UI.
+        if (!endingRef.current && !intentionalDisconnectRef.current) {
+          setReconnecting(false);
+          markRecoverableDisconnect("auto_reconnect_exhausted", "Auto-reconnect failed after retries", {
+            attempts: reconnectAttemptsRef.current,
+          });
+        }
+      } finally {
+        reconnectInFlightRef.current = false;
+      }
+    };
 
     // Track local video publication to attach to ref
     room.on(RoomEvent.LocalTrackPublished, (pub) => {
