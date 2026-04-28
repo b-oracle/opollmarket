@@ -102,6 +102,38 @@ const ChatView = () => {
     } catch { /* ignore quota / privacy mode */ }
   }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
 
+  // ── Missed-call banner ────────────────────────────────────────────────
+  // When a missed-call notification deep-links us into the thread it adds
+  // `?missed_call_id=<id>` to the URL. We surface a slim banner offering
+  // "Call back" and "Open thread" until the user dismisses it. Dismissal
+  // is persisted per call_id in sessionStorage so we don't keep re-showing
+  // the banner if the user navigates away and returns.
+  const missedCallId = searchParams.get("missed_call_id");
+  const missedDismissKey = missedCallId ? `dm-missed-dismissed:${missedCallId}` : null;
+  const [missedDismissed, setMissedDismissed] = useState<boolean>(() => {
+    if (!missedDismissKey) return false;
+    try { return window.sessionStorage.getItem(missedDismissKey) === "1"; }
+    catch { return false; }
+  });
+  useEffect(() => {
+    // Reset dismissal state whenever the deep link points at a new call.
+    if (!missedDismissKey) { setMissedDismissed(false); return; }
+    try {
+      setMissedDismissed(window.sessionStorage.getItem(missedDismissKey) === "1");
+    } catch { setMissedDismissed(false); }
+  }, [missedDismissKey]);
+
+  const dismissMissedBanner = useCallback(() => {
+    if (missedDismissKey) {
+      try { window.sessionStorage.setItem(missedDismissKey, "1"); } catch { /* ignore */ }
+    }
+    setMissedDismissed(true);
+    // Strip the param so a refresh doesn't re-show the banner either.
+    const next = new URLSearchParams(searchParams);
+    next.delete("missed_call_id");
+    setSearchParams(next, { replace: true });
+  }, [missedDismissKey, searchParams, setSearchParams]);
+
   // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
   // when the retry loop kicks off, used to drive a live countdown in the
   // banner. Null when there is no active attempt. We store the deadline (not
