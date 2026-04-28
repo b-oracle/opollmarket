@@ -890,7 +890,9 @@ const VoiceCallOverlay = ({
         if (!endingRef.current) {
           setWaitingReconnect(true);
           gracePeriodRef.current = setTimeout(() => {
-            if (!endingRef.current) handleEnd();
+            if (!endingRef.current) {
+              markRecoverableDisconnect("participant_grace_expired", "Remote participant did not reconnect after manual rejoin");
+            }
           }, GRACE_PERIOD_MS);
         }
       });
