@@ -316,6 +316,11 @@ const VoiceCallOverlay = ({
       inactivityTimeoutRef.current = setTimeout(() => {
         if (statusRef.current === "active" && !remoteTrackReceivedRef.current) {
           logCallEvent(callId, "timeout", { reason: "no_remote_track_60s" });
+          recordCallLifecycle(callId, "inactivity_timeout", {
+            status: statusRef.current,
+            message: "No remote audio track within 60s",
+            level: "error",
+          });
           handleEnd();
         }
       }, 60_000);
@@ -441,17 +446,29 @@ const VoiceCallOverlay = ({
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    recordCallLifecycle(callId, "livekit_connect_start", {
+      status: statusRef.current,
+      data: { url: livekitUrl, room: roomName },
+    });
     room
       .connect(livekitUrl, token)
       .then(async () => {
+        recordCallLifecycle(callId, "livekit_connected", { status: statusRef.current });
         // Mic enable can fail independently (permission denied, no device).
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
         try {
           await room.localParticipant.setMicrophoneEnabled(true);
+          recordCallLifecycle(callId, "mic_enable_ok", { status: statusRef.current });
         } catch (micErr: any) {
           console.warn("Microphone enable failed:", micErr);
           logCallEvent(callId, "failed", { stage: "mic_enable", error: micErr?.message });
+          recordCallLifecycle(callId, "mic_enable_failed", {
+            status: statusRef.current,
+            message: micErr?.message,
+            data: { error_name: micErr?.name },
+            level: "error",
+          });
           setMuted(true);
           userIntentMutedRef.current = true;
           const name = micErr?.name || "";
@@ -469,8 +486,13 @@ const VoiceCallOverlay = ({
         if (startWithVideo) {
           try {
             await room.localParticipant.setCameraEnabled(true);
-          } catch (e) {
+          } catch (e: any) {
             console.warn("Failed to enable camera:", e);
+            recordCallLifecycle(callId, "camera_enable_failed", {
+              status: statusRef.current,
+              message: e?.message,
+              level: "warn",
+            });
             setCameraOn(false);
           }
         }
@@ -505,6 +527,12 @@ const VoiceCallOverlay = ({
             error: err?.message,
             error_name: err?.name,
             url: livekitUrl,
+          });
+          recordCallLifecycle(callId, "livekit_connect_failed", {
+            status: statusRef.current,
+            message: err?.message,
+            data: { error_name: err?.name, url: livekitUrl },
+            level: "error",
           });
           // Surface a more specific message so we can actually debug. Common
           // causes: expired token, wrong region, network blocking WSS, or
@@ -677,6 +705,11 @@ const VoiceCallOverlay = ({
         },
         (payload: any) => {
           const newStatus = payload.new?.status;
+          recordCallLifecycle(callId, "remote_status_change", {
+            status: statusRef.current,
+            data: { db_status: newStatus },
+            level: newStatus === "ended" || newStatus === "declined" || newStatus === "missed" ? "warn" : "info",
+          });
           if (newStatus === "declined" || newStatus === "missed" || newStatus === "ended") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             setStatus("ended");
