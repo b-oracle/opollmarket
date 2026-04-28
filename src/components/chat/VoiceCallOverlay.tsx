@@ -174,6 +174,7 @@ const VoiceCallOverlay = ({
       : 0;
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
+    clearCallPreferences(callId);
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
