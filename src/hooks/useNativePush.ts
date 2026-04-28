@@ -244,6 +244,23 @@ export const useNativePush = () => {
                   return;
                 }
 
+                // Mute button → silence ring/vibration but keep call ringing
+                // for the caller. The notification stays visible so the user
+                // can still tap Accept/Decline within the call's TTL.
+                if (actionId === "mute") {
+                  stopForegroundCallRing();
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("dm-call-action", {
+                        detail: { action: "mute", call_id: callId },
+                      }),
+                    );
+                  } catch {
+                    // ignore
+                  }
+                  return;
+                }
+
                 // Decline button → fire decline RPC, no navigation
                 if (actionId === "decline") {
                   if (callId) {
