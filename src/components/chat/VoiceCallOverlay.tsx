@@ -937,6 +937,7 @@ const VoiceCallOverlay = ({
           resolution: { width: 640, height: 480, frameRate: 24 },
         });
         setFacingMode(newFacing);
+        saveCallPreferences(callId, { facingMode: newFacing });
         setTimeout(() => {
           const pub = room.localParticipant.getTrackPublication(Track.Source.Camera);
           if (pub?.track && localVideoRef.current) {
