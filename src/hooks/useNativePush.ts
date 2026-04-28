@@ -81,7 +81,15 @@ const stopForegroundCallRing = () => {
 // if the call is still in `ringing` status (not accepted, declined, missed,
 // or ended), we re-arm the local ring so the user gets a second chance to
 // answer — same UX as iOS/Android system phone apps.
+// Default snooze duration (when user taps the plain "Mute" button — kept for
+// backwards compatibility). Explicit snooze actions below let the user pick
+// 10s / 1m / 5m instead.
 const SNOOZE_MS = 15_000;
+const SNOOZE_OPTIONS_MS: Record<string, number> = {
+  snooze_10s: 10_000,
+  snooze_1m: 60_000,
+  snooze_5m: 5 * 60_000,
+};
 let snoozeTimer: ReturnType<typeof setTimeout> | null = null;
 let snoozedCallId: string | null = null;
 let snoozeStatusChannel: ReturnType<typeof supabase.channel> | null = null;
@@ -116,7 +124,7 @@ const isCallStillRinging = async (callId: string): Promise<boolean> => {
   }
 };
 
-const scheduleSnoozeRearm = (callId: string) => {
+const scheduleSnoozeRearm = (callId: string, durationMs: number = SNOOZE_MS) => {
   clearSnoozeTimer();
   if (!callId) return;
   snoozedCallId = callId;
@@ -166,14 +174,14 @@ const scheduleSnoozeRearm = (callId: string) => {
       // Notify any listeners (banner, overlays) that we re-armed the ring.
       window.dispatchEvent(
         new CustomEvent("dm-call-action", {
-          detail: { action: "snooze_expired", call_id: target },
+          detail: { action: "snooze_expired", call_id: target, duration_ms: durationMs },
         }),
       );
-      logCallEvent(target, "received", { source: "snooze_rearm" });
+      logCallEvent(target, "received", { source: "snooze_rearm", duration_ms: durationMs });
     } catch {
       // ignore
     }
-  }, SNOOZE_MS);
+  }, durationMs);
 };
 
 if (typeof window !== "undefined") {
@@ -239,7 +247,12 @@ export const useNativePush = () => {
                   id: "INCOMING_CALL",
                   actions: [
                     { id: "accept", title: "Accept" },
-                    { id: "mute", title: "Mute" },
+                    // Snooze options — local-only mute for the chosen duration.
+                    // iOS/Android notifications don't support nested submenus,
+                    // so we expose each duration as its own button.
+                    { id: "snooze_10s", title: "Snooze 10s" },
+                    { id: "snooze_1m", title: "Snooze 1m" },
+                    { id: "snooze_5m", title: "Snooze 5m" },
                     { id: "decline", title: "Decline", destructive: true },
                   ],
                 },
@@ -411,13 +424,18 @@ export const useNativePush = () => {
             return true;
           }
 
-          if (actionId === "mute") {
-            // Mute is a LOCAL-ONLY action: it silences ring/vibration on this
-            // device only. We never invoke an edge function, never write to
-            // dm_calls, and never notify the caller — from their perspective
-            // the call keeps ringing exactly as before. We snapshot the
-            // current call status purely for analytics so we can confirm the
-            // call was still actionable when the user muted.
+          // "mute" (legacy default) and "snooze_10s" / "snooze_1m" / "snooze_5m"
+          // are all local-only silences with different re-ring delays.
+          const isSnoozeAction =
+            actionId === "mute" || actionId in SNOOZE_OPTIONS_MS;
+          if (isSnoozeAction) {
+            const durationMs =
+              SNOOZE_OPTIONS_MS[actionId] ?? SNOOZE_MS;
+
+            // LOCAL-ONLY: never invoke an edge function, never write to
+            // dm_calls, never notify the caller — from their side the call
+            // keeps ringing exactly as before. We snapshot the current call
+            // status purely for analytics.
             stopForegroundCallRing();
             let callStatus: string | null = null;
             if (callId) {
@@ -434,22 +452,23 @@ export const useNativePush = () => {
             }
             logCallEvent(callId, "muted", {
               source: "notification_action",
+              action_id: actionId,
               local_only: true,
               call_status: callStatus,
+              duration_ms: durationMs,
             });
             // Only re-arm if the call hasn't already left the ringing state.
-            // If it's already missed/declined/ended/accepted-elsewhere we
-            // skip the snooze entirely so we never re-buzz for a dead call.
             if (!callStatus || callStatus === "ringing") {
-              scheduleSnoozeRearm(callId);
+              scheduleSnoozeRearm(callId, durationMs);
             }
             try {
               window.dispatchEvent(
                 new CustomEvent("dm-call-action", {
                   detail: {
                     action: "mute",
+                    action_id: actionId,
                     call_id: callId,
-                    snooze_ms: SNOOZE_MS,
+                    snooze_ms: durationMs,
                     call_status: callStatus,
                     local_only: true,
                   },
