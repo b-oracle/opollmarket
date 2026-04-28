@@ -847,7 +847,7 @@ const ChatView = () => {
         });
     };
 
-    const tryAccept = () => {
+    const tryAccept = async () => {
       if (done) return;
       attempts += 1;
       ensureLookup();
@@ -863,7 +863,28 @@ const ChatView = () => {
       ) {
         setRejoinStatus(null);
         setLastFailedCallId(null);
-        handleRejoinCall(callId, false);
+        // Dispatch the correct server action based on call status. A still-
+        // ringing call needs `answer` (rejoin would 400 with "Call is no
+        // longer active"). An active call uses `rejoin`.
+        try {
+          const { data: callRow } = await supabase
+            .from("dm_calls")
+            .select("status")
+            .eq("id", callId)
+            .maybeSingle();
+          const status = (callRow as any)?.status;
+          if (status === "ringing") {
+            handleAnswerCall(callId);
+          } else if (status === "active") {
+            handleRejoinCall(callId, false);
+          } else {
+            // Already missed/declined/ended — nothing to join.
+            toast.info("That call has already ended.");
+          }
+        } catch {
+          // Best-effort fallback: try answer first, rejoin handles the active case
+          handleAnswerCall(callId);
+        }
         stop({ strip: true });
         return;
       }
