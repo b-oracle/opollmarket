@@ -145,68 +145,8 @@ const ChatView = () => {
     setSearchParams(next, { replace: true });
   }, [missedDismissKey, searchParams, setSearchParams]);
 
-  // Validate deep-link call ids. Strips bad params from the URL so the chat
-  // still opens cleanly to the conversation. Considered invalid when:
-  //   • missing / malformed UUID
-  //   • call row not found (deleted / wrong project)
-  //   • call belongs to a different conversation than the one we're viewing
-  //   • call is "expired": older than 24h (any status) — past that point a
-  //     "Call back" CTA is more noise than signal.
-  useEffect(() => {
-    if (!conversationId) return;
-    let cancelled = false;
-
-    const stripParams = (keys: string[]) => {
-      const next = new URLSearchParams(searchParams);
-      let changed = false;
-      for (const k of keys) {
-        if (next.has(k)) { next.delete(k); changed = true; }
-      }
-      if (changed) setSearchParams(next, { replace: true });
-    };
-
-    const validate = async (id: string | null, kind: "missed" | "incoming"): Promise<string | null> => {
-      if (!id) return null;
-      if (!isValidUuid(id)) return null;
-      try {
-        const { data, error } = await supabase
-          .from("dm_calls")
-          .select("id, conversation_id, created_at, ended_at, status")
-          .eq("id", id)
-          .maybeSingle();
-        if (error || !data) return null;
-        if (data.conversation_id !== conversationId) return null;
-        const refTs = data.ended_at || data.created_at;
-        if (refTs) {
-          const ageMs = Date.now() - new Date(refTs).getTime();
-          if (ageMs > 24 * 60 * 60 * 1000) return null; // expired
-        }
-        // For incoming_call_id only honor it if the call hasn't already ended.
-        if (kind === "incoming" && data.status && data.status !== "ringing") {
-          return null;
-        }
-        return id;
-      } catch {
-        return null;
-      }
-    };
-
-    (async () => {
-      const [missedOk, incomingOk] = await Promise.all([
-        validate(rawMissedCallId, "missed"),
-        validate(rawIncomingCallId, "incoming"),
-      ]);
-      if (cancelled) return;
-      setValidatedMissedCallId(missedOk);
-      // Strip any param we couldn't validate so refresh / share-link is clean.
-      const toStrip: string[] = [];
-      if (rawMissedCallId && !missedOk) toStrip.push("missed_call_id");
-      if (rawIncomingCallId && !incomingOk) toStrip.push("incoming_call_id");
-      if (toStrip.length) stripParams(toStrip);
-    })();
-
-    return () => { cancelled = true; };
-  }, [rawMissedCallId, rawIncomingCallId, conversationId, searchParams, setSearchParams]);
+  // (Deep-link call-id validation effect lives below, after `conversationId`
+  // is resolved — see the block right after `const conversationId = ...`.)
 
   // Track which missed_call_id we've already scrolled to so message-list
   // updates / refetches don't re-trigger the highlight repeatedly.
