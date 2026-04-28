@@ -363,7 +363,16 @@ Deno.serve(async (req) => {
             apns: {
               headers: { "apns-priority": "10" },
               payload: {
-                aps: { sound: "default", "content-available": 1 },
+                aps: {
+                  sound: "default",
+                  "content-available": 1,
+                  // Missed-call pushes get a "View chat" action button on
+                  // iOS via the MISSED_CALL UNNotificationCategory we
+                  // register on the client.
+                  ...(stringifiedData.type === "call_missed"
+                    ? { category: "MISSED_CALL" }
+                    : {}),
+                },
               },
             },
           };
