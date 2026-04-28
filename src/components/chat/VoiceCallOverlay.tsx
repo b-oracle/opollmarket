@@ -770,7 +770,7 @@ const VoiceCallOverlay = ({
       toast.error(err.message || "Failed to rejoin call");
       handleEnd();
     }
-  }, [callId, conversationId, muted, cameraOn, handleEnd]);
+  }, [callId, conversationId, muted, cameraOn, handleEnd, handleTimeout]);
 
   const toggleScreenShare = async () => {
     if (!roomRef.current) return;
