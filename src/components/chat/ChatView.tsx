@@ -16,6 +16,7 @@ import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
+import { ensureMicrophonePermission } from "@/lib/mediaPermissions";
 import {
   getCachedCallConversation,
   dedupeCallConversationLookup,
@@ -571,6 +572,12 @@ const ChatView = () => {
     if (!conversationId || !user) return;
     setCalling(true);
     try {
+      const mic = await ensureMicrophonePermission();
+      if (mic.ok === false) {
+        logCallEvent(callId, "failed", { stage: "mic_permission_preflight", reason: mic.reason, error_name: mic.errorName, error: mic.errorMessage });
+        toast.error(mic.title, { description: mic.description });
+        return;
+      }
       logCallEvent(callId, "rejoin", { with_video: withVideo });
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "rejoin", call_id: callId },
@@ -609,6 +616,12 @@ const ChatView = () => {
     if (!conversationId || !user) return;
     setCalling(true);
     try {
+      const mic = await ensureMicrophonePermission();
+      if (mic.ok === false) {
+        logCallEvent(callId, "failed", { stage: "mic_permission_preflight", reason: mic.reason, error_name: mic.errorName, error: mic.errorMessage });
+        toast.error(mic.title, { description: mic.description });
+        return;
+      }
       logCallEvent(callId, "accepted", { via: "auto_accept_deep_link" });
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "answer", call_id: callId },
@@ -643,6 +656,11 @@ const ChatView = () => {
     if (calling || !conversationId || !user) return;
     setCalling(true);
     try {
+      const mic = await ensureMicrophonePermission();
+      if (mic.ok === false) {
+        toast.error(mic.title, { description: mic.description });
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "start", conversation_id: conversationId },
       });
