@@ -112,6 +112,28 @@ const VoiceCallOverlay = ({
   const [reconnecting, setReconnecting] = useState(false);
   const [showRejoin, setShowRejoin] = useState(false);
 
+  const markRecoverableDisconnect = useCallback((
+    stage: string,
+    message: string,
+    data: Record<string, unknown> = {},
+  ) => {
+    if (endingRef.current || intentionalDisconnectRef.current || statusRef.current === "ended") return;
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+    if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
+    setWaitingReconnect(false);
+    setReconnecting(false);
+    setShowRejoin(true);
+    if (statusRef.current === "connecting") setStatus("active");
+    logCallEvent(callId, "failed", { stage, recoverable: true, ...data });
+    recordCallLifecycle(callId, "show_rejoin", {
+      status: statusRef.current,
+      message,
+      data: { stage, ...data },
+      level: "warn",
+    });
+  }, [callId]);
+
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
