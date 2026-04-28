@@ -578,6 +578,8 @@ export const useNativePush = () => {
           } catch {
             // ignore
           }
+        }
+
         cleanup = () => {
           regSub.remove();
           errSub.remove();
