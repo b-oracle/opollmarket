@@ -946,7 +946,7 @@ const ChatView = () => {
         setRejoinStatus((prev) => (prev === "reconnecting" ? null : prev));
       }
     };
-  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, retryAutoAccept]);
+  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, handleAnswerCall, retryAutoAccept]);
 
 
 
