@@ -8,6 +8,8 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Maximize2, Video, VideoOff, Monitor, MonitorOff, SwitchCamera } from "lucide-react";
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
+import { recordCallLifecycle } from "@/lib/callLifecycleLog";
+import CallDebugOverlay from "./CallDebugOverlay";
 
 interface VoiceCallOverlayProps {
   callId: string;
@@ -139,6 +141,7 @@ const VoiceCallOverlay = ({
       ? Math.round((Date.now() - startTimeRef.current) / 1000)
       : 0;
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
+    recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -164,6 +167,7 @@ const VoiceCallOverlay = ({
     try { roomRef.current?.disconnect(); } catch {}
 
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
+    recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -191,6 +195,7 @@ const VoiceCallOverlay = ({
     try { roomRef.current?.disconnect(); } catch {}
 
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
+    recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -205,6 +210,10 @@ const VoiceCallOverlay = ({
 
   // Connect to LiveKit room
   useEffect(() => {
+    recordCallLifecycle(callId, "overlay_mount", {
+      status: statusRef.current,
+      data: { isOutgoing, room: roomName, url: livekitUrl },
+    });
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
@@ -223,6 +232,10 @@ const VoiceCallOverlay = ({
         if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
       }
 
+      recordCallLifecycle(callId, "track_subscribed", {
+        status: statusRef.current,
+        data: { kind: String(track.kind), source: String((track as any).source ?? "") },
+      });
       if (track.kind === Track.Kind.Audio) {
         remoteTrackReceivedRef.current = true;
         const el = track.attach();
@@ -267,6 +280,11 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.TrackUnsubscribed, (track) => {
+      recordCallLifecycle(callId, "track_unsubscribed", {
+        status: statusRef.current,
+        data: { kind: String(track.kind), source: String((track as any).source ?? "") },
+        level: "warn",
+      });
       if (track.kind === Track.Kind.Video) {
         const source = (track as any).source;
         if (source === Track.Source.ScreenShare) {
@@ -294,9 +312,15 @@ const VoiceCallOverlay = ({
         setWaitingReconnect(false);
       }
       logCallEvent(callId, "joined", { role: isOutgoing ? "caller" : "callee" });
+      recordCallLifecycle(callId, "participant_connected", { status: statusRef.current, data: { role: isOutgoing ? "caller" : "callee" } });
       inactivityTimeoutRef.current = setTimeout(() => {
         if (statusRef.current === "active" && !remoteTrackReceivedRef.current) {
           logCallEvent(callId, "timeout", { reason: "no_remote_track_60s" });
+          recordCallLifecycle(callId, "inactivity_timeout", {
+            status: statusRef.current,
+            message: "No remote audio track within 60s",
+            level: "error",
+          });
           handleEnd();
         }
       }, 60_000);
@@ -314,20 +338,43 @@ const VoiceCallOverlay = ({
           stage: "participant_disconnected_ignored",
           status: statusRef.current,
         });
+        recordCallLifecycle(callId, "participant_disconnected_ignored", {
+          status: statusRef.current,
+          message: "Ignored — call not yet active or already ending",
+          level: "warn",
+        });
         return;
       }
+      recordCallLifecycle(callId, "participant_disconnected", {
+        status: statusRef.current,
+        message: `Grace period started (${GRACE_PERIOD_MS / 1000}s)`,
+        level: "warn",
+      });
       setWaitingReconnect(true);
       gracePeriodRef.current = setTimeout(() => {
-        if (!endingRef.current) handleEnd();
+        if (!endingRef.current) {
+          recordCallLifecycle(callId, "grace_period_expired", { status: statusRef.current, level: "error" });
+          handleEnd();
+        }
       }, GRACE_PERIOD_MS);
     });
 
-    room.on(RoomEvent.Disconnected, () => {
+    room.on(RoomEvent.Disconnected, (reason?: any) => {
+      recordCallLifecycle(callId, "room_disconnected", {
+        status: statusRef.current,
+        data: {
+          reason: reason !== undefined ? String(reason) : undefined,
+          intentional: intentionalDisconnectRef.current,
+          ending: endingRef.current,
+        },
+        level: endingRef.current || intentionalDisconnectRef.current ? "info" : "warn",
+      });
       if (endingRef.current || intentionalDisconnectRef.current) return;
       // Always attempt one auto-reconnect before tearing the call down,
       // regardless of whether status flipped to "active" yet. Ending the
       // call on a transient Disconnected during the connect/answer
       // handshake was making calls drop the instant they were picked up.
+      recordCallLifecycle(callId, "auto_reconnect_start", { status: statusRef.current });
       setReconnecting(true);
       room.connect(livekitUrl, token)
         .then(async () => {
@@ -336,10 +383,17 @@ const VoiceCallOverlay = ({
             try { await room.localParticipant.setCameraEnabled(true); } catch {}
           }
           setReconnecting(false);
+          recordCallLifecycle(callId, "auto_reconnect_ok", { status: statusRef.current });
         })
         .catch((err) => {
           setReconnecting(false);
           logCallEvent(callId, "failed", { stage: "auto_reconnect", error: err?.message });
+          recordCallLifecycle(callId, "auto_reconnect_failed", {
+            status: statusRef.current,
+            message: err?.message,
+            data: { error_name: err?.name },
+            level: "error",
+          });
           setShowRejoin(true);
         });
     });
@@ -392,17 +446,29 @@ const VoiceCallOverlay = ({
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    recordCallLifecycle(callId, "livekit_connect_start", {
+      status: statusRef.current,
+      data: { url: livekitUrl, room: roomName },
+    });
     room
       .connect(livekitUrl, token)
       .then(async () => {
+        recordCallLifecycle(callId, "livekit_connected", { status: statusRef.current });
         // Mic enable can fail independently (permission denied, no device).
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
         try {
           await room.localParticipant.setMicrophoneEnabled(true);
+          recordCallLifecycle(callId, "mic_enable_ok", { status: statusRef.current });
         } catch (micErr: any) {
           console.warn("Microphone enable failed:", micErr);
           logCallEvent(callId, "failed", { stage: "mic_enable", error: micErr?.message });
+          recordCallLifecycle(callId, "mic_enable_failed", {
+            status: statusRef.current,
+            message: micErr?.message,
+            data: { error_name: micErr?.name },
+            level: "error",
+          });
           setMuted(true);
           userIntentMutedRef.current = true;
           const name = micErr?.name || "";
@@ -420,8 +486,13 @@ const VoiceCallOverlay = ({
         if (startWithVideo) {
           try {
             await room.localParticipant.setCameraEnabled(true);
-          } catch (e) {
+          } catch (e: any) {
             console.warn("Failed to enable camera:", e);
+            recordCallLifecycle(callId, "camera_enable_failed", {
+              status: statusRef.current,
+              message: e?.message,
+              level: "warn",
+            });
             setCameraOn(false);
           }
         }
@@ -456,6 +527,12 @@ const VoiceCallOverlay = ({
             error: err?.message,
             error_name: err?.name,
             url: livekitUrl,
+          });
+          recordCallLifecycle(callId, "livekit_connect_failed", {
+            status: statusRef.current,
+            message: err?.message,
+            data: { error_name: err?.name, url: livekitUrl },
+            level: "error",
           });
           // Surface a more specific message so we can actually debug. Common
           // causes: expired token, wrong region, network blocking WSS, or
@@ -628,6 +705,11 @@ const VoiceCallOverlay = ({
         },
         (payload: any) => {
           const newStatus = payload.new?.status;
+          recordCallLifecycle(callId, "remote_status_change", {
+            status: statusRef.current,
+            data: { db_status: newStatus },
+            level: newStatus === "ended" || newStatus === "declined" || newStatus === "missed" ? "warn" : "info",
+          });
           if (newStatus === "declined" || newStatus === "missed" || newStatus === "ended") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             setStatus("ended");
@@ -978,6 +1060,7 @@ const VoiceCallOverlay = ({
   // ── Full-screen overlay ──
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden" style={{ background: "radial-gradient(ellipse at center, hsl(var(--background)) 0%, hsl(var(--background)) 70%)" }}>
+      <CallDebugOverlay callId={callId} />
       {/* Doodle pattern layer */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.08] dark:opacity-[0.10]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
       {/* E2EE indicator + minimize */}
