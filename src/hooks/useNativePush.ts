@@ -365,6 +365,7 @@ export const useNativePush = () => {
 
           if (actionId === "accept") {
             logCallEvent(callId, "accepted", { source: "notification_action" });
+            clearSnoozeTimer();
             clearLatestCall();
             if (convId && typeof window !== "undefined") {
               window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
@@ -375,10 +376,13 @@ export const useNativePush = () => {
           if (actionId === "mute") {
             stopForegroundCallRing();
             logCallEvent(callId, "muted", { source: "notification_action" });
+            // Re-arm the ring after SNOOZE_MS if the call is still pending,
+            // so a muted call doesn't silently disappear.
+            scheduleSnoozeRearm(callId);
             try {
               window.dispatchEvent(
                 new CustomEvent("dm-call-action", {
-                  detail: { action: "mute", call_id: callId },
+                  detail: { action: "mute", call_id: callId, snooze_ms: SNOOZE_MS },
                 }),
               );
             } catch { /* ignore */ }
@@ -387,6 +391,7 @@ export const useNativePush = () => {
 
           if (actionId === "decline") {
             logCallEvent(callId, "declined", { source: "notification_action" });
+            clearSnoozeTimer();
             clearLatestCall();
             if (callId) {
               try {
