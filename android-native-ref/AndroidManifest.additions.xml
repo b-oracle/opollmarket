@@ -17,6 +17,10 @@
 <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<!-- Required by @capawesome-team/capacitor-android-foreground-service on Android 14+
+     so the in-call mic stays alive when the WebView backgrounds. -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
 <application ...>
 
@@ -44,6 +48,25 @@
     <receiver
         android:name=".CallActionReceiver"
         android:exported="false" />
+
+    <!-- Foreground service for the active in-call mic. The plugin auto-
+         registers its own service class; this entry only needs to be
+         present if you want to override the default declaration. The
+         critical part is that the manifest declares
+         foregroundServiceType="microphone" so Android 14+ keeps the mic
+         hot even when the WebView is backgrounded.
+
+         If you let the plugin auto-register, just ensure the two
+         permissions above (FOREGROUND_SERVICE_MICROPHONE,
+         FOREGROUND_SERVICE_MEDIA_PLAYBACK) are present. The plugin's
+         service inherits the permissions declared at the manifest root.
+    -->
+    <!--
+    <service
+        android:name="io.capawesome.capacitorjs.plugins.foregroundservice.ForegroundService"
+        android:foregroundServiceType="microphone|mediaPlayback"
+        android:exported="false" />
+    -->
 
     <!-- Deep-link on MainActivity so tapping Accept lands in the webview route -->
     <activity

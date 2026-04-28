@@ -16,6 +16,7 @@
         "@capacitor/push-notifications": "^8.0.3",
         "@capacitor/splash-screen": "^8.0.0",
         "@capacitor/status-bar": "^8.0.0",
+        "@capawesome-team/capacitor-android-foreground-service": "^8.1.0",
         "@capgo/capacitor-social-login": "^8.3.17",
         "@hookform/resolvers": "^3.10.0",
         "@lovable.dev/cloud-auth-js": "^1.1.1",
@@ -328,6 +329,8 @@
     "@capacitor/splash-screen": ["@capacitor/splash-screen@8.0.1", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-c/ew/Z3eA7z8l06WoRAtzVF16VwYYrExmHmfGq1Cg675pVzaC/yuucB8/1xG1vhEfnW4fZ1KhSf/kzR1RiVYgg=="],
 
     "@capacitor/status-bar": ["@capacitor/status-bar@8.0.2", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-WXs8YB8B9eEaPZz+bcdY6t2nForF1FLoj/JU0Dl9RRgQnddnS98FEEyDooQhaY7wivr000j4+SC1FyeJkrFO7A=="],
+
+    "@capawesome-team/capacitor-android-foreground-service": ["@capawesome-team/capacitor-android-foreground-service@8.1.0", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capawesome-team/capacitor-android-foreground-service/-/capacitor-android-foreground-service-8.1.0.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-q1LaZQ5K2cu2IXjbabwssF+RpUBikLxkOHYS69ahXz6a1kIsr2jC4RU1bwAEBTopRz0ccgfai0dSSTdqbtEwhw=="],
 
     "@capgo/capacitor-social-login": ["@capgo/capacitor-social-login@8.3.17", "", { "dependencies": { "tslib": "^2.8.1" }, "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-eN+WGgQY0br3xzKdqucBxXnQDflVvODdEcXXm5x/fGYQk6G4ppGRe3mK/JEqoSF7A8KYLEG6+jeDr/VGlLRf6A=="],
 

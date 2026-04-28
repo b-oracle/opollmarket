@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { recordCallLifecycle } from "@/lib/callLifecycleLog";
 import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
+import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
 import CallDebugOverlay from "./CallDebugOverlay";
 
 interface VoiceCallOverlayProps {
@@ -175,6 +176,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
+    void stopCallForegroundService();
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -202,6 +204,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
     clearCallPreferences(callId);
+    void stopCallForegroundService();
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -231,6 +234,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
     recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
     clearCallPreferences(callId);
+    void stopCallForegroundService();
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -580,6 +584,10 @@ const VoiceCallOverlay = ({
       .connect(livekitUrl, token)
       .then(async () => {
         recordCallLifecycle(callId, "livekit_connected", { status: statusRef.current });
+        // Keep mic alive on Android 14+ via a foreground service. No-op
+        // on iOS/web. Without this, the WebView is suspended seconds
+        // after pickup and the WSS dies → "call ends right after pickup".
+        void startCallForegroundService(otherUserName);
         // Mic enable can fail independently (permission denied, no device).
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
@@ -703,6 +711,7 @@ const VoiceCallOverlay = ({
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void stopCallForegroundService();
       room.disconnect();
       roomRef.current = null;
     };
