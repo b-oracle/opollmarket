@@ -293,13 +293,24 @@ export const useNativePush = () => {
               async (action) => {
                 stopForegroundCallRing();
                 const data = (action.notification.extra || {}) as Record<string, string>;
-                const callId = data.call_id || "";
-                const convId = data.conversation_id || "";
+                let callId = data.call_id || "";
+                let convId = data.conversation_id || "";
                 const actionId = action.actionId;
+
+                // Cold-start fallback: if the OS delivered the action without
+                // the original extras, recover ids from localStorage.
+                if (!callId || !convId) {
+                  const latest = readLatestCall();
+                  if (latest) {
+                    if (!callId) callId = latest.call_id;
+                    if (!convId) convId = latest.conversation_id;
+                  }
+                }
 
                 // Accept button → navigate to chat with auto_accept flag
                 if (actionId === "accept") {
                   logCallEvent(callId, "accepted", { source: "notification_action" });
+                  clearLatestCall();
                   if (convId && typeof window !== "undefined") {
                     window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
                   }
@@ -312,6 +323,7 @@ export const useNativePush = () => {
                 if (actionId === "mute") {
                   stopForegroundCallRing();
                   logCallEvent(callId, "muted", { source: "notification_action" });
+                  // Don't clear — user may still Accept/Decline after muting.
                   try {
                     window.dispatchEvent(
                       new CustomEvent("dm-call-action", {
@@ -327,6 +339,7 @@ export const useNativePush = () => {
                 // Decline button → fire decline RPC, no navigation
                 if (actionId === "decline") {
                   logCallEvent(callId, "declined", { source: "notification_action" });
+                  clearLatestCall();
                   if (callId) {
                     try {
                       await supabase.functions.invoke("dm-call-token", {
