@@ -37,11 +37,15 @@ import { useFirstRun } from "./hooks/useFirstRun";
 import AppSplash from "./components/AppSplash";
 import { bootNativeUI } from "./lib/nativeUI";
 import { initOpollCallNative } from "./lib/mobile/opollCallNative";
+import { initNativeAuthCache } from "./lib/nativeAuthCache";
 
 const NativePushRegistrar = () => {
   useNativePush();
   useCallDeepLink();
   useNativeAuthDeepLink();
+  // Mirrors the Supabase access token into Capacitor Preferences so the
+  // native CallActionReceiver can call dm-call-token with the app killed.
+  useEffect(() => { initNativeAuthCache(); }, []);
   return null;
 };
 
@@ -62,6 +66,7 @@ const Create = lazy(() => import("./pages/Create"));
 const Rankings = lazy(() => import("./pages/Rankings"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Portfolio = lazy(() => import("./pages/Portfolio"));
+const CreatorDashboard = lazy(() => import("./pages/CreatorDashboard"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -95,6 +100,8 @@ const InvestorDeck = lazy(() => import("./pages/admin/InvestorDeck"));
 const AdminAimtell = lazy(() => import("./pages/admin/AdminAimtell"));
 const AdminNotificationBroadcast = lazy(() => import("./pages/admin/AdminNotificationBroadcast"));
 const AdminApiKeys = lazy(() => import("./pages/admin/AdminApiKeys"));
+const AdminWebhookLogs = lazy(() => import("./pages/admin/AdminWebhookLogs"));
+const AdminWebhookEvents = lazy(() => import("./pages/admin/AdminWebhookEvents"));
 const AdminKyc = lazy(() => import("./pages/admin/AdminKyc"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
@@ -102,12 +109,14 @@ const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminTelegram = lazy(() => import("./pages/admin/AdminTelegram"));
 const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
 const AdminEscrows = lazy(() => import("./pages/admin/AdminEscrows"));
+const AdminCallEvents = lazy(() => import("./pages/admin/AdminCallEvents"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const DataUse = lazy(() => import("./pages/DataUse"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const QuickTrade = lazy(() => import("./pages/QuickTrade"));
@@ -506,13 +515,14 @@ const App = () => {
                 <FirstRunRedirector />
                 {/* IncomingCallBanner must be OUTSIDE ConditionalWagmiProvider so it persists across all route changes */}
                 <Suspense fallback={null}><IncomingCallBanner /></Suspense>
+                {/* Must initialize immediately so call push/token registration isn't delayed. */}
+                <NativePushRegistrar />
                 <ConditionalWagmiProvider>
                 {/* Deferred: these components trigger network requests but aren't needed for first paint */}
                 <DeferredMount delay={2000}>
                   <Suspense fallback={null}><AimtellProvider /></Suspense>
                   <SocialTutorialTrigger />
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
-                  <NativePushRegistrar />
                 </DeferredMount>
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
@@ -535,6 +545,7 @@ const App = () => {
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
                         <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
+                        <Route path="/creator" element={<CreatorDashboard />} />
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/transactions" element={<TransactionHistory />} />
                         <Route path="/messages" element={<FeatureGate featureKey="dm_chat"><Messages /></FeatureGate>} />
@@ -550,6 +561,7 @@ const App = () => {
                         <Route path="/disclaimer" element={<Disclaimer />} />
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/data-use" element={<DataUse />} />
                         <Route path="/maintenance" element={<Maintenance />} />
                         <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
                         <Route path="/user/:id" element={<UserProfile />} />
@@ -585,9 +597,12 @@ const App = () => {
                           <Route path="aimtell" element={<AdminAimtell />} />
                           <Route path="notification-broadcast" element={<AdminNotificationBroadcast />} />
                           <Route path="api-keys" element={<AdminApiKeys />} />
+                          <Route path="webhook-logs" element={<AdminWebhookLogs />} />
+                          <Route path="webhook-events" element={<AdminWebhookEvents />} />
                           <Route path="kyc" element={<AdminKyc />} />
                           <Route path="support" element={<AdminSupport />} />
                           <Route path="escrows" element={<AdminEscrows />} />
+                          <Route path="call-events" element={<AdminCallEvents />} />
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />

@@ -3,7 +3,9 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 import { supabase } from "@/integrations/supabase/client";
 
 const GOOGLE_WEB_CLIENT_ID = "552098177241-7hpvqukp60hja50bb3i7tqtitko2afvk.apps.googleusercontent.com";
-const GOOGLE_ANDROID_CLIENT_IDS: string[] = [];
+const GOOGLE_ANDROID_CLIENT_IDS: string[] = [
+  "552098177241-fj63h6pll8hhm8scno1s6qv6q0i5qjgc.apps.googleusercontent.com",
+];
 
 let initializePromise: Promise<void> | null = null;
 
@@ -66,14 +68,20 @@ export const signInWithNativeGoogle = async () => {
   await initializeGoogleSignIn();
 
   const nonce = createNonce();
-  const loginResult = await SocialLogin.login({
-    provider: "google",
-    options: {
-      
-    },
-  });
+  let loginResult;
 
-  console.log("loginResult", loginResult);
+  try {
+    loginResult = await SocialLogin.login({
+      provider: "google",
+      options: {
+        nonce,
+        filterByAuthorizedAccounts: false,
+        autoSelectEnabled: false,
+      },
+    });
+  } catch (error) {
+    throw new Error(getNativeGoogleErrorMessage(error));
+  }
 
   if (loginResult.result.responseType !== "online" || !loginResult.result.idToken) {
     throw new Error("Google did not return a valid identity token.");

@@ -7,6 +7,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Phone, PhoneOff } from "lucide-react";
 import { toast } from "sonner";
 import { playRingtone } from "@/lib/sounds";
+import {
+  startIncomingCallVibration,
+  stopVibration,
+  vibrate,
+  CALL_CONNECTED_PATTERN,
+  CALL_ENDED_PATTERN,
+} from "@/lib/haptics";
+import { logCallEvent } from "@/lib/callEvents";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 
@@ -42,6 +50,8 @@ interface ActiveCallState {
 }
 
 const ACTIVE_CALL_STORAGE_KEY = "dm-active-call";
+const PENDING_NATIVE_INCOMING_KEY = "opoll-pending-native-incoming";
+const PENDING_NATIVE_ACTION_KEY = "opoll-pending-native-action";
 
 const IncomingCallBanner = () => {
   const { user } = useAuth();
@@ -79,26 +89,30 @@ const IncomingCallBanner = () => {
     }
   }, [activeCall, callMinimized]);
 
-  // Play ringtone when incoming call appears
+  // Play ringtone + run the call vibration pattern when the banner appears.
+  // The pattern fires an initial attention buzz, then loops a WhatsApp-style
+  // ring cadence (1s on / 0.5s off / 1s on / 1.5s off). Works on Capacitor
+  // native (Android/iOS via Haptics.vibrate) and web (navigator.vibrate).
+  // Also tells useNativePush to stop its own foreground-FCM ring loop so we
+  // don't double-buzz when the FCM data push and the realtime INSERT both
+  // arrive (which is normal — push is the wake-up, realtime is the payload).
   useEffect(() => {
-    let vibrateInterval: ReturnType<typeof setInterval> | null = null;
+    let cancelVibration: (() => void) | null = null;
     if (incomingCall && !activeCall) {
+      // Silence the FCM-driven foreground ring; the banner now owns vibration.
+      try { window.dispatchEvent(new Event("dm-call-banner-dismissed")); } catch {}
       stopRingtoneRef.current = playRingtone();
-      // Vibrate pattern: 500ms on, 500ms off, repeating
-      if (navigator.vibrate) {
-        navigator.vibrate([500, 500, 500, 500, 500]);
-        vibrateInterval = setInterval(() => {
-          navigator.vibrate([500, 500, 500, 500, 500]);
-        }, 3000);
-      }
+      cancelVibration = startIncomingCallVibration();
     } else {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-      if (navigator.vibrate) navigator.vibrate(0);
+      stopVibration();
     }
     return () => {
       if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-      if (vibrateInterval) clearInterval(vibrateInterval);
-      if (navigator.vibrate) navigator.vibrate(0);
+      cancelVibration?.();
+      stopVibration();
+      // Notify the hook one more time so any leftover loop is cancelled.
+      try { window.dispatchEvent(new Event("dm-call-banner-dismissed")); } catch {}
     };
   }, [incomingCall, activeCall]);
 
@@ -135,6 +149,7 @@ const IncomingCallBanner = () => {
             callerName: profile?.display_name || "Unknown",
             callerAvatar: profile?.avatar_url || undefined,
           });
+          logCallEvent(call.id, "received", { source: "realtime" });
         }
       )
       .subscribe();
@@ -150,6 +165,7 @@ const IncomingCallBanner = () => {
 
     // Auto-dismiss after 90 seconds (matches caller's auto-cancel timeout)
     const dismissTimer = setTimeout(() => {
+      logCallEvent(incomingCall.id, "missed", { reason: "auto_dismiss_90s" });
       setIncomingCall(null);
     }, 90_000);
 
@@ -235,7 +251,9 @@ const IncomingCallBanner = () => {
     setAnswering(true);
     // Kill ringtone immediately — don't wait for async answer flow
     if (stopRingtoneRef.current) { stopRingtoneRef.current(); stopRingtoneRef.current = null; }
-    if (navigator.vibrate) navigator.vibrate(0);
+    stopVibration();
+    // Soft buzz to acknowledge the answer tap
+    void vibrate(CALL_CONNECTED_PATTERN);
 
     try {
       await answerCallById({
@@ -245,6 +263,7 @@ const IncomingCallBanner = () => {
         callerAvatar: incomingCall.callerAvatar,
       });
     } catch (err: any) {
+      logCallEvent(incomingCall.id, "failed", { stage: "answer", error: err?.message });
       toast.error(err.message || "Failed to answer call");
     } finally {
       setAnswering(false);
@@ -271,7 +290,12 @@ const IncomingCallBanner = () => {
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
 
+    // Decisive buzz to confirm the decline action
+    stopVibration();
+    void vibrate(CALL_ENDED_PATTERN);
+
     try {
+      logCallEvent(incomingCall.id, "declined", { via: "banner_tap" });
       await supabase.functions.invoke("dm-call-token", {
         body: { action: "decline", call_id: incomingCall.id },
       });
@@ -335,8 +359,44 @@ const IncomingCallBanner = () => {
       }
     };
 
+    const flushPendingNativeEvents = () => {
+      try {
+        const rawIncoming = window.sessionStorage.getItem(PENDING_NATIVE_INCOMING_KEY);
+        if (rawIncoming) {
+          const detail = JSON.parse(rawIncoming) as NativeCallPayload;
+          if (detail?.callId) {
+            setIncomingCall({
+              id: detail.callId,
+              conversation_id: detail.conversationId || "",
+              caller_id: detail.callerId || "",
+              room_name: "",
+              callerName: detail.callerName || "Unknown",
+              callerAvatar: detail.callerAvatar,
+            });
+          }
+          window.sessionStorage.removeItem(PENDING_NATIVE_INCOMING_KEY);
+        }
+      } catch {
+        // ignore malformed pending payload
+      }
+
+      try {
+        const rawAction = window.sessionStorage.getItem(PENDING_NATIVE_ACTION_KEY);
+        if (rawAction) {
+          const detail = JSON.parse(rawAction) as NativeCallPayload;
+          if (detail?.callId && detail?.action) {
+            void onNativeAction(new CustomEvent("native-call-action", { detail }));
+          }
+          window.sessionStorage.removeItem(PENDING_NATIVE_ACTION_KEY);
+        }
+      } catch {
+        // ignore malformed pending payload
+      }
+    };
+
     window.addEventListener("native-incoming-call", onNativeIncoming);
     window.addEventListener("native-call-action", onNativeAction);
+    flushPendingNativeEvents();
     return () => {
       window.removeEventListener("native-incoming-call", onNativeIncoming);
       window.removeEventListener("native-call-action", onNativeAction);

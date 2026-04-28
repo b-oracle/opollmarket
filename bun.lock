@@ -11,6 +11,8 @@
         "@capacitor/core": "^8.3.0",
         "@capacitor/haptics": "^8.0.0",
         "@capacitor/ios": "^8.3.0",
+        "@capacitor/local-notifications": "^8.0.0",
+        "@capacitor/preferences": "^8.0.1",
         "@capacitor/push-notifications": "^8.0.3",
         "@capacitor/splash-screen": "^8.0.0",
         "@capacitor/status-bar": "^8.0.0",
@@ -83,6 +85,7 @@
         "viem": "^2.47.6",
         "vite-plugin-pwa": "0.21.1",
         "wagmi": "^3.6.0",
+        "workbox-window": "^7.4.0",
         "zod": "^3.25.76",
       },
       "devDependencies": {
@@ -315,13 +318,17 @@
 
     "@capacitor/ios": ["@capacitor/ios@8.3.1", "", { "peerDependencies": { "@capacitor/core": "^8.3.0" } }, "sha512-BEhLyYYHWJLib4mpaPMaaylbC8meqgxbNYwQJH2svsSLW7yo/hFie+Zoo66a44XnqcMd2tvmAuzimWunXZi/xA=="],
 
+    "@capacitor/local-notifications": ["@capacitor/local-notifications@8.0.2", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/local-notifications/-/local-notifications-8.0.2.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-X7KE/I4ZutMTGVHNUyTjIugYcQEcHJRLks+TsPnOriuS+lo0geSTuaRln6zAZlJSSXSoVMSSzHexdSbIjR/8iw=="],
+
+    "@capacitor/preferences": ["@capacitor/preferences@8.0.1", "https://europe-west1-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capacitor/preferences/-/preferences-8.0.1.tgz", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-T6no3ebi79XJCk91U3Jp/liJUwgBdvHR+s6vhvPkPxSuch7z3zx5Rv1bdWM6sWruNx+pViuEGqZvbfCdyBvcHQ=="],
+
     "@capacitor/push-notifications": ["@capacitor/push-notifications@8.0.3", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-jmBBoJvOzmzem8YoO9dQJBPFiM1bksTNAoV7yksCBN10BybAOtmBF19vFPt/jr2KGAirnPZz0ne2X0OH/rRGtg=="],
 
     "@capacitor/splash-screen": ["@capacitor/splash-screen@8.0.1", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-c/ew/Z3eA7z8l06WoRAtzVF16VwYYrExmHmfGq1Cg675pVzaC/yuucB8/1xG1vhEfnW4fZ1KhSf/kzR1RiVYgg=="],
 
     "@capacitor/status-bar": ["@capacitor/status-bar@8.0.2", "", { "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-WXs8YB8B9eEaPZz+bcdY6t2nForF1FLoj/JU0Dl9RRgQnddnS98FEEyDooQhaY7wivr000j4+SC1FyeJkrFO7A=="],
 
-    "@capgo/capacitor-social-login": ["@capgo/capacitor-social-login@8.3.17", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@capgo/capacitor-social-login/-/capacitor-social-login-8.3.17.tgz", { "dependencies": { "tslib": "^2.8.1" }, "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-eN+WGgQY0br3xzKdqucBxXnQDflVvODdEcXXm5x/fGYQk6G4ppGRe3mK/JEqoSF7A8KYLEG6+jeDr/VGlLRf6A=="],
+    "@capgo/capacitor-social-login": ["@capgo/capacitor-social-login@8.3.17", "", { "dependencies": { "tslib": "^2.8.1" }, "peerDependencies": { "@capacitor/core": ">=8.0.0" } }, "sha512-eN+WGgQY0br3xzKdqucBxXnQDflVvODdEcXXm5x/fGYQk6G4ppGRe3mK/JEqoSF7A8KYLEG6+jeDr/VGlLRf6A=="],
 
     "@coinbase/cdp-sdk": ["@coinbase/cdp-sdk@1.45.0", "", { "dependencies": { "@solana-program/system": "^0.10.0", "@solana-program/token": "^0.9.0", "@solana/kit": "^5.1.0", "@solana/web3.js": "^1.98.1", "abitype": "1.0.6", "axios": "^1.12.2", "axios-retry": "^4.5.0", "jose": "^6.0.8", "md5": "^2.3.0", "uncrypto": "^0.1.3", "viem": "^2.21.26", "zod": "^3.24.4" } }, "sha512-4fgGOhyN9g/pTDE9NtsKUapwFsubrk9wafz8ltmBqSwWqLZWfWxXkVmzMYYFAf+qeGf/X9JqJtmvDVaHFlXWlw=="],
 

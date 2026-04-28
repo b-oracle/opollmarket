@@ -1,3 +1,4 @@
+import { getErrorMessage } from "../_shared/errors.ts";
 
 
 const corsHeaders = {
@@ -242,7 +243,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("faq-ai error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: getErrorMessage(e) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

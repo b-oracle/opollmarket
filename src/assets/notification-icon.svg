@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!--
+    Notification small icon. Designed for Android status bar at 24dp baseline:
+    a single solid white silhouette on transparent. Rasterized at five
+    densities (24/36/48/72/96 px) by scripts/build-splash-sources.mjs.
+
+    Brand DNA preserved from src/assets/app-icon.jpg:
+      - Outer circular ring
+      - Speech-bubble shape inside, pointing down-left
+    Inner stripes from the original are dropped — they don't read at small sizes.
+  -->
+  <circle cx="50" cy="50" r="40" fill="none" stroke="white" stroke-width="9" />
+  <path
+    d="M34 30
+       H66
+       Q72 30 72 36
+       V58
+       Q72 64 66 64
+       H46
+       L38 73
+       L40 64
+       H34
+       Q28 64 28 58
+       V36
+       Q28 30 34 30 Z"
+    fill="white" />
+</svg>

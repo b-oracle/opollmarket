@@ -657,7 +657,42 @@ const Index = () => {
         )}
       </div>
       <BoostMarketModal open={!!boostModalMarket} onClose={() => setBoostModalMarket(null)} marketId={boostModalMarket?.id || ""} marketTitle={boostModalMarket?.title || ""} />
-      
+
+      {/* Always-visible legal links (crawlable by Google verification) */}
+      <nav
+        aria-label="Legal"
+        className="lg:hidden border-t border-border bg-background/95 px-4 py-4 pb-24 mt-4"
+      >
+        <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
+          <li>
+            <a href="/privacy" className="hover:text-primary transition-colors underline-offset-2 hover:underline">
+              Privacy Policy
+            </a>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
+            <a href="/terms" className="hover:text-primary transition-colors underline-offset-2 hover:underline">
+              Terms &amp; Conditions
+            </a>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
+            <a href="/disclaimer" className="hover:text-primary transition-colors underline-offset-2 hover:underline">
+              Disclaimer
+            </a>
+          </li>
+          <li aria-hidden="true">·</li>
+          <li>
+            <a href="/data-use" className="hover:text-primary transition-colors underline-offset-2 hover:underline">
+              How We Use Your Data
+            </a>
+          </li>
+        </ul>
+        <p className="text-center text-[10px] text-muted-foreground mt-3">
+          © {new Date().getFullYear()} OPOLL. All rights reserved.
+        </p>
+      </nav>
+
       <BottomNav />
     </div>
   );

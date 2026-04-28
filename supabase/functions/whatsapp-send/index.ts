@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       // If user has prefs and this category is disabled, skip
-      if (prefs && (prefs as Record<string, boolean>)[prefKey] === false) {
+      if (prefs && (prefs as unknown as Record<string, boolean>)[prefKey] === false) {
         return new Response(JSON.stringify({ skipped: true, reason: `Preference '${prefKey}' disabled` }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

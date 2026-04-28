@@ -26,6 +26,8 @@
     "@capacitor/core": "^8.3.0",
     "@capacitor/haptics": "^8.0.0",
     "@capacitor/ios": "^8.3.0",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/preferences": "^8.0.1",
     "@capacitor/push-notifications": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.0",
@@ -99,6 +101,7 @@
     "viem": "^2.47.6",
     "vite-plugin-pwa": "0.21.1",
     "wagmi": "^3.6.0",
+    "workbox-window": "^7.4.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

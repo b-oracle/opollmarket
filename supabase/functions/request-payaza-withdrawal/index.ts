@@ -43,7 +43,12 @@ Deno.serve(async (req) => {
     const clientUa = req.headers.get("user-agent") || "unknown";
     console.log(`[NGN Withdrawal] user=${userId} ip=${clientIp} ua=${clientUa}`);
 
-    const { amount, bank_code, account_number, account_name } = await req.json();
+    const { amount, bank_code, account_number, account_name, idempotency_key } = await req.json();
+
+    // Idempotency key — relies on the unique index on withdrawal_requests.idempotency_key
+    // for race protection (see insert below).
+    const withdrawalIdempotencyKey =
+      idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -300,7 +305,34 @@ Deno.serve(async (req) => {
 
     console.log(`[NGN Payout] USD ${amount} - fee ${feeAmount} = net ${netAmount} × ₦${payoutRate} = ₦${ngnPayout}`);
 
-    // ─── Atomic balance debit with row lock (prevents race condition) ───
+    // ─── Idempotent withdrawal_requests insert ───
+    // Insert FIRST. Unique index on idempotency_key gives us atomic dedup —
+    // concurrent retries with the same key collide here and only one proceeds.
+    const { data: wdRow, error: wdInsertErr } = await adminClient
+      .from("withdrawal_requests")
+      .insert({
+        user_id: userId,
+        amount,
+        wallet_address: `${payazaBankCode}:${normalizedAccountNumber}:${account_name}`,
+        crypto_currency: "NGN",
+        status: "pending",
+        ip_address: clientIp,
+        user_agent: clientUa,
+        idempotency_key: withdrawalIdempotencyKey,
+      })
+      .select("id")
+      .single();
+
+    if (wdInsertErr || !wdRow?.id) {
+      const isDup = (wdInsertErr as { code?: string } | null)?.code === "23505";
+      return new Response(
+        JSON.stringify({ error: isDup ? "Duplicate withdrawal request" : "Could not record withdrawal" }),
+        { status: isDup ? 409 : 500, headers: corsHeaders }
+      );
+    }
+    const withdrawalRequestId = wdRow.id as string;
+
+    // ─── Atomic balance debit ───
     const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
       _user_id: userId,
       _main_deduct: amount,
@@ -308,6 +340,8 @@ Deno.serve(async (req) => {
     });
 
     if (!debitResult?.success) {
+      // Roll back the withdrawal_requests row so the idempotency_key can be retried.
+      await adminClient.from("withdrawal_requests").delete().eq("id", withdrawalRequestId);
       return new Response(
         JSON.stringify({ error: debitResult?.error || "Insufficient balance" }),
         { status: 400, headers: corsHeaders }
@@ -316,17 +350,6 @@ Deno.serve(async (req) => {
 
     const transactionReference = `wd_${userId}_${Date.now()}`;
 
-    // ─── Create withdrawal records (ONCE) ───
-    await adminClient.from("withdrawal_requests").insert({
-      user_id: userId,
-      amount,
-      wallet_address: `${payazaBankCode}:${normalizedAccountNumber}:${account_name}`,
-      crypto_currency: "NGN",
-      status: "pending",
-      ip_address: clientIp,
-      user_agent: clientUa,
-    });
-
     await adminClient.from("transactions").insert({
       user_id: userId,
       type: "withdrawal",
@@ -334,6 +357,7 @@ Deno.serve(async (req) => {
       status: "pending",
       payment_provider: "payaza",
       nowpayments_payment_id: transactionReference,
+      withdrawal_request_id: withdrawalRequestId,
     });
 
     // ─── Determine provider order based on admin settings ───
@@ -404,17 +428,17 @@ Deno.serve(async (req) => {
       await adminClient
         .from("withdrawal_requests")
         .update({ status: "completed", updated_at: new Date().toISOString() })
-        .eq("user_id", userId)
-        .eq("crypto_currency", "NGN")
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .eq("id", withdrawalRequestId);
 
       await adminClient
         .from("transactions")
         .update({ status: "confirmed", payment_provider: successProvider })
-        .eq("nowpayments_payment_id", transactionReference)
-        .eq("type", "withdrawal");
+        .eq("withdrawal_request_id", withdrawalRequestId);
+
+      // Credit fee to platform pool ONLY now that payout succeeded
+      if (feeAmount > 0) {
+        await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
+      }
     }
 
     const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";

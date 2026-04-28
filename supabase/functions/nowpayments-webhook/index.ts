@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logWebhookEvent } from "../_shared/webhookLog.ts";
+import { safeEqual, validateNowPaymentsPayload } from "../_shared/webhookValidation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,10 +46,10 @@ async function verifySignature(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  return computed === signature;
+  return safeEqual(computed, signature);
 }
 
-async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, userId: string, depositAmount: number) {
+async function processWelcomeBonus(supabase: any, userId: string, depositAmount: number) {
   const { data: toggle } = await supabase.from("feature_toggles").select("enabled").eq("feature_key", "welcome_bonus").maybeSingle();
   if (!toggle?.enabled) return;
   // Idempotency: check if already credited
@@ -71,8 +73,83 @@ async function processWelcomeBonus(supabase: ReturnType<typeof createClient>, us
   console.log(`Welcome bonus: $${bonus.toFixed(2)} credited to user ${userId}`);
 }
 
-async function handleDeposit(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
-  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount } = payload;
+// ===== Deviation thresholds (admin-configurable, with safe defaults) =====
+// All ratios are netReceived / requestedAmount.
+type Thresholds = {
+  overpay: number;       // >this * invoice -> overpayment flow (same asset)
+  partial: number;       // <this * invoice -> partial (rejected)
+  wrongHigh: number;     // >this * invoice w/ different currency -> wrong_asset
+  wrongLow: number;      // <this * invoice w/ different currency -> wrong_asset
+  largeAlert: number;    // >this * invoice -> alert admins even on success
+};
+const DEFAULT_THRESHOLDS: Thresholds = {
+  overpay: 1.02, partial: 0.98, wrongHigh: 2.0, wrongLow: 0.3, largeAlert: 1.5,
+};
+
+async function loadThresholds(supabase: any): Promise<Thresholds> {
+  try {
+    const { data } = await supabase
+      .from("commission_settings")
+      .select("deposit_overpay_threshold, deposit_partial_threshold, deposit_wrong_asset_high, deposit_wrong_asset_low, deposit_large_overpay_alert")
+      .limit(1)
+      .maybeSingle();
+    if (!data) return DEFAULT_THRESHOLDS;
+    const d = data as any;
+    return {
+      overpay: Number(d.deposit_overpay_threshold) || DEFAULT_THRESHOLDS.overpay,
+      partial: Number(d.deposit_partial_threshold) || DEFAULT_THRESHOLDS.partial,
+      wrongHigh: Number(d.deposit_wrong_asset_high) || DEFAULT_THRESHOLDS.wrongHigh,
+      wrongLow: Number(d.deposit_wrong_asset_low) || DEFAULT_THRESHOLDS.wrongLow,
+      largeAlert: Number(d.deposit_large_overpay_alert) || DEFAULT_THRESHOLDS.largeAlert,
+    };
+  } catch (_e) {
+    return DEFAULT_THRESHOLDS;
+  }
+}
+
+function classifyDeposit(requested: number, received: number, payCur: string, outCur: string, t: Thresholds): {
+  status: "wrong_asset" | "overpayment" | "partial" | "normal";
+  ratio: number;
+  recommendedCredit: number;
+  excess: number;
+  shortfall: number;
+} {
+  const ratio = requested > 0 ? received / requested : 1;
+  const sameAsset = payCur !== "" && payCur === outCur;
+  const sameAssetOverpay = sameAsset && requested > 0 && received >= requested * t.overpay;
+  // Wrong-asset only triggers on different currencies AND extreme deviation.
+  // Same-asset minor over/underpayment never triggers wrong_asset.
+  const wrongAsset = !sameAsset && (ratio > t.wrongHigh || (ratio < t.wrongLow && received > 0));
+
+  if (wrongAsset) {
+    return { status: "wrong_asset", ratio, recommendedCredit: Math.min(received, requested), excess: 0, shortfall: 0 };
+  }
+  if (sameAssetOverpay) {
+    return { status: "overpayment", ratio, recommendedCredit: requested, excess: received - requested, shortfall: 0 };
+  }
+  const credit = requested > 0 ? Math.min(received > 0 ? received : requested, requested) : received;
+  if (credit < requested * t.partial) {
+    return { status: "partial", ratio, recommendedCredit: credit, excess: 0, shortfall: requested - credit };
+  }
+  return { status: "normal", ratio, recommendedCredit: credit, excess: 0, shortfall: 0 };
+}
+
+async function notifyAdmins(supabase: any, title: string, message: string) {
+  const { data: adminRoles } = await supabase
+    .from("user_roles")
+    .select("user_id")
+    .in("role", ["admin", "super_admin"]);
+  const rows = (adminRoles || []).map((a: { user_id: string }) => ({
+    user_id: a.user_id,
+    title,
+    message,
+    type: "info",
+  }));
+  if (rows.length > 0) await supabase.from("notifications").insert(rows);
+}
+
+async function handleDeposit(supabase: any, payload: Record<string, unknown>, orderId: string) {
+  const { payment_id, actually_paid, outcome_amount, pay_amount, price_amount, pay_currency, outcome_currency } = payload;
   const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
@@ -87,6 +164,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     .from("transactions")
     .select("id, status")
     .eq("nowpayments_payment_id", paymentIdStr)
+    .eq("payment_provider", "nowpayments")
     .in("status", ["confirmed", "partial", "processing"])
     .maybeSingle();
 
@@ -98,16 +176,17 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   // 2. Atomically claim the transaction (prevents concurrent webhook replays)
   const { data: claimedRows } = await supabase.rpc("claim_webhook_deposit", {
     _payment_id: paymentIdStr,
+    _provider: "nowpayments",
   });
 
   let matchedTx = claimedRows?.[0] || null;
 
   // Fallback: try matching by user + pending status (for txns without payment_id yet)
   if (!matchedTx) {
-    // First try to set the payment_id on a matching pending tx, then claim it
+    // First try to set the payment_id + provider on a matching pending tx, then claim it
     await supabase
       .from("transactions")
-      .update({ nowpayments_payment_id: paymentIdStr })
+      .update({ nowpayments_payment_id: paymentIdStr, payment_provider: "nowpayments" })
       .eq("user_id", userId)
       .eq("type", "deposit")
       .in("status", ["pending", "expired"])
@@ -117,28 +196,32 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
 
     const { data: retryRows } = await supabase.rpc("claim_webhook_deposit", {
       _payment_id: paymentIdStr,
+      _provider: "nowpayments",
     });
     matchedTx = retryRows?.[0] || null;
   }
 
   // price_amount = the USD amount the user requested to deposit.
-  // outcome_amount = NP's reported net received — but can be wildly wrong
-  // (e.g. "Wrong Asset Confirmed" can return inflated/deflated values).
+  // outcome_amount = NP-reported net received (can be inflated/deflated for wrong-asset cases).
   const requestedAmount = Number(price_amount) || matchedTx?.amount || 0;
   const netReceived = Number(outcome_amount) || Number(actually_paid) || 0;
 
-  // WRONG ASSET DETECTION: if outcome_amount diverges wildly from price_amount,
-  // NP likely confirmed a wrong asset. Do NOT auto-credit — flag for manual review.
-  const divergenceRatio = requestedAmount > 0 ? netReceived / requestedAmount : 1;
-  if (divergenceRatio > 2 || (divergenceRatio < 0.3 && netReceived > 0)) {
-    console.warn(`WRONG ASSET DETECTED: outcome=$${netReceived} vs requested=$${requestedAmount} (ratio ${divergenceRatio.toFixed(2)}) for payment ${paymentIdStr}. Skipping auto-credit.`);
+  // Classify deposit deviation using admin-configurable thresholds
+  const payCur = String(pay_currency || "").toLowerCase();
+  const outCur = String(outcome_currency || pay_currency || "").toLowerCase();
+  const thresholds = await loadThresholds(supabase);
+  const cls = classifyDeposit(requestedAmount, netReceived, payCur, outCur, thresholds);
 
-    // Mark the transaction as needing manual review instead of crediting
+  if (cls.status === "wrong_asset") {
+    console.warn(`WRONG ASSET: payment ${paymentIdStr} ratio=${cls.ratio.toFixed(2)} payCur=${payCur} outCur=${outCur}`);
+
     if (matchedTx) {
-      await supabase
-        .from("transactions")
-        .update({ status: "wrong_asset", nowpayments_payment_id: paymentIdStr })
-        .eq("id", matchedTx.id);
+      await supabase.from("transactions").update({
+        status: "wrong_asset",
+        nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: netReceived,
+        net_amount_usd: netReceived,
+      }).eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
         user_id: userId,
@@ -146,33 +229,145 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
         amount: requestedAmount,
         status: "wrong_asset",
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: netReceived,
+        net_amount_usd: netReceived,
       });
     }
 
-    // Notify admins
-    const { data: adminRoles } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .in("role", ["admin", "super_admin"]);
-    for (const admin of adminRoles || []) {
-      await supabase.from("notifications").insert({
-        user_id: admin.user_id,
-        title: "⚠️ Wrong Asset Deposit Detected",
-        message: `User ${userId.slice(0, 8)}… sent wrong asset for payment ${paymentIdStr}. Requested $${requestedAmount}, NP reported $${netReceived.toFixed(2)}. Manual review required.`,
-        type: "info",
-      });
-    }
+    await notifyAdmins(
+      supabase,
+      "⚠️ Wrong Asset Deposit",
+      `User ${userId.slice(0, 8)}… payment ${paymentIdStr}. Requested $${requestedAmount.toFixed(2)}, NP reported $${netReceived.toFixed(2)} (ratio ${cls.ratio.toFixed(2)}). Recommended credit: $${cls.recommendedCredit.toFixed(2)}. Manual review required.`,
+    );
 
-    // Notify user
     await supabase.from("notifications").insert({
       user_id: userId,
       title: "Deposit Issue ⚠️",
       message: `Your $${requestedAmount.toFixed(2)} deposit was flagged because the wrong cryptocurrency was sent. Please contact support for assistance.`,
       type: "deposit",
     });
-
-    return; // Do NOT credit
+    return;
   }
+
+  // OVERPAYMENT FLOW
+  if (cls.status === "overpayment") {
+    const excess = cls.excess;
+
+    // SAFETY CAP: refuse to auto-credit massive overpayments. Mark as wrong_asset
+    // for admin review when the surplus is unreasonably large (likely a misconfigured
+    // payment or attack). Threshold: excess > min(requested * 5, $5000).
+    const overpayCap = Math.min(Number(requestedAmount) * 5, 5000);
+    if (excess > overpayCap) {
+      console.warn(`OVERPAYMENT EXCEEDS SAFETY CAP: requested=$${requestedAmount} received=$${netReceived} excess=$${excess} cap=$${overpayCap} — routing to admin review`);
+      if (matchedTx) {
+        await supabase.from("transactions").update({
+          status: "wrong_asset",
+          nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
+          gross_amount_usd: netReceived,
+          net_amount_usd: netReceived,
+        }).eq("id", matchedTx.id);
+      } else {
+        await supabase.from("transactions").insert({
+          user_id: userId, type: "deposit", amount: requestedAmount,
+          status: "wrong_asset", nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
+          gross_amount_usd: netReceived, net_amount_usd: netReceived,
+        });
+      }
+      await notifyAdmins(supabase, "🚨 Excessive Overpayment — Manual Review Required",
+        `User ${userId.slice(0,8)}… payment ${paymentIdStr} requested $${requestedAmount.toFixed(2)} but sent $${netReceived.toFixed(2)} (excess $${excess.toFixed(2)}, cap $${overpayCap.toFixed(2)}). Auto-credit blocked.`);
+      await supabase.from("notifications").insert({
+        user_id: userId, title: "Deposit Under Review ⚠️",
+        message: `Your $${requestedAmount.toFixed(2)} deposit received an unexpectedly large amount. It's under review and will be credited shortly.`,
+        type: "deposit",
+      });
+      return;
+    }
+
+    console.log(`OVERPAYMENT: requested=$${requestedAmount} received=$${netReceived} excess=$${excess.toFixed(4)} ratio=${cls.ratio.toFixed(2)}`);
+
+    const { error: balErr } = await supabase.rpc("adjust_balance", {
+      _user_id: userId,
+      _delta: Number(requestedAmount),
+      _bonus_delta: Number(excess),
+      _insurance_delta: 0,
+    });
+    if (balErr) {
+      console.error("Overpayment credit failed:", balErr);
+      throw new Error(`Overpayment balance adjust failed: ${balErr.message}`);
+    }
+
+    if (matchedTx) {
+      await supabase.from("transactions").update({
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+        amount: Number(requestedAmount),
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(requestedAmount),
+        description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
+      }).eq("id", matchedTx.id);
+    } else {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "deposit",
+        amount: Number(requestedAmount),
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(requestedAmount),
+        description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
+      });
+    }
+
+    if (excess > 0) {
+      await supabase.from("transactions").insert({
+        user_id: userId,
+        type: "overpayment_bonus",
+        amount: Number(excess),
+        status: "confirmed",
+        nowpayments_payment_id: paymentIdStr,
+        description: `Overpayment surplus from deposit ${paymentIdStr} — credited to bonus balance.`,
+      });
+    }
+
+    // Notify user
+    await supabase.from("notifications").insert({
+      user_id: userId,
+      title: "Deposit Confirmed ✅",
+      message: excess > 0
+        ? `Your $${requestedAmount.toFixed(2)} deposit was credited. You overpaid by $${excess.toFixed(2)} — added to your bonus balance (usable for platform fees).`
+        : `Your $${requestedAmount.toFixed(2)} deposit was credited.`,
+      type: "deposit",
+    });
+
+    // Alert admins on unusually large overpayments
+    if (cls.ratio >= thresholds.largeAlert) {
+      await notifyAdmins(
+        supabase,
+        "ℹ️ Large Overpayment Auto-Credited",
+        `User ${userId.slice(0, 8)}… overpaid by $${excess.toFixed(2)} (ratio ${cls.ratio.toFixed(2)}) on payment ${paymentIdStr}. Credited $${requestedAmount.toFixed(2)} to main balance, $${excess.toFixed(2)} to bonus.`,
+      );
+    }
+
+    // Run welcome-bonus + debt-settlement post-credit hooks (same as normal flow)
+    try { await processWelcomeBonus(supabase, userId, Number(requestedAmount)); } catch (e) { console.error("Welcome bonus error:", e); }
+    try {
+      const { data: debtResult } = await supabase.rpc("settle_user_debts", { _user_id: userId });
+      if (debtResult && Number((debtResult as { amount?: number }).amount ?? 0) > 0) {
+        await supabase.from("notifications").insert({
+          user_id: userId,
+          title: "Outstanding Balance Settled 📋",
+          message: `$${Number((debtResult as { amount: number }).amount).toFixed(2)} was deducted from your deposit to cover outstanding market liquidity fees.`,
+          type: "info",
+        });
+      }
+    } catch (e) { console.error("Debt settle error:", e); }
+
+    return;
+  }
+
+
 
   // Normal credit flow — cap at requested amount as safety net
   const creditAmount = requestedAmount > 0
@@ -187,7 +382,13 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
     if (matchedTx) {
       await supabase
         .from("transactions")
-        .update({ status: "partial", nowpayments_payment_id: paymentIdStr, amount: Number(creditAmount) })
+        .update({
+          status: "partial",
+          nowpayments_payment_id: paymentIdStr,
+          amount: Number(creditAmount),
+          gross_amount_usd: Number(netReceived),
+          net_amount_usd: Number(creditAmount),
+        })
         .eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
@@ -196,6 +397,8 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
         amount: Number(creditAmount),
         status: "partial",
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(creditAmount),
       });
     }
 
@@ -208,19 +411,12 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
       type: "deposit",
     });
 
-    // Notify admins
-    const { data: adminRoles2 } = await supabase
-      .from("user_roles")
-      .select("user_id")
-      .in("role", ["admin", "super_admin"]);
-    for (const admin of adminRoles2 || []) {
-      await supabase.from("notifications").insert({
-        user_id: admin.user_id,
-        title: "⚠️ Partial Deposit Flagged",
-        message: `User ${userId.slice(0, 8)}… sent $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (payment ${paymentIdStr}). Not credited — needs manual review.`,
-        type: "info",
-      });
-    }
+    // Notify admins (with recommended credit amount + clear status)
+    await notifyAdmins(
+      supabase,
+      "⚠️ Partial Deposit Flagged",
+      `User ${userId.slice(0, 8)}… payment ${paymentIdStr}: received $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (shortfall $${shortfall.toFixed(2)}, ratio ${(cls.ratio).toFixed(2)}). Status: partial. Recommended credit if approved: $${cls.recommendedCredit.toFixed(2)}.`,
+    );
 
     return; // Do NOT credit
   }
@@ -236,8 +432,30 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   });
   if (balanceError) {
     console.error("Failed to adjust balance:", balanceError);
+    await logWebhookEvent(supabase, {
+      provider: "nowpayments",
+      event_type: "credit_failed",
+      status: "error",
+      reference: paymentIdStr,
+      transaction_id: matchedTx?.id ?? null,
+      user_id: userId,
+      requested_amount: Number(requestedAmount),
+      credited_amount: Number(creditAmount),
+      error: balanceError,
+    });
     throw new Error(`Balance adjustment failed: ${balanceError.message}`);
   }
+
+  await logWebhookEvent(supabase, {
+    provider: "nowpayments",
+    event_type: "credited",
+    status: "success",
+    reference: paymentIdStr,
+    transaction_id: matchedTx?.id ?? null,
+    user_id: userId,
+    requested_amount: Number(requestedAmount),
+    credited_amount: Number(creditAmount),
+  });
 
   // 4. Update the transaction record
   if (matchedTx) {
@@ -247,6 +465,8 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
         amount: Number(creditAmount),
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(creditAmount),
       })
       .eq("id", matchedTx.id);
     if (txUpdateError) {
@@ -261,6 +481,8 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
         amount: Number(creditAmount),
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
+        gross_amount_usd: Number(netReceived),
+        net_amount_usd: Number(creditAmount),
       });
     if (txInsertError) {
       console.error("WARNING: Balance credited but tx insert failed:", txInsertError);
@@ -311,7 +533,7 @@ async function handleDeposit(supabase: ReturnType<typeof createClient>, payload:
   }
 }
 
-async function handleBoost(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
+async function handleBoost(supabase: any, payload: Record<string, unknown>, orderId: string) {
   const { payment_id } = payload;
   const paymentIdStr = String(payment_id);
 
@@ -425,7 +647,7 @@ async function handleBoost(supabase: ReturnType<typeof createClient>, payload: R
   console.log(`${isExtension ? "Extended" : "Activated"} ${tier} boost for market ${marketId}`);
 }
 
-async function handleBroadcast(supabase: ReturnType<typeof createClient>, payload: Record<string, unknown>, orderId: string) {
+async function handleBroadcast(supabase: any, payload: Record<string, unknown>, orderId: string) {
   const { payment_id } = payload;
   const paymentIdStr = String(payment_id);
 
@@ -508,8 +730,11 @@ Deno.serve(async (req) => {
   try {
     const ipnSecret = Deno.env.get("NOWPAYMENTS_IPN_SECRET");
     if (!ipnSecret) {
-      console.error("IPN secret not configured");
-      return new Response("OK", { status: 200, headers: corsHeaders });
+      // FAIL-SAFE: refuse webhook if signing secret is unset. Returning 200 here
+      // would silently accept unauthenticated payloads — prefer a hard 500 so
+      // NOWPayments retries and on-call notices the misconfiguration.
+      console.error("IPN secret not configured — rejecting webhook");
+      return new Response("Service misconfigured", { status: 500, headers: corsHeaders });
     }
 
     const body = await req.text();
@@ -521,10 +746,27 @@ Deno.serve(async (req) => {
       return new Response("Invalid signature", { status: 403, headers: corsHeaders });
     }
 
-    const payload = JSON.parse(body);
+    let rawPayload: unknown;
+    try {
+      rawPayload = JSON.parse(body);
+    } catch {
+      console.error("NowPayments IPN: invalid JSON body");
+      return new Response("Invalid JSON", { status: 400, headers: corsHeaders });
+    }
+
+    const validation = validateNowPaymentsPayload(rawPayload);
+    if (!validation.ok) {
+      console.error("NowPayments IPN validation failed:", validation.error);
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const payload = validation.value.raw as Record<string, unknown>;
     console.log("IPN payload:", JSON.stringify(payload));
 
-    const { payment_status, order_id } = payload;
+    const payment_status = validation.value.payment_status;
+    const order_id = validation.value.order_id;
 
     // Handle partially_paid: mark deposit as "partial" for admin review (no balance credit)
     if (payment_status === "partially_paid") {
@@ -635,6 +877,18 @@ Deno.serve(async (req) => {
     return new Response("OK", { status: 200, headers: corsHeaders });
   } catch (err) {
     console.error("Webhook error:", err);
+    try {
+      const supa = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await logWebhookEvent(supa, {
+        provider: "nowpayments",
+        event_type: "error",
+        status: "error",
+        error: err,
+      });
+    } catch { /* swallow */ }
     return new Response("OK", { status: 200, headers: corsHeaders });
   }
 });

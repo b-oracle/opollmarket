@@ -22,6 +22,7 @@ const root = path.resolve(__dirname, "..");
 
 const SRC_LOGO = path.join(root, "src", "assets", "blue-opoll-logo.png");
 const SRC_ICON = path.join(root, "src", "assets", "app-icon.jpg");
+const SRC_NOTIF = path.join(root, "src", "assets", "notification-icon.svg");
 const OUT_DIR = path.join(root, "assets");
 
 const BLACK = { r: 0, g: 0, b: 0, alpha: 1 };
@@ -93,42 +94,13 @@ const NOTIFICATION_DENSITIES = [
   { dir: "drawable-xxxhdpi", size: 96 },
 ];
 
-// Source app-icon.jpg has the cyan ring at ~90% of its canvas with no breathing
-// room. Without padding the silhouette feels cramped/zoomed in the status bar,
-// so we render the source at (1 - 2 * NOTIF_PADDING_RATIO) of the target size
-// and center it on a black canvas. Black pixels then become transparent
-// (brightness=0 -> alpha=0) and only the cyan mark contributes to the alpha.
-const NOTIF_PADDING_RATIO = 0.18;
-
+// Notification-icon source is an SVG (white-on-transparent silhouette already
+// designed for small sizes), so we just rasterize it at each density. Density
+// 600 gives sharp's librsvg backend enough resolution to anti-alias cleanly
+// even for the smallest 24px output.
 async function buildNotificationIcon(size, outPath) {
-  const inner = Math.round(size * (1 - 2 * NOTIF_PADDING_RATIO));
-  const offset = Math.round((size - inner) / 2);
-
-  const innerBuf = await sharp(SRC_ICON)
-    .resize(inner, inner, { fit: "contain", background: { r: 0, g: 0, b: 0 } })
-    .toBuffer();
-
-  const { data, info } = await sharp({
-    create: { width: size, height: size, channels: 3, background: { r: 0, g: 0, b: 0 } },
-  })
-    .composite([{ input: innerBuf, left: offset, top: offset }])
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  const ch = info.channels;
-  const out = Buffer.alloc(size * size * 4);
-  for (let i = 0; i < size * size; i++) {
-    const r = data[i * ch];
-    const g = data[i * ch + 1];
-    const b = data[i * ch + 2];
-    const brightness = Math.max(r, g, b);
-    out[i * 4] = 255;
-    out[i * 4 + 1] = 255;
-    out[i * 4 + 2] = 255;
-    out[i * 4 + 3] = brightness;
-  }
-
-  await sharp(out, { raw: { width: size, height: size, channels: 4 } })
+  await sharp(SRC_NOTIF, { density: 600 })
+    .resize(size, size)
     .png()
     .toFile(outPath);
 }

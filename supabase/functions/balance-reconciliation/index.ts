@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -225,7 +226,8 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("balance-reconciliation error:", err);
-    return new Response(JSON.stringify({ error: err.message || "Internal server error" }), {
+    const message = getErrorMessage(err);
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

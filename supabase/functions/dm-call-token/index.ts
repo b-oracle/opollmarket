@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AccessToken, RoomServiceClient } from "npm:livekit-server-sdk@2.15.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,31 @@ const json = (data: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+
+// Fire-and-forget event logger — uses service role bypassing RLS.
+// Never throws; logs warnings if insertion fails.
+const logCallEvent = async (
+  admin: any,
+  callId: string,
+  conversationId: string | null,
+  eventType: string,
+  actorId: string | null,
+  metadata: Record<string, unknown> = {},
+) => {
+  try {
+    const { error } = await admin.from("dm_call_events").insert({
+      call_id: callId,
+      conversation_id: conversationId,
+      event_type: eventType,
+      actor_id: actorId,
+      source: "edge",
+      metadata,
+    });
+    if (error) console.warn("logCallEvent insert error:", eventType, error.message);
+  } catch (err) {
+    console.warn("logCallEvent threw:", err);
+  }
+};
 
 function getLivekitConfig() {
   const apiKey = (Deno.env.get("LIVEKIT_API_KEY") || "").trim();
@@ -190,10 +216,16 @@ Deno.serve(async (req) => {
 
       if (callErr) throw callErr;
 
+      // Lifecycle: call created — recipient will be notified next
+      await logCallEvent(admin, callData.id, conversation_id, "received", user.id, {
+        callee_id: calleeId,
+        room_name: roomName,
+      });
+
       // Send notification to callee
       const { data: callerProfile } = await admin
         .from("profiles")
-        .select("display_name")
+        .select("display_name, avatar_url")
         .eq("id", user.id)
         .single();
 
@@ -287,6 +319,12 @@ Deno.serve(async (req) => {
         .update({ status: "active", started_at: new Date().toISOString() })
         .eq("id", call_id);
 
+      // Lifecycle: callee accepted — call transitions ringing → active
+      await logCallEvent(admin, call_id, call.conversation_id, "accepted", user.id, {
+        caller_id: call.caller_id,
+        room_name: call.room_name,
+      });
+
       const { data: profile } = await admin
         .from("profiles")
         .select("display_name")
@@ -333,6 +371,12 @@ Deno.serve(async (req) => {
         .from("dm_calls")
         .update({ status: "declined", ended_at: new Date().toISOString() })
         .eq("id", call_id);
+
+      // Lifecycle: callee declined — call transitions ringing → declined
+      await logCallEvent(admin, call_id, call.conversation_id, "declined", user.id, {
+        caller_id: call.caller_id,
+        room_name: call.room_name,
+      });
 
       // Insert system message
       await admin.from("dm_messages").insert({
@@ -463,6 +507,13 @@ Deno.serve(async (req) => {
         })
         .eq("id", call_id);
 
+      // Lifecycle: a participant ended the call — active → ended
+      await logCallEvent(admin, call_id, call.conversation_id, "ended", user.id, {
+        duration_seconds: duration,
+        ended_by_role: call.caller_id === user.id ? "caller" : "callee",
+        room_name: call.room_name,
+      });
+
       // Insert system message
       await admin.from("dm_messages").insert({
         conversation_id: call.conversation_id,
@@ -507,18 +558,32 @@ Deno.serve(async (req) => {
 
       // Verify room still exists in LiveKit
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+      let rejoinParticipantCount = 0;
       try {
         const participants = await svc.listParticipants(call.room_name);
+        rejoinParticipantCount = participants?.length || 0;
         // Room exists — generate a new token for the rejoining user
-        console.log("Rejoin: room has", participants?.length || 0, "participants");
+        console.log("Rejoin: room has", rejoinParticipantCount, "participants");
       } catch {
         // Room is gone — cannot rejoin
         await admin
           .from("dm_calls")
           .update({ status: "ended", ended_at: new Date().toISOString() })
           .eq("id", call_id);
+        // Lifecycle: rejoin attempted but room was gone — auto-closed as ended
+        await logCallEvent(admin, call_id, call.conversation_id, "ended", user.id, {
+          reason: "rejoin_room_missing",
+          room_name: call.room_name,
+        });
         return json({ error: "Call room no longer exists" }, 410);
       }
+
+      // Lifecycle: participant successfully rejoined the active call
+      await logCallEvent(admin, call_id, call.conversation_id, "rejoin", user.id, {
+        rejoiner_role: call.caller_id === user.id ? "caller" : "callee",
+        room_name: call.room_name,
+        participants_at_rejoin: rejoinParticipantCount,
+      });
 
       const { data: profile } = await admin
         .from("profiles")
@@ -551,6 +616,6 @@ Deno.serve(async (req) => {
     return json({ error: "Unknown action" }, 400);
   } catch (err: any) {
     console.error("dm-call-token error:", err);
-    return json({ error: err.message || "Internal error" }, 500);
+    return json({ error: (getErrorMessage(err)) || "Internal error" }, 500);
   }
 });

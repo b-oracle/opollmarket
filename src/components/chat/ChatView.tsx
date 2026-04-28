@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import ChatDoodleBackground from "./ChatDoodleBackground";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video, WifiOff } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,12 @@ import ChatMessageBubble from "./ChatMessageBubble";
 import ChatSharePicker from "./ChatSharePicker";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
+import { logCallEvent } from "@/lib/callEvents";
+import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
+import {
+  getCachedCallConversation,
+  dedupeCallConversationLookup,
+} from "@/lib/dmCallLookupCache";
 
 interface Message {
   id: string;
@@ -37,6 +43,7 @@ interface ReplyTo {
 
 const ChatView = () => {
   const { conversationId: paramId } = useParams<{ conversationId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -52,6 +59,107 @@ const ChatView = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [resolvedConvoId, setResolvedConvoId] = useState<string | null>(null);
   const resolvedRef = useRef(false);
+  const autoAcceptedRef = useRef<string | null>(null);
+  // null = idle, "reconnecting" = retry loop running, "failed" = gave up.
+  // Drives the slim banner shown under the header so users get visible
+  // feedback while we wait for conversation/convo data before auto-joining.
+  // Persisted in sessionStorage (keyed by conversation id) so the banner
+  // survives navigation away and back to the chat view — without this, the
+  // user loses all visibility into a still-pending or failed reconnect the
+  // moment they tap the back button or open another tab.
+  const rejoinStorageKey = paramId ? `dm-rejoin-status:${paramId}` : null;
+  const [rejoinStatus, setRejoinStatus] = useState<null | "reconnecting" | "failed">(() => {
+    if (!rejoinStorageKey) return null;
+    try {
+      const raw = window.sessionStorage.getItem(rejoinStorageKey);
+      if (raw === "reconnecting" || raw === "failed") return raw;
+    } catch { /* ignore */ }
+    return null;
+  });
+  // Holds the call_id from the last failed auto-accept attempt so the
+  // "Try again" affordance (banner button + toast action) can re-invoke it.
+  // Also persisted alongside rejoinStatus so "Try again" still works after
+  // returning to the page.
+  const lastFailedCallIdKey = paramId ? `dm-rejoin-failed-call:${paramId}` : null;
+  const lastFailedCallIdRef = useRef<string | null>((() => {
+    if (!lastFailedCallIdKey) return null;
+    try {
+      return window.sessionStorage.getItem(lastFailedCallIdKey);
+    } catch { return null; }
+  })());
+
+  // Mirror rejoinStatus + last failed call id to sessionStorage so they
+  // survive remounts. Cleared when status returns to idle.
+  useEffect(() => {
+    if (!rejoinStorageKey) return;
+    try {
+      if (rejoinStatus) {
+        window.sessionStorage.setItem(rejoinStorageKey, rejoinStatus);
+      } else {
+        window.sessionStorage.removeItem(rejoinStorageKey);
+        if (lastFailedCallIdKey) window.sessionStorage.removeItem(lastFailedCallIdKey);
+      }
+    } catch { /* ignore quota / privacy mode */ }
+  }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
+
+  // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
+  // when the retry loop kicks off, used to drive a live countdown in the
+  // banner. Null when there is no active attempt. We store the deadline (not
+  // the seconds remaining) so the visible value stays accurate even if the
+  // browser throttles our 1s tick (e.g., backgrounded tab).
+  const [rejoinDeadlineAt, setRejoinDeadlineAt] = useState<number | null>(null);
+  const [rejoinSecondsLeft, setRejoinSecondsLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (rejoinStatus !== "reconnecting" || !rejoinDeadlineAt) {
+      setRejoinSecondsLeft(null);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((rejoinDeadlineAt - Date.now()) / 1000));
+      setRejoinSecondsLeft(remaining);
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [rejoinStatus, rejoinDeadlineAt]);
+
+  // Clear the countdown deadline as soon as we leave the reconnecting state.
+  useEffect(() => {
+    if (rejoinStatus !== "reconnecting") setRejoinDeadlineAt(null);
+  }, [rejoinStatus]);
+
+
+  // Helper to update the failed-call ref AND its persisted mirror together.
+  const setLastFailedCallId = useCallback((id: string | null) => {
+    lastFailedCallIdRef.current = id;
+    if (!lastFailedCallIdKey) return;
+    try {
+      if (id) window.sessionStorage.setItem(lastFailedCallIdKey, id);
+      else window.sessionStorage.removeItem(lastFailedCallIdKey);
+    } catch { /* ignore */ }
+  }, [lastFailedCallIdKey]);
+
+  // Track network connectivity so the rejoin banner can show a more accurate
+  // "Offline — waiting for network" state instead of a misleading "Reconnecting…"
+  // spinner when the device has no connection. We only check navigator.onLine
+  // once on mount and then react to online/offline events — `navigator.onLine`
+  // can lie (says online when captive portal blocks traffic) but it's the best
+  // signal available without a probe request.
+  const [isOffline, setIsOffline] = useState<boolean>(() => {
+    if (typeof navigator === "undefined") return false;
+    return navigator.onLine === false;
+  });
+  useEffect(() => {
+    const goOnline = () => setIsOffline(false);
+    const goOffline = () => setIsOffline(true);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
 
   // If paramId is a user ID (not a conversation ID), resolve it to a conversation
   useEffect(() => {
@@ -285,6 +393,7 @@ const ChatView = () => {
     if (!conversationId || !user) return;
     setCalling(true);
     try {
+      logCallEvent(callId, "rejoin", { with_video: withVideo });
       const { data, error } = await supabase.functions.invoke("dm-call-token", {
         body: { action: "rejoin", call_id: callId },
       });
@@ -308,6 +417,7 @@ const ChatView = () => {
         })
       );
     } catch (err: any) {
+      logCallEvent(callId, "failed", { stage: "rejoin", error: err?.message });
       toast.error(err.message || "Failed to rejoin call");
     } finally {
       setCalling(false);
@@ -380,6 +490,230 @@ const ChatView = () => {
     }
   }, [calling, conversationId, user, otherName, convo, handleRejoinCall]);
 
+  // Re-arms the auto-accept retry loop after a failure. Resets the dedupe
+  // ref so the effect below re-enters, then re-adds auto_accept + call_id
+  // to the URL (preserving any other params) so the same flow runs again.
+  const retryAutoAccept = useCallback(
+    (callId: string) => {
+      if (!callId) return;
+      autoAcceptedRef.current = null;
+      setLastFailedCallId(null);
+      setRejoinStatus("reconnecting");
+      // 15s matches HARD_TIMEOUT_MS in the auto-accept effect below.
+      setRejoinDeadlineAt(Date.now() + 15_000);
+      setSearchParams(
+        (current) => {
+          const next = new URLSearchParams(current);
+          next.set("auto_accept", "1");
+          next.set("call_id", callId);
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams, setLastFailedCallId],
+  );
+
+  // Auto-accept incoming call when arriving via native notification deep link
+  // (opoll://call/accept → /messages/<id>?call_id=...&auto_accept=1)
+  // Polls until conversation/convo data is ready, then joins.
+  // Strips ONLY auto_accept + call_id from the URL after the attempt resolves
+  // — preserves utm_*, ref, and any other tracking/query params untouched.
+  useEffect(() => {
+    const autoAccept = searchParams.get("auto_accept");
+    const callId = searchParams.get("call_id");
+    if (autoAccept !== "1" || !callId) return;
+    if (autoAcceptedRef.current === callId) return;
+
+    // Mark as in-flight immediately so re-renders don't re-enter this effect
+    // for the same callId. We still wait to clear the URL params until after
+    // the join attempt resolves (success or timeout) so a mid-flight unmount
+    // doesn't lose context.
+    autoAcceptedRef.current = callId;
+
+    let attempts = 0;
+    const MAX_ATTEMPTS = 10;        // ~10s of polling (1s interval)
+    const HARD_TIMEOUT_MS = 15_000; // absolute upper bound
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let done = false;
+    // Cached server-side conversation_id for this callId. We refuse to
+    // auto-join until the loaded conversationId matches this value, so a
+    // race where another conversation finishes loading first can't pull
+    // the user into the wrong thread.
+    let expectedConvoId: string | null = null;
+    let lookupInFlight = false;
+    let lookupFailed = false;
+
+    const stripCallParams = () => {
+      // Use the functional form so we merge against the LATEST params,
+      // not the snapshot captured when the effect ran. This preserves any
+      // utm_*, ref, or other params that may have been added meanwhile.
+      setSearchParams(
+        (current) => stripCallDeepLinkParams(current),
+        { replace: true },
+      );
+    };
+
+    const stop = (opts: { strip: boolean }) => {
+      if (done) return;
+      done = true;
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (opts.strip) stripCallParams();
+    };
+
+    const failWithToast = (reason: "attempts" | "timeout" | "mismatch" | "lookup") => {
+      autoAcceptedRef.current = null;
+      setLastFailedCallId(callId);
+      setRejoinStatus("failed");
+      const description =
+        reason === "timeout"
+          ? "Took too long to load the conversation."
+          : reason === "mismatch"
+          ? "This call belongs to a different conversation."
+          : reason === "lookup"
+          ? "Couldn't verify the call. Please try again."
+          : "We tried a few times but couldn't join.";
+      toast.error("Couldn't reconnect to the call", {
+        description,
+        action: {
+          label: "Try again",
+          onClick: () => retryAutoAccept(callId),
+        },
+      });
+    };
+
+    const ensureLookup = () => {
+      if (expectedConvoId || lookupFailed || lookupInFlight) return;
+
+      // Fast path: in-memory / localStorage cache from a prior lookup.
+      const cached = getCachedCallConversation(callId);
+      if (cached) {
+        expectedConvoId = cached;
+        return;
+      }
+
+      // Slow path: route through the module-level dedupe registry so that
+      // concurrent ensureLookup callers (rapid retry clicks, overlapping
+      // poll ticks, multiple mounted ChatView instances) share ONE supabase
+      // query for the same call_id instead of stampeding the database.
+      lookupInFlight = true;
+      dedupeCallConversationLookup(callId, async () => {
+        const { data, error } = await supabase
+          .from("dm_calls" as any)
+          .select("conversation_id")
+          .eq("id", callId)
+          .maybeSingle() as any;
+        if (error) {
+          console.warn("auto_accept: call lookup failed", error);
+          return null;
+        }
+        return (data?.conversation_id as string | undefined) ?? null;
+      })
+        .then((conversationId) => {
+          lookupInFlight = false;
+          if (done) return;
+          if (!conversationId) {
+            lookupFailed = true;
+            failWithToast("lookup");
+            stop({ strip: true });
+            return;
+          }
+          expectedConvoId = conversationId;
+        })
+        .catch((err) => {
+          lookupInFlight = false;
+          if (done) return;
+          lookupFailed = true;
+          console.warn("auto_accept: call lookup threw", err);
+          failWithToast("lookup");
+          stop({ strip: true });
+        });
+    };
+
+    const tryAccept = () => {
+      if (done) return;
+      attempts += 1;
+      ensureLookup();
+      // Only join when (a) we know which conversation the call belongs to,
+      // (b) the currently-loaded conversation matches it, and (c) convo data
+      // is ready. This prevents a misroute if a different convo loads first.
+      if (
+        expectedConvoId &&
+        conversationId === expectedConvoId &&
+        user &&
+        convo &&
+        (convo as any).id === expectedConvoId
+      ) {
+        setRejoinStatus(null);
+        setLastFailedCallId(null);
+        handleRejoinCall(callId, false);
+        stop({ strip: true });
+        return;
+      }
+      // If we've resolved a conversation but it's the wrong one, fail fast
+      // — polling won't change which thread the user opened.
+      if (expectedConvoId && conversationId && conversationId !== expectedConvoId) {
+        console.warn("auto_accept: conversation mismatch", { conversationId, expectedConvoId });
+        failWithToast("mismatch");
+        stop({ strip: true });
+        return;
+      }
+      // Surface the reconnecting banner once we've waited at least one tick
+      // — avoids a flash for the common case where everything is ready on the
+      // first synchronous attempt.
+      setRejoinStatus("reconnecting");
+      // Set/refresh the deadline used by the countdown banner. We anchor it
+      // once at first surfacing so the displayed seconds tick down smoothly.
+      setRejoinDeadlineAt((prev) => prev ?? Date.now() + HARD_TIMEOUT_MS);
+      if (attempts >= MAX_ATTEMPTS) {
+        console.warn("auto_accept: gave up after", attempts, "attempts");
+        failWithToast("attempts");
+        stop({ strip: true });
+      }
+    };
+
+    // Try immediately, then poll
+    tryAccept();
+    if (!done) {
+      intervalId = setInterval(tryAccept, 1000);
+      timeoutId = setTimeout(() => {
+        if (!done) {
+          console.warn("auto_accept: hard timeout reached");
+          failWithToast("timeout");
+        }
+        stop({ strip: true });
+      }, HARD_TIMEOUT_MS);
+    }
+
+    // Cleanup on unmount / dependency change.
+    //
+    // "Deep link handling cancelled" path: if the user leaves the page (or this
+    // effect re-runs) BEFORE the join attempt resolves, we must:
+    //   1. Stop pending timers so no late join fires against a stale conversation.
+    //   2. Preserve auto_accept + call_id in the URL untouched, so navigating
+    //      back (or the next mount) re-enters this effect and retries the join.
+    //   3. Reset autoAcceptedRef for this callId so the early-return guard
+    //      doesn't permanently swallow the intent on remount.
+    //   4. Clear any "reconnecting" banner state — the cancelled attempt is
+    //      no longer in flight and showing a stale spinner is misleading.
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+      if (!done) {
+        // Attempt was cancelled mid-flight (unmount / nav / dep change).
+        console.info("auto_accept: deep link handling cancelled, preserving params", { callId });
+        if (autoAcceptedRef.current === callId) {
+          autoAcceptedRef.current = null;
+        }
+        setRejoinStatus((prev) => (prev === "reconnecting" ? null : prev));
+      }
+    };
+  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, retryAutoAccept]);
+
+
+
   return (
     <div className="h-[100dvh] bg-background flex flex-col overflow-hidden overflow-x-hidden relative">
       {isFeatureEnabled("chat_doodle_bg") && <ChatDoodleBackground />}
@@ -425,9 +759,74 @@ const ChatView = () => {
         )}
       </div>
 
+      {/* Auto-rejoin status banner — shown while we wait for conversation
+          data to load before joining a call from a native deep link.
+          Uses semantic tokens so it adapts to light/dark themes. */}
+      {rejoinStatus === "reconnecting" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`shrink-0 border-b px-4 py-2 flex items-center gap-2 ${
+            isOffline
+              ? "bg-warning/10 border-warning/20"
+              : "bg-primary/10 border-primary/20"
+          }`}
+        >
+          {isOffline ? (
+            <WifiOff className="w-4 h-4 text-warning shrink-0" />
+          ) : (
+            <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />
+          )}
+          <p className="text-xs text-foreground flex-1">
+            {isOffline
+              ? "Offline — waiting for network…"
+              : rejoinSecondsLeft != null && rejoinSecondsLeft > 0
+                ? `Reconnecting… ${rejoinSecondsLeft}s`
+                : "Reconnecting call…"}
+          </p>
+        </div>
+      )}
+      {rejoinStatus === "failed" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center gap-2"
+        >
+          <X className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-xs text-foreground flex-1">
+            Couldn't reconnect to the call.
+          </p>
+          {/* Primary action: re-run the auto-join retry loop. We always render
+              this button (even if we've lost the call_id from a previous
+              session), but disable it when there's nothing to retry so the
+              user still gets a clear, consistent affordance instead of the
+              banner silently having no actionable path. */}
+          <button
+            onClick={() => {
+              const id = lastFailedCallIdRef.current;
+              if (id) retryAutoAccept(id);
+            }}
+            disabled={!lastFailedCallIdRef.current}
+            className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Try reconnecting
+          </button>
+          <button
+            onClick={() => {
+              setLastFailedCallId(null);
+              setRejoinStatus(null);
+            }}
+            aria-label="Dismiss"
+            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Pending request banner for recipient */}
       {isRecipientOfRequest && (
-        <div className="shrink-0 bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center gap-3">
+        <div className="shrink-0 bg-warning/10 border-b border-warning/20 px-4 py-3 flex items-center gap-3">
           <p className="text-sm text-foreground flex-1">
             <span className="font-semibold">{otherName}</span> wants to message you
           </p>

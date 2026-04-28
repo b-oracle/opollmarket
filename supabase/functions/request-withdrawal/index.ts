@@ -91,21 +91,11 @@ Deno.serve(async (req) => {
 
     const { amount, wallet_address, crypto_currency, idempotency_key } = await req.json();
 
-    // Idempotency: reject duplicate submissions
-    if (idempotency_key) {
-      const { count: existingKey } = await createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      ).from("withdrawal_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("idempotency_key", idempotency_key);
-      if ((existingKey ?? 0) > 0) {
-        return new Response(JSON.stringify({ error: "Duplicate withdrawal request" }), {
-          status: 409, headers: corsHeaders,
-        });
-      }
-    }
-    const withdrawalIdempotencyKey = idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    // Idempotency key — generate one if client didn't supply. We rely on the
+    // unique index on withdrawal_requests.idempotency_key for the actual race
+    // protection (see insert below); this pre-check is a fast-path UX hint.
+    const withdrawalIdempotencyKey =
+      idempotency_key || `${userId}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 
     const adminClient = createClient(
@@ -358,7 +348,42 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Atomic balance debit with row lock (main balance only, not bonus)
+    const payCurrency = crypto_currency || "usdtbsc";
+
+    // Calculate fee and net payout
+    const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
+    const netAmount = amount - feeAmount;
+
+    // ─── Idempotent withdrawal_requests insert ───
+    // Insert FIRST. The unique index on idempotency_key gives us atomic
+    // "single row per submission" semantics — concurrent retries with the
+    // same key collide here and only one proceeds to the balance debit.
+    const { data: wdRow, error: wdInsertErr } = await adminClient
+      .from("withdrawal_requests")
+      .insert({
+        user_id: userId,
+        amount,
+        wallet_address: wallet_address.trim(),
+        crypto_currency: payCurrency,
+        status: "pending",
+        ip_address: clientIp,
+        user_agent: clientUa,
+        idempotency_key: withdrawalIdempotencyKey,
+      })
+      .select("id")
+      .single();
+
+    if (wdInsertErr || !wdRow?.id) {
+      // Most likely a unique-violation on idempotency_key — duplicate submission.
+      const isDup = (wdInsertErr as { code?: string } | null)?.code === "23505";
+      return new Response(
+        JSON.stringify({ error: isDup ? "Duplicate withdrawal request" : "Could not record withdrawal" }),
+        { status: isDup ? 409 : 500, headers: corsHeaders }
+      );
+    }
+    const withdrawalRequestId = wdRow.id as string;
+
+    // Atomic balance debit — only after we have an exclusive withdrawal_requests row.
     const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
       _user_id: userId,
       _main_deduct: amount,
@@ -366,22 +391,17 @@ Deno.serve(async (req) => {
     });
 
     if (!debitResult?.success) {
+      // Roll back the withdrawal_requests row so the idempotency_key can be retried with funds.
+      await adminClient.from("withdrawal_requests").delete().eq("id", withdrawalRequestId);
       return new Response(
         JSON.stringify({ error: "Insufficient balance" }),
         { status: 400, headers: corsHeaders }
       );
     }
 
-    const payCurrency = crypto_currency || "usdtbsc";
-
-    // Calculate fee and net payout
-    const feeAmount = withdrawalFeePercent > 0 ? (amount * withdrawalFeePercent) / 100 : 0;
-    const netAmount = amount - feeAmount;
-
-    // Credit withdrawal fee to platform pool as tracked revenue
-    if (feeAmount > 0) {
-      await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
-    }
+    // NOTE: Withdrawal fee is NOT credited to the platform pool here. We credit it
+    // only when the payout actually succeeds (or admin approves a manual one) so
+    // rejected/failed withdrawals don't inflate platform revenue.
 
     // JWT-based payout flow
     let payoutSuccess = false;
@@ -549,26 +569,18 @@ Deno.serve(async (req) => {
     }
 
     if (!payoutSuccess) {
-      // Fallback: create a pending withdrawal for manual admin processing
-      // Balance stays deducted — admin will approve/reject via process-withdrawal
+      // Fallback: leave the withdrawal_requests row as 'pending' for manual admin processing.
+      // Balance stays deducted — admin will approve/reject via process-withdrawal.
+      // (No second insert: the row was created up-front for idempotency.)
       console.warn("Payout failed, falling back to manual processing. Error:", payoutError);
-
-      await adminClient.from("withdrawal_requests").insert({
-        user_id: userId,
-        amount,
-        wallet_address: wallet_address.trim(),
-        crypto_currency: payCurrency,
-        status: "pending",
-        ip_address: clientIp,
-        user_agent: clientUa,
-        idempotency_key: withdrawalIdempotencyKey,
-      });
 
       await adminClient.from("transactions").insert({
         user_id: userId,
         type: "withdrawal",
         amount,
         status: "pending",
+        payment_provider: "nowpayments",
+        withdrawal_request_id: withdrawalRequestId,
       });
 
       const feeNote = feeAmount > 0 ? ` (Fee: $${feeAmount.toFixed(2)}, Net: $${netAmount.toFixed(2)})` : "";
@@ -585,29 +597,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Record withdrawal request as completed
-    await adminClient.from("withdrawal_requests").insert({
-      user_id: userId,
-      amount,
-      wallet_address: wallet_address.trim(),
-      crypto_currency: payCurrency,
-      status: "completed",
-      nowpayments_id: payoutId ? String(payoutId) : null,
-      tx_hash: payoutTxHash,
-      ip_address: clientIp,
-      user_agent: clientUa,
-      idempotency_key: withdrawalIdempotencyKey,
-    });
+    // Mark the existing withdrawal_requests row as completed (no second insert).
+    await adminClient
+      .from("withdrawal_requests")
+      .update({
+        status: "completed",
+        nowpayments_id: payoutId ? String(payoutId) : null,
+        tx_hash: payoutTxHash,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", withdrawalRequestId);
 
-    // Insert confirmed withdrawal transaction
+    // Insert confirmed withdrawal transaction linked to the request row
     await adminClient.from("transactions").insert({
       user_id: userId,
       type: "withdrawal",
       amount,
       status: "confirmed",
+      payment_provider: "nowpayments",
       nowpayments_payment_id: payoutId ? String(payoutId) : null,
       tx_hash: payoutTxHash,
+      withdrawal_request_id: withdrawalRequestId,
     });
+
+    // Credit fee to platform pool ONLY now that payout succeeded
+    if (feeAmount > 0) {
+      await adminClient.rpc("adjust_platform_pool", { _delta: feeAmount });
+    }
 
     // If tx hash wasn't available yet, schedule a background fetch
     if (!payoutTxHash && payoutId) {

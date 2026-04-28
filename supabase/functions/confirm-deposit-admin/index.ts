@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { validateDepositCap } from "../_shared/depositCap.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,10 +67,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify the transaction exists and is pending/partial
+    // Verify the transaction exists and is pending/partial/wrong_asset
     const { data: tx, error: txError } = await adminClient
       .from("transactions")
-      .select("id, status, amount")
+      .select("id, status, amount, gross_amount_usd, net_amount_usd")
       .eq("id", transaction_id)
       .eq("user_id", user_id)
       .single();
@@ -88,11 +89,18 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate: admin cannot credit MORE than the original transaction amount
-    const originalAmount = Number(tx.amount);
-    if (Number(amount) > originalAmount) {
-      return new Response(JSON.stringify({ error: `Amount $${Number(amount).toFixed(2)} exceeds original transaction amount $${originalAmount.toFixed(2)}` }), {
-        status: 400,
+    // Shared cap validator: refuses to fall back to invoice amount on flagged
+    // (partial / wrong_asset) rows where the invoice can't be trusted.
+    const cap = validateDepositCap({
+      grossAmountUsd: (tx as any).gross_amount_usd,
+      netAmountUsd: (tx as any).net_amount_usd,
+      invoiceAmount: tx.amount,
+      requestedCredit: Number(amount),
+      status: tx.status,
+    });
+    if (!cap.ok) {
+      return new Response(JSON.stringify({ error: cap.error }), {
+        status: cap.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -120,7 +128,7 @@ Deno.serve(async (req) => {
     // Update transaction
     await adminClient
       .from("transactions")
-      .update({ status: "confirmed", amount: Number(amount) })
+      .update({ status: "confirmed", amount: Number(amount), net_amount_usd: Number(amount) })
       .eq("id", transaction_id);
 
     // Notify user

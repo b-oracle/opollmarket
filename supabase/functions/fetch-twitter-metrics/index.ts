@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -293,7 +294,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("fetch-twitter-metrics error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (getErrorMessage(err)) }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

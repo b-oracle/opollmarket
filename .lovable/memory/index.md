@@ -1,0 +1,108 @@
+# Project Memory
+
+## Core
+- **Tech Stack**: Supabase (RLS, Postgres Realtime), Wagmi/Viem (BSC), LiveKit (media), Despia (native wrapper).
+- **Supabase RPCs**: Explicitly pass ALL parameters to resolve Postgres overloading. Explicitly cast JSONB values (`::date`, `::numeric`).
+- **Auth**: Always use `supabase.auth.getUser()`. Never use deprecated `getClaims()`.
+- **Dates**: Store date-only fields as stable local strings (`yyyy-MM-dd`) to prevent timezone shifting.
+- **Layout**: Use CSS safe-area vars (`var(--content-bottom)`) and `overscroll-behavior: none` for edge-to-edge mobile rendering.
+- **Numbers/Currency**: Use USD notation ($) with K/M/B suffixes for volume. Explicitly parse strings to ints with helper.
+- **Native App ID**: Always `com.opollmarket.app`. Never use legacy `app.lovable.<uuid>` form.
+
+## Memories
+- [Project Vision](mem://project/vision) — Pollmarket mobile-first social prediction platform vision.
+- [Visual Identity](mem://style/visual-identity) — SVG backgrounds, watermarks, safe-area usages.
+- [Architecture](mem://tech/architecture) — Atomic RPCs, FOR UPDATE row locking, SECURITY DEFINER rules.
+- [Leaderboard Logic](mem://features/leaderboard) — Ranking metrics and PnL calculation formulas.
+- [Content Moderation](mem://features/content-moderation) — Market creation UI delays, 5-step progress visualization.
+- [Blockchain Integration](mem://tech/blockchain-integration) — Custom BNB to BC400 swaps via PancakeSwap Router V2.
+- [Wallet Connection](mem://tech/wallet-connection) — Reown AppKit on BSC, Trust Wallet deep links, timeouts.
+- [Financial Rules](mem://features/financials) — Deposit/withdrawal limits, 1% fee, NOWPayments/Payaza.
+- [Polymarket Integration](mem://features/polymarket-integration) — Automated import and resolution via Gamma API.
+- [Realtime Reactivity](mem://tech/realtime-reactivity) — Supabase Realtime singleton pattern to prevent duplicate subscriptions.
+- [Verification Badges](mem://features/verification-system/tiered-badges-and-benefits) — Blue/Gold verification requirements and monthly sweep cron.
+- [Price Feeds](mem://tech/integrations/price-feeds) — metals.dev, ExchangeRate-API, Binance Spot API via Edge Functions.
+- [Automated Resolution](mem://features/automated-resolution) — Sports (2h delay) and Twitter automated resolution.
+- [Feature Toggles](mem://features/feature-toggles) — Global functionality toggles in feature_toggles table.
+- [Bonus Balance Usage](mem://constraints/bonus-balance-usage) — Strict usage rules for platform fees, cannot be wagered.
+- [BC400 Reward Pool](mem://features/reward-pools/bc400) — Commission splits and 48-hour holds.
+- [Limit Orders](mem://features/limit-orders/escrow-architecture) — Server-side escrow, atomic fills, fee deduction.
+- [Market Creation Fee](mem://features/market-creation/fee-escrow-bypass) — Fixed $50 creation fee held in escrow.
+- [Market Images](mem://constraints/market-images) — Mandatory compressed image uploads, prefixed with user_id.
+- [Bot Ecosystem](mem://features/messaging/bot-ecosystem) — Telegram daily digest and contextual action buttons.
+- [Quick Trade Logic](mem://features/quick-trade/core-logic-and-ui) — Parimutuel rules, rate limits, milestone tracking.
+- [Transaction History](mem://features/user-profile/transaction-history) — Violet themes for AI transactions, capped at 200.
+- [Approval Workflow](mem://features/market-approval-workflow) — Moderator review steps and prediction blocking.
+- [Twitter X Auto-post](mem://features/social/x-integration) — Automated platform activity posting via pg_net.
+- [Admin Notifications](mem://project/governance/admin-notifications) — 30s pulsing badge for pending admin tasks.
+- [Platform Analytics](mem://tech/analytics/platform-analytics-overview) — Event tracking, 10k row batch-counting limits.
+- [Draft Management](mem://features/market-creation/draft-management) — LocalStorage drafts, tier limits, JSONB RPC typing.
+- [Portfolio PnL](mem://features/portfolio/pnl-and-display) — Active vs resolved categories, simulated AMM price impact.
+- [Push Notifications](mem://tech/push-notifications) — Multi-channel architecture, deduplication, deep-linking.
+- [Resolution Audit](mem://tech/blockchain-integration/resolution-audit) — On-chain market resolution logging.
+- [Twitter Engagement Tracking](mem://features/market-mechanics/twitter-engagement-tracking) — Live engagement UI parsing.
+- [Promotions System](mem://features/promotions/system-overview) — Boosts/Broadcasts/Ads with 4h expiry.
+- [Unlimited Markets](mem://features/market-creation/unlimited-markets-whitelist) — Whitelist bypassing constraints and fees.
+- [Market Integrity](mem://tech/financials/market-integrity) — RLS locks on financial fields, initial liquidity validation.
+- [Registration Logic](mem://features/user-onboarding/registration-logic) — Default followers, referral code handling.
+- [KYC System](mem://features/kyc-system) — Multi-tier KYC via document proxy.
+- [Deletion Policy](mem://constraints/deletion-policy) — 24-hour soft delete for markets via pg_cron.
+- [Platform Economy](mem://tech/financials/platform-economy-and-stats) — Multi-balance system (main, bonus, rewards).
+- [Market Mechanics](mem://features/market-mechanics/core-logic-and-visibility) — AMM pricing and proportional losing pool caps.
+- [Mobile Deployment](mem://tech/mobile-deployment-strategy) — PWA, Despia, Capacitor fallbacks.
+- [Reward Conversion](mem://features/financials/reward-conversion) — Transfer gifts to rewards balance atomically.
+- [Gifting Mechanics](mem://features/financials/gifting-mechanics) — Emoji gifts and direct money transfers via DMs/Spaces.
+- [Notification Triggers](mem://tech/database-integrity/notification-automation) — Security Definer DB triggers for critical alerts.
+- [Mobile Layout Patterns](mem://style/layout-architecture/mobile-responsiveness-patterns) — h-100dvh boundaries, touch manipulation.
+- [Space Lifecycle](mem://features/social/spaces/lifecycle-and-status) — Space states and 30m inactivity auto-termination.
+- [Deep Linking](mem://features/notifications/deep-linking-and-navigation-logic) — Notification click handlers to app events.
+- [Profile Interactions](mem://features/user-profile/layout-and-interactions-update) — Tap-to-hide balance mask, glass-morphic styles.
+- [Voice Calling](mem://features/messaging/voice-calling) — LiveKit 1:1 DMs, PiP video, background DOM polling.
+- [Deposit Integrity](mem://tech/financials/deposit-integrity) — NOWPayments webhooks and admin reconciliation limits.
+- [oSURE Protection](mem://features/osure-protection) — Prediction insurance tiers and premium distributions.
+- [Auth Sessions](mem://tech/auth/authentication-and-sessions) — 30m PIN timeout, 24h full logout, session sync.
+- [Payaza Webhooks](mem://tech/financials/payaza-webhook-security) — Fiat deposits reference verification and idempotency.
+- [Feed & Stories](mem://features/social/feed-and-stories-logic) — chronological aggregation, 24h story purge, ad spacing.
+- [Space Visibility](mem://features/social/spaces/visibility-rules) — Feed synchronization and private invite logic.
+- [Space Live Status](mem://features/social/spaces/live-status-indicator) — Red ring indicator via global singleton channel.
+- [Space Occupancy](mem://features/social/spaces/occupancy-tracking) — Real-time LiveKit server presence checking.
+- [Copy Trading](mem://features/copy-trading/core-functionality) — Replicated trading constraints and AMM updates.
+- [Space Chat Interaction](mem://features/social/spaces/chat-interaction) — Threaded replies, mentions, and emoji reactions.
+- [Communities](mem://features/communities) — Category-based group chat aggregations.
+- [User Settings](mem://features/user-settings) — Privacy and feature toggles syncing.
+- [Image Rendering](mem://style/ui-patterns/image-rendering-and-parallax) — Parallax bleed, overlay legibility, video auto-play.
+- [Messaging Navigation](mem://style/ui-patterns/messaging-navigation) — WhatsApp style routing and status contexts.
+- [Space Recording](mem://features/social/spaces/recording-mechanics) — audio/mp4 for iOS/Safari via floating mini-player.
+- [WhatsApp Bot](mem://tech/integrations/whatsapp-bot) — Twilio bot integrations for predictions and balance.
+- [Support Tickets](mem://features/support/ticketing-system) — RLS scoped file uploads and AI responses.
+- [DM Functionality](mem://features/messaging/dm-chat-functionality) — Initiated_by tracking, UI guards, search functionality.
+- [Platform Limits](mem://features/admin-controls/platform-limits) — Dynamic threshold variables for bets/deposits.
+- [Referral Stats](mem://features/referrals/personal-stats) — Username based refs without exposing emails.
+- [Sports Betting](mem://features/sports-betting/core-functionality) — API-Football offsets end_date to day after kickoff.
+- [Gift Interactions](mem://features/messaging/gift-interactions) — Tap-to-animate confetti blasts and 3s cooldowns.
+- [Terms & Policies](mem://project/governance/terms-and-policies) — Mandatory re-acceptance prompts via LATEST_POLICY_DATE.
+- [Notification Broadcasts](mem://features/admin-controls/notification-broadcasts) — Targeted push delivery via pg_cron.
+- [Twitter Market Constraints](mem://constraints/twitter-market-duration) — 5-day max lifespan for API cost control.
+- [Admin Permissions](mem://project/governance/admin-roles-and-permissions) — RBAC for Support, Moderator, Admin tiers.
+- [Registration Rewards](mem://features/incentives/registration-rewards) — Instant $2 bonuses for new users and referrers.
+- [Analytics Formatting](mem://features/admin-controls/analytics-and-ranking) — Batch fetches to bypass limits, .toFixed(2) UI formatting.
+- [Storage Limits](mem://constraints/storage-optimization) — File size rules (5MB images, 50MB audio).
+- [Business Portal](mem://features/business-portal) — Partner API management, webhooks, and analytics.
+- [Social Previews](mem://tech/ux/social-sharing-previews) — Server-side satori generation with opollmarket.com aliases.
+- [API Throttling](mem://tech/cost-optimization/api-throttling) — Cost management limits for external services.
+- [Identity System](mem://features/social/identity-system) — Dual-lookup routing (UUIDs/handles) for profile resolving.
+- [AI Agent Generation](mem://features/ai-generation) — Gemini 3 Flash prompts, $0.50 fee deduction logic.
+- [Access Security](mem://tech/security/access-and-privacy) — Security invoker profiles and restricted config.
+- [Synchronization Logic](mem://tech/data-integrity/synchronization-logic) — Image and notification cross-table sync.
+- [Onboarding UX](mem://features/social/onboarding-ux) — Static modal tutorial to prevent route resetting.
+- [Optimistic UI](mem://tech/ux/optimistic-interactions) — likeDelta bypassing batched updates.
+- [Market Management](mem://features/admin-controls/market-management) — Admin dashboard utilities for re-opening/hiding markets.
+- [DM Initialization](mem://features/messaging/dm-chat-initialization) — start_dm_conversation RPC for new threads.
+- [Space Media UX](mem://features/social/spaces/media-and-interaction-ux) — Disconnect on page leave false for mobile stability.
+- [SDK Compatibility](mem://tech/auth/sdk-compatibility) — Mandatory usage of get_user() for Edge Functions.
+- [Public API System](mem://tech/integrations/public-api-system) — Pseudo-email registrations for partners.
+- [Despia Native App](mem://tech/integrations/despia-native-app) — Helpers for haptics, biometrics, and OneSignal.
+- [Payment Restrictions](mem://tech/integrations/payment-providers-and-restrictions-rules) — Paddle banned, Payaza/NOWPayments only.
+- [Market Streaming](mem://features/social/market-streaming) — Self-hosted LiveKit and YT broadcasts for match events.
+- [Investor Deck](mem://features/admin-controls/investor-deck) — Dynamic html2canvas exports for presentations.
+- [App Package ID](mem://constraints/app-package-id) — Canonical native package id `com.opollmarket.app`; legacy `app.lovable.<uuid>` is forbidden.

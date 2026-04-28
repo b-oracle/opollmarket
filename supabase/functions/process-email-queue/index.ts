@@ -1,5 +1,6 @@
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { getErrorMessage } from "../_shared/errors.ts";
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -54,7 +55,7 @@ function parseJwtClaims(token: string): Record<string, unknown> | null {
 
 // Move a message to the dead letter queue and log the reason.
 async function moveToDlq(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   queue: string,
   msg: { msg_id: number; message: Record<string, unknown> },
   reason: string
@@ -155,13 +156,13 @@ Deno.serve(async (req) => {
     // messages not attempted when a 429 stops processing early.
     const messageIds = Array.from(
       new Set(
-        messages
-          .map((msg) =>
+        (messages as any[])
+          .map((msg: any) =>
             msg?.message?.message_id && typeof msg.message.message_id === 'string'
               ? msg.message.message_id
               : null
           )
-          .filter((id): id is string => Boolean(id))
+          .filter((id: string | null): id is string => Boolean(id))
       )
     )
     const failedAttemptsByMessageId = new Map<string, number>()
@@ -288,7 +289,7 @@ Deno.serve(async (req) => {
         }
         totalProcessed++
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error)
+        const errorMsg = getErrorMessage(error)
         console.error('Email send failed', {
           queue,
           msg_id: msg.msg_id,

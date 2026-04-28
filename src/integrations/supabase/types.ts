@@ -522,9 +522,14 @@ export type Database = {
           creator_fee_gold_percent: number
           creator_fee_percent: number
           deposit_expiry_minutes: number
+          deposit_large_overpay_alert: number
           deposit_max_amount: number
           deposit_min_amount: number
+          deposit_overpay_threshold: number
+          deposit_partial_threshold: number
           deposit_provider: string
+          deposit_wrong_asset_high: number
+          deposit_wrong_asset_low: number
           exit_fee_percent: number
           fallback_naira_rate: number
           fallback_payout_naira_rate: number
@@ -580,6 +585,7 @@ export type Database = {
           updated_by: string | null
           welcome_bonus_cap: number
           welcome_bonus_percent: number
+          withdrawal_anomaly_threshold: number
           withdrawal_cooldown_minutes: number
           withdrawal_fee_percent: number
           withdrawal_limit_enabled: boolean
@@ -603,9 +609,14 @@ export type Database = {
           creator_fee_gold_percent?: number
           creator_fee_percent?: number
           deposit_expiry_minutes?: number
+          deposit_large_overpay_alert?: number
           deposit_max_amount?: number
           deposit_min_amount?: number
+          deposit_overpay_threshold?: number
+          deposit_partial_threshold?: number
           deposit_provider?: string
+          deposit_wrong_asset_high?: number
+          deposit_wrong_asset_low?: number
           exit_fee_percent?: number
           fallback_naira_rate?: number
           fallback_payout_naira_rate?: number
@@ -661,6 +672,7 @@ export type Database = {
           updated_by?: string | null
           welcome_bonus_cap?: number
           welcome_bonus_percent?: number
+          withdrawal_anomaly_threshold?: number
           withdrawal_cooldown_minutes?: number
           withdrawal_fee_percent?: number
           withdrawal_limit_enabled?: boolean
@@ -684,9 +696,14 @@ export type Database = {
           creator_fee_gold_percent?: number
           creator_fee_percent?: number
           deposit_expiry_minutes?: number
+          deposit_large_overpay_alert?: number
           deposit_max_amount?: number
           deposit_min_amount?: number
+          deposit_overpay_threshold?: number
+          deposit_partial_threshold?: number
           deposit_provider?: string
+          deposit_wrong_asset_high?: number
+          deposit_wrong_asset_low?: number
           exit_fee_percent?: number
           fallback_naira_rate?: number
           fallback_payout_naira_rate?: number
@@ -742,6 +759,7 @@ export type Database = {
           updated_by?: string | null
           welcome_bonus_cap?: number
           welcome_bonus_percent?: number
+          withdrawal_anomaly_threshold?: number
           withdrawal_cooldown_minutes?: number
           withdrawal_fee_percent?: number
           withdrawal_limit_enabled?: boolean
@@ -944,6 +962,39 @@ export type Database = {
           released_at?: string | null
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      dm_call_events: {
+        Row: {
+          actor_id: string | null
+          call_id: string
+          conversation_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          source: string
+        }
+        Insert: {
+          actor_id?: string | null
+          call_id: string
+          conversation_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          source?: string
+        }
+        Update: {
+          actor_id?: string | null
+          call_id?: string
+          conversation_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          source?: string
         }
         Relationships: []
       }
@@ -2502,6 +2553,33 @@ export type Database = {
         }
         Relationships: []
       }
+      signup_device_fingerprints: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          referrer_id: string | null
+          user_agent_hash: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          referrer_id?: string | null
+          user_agent_hash?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          referrer_id?: string | null
+          user_agent_hash?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_ads: {
         Row: {
           amount: number
@@ -3443,9 +3521,11 @@ export type Database = {
           bonus_amount: number
           created_at: string
           description: string | null
+          gross_amount_usd: number | null
           id: string
           is_copy_trade: boolean
           market_id: string | null
+          net_amount_usd: number | null
           nowpayments_payment_id: string | null
           option_id: string | null
           payment_provider: string | null
@@ -3456,6 +3536,7 @@ export type Database = {
           tx_hash: string | null
           type: string
           user_id: string
+          withdrawal_request_id: string | null
         }
         Insert: {
           amount: number
@@ -3463,9 +3544,11 @@ export type Database = {
           bonus_amount?: number
           created_at?: string
           description?: string | null
+          gross_amount_usd?: number | null
           id?: string
           is_copy_trade?: boolean
           market_id?: string | null
+          net_amount_usd?: number | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
           payment_provider?: string | null
@@ -3476,6 +3559,7 @@ export type Database = {
           tx_hash?: string | null
           type: string
           user_id: string
+          withdrawal_request_id?: string | null
         }
         Update: {
           amount?: number
@@ -3483,9 +3567,11 @@ export type Database = {
           bonus_amount?: number
           created_at?: string
           description?: string | null
+          gross_amount_usd?: number | null
           id?: string
           is_copy_trade?: boolean
           market_id?: string | null
+          net_amount_usd?: number | null
           nowpayments_payment_id?: string | null
           option_id?: string | null
           payment_provider?: string | null
@@ -3496,6 +3582,7 @@ export type Database = {
           tx_hash?: string | null
           type?: string
           user_id?: string
+          withdrawal_request_id?: string | null
         }
         Relationships: [
           {
@@ -3517,6 +3604,13 @@ export type Database = {
             columns: ["option_id"]
             isOneToOne: false
             referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_withdrawal_request_id_fkey"
+            columns: ["withdrawal_request_id"]
+            isOneToOne: false
+            referencedRelation: "withdrawal_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -3773,6 +3867,30 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_event_ledger: {
+        Row: {
+          event_key: string
+          first_seen_at: string
+          id: string
+          payload: Json | null
+          provider: string
+        }
+        Insert: {
+          event_key: string
+          first_seen_at?: string
+          id?: string
+          payload?: Json | null
+          provider: string
+        }
+        Update: {
+          event_key?: string
+          first_seen_at?: string
+          id?: string
+          payload?: Json | null
+          provider?: string
+        }
+        Relationships: []
+      }
       webhook_events: {
         Row: {
           api_key_id: string
@@ -3781,6 +3899,8 @@ export type Database = {
           event_type: string
           id: string
           last_attempt_at: string | null
+          last_error: string | null
+          next_retry_at: string | null
           payload: Json
           response_code: number | null
           status: string
@@ -3792,6 +3912,8 @@ export type Database = {
           event_type: string
           id?: string
           last_attempt_at?: string | null
+          last_error?: string | null
+          next_retry_at?: string | null
           payload: Json
           response_code?: number | null
           status?: string
@@ -3803,6 +3925,8 @@ export type Database = {
           event_type?: string
           id?: string
           last_attempt_at?: string | null
+          last_error?: string | null
+          next_retry_at?: string | null
           payload?: Json
           response_code?: number | null
           status?: string
@@ -3813,6 +3937,132 @@ export type Database = {
             columns: ["api_key_id"]
             isOneToOne: false
             referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_failures: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string | null
+          external_reference: string | null
+          id: string
+          last_error: string | null
+          last_stack: string | null
+          next_run_at: string | null
+          payload: Json
+          payload_hash: string
+          provider: string
+          resolved_at: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type?: string | null
+          external_reference?: string | null
+          id?: string
+          last_error?: string | null
+          last_stack?: string | null
+          next_run_at?: string | null
+          payload: Json
+          payload_hash: string
+          provider: string
+          resolved_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string | null
+          external_reference?: string | null
+          id?: string
+          last_error?: string | null
+          last_stack?: string | null
+          next_run_at?: string | null
+          payload?: Json
+          payload_hash?: string
+          provider?: string
+          resolved_at?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          bonus_amount: number | null
+          created_at: string
+          credited_amount: number | null
+          error: string | null
+          event_type: string
+          id: string
+          message: string | null
+          payload: Json | null
+          provider: string
+          reference: string | null
+          requested_amount: number | null
+          stack: string | null
+          status: string
+          transaction_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          bonus_amount?: number | null
+          created_at?: string
+          credited_amount?: number | null
+          error?: string | null
+          event_type: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          provider: string
+          reference?: string | null
+          requested_amount?: number | null
+          stack?: string | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          bonus_amount?: number | null
+          created_at?: string
+          credited_amount?: number | null
+          error?: string | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          provider?: string
+          reference?: string | null
+          requested_amount?: number | null
+          stack?: string | null
+          status?: string
+          transaction_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "public_market_trades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_logs_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -4252,20 +4502,15 @@ export type Database = {
         Args: { _amount: number; _market_id: string; _user_id: string }
         Returns: Json
       }
-      adjust_balance:
-        | {
-            Args: { _bonus_delta?: number; _delta: number; _user_id: string }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              _bonus_delta?: number
-              _delta: number
-              _insurance_delta?: number
-              _user_id: string
-            }
-            Returns: undefined
-          }
+      adjust_balance: {
+        Args: {
+          _bonus_delta?: number
+          _delta: number
+          _insurance_delta?: number
+          _user_id: string
+        }
+        Returns: undefined
+      }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
       admin_update_profile: {
         Args: {
@@ -4301,8 +4546,23 @@ export type Database = {
         Args: { _market_id: string }
         Returns: Json
       }
+      claim_webhook_boost: {
+        Args: { _market_id: string; _payer: string; _payment_id: string }
+        Returns: {
+          ends_at: string
+          id: string
+          status: string
+        }[]
+      }
+      claim_webhook_broadcast: {
+        Args: { _market_id: string; _payment_id: string; _user_id: string }
+        Returns: {
+          id: string
+          status: string
+        }[]
+      }
       claim_webhook_deposit: {
-        Args: { _payment_id: string; _provider?: string }
+        Args: { _payment_id: string; _provider: string }
         Returns: {
           amount: number
           id: string
@@ -4314,6 +4574,7 @@ export type Database = {
         Args: { _action: string; _withdrawal_id: string }
         Returns: Json
       }
+      cleanup_webhook_event_ledger: { Args: never; Returns: undefined }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
@@ -4526,6 +4787,10 @@ export type Database = {
               error: true
             } & "Could not choose the best candidate function between: public.is_valid_referral_code(_code => text), public.is_valid_referral_code(_code => uuid). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
           }
+      log_dm_call_event: {
+        Args: { _call_id: string; _event_type: string; _metadata?: Json }
+        Returns: string
+      }
       mark_dm_messages_read: {
         Args: { _conversation_id: string }
         Returns: number
@@ -4552,11 +4817,32 @@ export type Database = {
           read_ct: number
         }[]
       }
+      record_webhook_event: {
+        Args: { _event_key: string; _payload?: Json; _provider: string }
+        Returns: boolean
+      }
+      record_webhook_failure: {
+        Args: {
+          _error?: string
+          _event_type?: string
+          _external_reference?: string
+          _next_run_at?: string
+          _payload: Json
+          _payload_hash: string
+          _provider: string
+          _stack?: string
+          _transaction_id?: string
+          _user_id?: string
+        }
+        Returns: string
+      }
       reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
       }
+      requeue_webhook_event: { Args: { _event_id: string }; Returns: Json }
+      resolve_webhook_failure: { Args: { _id: string }; Returns: boolean }
       sell_update_market_prices: {
         Args: {
           _gross_proceeds: number

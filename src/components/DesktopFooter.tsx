@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import logoLight from "@/assets/blue-opoll-logo.png";
-import { Video, HelpCircle, FileText, Shield, Scale } from "lucide-react";
+import { Video, HelpCircle, FileText, Shield, Scale, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useSocialLinks } from "@/hooks/useSocialLinks";
 import SocialIcon from "@/components/SocialIcon";
@@ -8,6 +8,7 @@ import SocialIcon from "@/components/SocialIcon";
 const footerLinks = [
   { icon: Video, label: "How-to", href: "#", comingSoon: true },
   { icon: HelpCircle, label: "FAQ", href: "/faq" },
+  { icon: Eye, label: "How We Use Your Data", href: "/data-use" },
   { icon: Scale, label: "Disclaimer", href: "/disclaimer" },
   { icon: FileText, label: "Terms & Conditions", href: "/terms" },
   { icon: Shield, label: "Privacy Policy", href: "/privacy" },
@@ -131,23 +132,15 @@ const DesktopFooter = () => {
             © {new Date().getFullYear()} OPOLL. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
-            {["Terms", "Privacy", "Disclaimer"].map((label) => (
-              <button
-                key={label}
-                onClick={() =>
-                  navigate(
-                    label === "Terms"
-                      ? "/terms"
-                      : label === "Privacy"
-                      ? "/privacy"
-                      : "/disclaimer"
-                  )
-                }
-                className="text-[11px] text-muted-foreground hover:text-primary transition-colors"
-              >
-                {label}
-              </button>
-            ))}
+            <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Terms
+            </a>
+            <a href="/privacy" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Privacy
+            </a>
+            <a href="/disclaimer" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Disclaimer
+            </a>
           </div>
         </div>
       </div>

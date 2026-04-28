@@ -1,3 +1,4 @@
+import { getErrorMessage } from "../_shared/errors.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -63,7 +64,7 @@ Deno.serve(async (req) => {
   } catch (err: any) {
     console.error("jamendo-search error:", err);
     return new Response(
-      JSON.stringify({ error: err.message || "Internal error" }),
+      JSON.stringify({ error: (getErrorMessage(err)) || "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

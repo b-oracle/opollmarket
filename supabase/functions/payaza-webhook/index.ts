@@ -1,4 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logWebhookEvent } from "../_shared/webhookLog.ts";
+import { safeEqual, validatePayazaPayload } from "../_shared/webhookValidation.ts";
+import { errorResponse } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,21 +15,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // ── Webhook secret verification ──
+    // ── Webhook secret verification (REQUIRED — hard-fail if unset) ──
     const webhookSecret = Deno.env.get("PAYAZA_WEBHOOK_SECRET");
-    if (webhookSecret) {
-      const incomingToken =
-        req.headers.get("x-payaza-webhook-token") ||
-        req.headers.get("payaza-webhook-token") ||
-        req.headers.get("x-webhook-token") ||
-        new URL(req.url).searchParams.get("token");
+    if (!webhookSecret) {
+      console.error("PAYAZA_WEBHOOK_SECRET not configured — rejecting webhook");
+      return new Response(JSON.stringify({ error: "Webhook not configured" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const incomingToken =
+      req.headers.get("x-payaza-webhook-token") ||
+      req.headers.get("payaza-webhook-token") ||
+      req.headers.get("x-webhook-token") ||
+      new URL(req.url).searchParams.get("token");
 
-      if (incomingToken !== webhookSecret) {
-        console.error("Payaza webhook: invalid or missing webhook token");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // Constant-time compare to mitigate timing attacks
+    if (!safeEqual(incomingToken, webhookSecret)) {
+      console.error("Payaza webhook: invalid or missing webhook token");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Log all incoming headers (names only) for debugging
@@ -34,7 +42,7 @@ Deno.serve(async (req) => {
     console.log("Payaza webhook headers:", headerNames.join(", "));
 
     const rawBody = await req.text();
-    let body: any;
+    let body: unknown;
     try {
       body = JSON.parse(rawBody);
     } catch {
@@ -46,42 +54,30 @@ Deno.serve(async (req) => {
 
     console.log("Payaza webhook payload:", JSON.stringify(body).substring(0, 1000));
 
-    // Extract reference — Payaza sends it in multiple possible fields
-    const reference =
-      body.transaction_reference ||
-      body.merchant_reference ||
-      body.account_reference ||
-      body.data?.transaction_reference ||
-      body.data?.merchant_reference ||
-      body.data?.account_reference ||
-      body.response_content?.transaction_reference ||
-      body.response_content?.merchant_reference ||
-      body.response_content?.account_reference;
-
-    // Extract status — normalize to lowercase
-    const rawStatus = (
-      body.status ||
-      body.transaction_status ||
-      body.data?.status ||
-      body.data?.transaction_status ||
-      body.response_content?.status ||
-      body.response_content?.transaction_status ||
-      ""
-    ).toString().toLowerCase().trim();
-
-    console.log(`Payaza webhook: reference=${reference}, rawStatus=${rawStatus}`);
-
-    if (!reference) {
-      console.error("Payaza webhook: no reference found in payload");
-      return new Response(JSON.stringify({ error: "Missing transaction_reference" }), {
+    // Strict shape validation (required reference + status; optional amount/currency)
+    const parsed = validatePayazaPayload(body);
+    if (!parsed.ok) {
+      console.error("Payaza webhook validation failed:", parsed.error);
+      return new Response(JSON.stringify({ error: parsed.error }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const { reference, status: rawStatus, amount: reportedAmount, currency: reportedCurrency } = parsed.value;
+
+    console.log(`Payaza webhook: reference=${reference}, rawStatus=${rawStatus}, reportedAmount=${reportedAmount}, currency=${reportedCurrency}`);
 
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    await logWebhookEvent(adminClient, {
+      provider: "payaza",
+      event_type: "received",
+      reference: reference,
+      message: `rawStatus=${rawStatus}`,
+      payload: body,
+    });
 
     // ── SECURITY: Verify this reference belongs to a real pending Payaza deposit ──
     // Only references starting with "payaza_" or "promo_" that were created by our
@@ -94,6 +90,7 @@ Deno.serve(async (req) => {
       .from("transactions")
       .select("id")
       .eq("nowpayments_payment_id", reference)
+      .eq("payment_provider", "payaza")
       .eq("type", "deposit")
       .in("status", ["confirmed", "processing"])
       .maybeSingle();
@@ -114,10 +111,27 @@ Deno.serve(async (req) => {
 
     if (!tx) {
       console.error("No claimable transaction for reference:", reference);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "not_found",
+        status: "warning",
+        reference,
+        message: "No claimable transaction for reference",
+      });
       return new Response(JSON.stringify({ error: "Transaction not found or already claimed" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    await logWebhookEvent(adminClient, {
+      provider: "payaza",
+      event_type: "claimed",
+      reference,
+      transaction_id: tx.id,
+      user_id: tx.user_id,
+      requested_amount: Number(tx.amount),
+      message: `claimed for processing (rawStatus=${rawStatus})`,
+    });
 
     // Check if payment was successful
     const successStatuses = ["approved", "successful", "completed", "funds received", "success"];
@@ -131,9 +145,42 @@ Deno.serve(async (req) => {
         .update({ status: "failed" })
         .eq("id", tx.id);
 
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "failed",
+        status: "warning",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        message: `Payment not successful (rawStatus=${rawStatus})`,
+      });
+
       console.log("Payment not successful, marked as failed:", tx.id);
       return new Response(JSON.stringify({ success: true, message: "Payment not successful" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Currency sanity: Payaza payouts are NGN-denominated. If the provider
+    // reports any other currency on a "success" event, flag rather than credit.
+    if (reportedCurrency && reportedCurrency !== "NGN") {
+      await adminClient
+        .from("transactions")
+        .update({ status: "wrong_asset" })
+        .eq("id", tx.id);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "wrong_currency",
+        status: "warning",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        message: `Expected NGN, got ${reportedCurrency} (reportedAmount=${reportedAmount ?? "n/a"})`,
+      });
+      return new Response(JSON.stringify({ error: "Unsupported currency" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -148,12 +195,33 @@ Deno.serve(async (req) => {
 
     if (balanceError) {
       console.error("CRITICAL: Failed to credit balance for Payaza deposit:", balanceError);
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "credit_failed",
+        status: "error",
+        reference,
+        transaction_id: tx.id,
+        user_id: tx.user_id,
+        requested_amount: Number(tx.amount),
+        error: balanceError,
+      });
       return new Response(JSON.stringify({ error: "Balance credit failed" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     console.log(`Credited $${depositAmount} to user ${tx.user_id}`);
+
+    await logWebhookEvent(adminClient, {
+      provider: "payaza",
+      event_type: "credited",
+      status: "success",
+      reference,
+      transaction_id: tx.id,
+      user_id: tx.user_id,
+      requested_amount: Number(tx.amount),
+      credited_amount: depositAmount,
+    });
 
     // ── STEP 2: Mark transaction as confirmed ──
     const { error: txUpdateError } = await adminClient
@@ -234,9 +302,18 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("payaza-webhook error:", err);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: corsHeaders }
-    );
+    try {
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await logWebhookEvent(adminClient, {
+        provider: "payaza",
+        event_type: "error",
+        status: "error",
+        error: err,
+      });
+    } catch { /* swallow */ }
+    return errorResponse(err, 500, corsHeaders);
   }
 });

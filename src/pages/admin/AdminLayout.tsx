@@ -3,7 +3,7 @@ import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "rea
 import { useAuth } from "@/hooks/useAuth";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
-  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle, Lock, Megaphone,
+  ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle, Lock, Megaphone, RotateCcw,
 } from "lucide-react";
 
 type NavItem = {
@@ -26,6 +26,8 @@ const navItems: NavItem[] = [
   { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, roles: ["super_admin", "admin"] },
   { to: "/admin/deposits", label: "Deposits", icon: ArrowDownToLine, roles: ["super_admin", "admin"] },
   { to: "/admin/reconciliation", label: "Reconciliation", icon: Scale, roles: ["super_admin", "admin"] },
+  { to: "/admin/webhook-logs", label: "Webhook Logs", icon: History, roles: ["super_admin", "admin"] },
+  { to: "/admin/webhook-events", label: "Webhook Retries", icon: RotateCcw, roles: ["super_admin", "admin"] },
   { to: "/admin/boosts", label: "Boosts", icon: Zap, roles: ["super_admin", "admin"] },
   { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/comments", label: "Comments", icon: MessageSquare, roles: ["super_admin", "admin", "moderator"] },
@@ -47,6 +49,7 @@ const navItems: NavItem[] = [
   { to: "/admin/kyc", label: "KYC Verification", icon: ClipboardCheck, roles: ["super_admin", "admin", "support"] },
   { to: "/admin/support", label: "Support Tickets", icon: HelpCircle, roles: ["super_admin", "admin", "support"] },
   { to: "/admin/escrows", label: "Escrows", icon: Lock, roles: ["super_admin"] },
+  { to: "/admin/call-events", label: "Call Events", icon: Phone, roles: ["super_admin", "admin"] },
 ];
 
 const AdminLayout = () => {

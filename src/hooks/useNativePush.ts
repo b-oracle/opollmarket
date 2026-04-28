@@ -1,10 +1,37 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import {
+  startIncomingCallVibration,
+  stopVibration,
+  vibrate,
+  CALL_RING_PATTERN,
+} from "@/lib/haptics";
+
+// Tracks the active foreground-call vibration cancel function so we can stop
+// it when the user accepts/declines or when the call FCM "ended" arrives.
+let activeCallVibrationCancel: (() => void) | null = null;
+
+const stopForegroundCallRing = () => {
+  if (activeCallVibrationCancel) {
+    activeCallVibrationCancel();
+    activeCallVibrationCancel = null;
+  }
+  stopVibration();
+};
+
+if (typeof window !== "undefined") {
+  // The IncomingCallBanner fires this when the user accepts/declines or the
+  // banner auto-dismisses, so we don't double-buzz the device.
+  window.addEventListener("dm-call-banner-dismissed", stopForegroundCallRing);
+}
 
 // Registers the device with FCM (Android) / APNs (iOS) via Capacitor,
 // stores the token in user_fcm_tokens, and routes foreground notification
-// taps into the app. No-op on web.
+// taps into the app. Also surfaces a local notification + ringing vibration
+// when data-only call pushes arrive while the app is foregrounded (the
+// native lockscreen UI handles the killed-app case, see android-native-ref/).
+// No-op on web.
 export const useNativePush = () => {
   const { user } = useAuth();
 
@@ -16,6 +43,7 @@ export const useNativePush = () => {
       try {
         const { Capacitor } = await import("@capacitor/core");
         if (!Capacitor.isNativePlatform()) return;
+        const platform = Capacitor.getPlatform();
 
         const { PushNotifications } = await import("@capacitor/push-notifications");
 
@@ -27,13 +55,56 @@ export const useNativePush = () => {
 
         await PushNotifications.register();
 
+        // Also request local-notification permission (used as foreground
+        // fallback for data-only call pushes). On Android, register a
+        // dedicated high-importance channel so the call notification bypasses
+        // DND and uses the ring vibration pattern.
+        let LocalNotifications:
+          | typeof import("@capacitor/local-notifications").LocalNotifications
+          | null = null;
+        try {
+          const mod = await import("@capacitor/local-notifications");
+          LocalNotifications = mod.LocalNotifications;
+          const lnPerm = await LocalNotifications.checkPermissions();
+          if (lnPerm.display !== "granted") {
+            await LocalNotifications.requestPermissions();
+          }
+
+          if (platform === "android") {
+            try {
+              await LocalNotifications.createChannel({
+                id: "incoming_calls",
+                name: "Incoming Calls",
+                description: "Ringing notifications for incoming voice/video calls",
+                importance: 5, // IMPORTANCE_HIGH
+                visibility: 1, // VISIBILITY_PUBLIC (show on lockscreen)
+                vibration: true,
+                lights: true,
+                sound: "ringtone", // res/raw/ringtone.mp3 (when present in native build)
+              });
+              await LocalNotifications.createChannel({
+                id: "default",
+                name: "General Notifications",
+                description: "App notifications",
+                importance: 4, // IMPORTANCE_DEFAULT (high to ensure delivery)
+                visibility: 1,
+                vibration: true,
+              });
+            } catch (err) {
+              console.warn("Failed to create notification channels:", err);
+            }
+          }
+        } catch {
+          // plugin missing — fine, only used for foreground fallback.
+        }
+
         const regSub = await PushNotifications.addListener("registration", async (tok) => {
           try {
             await supabase.from("user_fcm_tokens" as any).upsert(
               {
                 user_id: user.id,
                 token: tok.value,
-                platform: Capacitor.getPlatform(),
+                platform,
               },
               { onConflict: "user_id,token" }
             );
@@ -46,9 +117,82 @@ export const useNativePush = () => {
           console.warn("Push registration error:", err);
         });
 
+        // Foreground push received — surface a banner notification + ringing buzz.
+        // For incoming-call data pushes we trigger the looping ring pattern so
+        // the user notices even if the app is silent or muted, and we render a
+        // local notification (data-only FCM payloads don't show one by default).
+        const recvSub = await PushNotifications.addListener(
+          "pushNotificationReceived",
+          async (notification) => {
+            const data = (notification.data || {}) as Record<string, string>;
+            const isCall =
+              data.type === "incoming_call" ||
+              data.is_call === "true" ||
+              data.is_call === "1";
+            const isCallEnded =
+              data.type === "call_ended" ||
+              data.type === "call_declined" ||
+              data.type === "call_missed";
+
+            // Stop any prior ring loop if a call lifecycle event arrives.
+            if (isCallEnded) {
+              stopForegroundCallRing();
+              return;
+            }
+
+            if (isCall) {
+              // Start the looping WhatsApp-style ring pattern. The
+              // IncomingCallBanner runs its own pattern when it mounts, but
+              // this hook fires earlier (data-only FCM lands before the
+              // banner subscribes via realtime), so we kick off vibration
+              // immediately and the banner takes over once it appears.
+              stopForegroundCallRing();
+              activeCallVibrationCancel = startIncomingCallVibration();
+            }
+
+            // If FCM didn't render a system notification (data-only payload),
+            // fall back to a local one so it appears in the tray + buzzes.
+            const hasSystemNotif = !!notification.title || !!notification.body;
+            if (!hasSystemNotif && LocalNotifications) {
+              try {
+                await LocalNotifications.schedule({
+                  notifications: [
+                    {
+                      id: Math.floor(Math.random() * 2_147_483_647),
+                      title:
+                        data.title ||
+                        (isCall ? "Incoming Call 📞" : "Notification"),
+                      body:
+                        data.body ||
+                        (isCall ? "Tap to answer" : ""),
+                      extra: data,
+                      smallIcon: "ic_stat_icon_config_sample",
+                      channelId: isCall ? "incoming_calls" : "default",
+                      // Use the ring pattern for calls, single 200ms buzz otherwise
+                      ...(platform === "android"
+                        ? {
+                            // @capacitor/local-notifications passes these through
+                            // to NotificationCompat.Builder.
+                            // For older Android versions without channel sounds.
+                            ongoing: isCall,
+                            autoCancel: !isCall,
+                          }
+                        : {}),
+                    },
+                  ],
+                });
+              } catch (err) {
+                console.warn("Local notification fallback failed:", err);
+              }
+            }
+          }
+        );
+
         const tapSub = await PushNotifications.addListener(
           "pushNotificationActionPerformed",
           (action) => {
+            // User tapped — call is being handled, stop ringing.
+            stopForegroundCallRing();
             const data = action.notification.data || {};
             const url = (data as any).url;
             if (url && typeof window !== "undefined") {
@@ -57,10 +201,33 @@ export const useNativePush = () => {
           }
         );
 
+        // Handle taps on local-notification fallbacks too.
+        let lnTapSub: { remove: () => Promise<void> } | null = null;
+        if (LocalNotifications) {
+          try {
+            lnTapSub = await LocalNotifications.addListener(
+              "localNotificationActionPerformed",
+              (action) => {
+                stopForegroundCallRing();
+                const data = action.notification.extra || {};
+                const url = (data as any).url;
+                if (url && typeof window !== "undefined") {
+                  window.location.href = url;
+                }
+              }
+            );
+          } catch {
+            // ignore
+          }
+        }
+
         cleanup = () => {
           regSub.remove();
           errSub.remove();
+          recvSub.remove();
           tapSub.remove();
+          lnTapSub?.remove();
+          stopForegroundCallRing();
         };
       } catch (err) {
         // Plugin not installed on this build — safely ignore.
@@ -73,3 +240,7 @@ export const useNativePush = () => {
     };
   }, [user]);
 };
+
+// Re-exported for callers (e.g. IncomingCallBanner) that want to silence the
+// foreground ring after the user accepts/declines.
+export { stopForegroundCallRing, CALL_RING_PATTERN };
