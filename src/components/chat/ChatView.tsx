@@ -602,6 +602,43 @@ const ChatView = () => {
     }
   }, [conversationId, user, otherName, convo]);
 
+  // Answer a still-ringing incoming call. Used by the auto_accept deep-link
+  // flow when the user opens a "Tap to answer" notification — calls the
+  // `answer` action (NOT `rejoin`, which only works on already-active calls).
+  const handleAnswerCall = useCallback(async (callId: string) => {
+    if (!conversationId || !user) return;
+    setCalling(true);
+    try {
+      logCallEvent(callId, "accepted", { via: "auto_accept_deep_link" });
+      const { data, error } = await supabase.functions.invoke("dm-call-token", {
+        body: { action: "answer", call_id: callId },
+      });
+
+      if (error || data?.error) throw new Error(data?.error || "Failed to answer call");
+
+      window.dispatchEvent(
+        new CustomEvent("start-voice-call", {
+          detail: {
+            callId: data.call_id,
+            conversationId,
+            token: data.token,
+            url: data.url,
+            room: data.room,
+            passphrase: data.e2ee_passphrase,
+            otherName,
+            otherAvatar: (convo as any)?.other_user?.avatar_url,
+            isOutgoing: false,
+          },
+        })
+      );
+    } catch (err: any) {
+      logCallEvent(callId, "failed", { stage: "answer", error: err?.message });
+      toast.error(err.message || "Failed to answer call");
+    } finally {
+      setCalling(false);
+    }
+  }, [conversationId, user, otherName, convo]);
+
   const handleStartCall = useCallback(async (withVideo = false) => {
     if (calling || !conversationId || !user) return;
     setCalling(true);
@@ -810,7 +847,7 @@ const ChatView = () => {
         });
     };
 
-    const tryAccept = () => {
+    const tryAccept = async () => {
       if (done) return;
       attempts += 1;
       ensureLookup();
@@ -826,7 +863,28 @@ const ChatView = () => {
       ) {
         setRejoinStatus(null);
         setLastFailedCallId(null);
-        handleRejoinCall(callId, false);
+        // Dispatch the correct server action based on call status. A still-
+        // ringing call needs `answer` (rejoin would 400 with "Call is no
+        // longer active"). An active call uses `rejoin`.
+        try {
+          const { data: callRow } = await supabase
+            .from("dm_calls")
+            .select("status")
+            .eq("id", callId)
+            .maybeSingle();
+          const status = (callRow as any)?.status;
+          if (status === "ringing") {
+            handleAnswerCall(callId);
+          } else if (status === "active") {
+            handleRejoinCall(callId, false);
+          } else {
+            // Already missed/declined/ended — nothing to join.
+            toast.info("That call has already ended.");
+          }
+        } catch {
+          // Best-effort fallback: try answer first, rejoin handles the active case
+          handleAnswerCall(callId);
+        }
         stop({ strip: true });
         return;
       }
@@ -888,7 +946,7 @@ const ChatView = () => {
         setRejoinStatus((prev) => (prev === "reconnecting" ? null : prev));
       }
     };
-  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, retryAutoAccept]);
+  }, [conversationId, user, convo, searchParams, setSearchParams, handleRejoinCall, handleAnswerCall, retryAutoAccept]);
 
 
 
