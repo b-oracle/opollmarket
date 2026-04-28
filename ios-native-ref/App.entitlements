@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ios/App/App/App.entitlements
+
+  - aps-environment: "development" for Debug builds (sandbox APNs),
+    "production" for App Store / TestFlight. Xcode toggles this automatically
+    when you check the Push Notifications capability, but verify it.
+  - com.apple.developer.pushkit.unrestricted-voip is NOT required — VoIP
+    push works without it. The entitlement only exists for the (now retired)
+    PushKit-for-non-call use cases that Apple no longer allows.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>aps-environment</key>
+    <string>production</string>
+
+    <!-- Required so opoll:// universal links work alongside the custom scheme -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:opoll.org</string>
+        <string>applinks:www.opoll.org</string>
+        <string>applinks:opollmarket.com</string>
+    </array>
+</dict>
+</plist>

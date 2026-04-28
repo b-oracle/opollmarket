@@ -1,0 +1,40 @@
+<!--
+  Merge into ios/App/App/Info.plist
+
+  - UIBackgroundModes: voip + audio + remote-notification + fetch are all
+    required for PushKit + CallKit + LiveKit audio + standard alert pushes.
+  - NSMicrophoneUsageDescription is mandatory because CallKit will route
+    audio through AVAudioSession the moment the user taps Accept.
+  - LSApplicationQueriesSchemes lets us deep-link out to the dialer / mail
+    if needed (optional).
+-->
+
+<key>UIBackgroundModes</key>
+<array>
+    <string>voip</string>
+    <string>audio</string>
+    <string>remote-notification</string>
+    <string>fetch</string>
+</array>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>Opoll uses the microphone for voice calls and Spaces.</string>
+
+<key>NSCameraUsageDescription</key>
+<string>Opoll uses the camera for video calls and profile photos.</string>
+
+<!--
+  Custom-scheme deep link so CallKit / notifications can punch back into the
+  webview at /messages/<conversation_id>?call_id=…&auto_accept=1
+-->
+<key>CFBundleURLTypes</key>
+<array>
+    <dict>
+        <key>CFBundleURLName</key>
+        <string>com.opollmarket.app</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+            <string>opoll</string>
+        </array>
+    </dict>
+</array>
