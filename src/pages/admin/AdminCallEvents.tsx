@@ -31,22 +31,29 @@ type CallSummary = {
 };
 
 const EVENT_META: Record<string, { label: string; icon: typeof Phone; tone: string }> = {
-  received:  { label: "Received",  icon: PhoneIncoming, tone: "text-blue-400 bg-blue-400/10" },
-  accepted:  { label: "Accepted",  icon: CheckCircle2, tone: "text-emerald-400 bg-emerald-400/10" },
-  declined:  { label: "Declined",  icon: PhoneOff,     tone: "text-destructive bg-destructive/10" },
-  joined:    { label: "Joined",    icon: LogIn,        tone: "text-emerald-400 bg-emerald-400/10" },
-  ended:     { label: "Ended",     icon: PhoneOff,     tone: "text-muted-foreground bg-muted" },
-  failed:    { label: "Failed",    icon: XCircle,      tone: "text-destructive bg-destructive/10" },
-  missed:    { label: "Missed",    icon: PhoneMissed,  tone: "text-amber-400 bg-amber-400/10" },
-  rejoin:    { label: "Rejoin",    icon: RefreshCw,    tone: "text-blue-400 bg-blue-400/10" },
-  timeout:   { label: "Timeout",   icon: Clock,        tone: "text-amber-400 bg-amber-400/10" },
-  cancelled: { label: "Cancelled", icon: AlertTriangle,tone: "text-amber-400 bg-amber-400/10" },
-  muted:     { label: "Muted",     icon: BellOff,      tone: "text-purple-400 bg-purple-400/10" },
+  received:    { label: "Received",          icon: PhoneIncoming, tone: "text-blue-400 bg-blue-400/10" },
+  accepted:    { label: "Accepted",          icon: CheckCircle2,  tone: "text-emerald-400 bg-emerald-400/10" },
+  declined:    { label: "Declined",          icon: PhoneOff,      tone: "text-destructive bg-destructive/10" },
+  joined:      { label: "Joined",            icon: LogIn,         tone: "text-emerald-400 bg-emerald-400/10" },
+  ended:       { label: "Ended",             icon: PhoneOff,      tone: "text-muted-foreground bg-muted" },
+  failed:      { label: "Failed",            icon: XCircle,       tone: "text-destructive bg-destructive/10" },
+  missed:      { label: "Missed",            icon: PhoneMissed,   tone: "text-amber-400 bg-amber-400/10" },
+  rejoin:      { label: "Rejoin",            icon: RefreshCw,     tone: "text-blue-400 bg-blue-400/10" },
+  timeout:     { label: "Timeout",           icon: Clock,         tone: "text-amber-400 bg-amber-400/10" },
+  no_answer:   { label: "Timeout (no answer)", icon: Hourglass,   tone: "text-orange-400 bg-orange-400/10" },
+  cancelled:   { label: "Cancelled",         icon: AlertTriangle, tone: "text-amber-400 bg-amber-400/10" },
+  muted:       { label: "Muted",             icon: BellOff,       tone: "text-purple-400 bg-purple-400/10" },
 };
 
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, {
   month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit",
 });
+
+// A `timeout` event whose metadata says `via: "no_answer"` is reported as the
+// distinct "no_answer" outcome so admins can separate unanswered rings from
+// other kinds of timeout (e.g. no remote track for 60s).
+const isNoAnswer = (e: CallEvent) =>
+  e.event_type === "timeout" && (e.metadata as any)?.via === "no_answer";
 
 const deriveOutcome = (events: CallEvent[]): string => {
   const types = events.map((e) => e.event_type);
@@ -54,6 +61,7 @@ const deriveOutcome = (events: CallEvent[]): string => {
   if (types.includes("failed")) return "failed";
   if (types.includes("declined")) return "declined";
   if (types.includes("missed")) return "missed";
+  if (events.some(isNoAnswer)) return "no_answer";
   if (types.includes("cancelled")) return "cancelled";
   if (types.includes("timeout")) return "timeout";
   if (types.includes("joined")) return "in_call";
