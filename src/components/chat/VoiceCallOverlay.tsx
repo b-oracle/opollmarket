@@ -204,6 +204,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
     clearCallPreferences(callId);
+    void stopCallForegroundService();
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
