@@ -84,6 +84,14 @@ const stopForegroundCallRing = () => {
 const SNOOZE_MS = 15_000;
 let snoozeTimer: ReturnType<typeof setTimeout> | null = null;
 let snoozedCallId: string | null = null;
+let snoozeStatusChannel: ReturnType<typeof supabase.channel> | null = null;
+
+const teardownSnoozeStatusChannel = () => {
+  if (snoozeStatusChannel) {
+    try { supabase.removeChannel(snoozeStatusChannel); } catch { /* ignore */ }
+    snoozeStatusChannel = null;
+  }
+};
 
 const clearSnoozeTimer = () => {
   if (snoozeTimer) {
@@ -91,6 +99,7 @@ const clearSnoozeTimer = () => {
     snoozeTimer = null;
   }
   snoozedCallId = null;
+  teardownSnoozeStatusChannel();
 };
 
 const isCallStillRinging = async (callId: string): Promise<boolean> => {
