@@ -303,14 +303,23 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.ParticipantDisconnected, () => {
-      if (statusRef.current === "active" && !endingRef.current) {
-        setWaitingReconnect(true);
-        gracePeriodRef.current = setTimeout(() => {
-          if (!endingRef.current) handleEnd();
-        }, GRACE_PERIOD_MS);
-      } else {
-        handleEnd();
+      // Only react if we were actually in an active call. During
+      // "connecting"/"ringing" LiveKit can emit transient
+      // ParticipantDisconnected events as the room state reconciles
+      // (e.g. the caller's pre-answer presence syncs after the callee
+      // joins). Treating those as a hang-up was killing calls the
+      // instant the callee picked up.
+      if (statusRef.current !== "active" || endingRef.current) {
+        logCallEvent(callId, "failed", {
+          stage: "participant_disconnected_ignored",
+          status: statusRef.current,
+        });
+        return;
       }
+      setWaitingReconnect(true);
+      gracePeriodRef.current = setTimeout(() => {
+        if (!endingRef.current) handleEnd();
+      }, GRACE_PERIOD_MS);
     });
 
     room.on(RoomEvent.Disconnected, () => {
