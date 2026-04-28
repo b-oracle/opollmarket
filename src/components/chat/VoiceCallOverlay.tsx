@@ -111,6 +111,12 @@ const VoiceCallOverlay = ({
   const [waitingReconnect, setWaitingReconnect] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [showRejoin, setShowRejoin] = useState(false);
+  // Mutable token/url so auto-reconnect can swap in a fresh one when the original expires.
+  const currentTokenRef = useRef(token);
+  const currentUrlRef = useRef(livekitUrl);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectInFlightRef = useRef(false);
+  const MAX_AUTO_RECONNECT = 3;
 
   const markRecoverableDisconnect = useCallback((
     stage: string,
