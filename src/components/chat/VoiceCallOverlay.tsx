@@ -846,6 +846,7 @@ const VoiceCallOverlay = ({
         adaptiveStream: true,
         dynacast: true,
         videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
+        disconnectOnPageLeave: false,
       });
       roomRef.current?.disconnect();
       roomRef.current = room;
@@ -915,9 +916,18 @@ const VoiceCallOverlay = ({
     } catch (err: any) {
       setReconnecting(false);
       toast.error(err.message || "Failed to rejoin call");
-      handleEnd();
+      recordCallLifecycle(callId, "rejoin_failed", {
+        status: statusRef.current,
+        message: err?.message,
+        data: { error_name: err?.name },
+        level: "error",
+      });
+      markRecoverableDisconnect("manual_rejoin", "Manual rejoin failed without ending the call", {
+        error: err?.message,
+        error_name: err?.name,
+      });
     }
-  }, [callId, conversationId, muted, cameraOn, handleEnd, handleTimeout]);
+  }, [callId, conversationId, muted, cameraOn, markRecoverableDisconnect]);
 
   const toggleScreenShare = async () => {
     if (!roomRef.current) return;
