@@ -708,6 +708,7 @@ const VoiceCallOverlay = ({
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void stopCallForegroundService();
       room.disconnect();
       roomRef.current = null;
     };
