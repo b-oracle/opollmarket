@@ -9,6 +9,7 @@ import { PhoneOff, Phone, Mic, MicOff, Volume2, VolumeX, Lock, X, Minimize2, Max
 import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { recordCallLifecycle } from "@/lib/callLifecycleLog";
+import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
 import CallDebugOverlay from "./CallDebugOverlay";
 
 interface VoiceCallOverlayProps {
