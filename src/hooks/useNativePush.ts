@@ -332,20 +332,26 @@ export const useNativePush = () => {
               data.type === "incoming_call" ||
               data.is_call === "true" ||
               data.is_call === "1";
-            const isCallEnded =
-              data.type === "call_ended" ||
-              data.type === "call_declined" ||
-              data.type === "call_missed";
+            const isMissedCall = data.type === "call_missed";
+            const isCallTerminated =
+              data.type === "call_ended" || data.type === "call_declined";
 
-            // Stop any prior ring loop if a call lifecycle event arrives.
-            if (isCallEnded) {
+            // For ended/declined: just stop any active ring loop and return.
+            // For missed: stop the ring but still render a local notification
+            // with the "View chat" action so the user can jump to the thread.
+            if (isCallTerminated) {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
               return;
             }
 
-            if (isCall) {
+            if (isMissedCall) {
+              stopForegroundCallRing();
+              clearSnoozeTimer();
+              clearLatestCall();
+              // fall through to render the missed-call notification below
+            } else if (isCall) {
               // Persist the call context so cold-started action handlers
               // (Accept / Mute / Decline) can recover ids if the OS strips
               // the notification's `extra` payload.
@@ -374,15 +380,28 @@ export const useNativePush = () => {
                       id: Math.floor(Math.random() * 2_147_483_647),
                       title:
                         data.title ||
-                        (isCall ? "Incoming Call 📞" : "Notification"),
+                        (isCall
+                          ? "Incoming Call 📞"
+                          : isMissedCall
+                            ? "Missed Call 📞"
+                            : "Notification"),
                       body:
                         data.body ||
-                        (isCall ? "Tap to answer" : ""),
+                        (isCall
+                          ? "Tap to answer"
+                          : isMissedCall
+                            ? "Tap to view chat"
+                            : ""),
                       extra: data,
                       smallIcon: "ic_stat_icon_config_sample",
                       channelId: isCall ? "incoming_calls" : "default",
-                      // Show Accept / Decline buttons on incoming-call notifications
-                      ...(isCall ? { actionTypeId: "INCOMING_CALL" } : {}),
+                      // Action category: incoming → Accept/Decline/Snooze;
+                      // missed → just "View chat".
+                      ...(isCall
+                        ? { actionTypeId: "INCOMING_CALL" }
+                        : isMissedCall
+                          ? { actionTypeId: "MISSED_CALL" }
+                          : {}),
                       // Use the ring pattern for calls, single 200ms buzz otherwise
                       ...(platform === "android"
                         ? {
