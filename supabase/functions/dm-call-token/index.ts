@@ -581,8 +581,13 @@ Deno.serve(async (req) => {
       const isParticipant = call.caller_id === user.id || call.callee_id === user.id;
       if (!isParticipant) return json({ error: "Not a participant" }, 403);
 
-      if (call.status !== "active") {
-        return json({ error: "Call is no longer active" }, 400);
+      // Allow rejoin while the call is still in the answer handshake
+      // ("ringing") OR fully "active". On native Android the WSS often
+      // dies a millisecond before `answer` flips status to active —
+      // rejecting that window was the main cause of "ends right after
+      // pickup". Only block if the call has been terminated.
+      if (call.status !== "active" && call.status !== "ringing") {
+        return json({ error: "Call is no longer active", status: call.status }, 400);
       }
 
       // Check the call isn't too old (max 2h)
