@@ -1060,6 +1060,7 @@ const VoiceCallOverlay = ({
   // ── Full-screen overlay ──
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col overflow-hidden" style={{ background: "radial-gradient(ellipse at center, hsl(var(--background)) 0%, hsl(var(--background)) 70%)" }}>
+      <CallDebugOverlay callId={callId} />
       {/* Doodle pattern layer */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.08] dark:opacity-[0.10]" style={{ backgroundImage: doodleBgUrl, backgroundSize: "200px 200px", backgroundRepeat: "repeat" }} />
       {/* E2EE indicator + minimize */}
