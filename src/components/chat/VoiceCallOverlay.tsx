@@ -112,6 +112,28 @@ const VoiceCallOverlay = ({
   const [reconnecting, setReconnecting] = useState(false);
   const [showRejoin, setShowRejoin] = useState(false);
 
+  const markRecoverableDisconnect = useCallback((
+    stage: string,
+    message: string,
+    data: Record<string, unknown> = {},
+  ) => {
+    if (endingRef.current || intentionalDisconnectRef.current || statusRef.current === "ended") return;
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+    if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
+    setWaitingReconnect(false);
+    setReconnecting(false);
+    setShowRejoin(true);
+    if (statusRef.current === "connecting") setStatus("active");
+    logCallEvent(callId, "failed", { stage, recoverable: true, ...data });
+    recordCallLifecycle(callId, "show_rejoin", {
+      status: statusRef.current,
+      message,
+      data: { stage, ...data },
+      level: "warn",
+    });
+  }, [callId]);
+
   useEffect(() => {
     statusRef.current = status;
   }, [status]);
@@ -354,7 +376,7 @@ const VoiceCallOverlay = ({
       gracePeriodRef.current = setTimeout(() => {
         if (!endingRef.current) {
           recordCallLifecycle(callId, "grace_period_expired", { status: statusRef.current, level: "error" });
-          handleEnd();
+          markRecoverableDisconnect("participant_grace_expired", "Remote participant did not reconnect within the grace period");
         }
       }, GRACE_PERIOD_MS);
     });
@@ -539,7 +561,10 @@ const VoiceCallOverlay = ({
           // browser blocking insecure WebSocket on a non-HTTPS context.
           const reason = err?.message || err?.name || "Unknown error";
           toast.error("Failed to connect to call", { description: reason });
-          handleEnd();
+          markRecoverableDisconnect("livekit_connect", "LiveKit connect failed without ending the call", {
+            error: err?.message,
+            error_name: err?.name,
+          });
         }
       });
 
@@ -821,8 +846,12 @@ const VoiceCallOverlay = ({
         adaptiveStream: true,
         dynacast: true,
         videoCaptureDefaults: { resolution: { width: 640, height: 480, frameRate: 24 } },
+        disconnectOnPageLeave: false,
       });
-      roomRef.current?.disconnect();
+      const previousRoom = roomRef.current;
+      intentionalDisconnectRef.current = true;
+      previousRoom?.disconnect();
+      intentionalDisconnectRef.current = false;
       roomRef.current = room;
       // Re-bind events
       room.on(RoomEvent.TrackSubscribed, (track) => {
@@ -864,7 +893,9 @@ const VoiceCallOverlay = ({
         if (!endingRef.current) {
           setWaitingReconnect(true);
           gracePeriodRef.current = setTimeout(() => {
-            if (!endingRef.current) handleEnd();
+            if (!endingRef.current) {
+              markRecoverableDisconnect("participant_grace_expired", "Remote participant did not reconnect after manual rejoin");
+            }
           }, GRACE_PERIOD_MS);
         }
       });
@@ -890,9 +921,18 @@ const VoiceCallOverlay = ({
     } catch (err: any) {
       setReconnecting(false);
       toast.error(err.message || "Failed to rejoin call");
-      handleEnd();
+      recordCallLifecycle(callId, "rejoin_failed", {
+        status: statusRef.current,
+        message: err?.message,
+        data: { error_name: err?.name },
+        level: "error",
+      });
+      markRecoverableDisconnect("manual_rejoin", "Manual rejoin failed without ending the call", {
+        error: err?.message,
+        error_name: err?.name,
+      });
     }
-  }, [callId, conversationId, muted, cameraOn, handleEnd, handleTimeout]);
+  }, [callId, conversationId, muted, cameraOn, markRecoverableDisconnect]);
 
   const toggleScreenShare = async () => {
     if (!roomRef.current) return;
