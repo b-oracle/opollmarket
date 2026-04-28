@@ -454,6 +454,29 @@ export const useNativePush = () => {
             return true;
           }
 
+          // "View chat" — silences any active ring and opens the conversation
+          // thread. For an incoming-call notification we mark the link as
+          // missed (the user explicitly chose not to answer); for a missed-
+          // call notification we open the thread directly.
+          if (actionId === "view_chat") {
+            stopForegroundCallRing();
+            clearSnoozeTimer();
+            clearLatestCall();
+            const isFromIncoming = data.type === "incoming_call";
+            logCallEvent(callId, "viewed_chat", {
+              source: "notification_action",
+              from: isFromIncoming ? "incoming_call" : "missed_call",
+            });
+            if (convId && typeof window !== "undefined") {
+              const param = isFromIncoming ? "incoming_call_id" : "missed_call_id";
+              const suffix = callId
+                ? `?${param}=${encodeURIComponent(callId)}`
+                : "";
+              window.location.href = `/messages/${convId}${suffix}`;
+            }
+            return true;
+          }
+
           // "mute" (legacy default) and "snooze_10s" / "snooze_1m" / "snooze_5m"
           // are all local-only silences with different re-ring delays.
           const isSnoozeAction =
