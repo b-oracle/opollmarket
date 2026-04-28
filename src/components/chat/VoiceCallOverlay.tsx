@@ -384,7 +384,27 @@ const VoiceCallOverlay = ({
     room
       .connect(livekitUrl, token)
       .then(async () => {
-        await room.localParticipant.setMicrophoneEnabled(true);
+        // Mic enable can fail independently (permission denied, no device).
+        // Don't tear down the whole call for that — let the user join muted
+        // and surface a targeted toast instead.
+        try {
+          await room.localParticipant.setMicrophoneEnabled(true);
+        } catch (micErr: any) {
+          console.warn("Microphone enable failed:", micErr);
+          logCallEvent(callId, "failed", { stage: "mic_enable", error: micErr?.message });
+          setMuted(true);
+          userIntentMutedRef.current = true;
+          const name = micErr?.name || "";
+          if (name === "NotAllowedError" || name === "SecurityError") {
+            toast.error("Microphone permission denied", {
+              description: "Enable mic access in your browser/app settings to talk.",
+            });
+          } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+            toast.error("No microphone found", { description: "Connect a mic and retry." });
+          } else {
+            toast.warning("Joined muted — mic unavailable");
+          }
+        }
         // Enable camera if starting with video
         if (startWithVideo) {
           try {
@@ -420,8 +440,17 @@ const VoiceCallOverlay = ({
       .catch((err) => {
         if (!intentionalDisconnectRef.current) {
           console.error("Failed to connect to call:", err);
-          logCallEvent(callId, "failed", { stage: "livekit_connect", error: err?.message });
-          toast.error("Failed to connect to call");
+          logCallEvent(callId, "failed", {
+            stage: "livekit_connect",
+            error: err?.message,
+            error_name: err?.name,
+            url: livekitUrl,
+          });
+          // Surface a more specific message so we can actually debug. Common
+          // causes: expired token, wrong region, network blocking WSS, or
+          // browser blocking insecure WebSocket on a non-HTTPS context.
+          const reason = err?.message || err?.name || "Unknown error";
+          toast.error("Failed to connect to call", { description: reason });
           handleEnd();
         }
       });
