@@ -922,6 +922,7 @@ const VoiceCallOverlay = ({
           resolution: { width: 640, height: 480, frameRate: 24 },
         });
         setFacingMode(newFacing);
+        saveCallPreferences(callId, { facingMode: newFacing });
         // Re-attach after restart
         setTimeout(() => {
           if (localVideoRef.current && camPub.track) {
