@@ -229,13 +229,16 @@ Deno.serve(async (req) => {
         .eq("id", user.id)
         .single();
 
+      // NOTE: notifications.market_id has a FK -> markets, so we MUST NOT
+      // store the conversation_id there. Leave it null for call notifications;
+      // the conversation can be inferred from actor_id (caller) or by joining
+      // dm_calls if needed by the UI.
       const notifPayload = {
         user_id: calleeId,
         title: "Incoming Call 📞",
         message: `${callerProfile?.display_name || "Someone"} is calling you`,
         type: "call",
         actor_id: user.id,
-        market_id: conversation_id,
       };
       console.log("Inserting call notification:", JSON.stringify(notifPayload));
       const { error: notifErr } = await admin.from("notifications").insert(notifPayload);
