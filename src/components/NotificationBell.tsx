@@ -136,10 +136,40 @@ const NotificationBell = () => {
       return;
     }
 
-    // Call notifications → navigate to the conversation
-    if (n.type === "call" && n.market_id) {
+    // Call notifications: incoming-call rows have market_id=null (FK→markets),
+    // so we can't navigate via market_id. Resolve the conversation + the
+    // ringing/active call from dm_calls using actor_id (= caller). When we
+    // find a still-ringing call, append `?incoming_call_id=...&auto_accept=1`
+    // so ChatView's auto-accept effect picks it up and answers the call.
+    if (n.type === "call" && n.actor_id && user) {
       setOpen(false);
-      navigate(`/messages/${n.market_id}`);
+      (async () => {
+        // Find the most recent call between caller (actor_id) and current user
+        const { data: call } = await supabase
+          .from("dm_calls")
+          .select("id, conversation_id, status")
+          .eq("caller_id", n.actor_id)
+          .eq("callee_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!call?.conversation_id) {
+          // Fallback: just open conversations list
+          navigate("/messages");
+          return;
+        }
+
+        // Only auto-accept if the call is still ringing; otherwise just open
+        // the thread (it's likely already missed/ended/declined).
+        if (call.status === "ringing") {
+          navigate(
+            `/messages/${call.conversation_id}?incoming_call_id=${encodeURIComponent(call.id)}&auto_accept=1&call_id=${encodeURIComponent(call.id)}`
+          );
+        } else {
+          navigate(`/messages/${call.conversation_id}?missed_call_id=${encodeURIComponent(call.id)}`);
+        }
+      })();
       return;
     }
 
