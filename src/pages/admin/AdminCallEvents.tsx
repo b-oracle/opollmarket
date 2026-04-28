@@ -237,7 +237,8 @@ const AdminCallEvents = () => {
                     )}
                     <ol className="space-y-1.5">
                       {s.events.map((ev) => {
-                        const meta = EVENT_META[ev.event_type] ?? { label: ev.event_type, icon: Phone, tone: "text-muted-foreground bg-muted" };
+                        const metaKey = isNoAnswer(ev) ? "no_answer" : ev.event_type;
+                        const meta = EVENT_META[metaKey] ?? { label: ev.event_type, icon: Phone, tone: "text-muted-foreground bg-muted" };
                         const EvIcon = meta.icon;
                         return (
                           <li key={ev.id} className="flex items-start gap-2 text-xs">
