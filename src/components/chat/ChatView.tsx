@@ -134,6 +134,10 @@ const ChatView = () => {
     setSearchParams(next, { replace: true });
   }, [missedDismissKey, searchParams, setSearchParams]);
 
+  // Track which missed_call_id we've already scrolled to so message-list
+  // updates / refetches don't re-trigger the highlight repeatedly.
+  const scrolledMissedCallRef = useRef<string | null>(null);
+
   // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
   // when the retry loop kicks off, used to drive a live countdown in the
   // banner. Null when there is no active attempt. We store the deadline (not
