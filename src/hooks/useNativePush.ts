@@ -271,13 +271,91 @@ export const useNativePush = () => {
           }
         );
 
+        // Shared handler for Accept / Mute / Decline action taps. Used by
+        // both the LocalNotifications listener (Android foreground fallback)
+        // and the PushNotifications listener (iOS APNs categories + Android
+        // system push), so the flow is identical across platforms.
+        const handleCallAction = async (
+          actionId: string,
+          rawData: Record<string, unknown> | undefined,
+        ): Promise<boolean> => {
+          const data = (rawData || {}) as Record<string, string>;
+          let callId = data.call_id || "";
+          let convId = data.conversation_id || "";
+
+          // Cold-start fallback: if the OS delivered the action without
+          // the original extras, recover ids from localStorage.
+          if (!callId || !convId) {
+            const latest = readLatestCall();
+            if (latest) {
+              if (!callId) callId = latest.call_id;
+              if (!convId) convId = latest.conversation_id;
+            }
+          }
+
+          if (actionId === "accept") {
+            logCallEvent(callId, "accepted", { source: "notification_action" });
+            clearLatestCall();
+            if (convId && typeof window !== "undefined") {
+              window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
+            }
+            return true;
+          }
+
+          if (actionId === "mute") {
+            stopForegroundCallRing();
+            logCallEvent(callId, "muted", { source: "notification_action" });
+            try {
+              window.dispatchEvent(
+                new CustomEvent("dm-call-action", {
+                  detail: { action: "mute", call_id: callId },
+                }),
+              );
+            } catch { /* ignore */ }
+            return true;
+          }
+
+          if (actionId === "decline") {
+            logCallEvent(callId, "declined", { source: "notification_action" });
+            clearLatestCall();
+            if (callId) {
+              try {
+                await supabase.functions.invoke("dm-call-token", {
+                  body: { action: "decline", call_id: callId },
+                });
+              } catch (err) {
+                console.warn("decline RPC failed", err);
+              }
+            }
+            try {
+              window.dispatchEvent(
+                new CustomEvent("dm-call-action", {
+                  detail: { action: "decline", call_id: callId },
+                }),
+              );
+              window.dispatchEvent(new Event("dm-call-banner-dismissed"));
+            } catch { /* ignore */ }
+            return true;
+          }
+
+          return false;
+        };
+
         const tapSub = await PushNotifications.addListener(
           "pushNotificationActionPerformed",
-          (action) => {
+          async (action) => {
             // User tapped — call is being handled, stop ringing.
             stopForegroundCallRing();
-            const data = action.notification.data || {};
-            const url = (data as any).url;
+            const data = (action.notification.data || {}) as Record<string, unknown>;
+            // iOS delivers UNNotificationCategory action taps here with
+            // actionId = "accept" | "mute" | "decline" matching the
+            // INCOMING_CALL category we registered. Android system pushes
+            // use the same listener for category actions.
+            const handled = await handleCallAction(action.actionId || "", data);
+            if (handled) return;
+
+            // Default tap (no action button) → open the URL if provided
+            const url = (data as Record<string, string>).url;
             if (url && typeof window !== "undefined") {
               window.location.href = url;
             }
@@ -292,78 +370,12 @@ export const useNativePush = () => {
               "localNotificationActionPerformed",
               async (action) => {
                 stopForegroundCallRing();
-                const data = (action.notification.extra || {}) as Record<string, string>;
-                let callId = data.call_id || "";
-                let convId = data.conversation_id || "";
-                const actionId = action.actionId;
-
-                // Cold-start fallback: if the OS delivered the action without
-                // the original extras, recover ids from localStorage.
-                if (!callId || !convId) {
-                  const latest = readLatestCall();
-                  if (latest) {
-                    if (!callId) callId = latest.call_id;
-                    if (!convId) convId = latest.conversation_id;
-                  }
-                }
-
-                // Accept button → navigate to chat with auto_accept flag
-                if (actionId === "accept") {
-                  logCallEvent(callId, "accepted", { source: "notification_action" });
-                  clearLatestCall();
-                  if (convId && typeof window !== "undefined") {
-                    window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
-                  }
-                  return;
-                }
-
-                // Mute button → silence ring/vibration but keep call ringing
-                // for the caller. The notification stays visible so the user
-                // can still tap Accept/Decline within the call's TTL.
-                if (actionId === "mute") {
-                  stopForegroundCallRing();
-                  logCallEvent(callId, "muted", { source: "notification_action" });
-                  // Don't clear — user may still Accept/Decline after muting.
-                  try {
-                    window.dispatchEvent(
-                      new CustomEvent("dm-call-action", {
-                        detail: { action: "mute", call_id: callId },
-                      }),
-                    );
-                  } catch {
-                    // ignore
-                  }
-                  return;
-                }
-
-                // Decline button → fire decline RPC, no navigation
-                if (actionId === "decline") {
-                  logCallEvent(callId, "declined", { source: "notification_action" });
-                  clearLatestCall();
-                  if (callId) {
-                    try {
-                      await supabase.functions.invoke("dm-call-token", {
-                        body: { action: "decline", call_id: callId },
-                      });
-                    } catch (err) {
-                      console.warn("decline RPC failed", err);
-                    }
-                  }
-                  try {
-                    window.dispatchEvent(
-                      new CustomEvent("dm-call-action", {
-                        detail: { action: "decline", call_id: callId },
-                      }),
-                    );
-                    window.dispatchEvent(new Event("dm-call-banner-dismissed"));
-                  } catch {
-                    // ignore
-                  }
-                  return;
-                }
+                const data = (action.notification.extra || {}) as Record<string, unknown>;
+                const handled = await handleCallAction(action.actionId || "", data);
+                if (handled) return;
 
                 // Default tap (no action button) → open the URL if provided
-                const url = (data as any).url;
+                const url = (data as Record<string, string>).url;
                 if (url && typeof window !== "undefined") {
                   window.location.href = url;
                 }
@@ -373,6 +385,7 @@ export const useNativePush = () => {
             // ignore
           }
         }
+
 
         cleanup = () => {
           regSub.remove();
