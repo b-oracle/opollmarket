@@ -173,6 +173,33 @@ const VoiceCallOverlay = ({
     setTimeout(onClose, 500);
   }, [callId, onClose]);
 
+  // Auto-fired when the callee never answers within the ringing timeout.
+  // Logged distinctly from a manual caller-cancel so the dashboard can tell
+  // unanswered calls apart from genuine hang-ups.
+  const handleTimeout = useCallback(() => {
+    if (endingRef.current) {
+      try { roomRef.current?.disconnect(); } catch {}
+      onClose();
+      return;
+    }
+    endingRef.current = true;
+    intentionalDisconnectRef.current = true;
+    setStatus("ended");
+    if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
+    if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
+    if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
+    try { roomRef.current?.disconnect(); } catch {}
+
+    logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
+
+    // Fire-and-forget — server still needs to clean up the call row
+    supabase.functions.invoke("dm-call-token", {
+      body: { action: "cancel", call_id: callId, reason: "no_answer" },
+    }).catch(() => {});
+
+    setTimeout(onClose, 500);
+  }, [callId, onClose]);
+
   // Track whether the user intentionally muted, so we can auto-restore on app switch
   const userIntentMutedRef = useRef(false);
 
