@@ -581,8 +581,19 @@ const VoiceCallOverlay = ({
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
         try {
-          await room.localParticipant.setMicrophoneEnabled(true);
-          recordCallLifecycle(callId, "mic_enable_ok", { status: statusRef.current });
+          // Honor any persisted muted intent for this call (e.g., user
+          // muted before a reload or before the overlay remounted).
+          const restored = loadCallPreferences(callId);
+          const wantMuted = restored?.muted ?? false;
+          await room.localParticipant.setMicrophoneEnabled(!wantMuted);
+          if (wantMuted) {
+            setMuted(true);
+            userIntentMutedRef.current = true;
+          }
+          recordCallLifecycle(callId, "mic_enable_ok", {
+            status: statusRef.current,
+            data: { muted: wantMuted, restored: !!restored },
+          });
         } catch (micErr: any) {
           console.warn("Microphone enable failed:", micErr);
           logCallEvent(callId, "failed", { stage: "mic_enable", error: micErr?.message });
@@ -605,10 +616,13 @@ const VoiceCallOverlay = ({
             toast.warning("Joined muted — mic unavailable");
           }
         }
-        // Enable camera if starting with video
-        if (startWithVideo) {
+        // Enable camera if starting with video OR persisted preference says on
+        const restoredPrefs = loadCallPreferences(callId);
+        const shouldStartCamera = restoredPrefs?.cameraOn ?? startWithVideo;
+        if (shouldStartCamera) {
           try {
             await room.localParticipant.setCameraEnabled(true);
+            setCameraOn(true);
           } catch (e: any) {
             console.warn("Failed to enable camera:", e);
             recordCallLifecycle(callId, "camera_enable_failed", {
