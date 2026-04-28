@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
 
     const { data: tokens } = await supabase
       .from("user_fcm_tokens")
-      .select("id, token")
+      .select("id, token, platform, token_type")
       .eq("user_id", user_id);
 
     if (!tokens || tokens.length === 0) {
@@ -303,7 +303,85 @@ Deno.serve(async (req) => {
       }
     }
 
+    // iOS bundle id used as apns-topic. For VoIP pushes the topic MUST be
+    // suffixed with `.voip`. We default to the canonical app bundle id but
+    // allow override via APNS_BUNDLE_ID secret for staging builds.
+    const apnsBundleId =
+      Deno.env.get("APNS_BUNDLE_ID") || "com.opollmarket.app";
+
     for (const row of tokens) {
+      // ── iOS VoIP branch ────────────────────────────────────────────────
+      // VoIP pushes cannot be relayed through FCM — they MUST be delivered
+      // directly to APNs (`api.push.apple.com`) with `apns-push-type: voip`
+      // and the `.voip` topic suffix. They are the only push type that can
+      // reliably wake a killed iOS app and legally trigger CallKit's
+      // full-screen incoming-call UI.
+      if (
+        is_call &&
+        row.platform === "ios" &&
+        row.token_type === "voip"
+      ) {
+        const apnsRes = await sendVoipApns({
+          deviceToken: row.token,
+          bundleId: apnsBundleId,
+          payload: {
+            aps: { "content-available": 1 },
+            type: "incoming_call",
+            call_id: stringifiedData.call_id || "",
+            caller_id: stringifiedData.caller_id || "",
+            caller_name: stringifiedData.caller_name || String(title),
+            caller_avatar: stringifiedData.caller_avatar || "",
+            conversation_id: stringifiedData.conversation_id || "",
+            has_video: stringifiedData.has_video === "true",
+          },
+        });
+
+        const tokenTail = row.token ? `…${row.token.slice(-12)}` : "";
+        let removed = false;
+        if (apnsRes.ok) {
+          sent++;
+        } else if (apnsRes.status === 410 || apnsRes.reason === "BadDeviceToken" || apnsRes.reason === "Unregistered") {
+          expired.push(row.id);
+          removed = true;
+        } else {
+          console.warn("APNs VoIP send error:", apnsRes.status, apnsRes.reason, apnsRes.error);
+        }
+        results.push({
+          token_id: row.id,
+          token_tail: tokenTail,
+          ok: apnsRes.ok,
+          http_status: apnsRes.status,
+          fcm_error_status: apnsRes.reason || null,
+          fcm_error_code: apnsRes.reason || null,
+          fcm_error_message: apnsRes.error || null,
+          hint: apnsRes.ok
+            ? null
+            : "Direct APNs VoIP push failed. Check APNS_AUTH_KEY_P8 / APNS_KEY_ID / APNS_TEAM_ID / APNS_BUNDLE_ID secrets and that the device VoIP token is registered against the same team/bundle.",
+          removed,
+        });
+        try {
+          await supabase.from("push_delivery_logs").insert({
+            user_id,
+            token_id: row.id,
+            token_tail: tokenTail,
+            title: String(title),
+            body: body ? String(body) : null,
+            is_call: true,
+            call_id: call_id || null,
+            ok: apnsRes.ok,
+            http_status: apnsRes.status,
+            fcm_error_status: apnsRes.reason || null,
+            fcm_error_code: apnsRes.reason || null,
+            fcm_error_message: apnsRes.error || null,
+            hint: apnsRes.ok ? null : "voip-apns",
+            removed,
+          });
+        } catch (logErr) {
+          console.warn("push_delivery_logs insert failed:", (logErr as Error).message);
+        }
+        continue;
+      }
+
       // For calls: send a DATA-ONLY message so our Android
       // FirebaseMessagingService always handles it and can trigger a
       // full-screen intent (ConnectionService/CallKit-style lockscreen UI).
@@ -329,6 +407,9 @@ Deno.serve(async (req) => {
               headers: {
                 "apns-priority": "10",
                 "apns-push-type": "alert",
+                // Required by APNs HTTP/2; FCM normally injects this from
+                // the bundle id, but we set it explicitly for safety.
+                "apns-topic": apnsBundleId,
               },
               payload: {
                 aps: {
@@ -361,7 +442,10 @@ Deno.serve(async (req) => {
               },
             },
             apns: {
-              headers: { "apns-priority": "10" },
+              headers: {
+                "apns-priority": "10",
+                "apns-topic": apnsBundleId,
+              },
               payload: {
                 aps: {
                   sound: "default",
