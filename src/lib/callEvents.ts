@@ -14,7 +14,8 @@ export type CallEventType =
   | "rejoin"
   | "timeout"
   | "cancelled"
-  | "muted";
+  | "muted"
+  | "viewed_chat";
 
 export const logCallEvent = (
   callId: string | null | undefined,
