@@ -471,10 +471,21 @@ const VoiceCallOverlay = ({
               data: { attempt },
             });
             await room.connect(currentUrlRef.current, currentTokenRef.current);
-            try { await room.localParticipant.setMicrophoneEnabled(!muted); } catch {}
-            if (cameraOn) {
+            // Restore the user's last mic/camera intent. Read from the
+            // persisted store so we always honor the most recent toggle —
+            // even if the closure captured a stale `muted`/`cameraOn`.
+            const restored = loadCallPreferences(callId);
+            const wantMuted = restored?.muted ?? muted;
+            const wantCameraOn = restored?.cameraOn ?? cameraOn;
+            try { await room.localParticipant.setMicrophoneEnabled(!wantMuted); } catch {}
+            if (wantCameraOn) {
               try { await room.localParticipant.setCameraEnabled(true); } catch {}
             }
+            recordCallLifecycle(callId, "info", {
+              status: statusRef.current,
+              message: "Restored media preferences after auto-reconnect",
+              data: { muted: wantMuted, cameraOn: wantCameraOn, attempt },
+            });
             setReconnecting(false);
             reconnectAttemptsRef.current = 0;
             recordCallLifecycle(callId, "auto_reconnect_ok", {
