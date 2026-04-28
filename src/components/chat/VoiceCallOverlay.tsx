@@ -69,12 +69,15 @@ const VoiceCallOverlay = ({
   });
 
   const screenShareEnabled = globalScreenShareEnabled && userScreenShareAllowed;
+  // Hydrate from any persisted preferences for this call so reloads /
+  // overlay remounts retain the last mic/camera intent.
+  const persistedPrefs = loadCallPreferences(callId);
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(persistedPrefs?.muted ?? false);
   const [speakerOn, setSpeakerOn] = useState(false);
-  const [cameraOn, setCameraOn] = useState(startWithVideo);
+  const [cameraOn, setCameraOn] = useState(persistedPrefs?.cameraOn ?? startWithVideo);
   const [screenShareOn, setScreenShareOn] = useState(false);
   const [duration, setDuration] = useState(0);
   const [remoteAudioLevel, setRemoteAudioLevel] = useState(0);
