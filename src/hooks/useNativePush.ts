@@ -228,9 +228,46 @@ export const useNativePush = () => {
           try {
             lnTapSub = await LocalNotifications.addListener(
               "localNotificationActionPerformed",
-              (action) => {
+              async (action) => {
                 stopForegroundCallRing();
-                const data = action.notification.extra || {};
+                const data = (action.notification.extra || {}) as Record<string, string>;
+                const callId = data.call_id || "";
+                const convId = data.conversation_id || "";
+                const actionId = action.actionId;
+
+                // Accept button → navigate to chat with auto_accept flag
+                if (actionId === "accept") {
+                  if (convId && typeof window !== "undefined") {
+                    window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
+                  }
+                  return;
+                }
+
+                // Decline button → fire decline RPC, no navigation
+                if (actionId === "decline") {
+                  if (callId) {
+                    try {
+                      await supabase.functions.invoke("dm-call-token", {
+                        body: { action: "decline", call_id: callId },
+                      });
+                    } catch (err) {
+                      console.warn("decline RPC failed", err);
+                    }
+                  }
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("dm-call-action", {
+                        detail: { action: "decline", call_id: callId },
+                      }),
+                    );
+                    window.dispatchEvent(new Event("dm-call-banner-dismissed"));
+                  } catch {
+                    // ignore
+                  }
+                  return;
+                }
+
+                // Default tap (no action button) → open the URL if provided
                 const url = (data as any).url;
                 if (url && typeof window !== "undefined") {
                   window.location.href = url;
