@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     );
 
     const INACTIVITY_MINUTES = 30;
-    const HARD_TIMEOUT_HOURS = 6;
+    const HARD_TIMEOUT_HOURS = 12;
     const cutoff = new Date(Date.now() - INACTIVITY_MINUTES * 60 * 1000).toISOString();
     const hardCutoff = new Date(Date.now() - HARD_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString();
 
