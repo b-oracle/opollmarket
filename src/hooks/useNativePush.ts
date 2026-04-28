@@ -80,6 +80,7 @@ export const useNativePush = () => {
                   id: "INCOMING_CALL",
                   actions: [
                     { id: "accept", title: "Accept" },
+                    { id: "mute", title: "Mute" },
                     { id: "decline", title: "Decline", destructive: true },
                   ],
                 },
@@ -239,6 +240,23 @@ export const useNativePush = () => {
                 if (actionId === "accept") {
                   if (convId && typeof window !== "undefined") {
                     window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
+                  }
+                  return;
+                }
+
+                // Mute button → silence ring/vibration but keep call ringing
+                // for the caller. The notification stays visible so the user
+                // can still tap Accept/Decline within the call's TTL.
+                if (actionId === "mute") {
+                  stopForegroundCallRing();
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("dm-call-action", {
+                        detail: { action: "mute", call_id: callId },
+                      }),
+                    );
+                  } catch {
+                    // ignore
                   }
                   return;
                 }
