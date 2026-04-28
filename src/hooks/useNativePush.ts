@@ -212,10 +212,16 @@ export const useNativePush = () => {
             // Stop any prior ring loop if a call lifecycle event arrives.
             if (isCallEnded) {
               stopForegroundCallRing();
+              clearLatestCall();
               return;
             }
 
             if (isCall) {
+              // Persist the call context so cold-started action handlers
+              // (Accept / Mute / Decline) can recover ids if the OS strips
+              // the notification's `extra` payload.
+              saveLatestCall(data);
+
               // Start the looping WhatsApp-style ring pattern. The
               // IncomingCallBanner runs its own pattern when it mounts, but
               // this hook fires earlier (data-only FCM lands before the
