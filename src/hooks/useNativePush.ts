@@ -75,10 +75,76 @@ const stopForegroundCallRing = () => {
   stopVibration();
 };
 
+// ---- Snooze (mute) timer --------------------------------------------------
+// When the user taps "Mute" on an incoming-call notification, we silence the
+// ring/vibration but keep the call ringing for the caller. After SNOOZE_MS,
+// if the call is still in `ringing` status (not accepted, declined, missed,
+// or ended), we re-arm the local ring so the user gets a second chance to
+// answer — same UX as iOS/Android system phone apps.
+const SNOOZE_MS = 15_000;
+let snoozeTimer: ReturnType<typeof setTimeout> | null = null;
+let snoozedCallId: string | null = null;
+
+const clearSnoozeTimer = () => {
+  if (snoozeTimer) {
+    clearTimeout(snoozeTimer);
+    snoozeTimer = null;
+  }
+  snoozedCallId = null;
+};
+
+const isCallStillRinging = async (callId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from("dm_calls")
+      .select("status")
+      .eq("id", callId)
+      .maybeSingle();
+    if (error || !data) return false;
+    return data.status === "ringing";
+  } catch {
+    return false;
+  }
+};
+
+const scheduleSnoozeRearm = (callId: string) => {
+  clearSnoozeTimer();
+  if (!callId) return;
+  snoozedCallId = callId;
+  snoozeTimer = setTimeout(async () => {
+    const target = snoozedCallId;
+    snoozeTimer = null;
+    snoozedCallId = null;
+    if (!target) return;
+    // Only re-ring if the call is still pending; otherwise the lifecycle
+    // event we missed (declined / ended / accepted elsewhere) means we
+    // should stay silent.
+    const stillRinging = await isCallStillRinging(target);
+    if (!stillRinging) return;
+
+    try {
+      stopForegroundCallRing();
+      activeCallVibrationCancel = startIncomingCallVibration();
+      // Notify any listeners (banner, overlays) that we re-armed the ring.
+      window.dispatchEvent(
+        new CustomEvent("dm-call-action", {
+          detail: { action: "snooze_expired", call_id: target },
+        }),
+      );
+      logCallEvent(target, "received", { source: "snooze_rearm" });
+    } catch {
+      // ignore
+    }
+  }, SNOOZE_MS);
+};
+
 if (typeof window !== "undefined") {
   // The IncomingCallBanner fires this when the user accepts/declines or the
   // banner auto-dismisses, so we don't double-buzz the device.
-  window.addEventListener("dm-call-banner-dismissed", stopForegroundCallRing);
+  window.addEventListener("dm-call-banner-dismissed", () => {
+    stopForegroundCallRing();
+    clearSnoozeTimer();
+  });
 }
 
 // Registers the device with FCM (Android) / APNs (iOS) via Capacitor,
@@ -212,6 +278,7 @@ export const useNativePush = () => {
             // Stop any prior ring loop if a call lifecycle event arrives.
             if (isCallEnded) {
               stopForegroundCallRing();
+              clearSnoozeTimer();
               clearLatestCall();
               return;
             }
@@ -221,6 +288,9 @@ export const useNativePush = () => {
               // (Accept / Mute / Decline) can recover ids if the OS strips
               // the notification's `extra` payload.
               saveLatestCall(data);
+
+              // A new incoming-call push supersedes any prior snooze.
+              clearSnoozeTimer();
 
               // Start the looping WhatsApp-style ring pattern. The
               // IncomingCallBanner runs its own pattern when it mounts, but
@@ -295,6 +365,7 @@ export const useNativePush = () => {
 
           if (actionId === "accept") {
             logCallEvent(callId, "accepted", { source: "notification_action" });
+            clearSnoozeTimer();
             clearLatestCall();
             if (convId && typeof window !== "undefined") {
               window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
@@ -305,10 +376,13 @@ export const useNativePush = () => {
           if (actionId === "mute") {
             stopForegroundCallRing();
             logCallEvent(callId, "muted", { source: "notification_action" });
+            // Re-arm the ring after SNOOZE_MS if the call is still pending,
+            // so a muted call doesn't silently disappear.
+            scheduleSnoozeRearm(callId);
             try {
               window.dispatchEvent(
                 new CustomEvent("dm-call-action", {
-                  detail: { action: "mute", call_id: callId },
+                  detail: { action: "mute", call_id: callId, snooze_ms: SNOOZE_MS },
                 }),
               );
             } catch { /* ignore */ }
@@ -317,6 +391,7 @@ export const useNativePush = () => {
 
           if (actionId === "decline") {
             logCallEvent(callId, "declined", { source: "notification_action" });
+            clearSnoozeTimer();
             clearLatestCall();
             if (callId) {
               try {
