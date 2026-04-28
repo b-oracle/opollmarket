@@ -326,12 +326,24 @@ Deno.serve(async (req) => {
               ttl: "45s",
             },
             apns: {
-              headers: { "apns-priority": "10", "apns-push-type": "alert" },
+              headers: {
+                "apns-priority": "10",
+                "apns-push-type": "alert",
+              },
               payload: {
                 aps: {
+                  alert: {
+                    title: String(title),
+                    body: String(body || "Incoming call"),
+                  },
                   sound: "ringtone.caf",
-                  "content-available": 1,
+                  // Matches the UNNotificationCategory we register on the
+                  // client (LocalNotifications.registerActionTypes), so iOS
+                  // shows Accept / Mute / Decline buttons on the lockscreen
+                  // and notification center — same flow as Android.
+                  category: "INCOMING_CALL",
                   "mutable-content": 1,
+                  "interruption-level": "time-sensitive",
                 },
               },
             },
