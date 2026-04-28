@@ -581,6 +581,10 @@ const VoiceCallOverlay = ({
       .connect(livekitUrl, token)
       .then(async () => {
         recordCallLifecycle(callId, "livekit_connected", { status: statusRef.current });
+        // Keep mic alive on Android 14+ via a foreground service. No-op
+        // on iOS/web. Without this, the WebView is suspended seconds
+        // after pickup and the WSS dies → "call ends right after pickup".
+        void startCallForegroundService(otherUserName);
         // Mic enable can fail independently (permission denied, no device).
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
