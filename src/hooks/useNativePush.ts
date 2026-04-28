@@ -187,6 +187,8 @@ export const useNativePush = () => {
                       extra: data,
                       smallIcon: "ic_stat_icon_config_sample",
                       channelId: isCall ? "incoming_calls" : "default",
+                      // Show Accept / Decline buttons on incoming-call notifications
+                      ...(isCall ? { actionTypeId: "INCOMING_CALL" } : {}),
                       // Use the ring pattern for calls, single 200ms buzz otherwise
                       ...(platform === "android"
                         ? {
