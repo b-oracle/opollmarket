@@ -483,13 +483,28 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // For calls: send a DATA-ONLY message so our Android
-      // FirebaseMessagingService always handles it and can trigger a
-      // full-screen intent (ConnectionService/CallKit-style lockscreen UI).
+      // For calls: include BOTH a `notification` block and rich `data`.
+      //
+      //   • If our native FirebaseMessagingService (CallMessagingService) is
+      //     installed and the app process can run, it intercepts the data
+      //     payload first, cancels the system notification, and triggers the
+      //     full-screen IncomingCallActivity (CallKit-style lockscreen UI).
+      //   • If the service is NOT yet shipped, the app is force-killed by
+      //     the OEM, or Android Doze suppresses the data wake-up, the
+      //     `notification` block ensures the device still rings with a
+      //     heads-up notification on the high-importance "calls" channel —
+      //     so the callee actually sees the call instead of nothing. This
+      //     was previously failing silently (FCM 200 OK, device shows
+      //     nothing) when the data-only payload had no consumer.
+      //
       // For non-calls: keep notification+data so the system tray handles display.
       const message: Record<string, unknown> = is_call
         ? {
             token: row.token,
+            notification: {
+              title: String(title),
+              body: String(body || "Incoming call"),
+            },
             data: {
               ...stringifiedData,
               type: "incoming_call",
@@ -501,8 +516,23 @@ Deno.serve(async (req) => {
             },
             android: {
               priority: "HIGH",
-              // no `notification` block — data-only so our service runs
               ttl: "45s",
+              notification: {
+                // Must match the channel the native app creates with
+                // IMPORTANCE_HIGH + ringtone sound + bypass-DND. Falls back
+                // to "default" if the dedicated channel doesn't exist yet.
+                channel_id: "calls",
+                sound: "ringtone",
+                click_action: "FCM_PLUGIN_ACTIVITY",
+                // Tells Android this is a call-style notification — the OS
+                // will keep it visible and ringing, and on Android 10+ may
+                // surface it as a heads-up over the lockscreen even without
+                // a full-screen intent permission.
+                notification_priority: "PRIORITY_MAX",
+                visibility: "PUBLIC",
+                default_sound: false,
+                default_vibrate_timings: true,
+              },
             },
             apns: {
               headers: {
