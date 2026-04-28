@@ -424,13 +424,18 @@ export const useNativePush = () => {
             return true;
           }
 
-          if (actionId === "mute") {
-            // Mute is a LOCAL-ONLY action: it silences ring/vibration on this
-            // device only. We never invoke an edge function, never write to
-            // dm_calls, and never notify the caller — from their perspective
-            // the call keeps ringing exactly as before. We snapshot the
-            // current call status purely for analytics so we can confirm the
-            // call was still actionable when the user muted.
+          // "mute" (legacy default) and "snooze_10s" / "snooze_1m" / "snooze_5m"
+          // are all local-only silences with different re-ring delays.
+          const isSnoozeAction =
+            actionId === "mute" || actionId in SNOOZE_OPTIONS_MS;
+          if (isSnoozeAction) {
+            const durationMs =
+              SNOOZE_OPTIONS_MS[actionId] ?? SNOOZE_MS;
+
+            // LOCAL-ONLY: never invoke an edge function, never write to
+            // dm_calls, never notify the caller — from their side the call
+            // keeps ringing exactly as before. We snapshot the current call
+            // status purely for analytics.
             stopForegroundCallRing();
             let callStatus: string | null = null;
             if (callId) {
@@ -447,22 +452,23 @@ export const useNativePush = () => {
             }
             logCallEvent(callId, "muted", {
               source: "notification_action",
+              action_id: actionId,
               local_only: true,
               call_status: callStatus,
+              duration_ms: durationMs,
             });
             // Only re-arm if the call hasn't already left the ringing state.
-            // If it's already missed/declined/ended/accepted-elsewhere we
-            // skip the snooze entirely so we never re-buzz for a dead call.
             if (!callStatus || callStatus === "ringing") {
-              scheduleSnoozeRearm(callId);
+              scheduleSnoozeRearm(callId, durationMs);
             }
             try {
               window.dispatchEvent(
                 new CustomEvent("dm-call-action", {
                   detail: {
                     action: "mute",
+                    action_id: actionId,
                     call_id: callId,
-                    snooze_ms: SNOOZE_MS,
+                    snooze_ms: durationMs,
                     call_status: callStatus,
                     local_only: true,
                   },
