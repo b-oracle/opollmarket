@@ -175,6 +175,7 @@ const AdminCallEvents = () => {
           <option value="cancelled">Cancelled</option>
           <option value="failed">Failed</option>
           <option value="timeout">Timeout</option>
+          <option value="muted">Muted</option>
         </select>
       </div>
 
