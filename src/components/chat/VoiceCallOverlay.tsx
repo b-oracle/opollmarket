@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { logCallEvent } from "@/lib/callEvents";
 import { recordCallLifecycle } from "@/lib/callLifecycleLog";
 import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
+import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
 import CallDebugOverlay from "./CallDebugOverlay";
 
 interface VoiceCallOverlayProps {
