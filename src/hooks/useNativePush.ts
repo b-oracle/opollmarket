@@ -120,10 +120,39 @@ const scheduleSnoozeRearm = (callId: string) => {
   clearSnoozeTimer();
   if (!callId) return;
   snoozedCallId = callId;
+
+  // Watch the call row: if it transitions out of `ringing` (missed, declined,
+  // ended, accepted-elsewhere) we must cancel the snooze immediately so we
+  // don't re-ring the user for a call they can no longer act on.
+  try {
+    snoozeStatusChannel = supabase
+      .channel(`snooze-call-${callId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "dm_calls",
+          filter: `id=eq.${callId}`,
+        },
+        (payload) => {
+          const nextStatus = (payload.new as { status?: string } | null)?.status;
+          if (nextStatus && nextStatus !== "ringing") {
+            // No longer actionable — cancel snooze without re-ringing.
+            clearSnoozeTimer();
+          }
+        },
+      )
+      .subscribe();
+  } catch {
+    // realtime optional; the setTimeout fallback below still gates on status
+  }
+
   snoozeTimer = setTimeout(async () => {
     const target = snoozedCallId;
     snoozeTimer = null;
     snoozedCallId = null;
+    teardownSnoozeStatusChannel();
     if (!target) return;
     // Only re-ring if the call is still pending; otherwise the lifecycle
     // event we missed (declined / ended / accepted elsewhere) means we
