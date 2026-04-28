@@ -81,7 +81,15 @@ const stopForegroundCallRing = () => {
 // if the call is still in `ringing` status (not accepted, declined, missed,
 // or ended), we re-arm the local ring so the user gets a second chance to
 // answer — same UX as iOS/Android system phone apps.
+// Default snooze duration (when user taps the plain "Mute" button — kept for
+// backwards compatibility). Explicit snooze actions below let the user pick
+// 10s / 1m / 5m instead.
 const SNOOZE_MS = 15_000;
+const SNOOZE_OPTIONS_MS: Record<string, number> = {
+  snooze_10s: 10_000,
+  snooze_1m: 60_000,
+  snooze_5m: 5 * 60_000,
+};
 let snoozeTimer: ReturnType<typeof setTimeout> | null = null;
 let snoozedCallId: string | null = null;
 let snoozeStatusChannel: ReturnType<typeof supabase.channel> | null = null;
