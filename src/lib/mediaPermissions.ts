@@ -110,7 +110,61 @@ const attachPermissionListener = async () => {
 
 export const clearMicrophonePermissionCache = () => writeCache(null);
 
+// Native (Capacitor) microphone permission preflight. On Android the WebView's
+// getUserMedia call won't prompt unless the host app has been granted the
+// RECORD_AUDIO runtime permission. This helper requests it explicitly so the
+// call doesn't silently fail right after pickup.
+const requestNativeMicPermission = async (): Promise<
+  | { handled: true; result: MicrophonePermissionResult }
+  | { handled: false }
+> => {
+  try {
+    const { Capacitor } = await import("@capacitor/core");
+    if (!Capacitor?.isNativePlatform?.()) return { handled: false };
+    const mod: any = await import("@mozartec/capacitor-microphone");
+    const Microphone = mod?.Microphone;
+    if (!Microphone) return { handled: false };
+
+    let status: any = null;
+    try { status = await Microphone.checkPermissions(); } catch { /* ignore */ }
+    let state: string = status?.microphone || "prompt";
+
+    if (state !== "granted") {
+      try {
+        const req = await Microphone.requestPermissions();
+        state = req?.microphone || state;
+      } catch { /* ignore */ }
+    }
+
+    if (state === "granted") {
+      writeCache({ state: "granted", ts: Date.now() });
+      return { handled: true, result: { ok: true } };
+    }
+    if (state === "denied") {
+      writeCache({ state: "denied", reason: "denied", errorName: "NativePermissionDenied", ts: Date.now() });
+      return {
+        handled: true,
+        result: {
+          ok: false,
+          reason: "denied",
+          title: "Microphone permission denied",
+          description: "Open the app's system settings, enable Microphone, then try the call again.",
+          errorName: "NativePermissionDenied",
+        },
+      };
+    }
+    // "prompt" or unknown → fall through to the web getUserMedia path
+    return { handled: false };
+  } catch {
+    return { handled: false };
+  }
+};
+
 export const ensureMicrophonePermission = async (): Promise<MicrophonePermissionResult> => {
+  // Native preflight first — short-circuits the web path on Capacitor.
+  const native = await requestNativeMicPermission();
+  if (native.handled) return native.result;
+
   if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
     const result: MicrophonePermissionResult = {
       ok: false,
