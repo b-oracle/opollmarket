@@ -467,6 +467,40 @@ Deno.serve(async (req) => {
           actor_id: user.id,
           market_id: call.conversation_id,
         });
+
+        // Send a push so the missed-call notification deep-links the callee
+        // straight into the caller's chat thread when they tap it.
+        try {
+          const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+          const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+          const missedPushBody = JSON.stringify({
+            user_id: call2.callee_id,
+            title: "Missed Call 📞",
+            body: `You missed a call from ${callerP?.display_name || "someone"}`,
+            url: `/messages/${call.conversation_id}?missed_call_id=${encodeURIComponent(call_id)}`,
+            data: {
+              type: "call_missed",
+              call_id,
+              conversation_id: call.conversation_id,
+              caller_id: user.id,
+              caller_name: callerP?.display_name || "Someone",
+            },
+          });
+          await Promise.all([
+            fetch(`${supabaseUrl}/functions/v1/send-push`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+              body: missedPushBody,
+            }).catch((e) => console.warn("missed-call web push failed:", e)),
+            fetch(`${supabaseUrl}/functions/v1/send-fcm-push`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${serviceKey}` },
+              body: missedPushBody,
+            }).catch((e) => console.warn("missed-call fcm push failed:", e)),
+          ]);
+        } catch (pushErr) {
+          console.warn("Missed-call push failed (non-fatal):", pushErr);
+        }
       }
 
       try {
