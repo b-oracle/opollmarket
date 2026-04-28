@@ -247,6 +247,9 @@ export const useNativePush = () => {
                   id: "INCOMING_CALL",
                   actions: [
                     { id: "accept", title: "Accept" },
+                    // One-tap shortcut to the caller's chat thread without
+                    // accepting / declining the call.
+                    { id: "view_chat", title: "View chat" },
                     // Snooze options — local-only mute for the chosen duration.
                     // iOS/Android notifications don't support nested submenus,
                     // so we expose each duration as its own button.
@@ -254,6 +257,14 @@ export const useNativePush = () => {
                     { id: "snooze_1m", title: "Snooze 1m" },
                     { id: "snooze_5m", title: "Snooze 5m" },
                     { id: "decline", title: "Decline", destructive: true },
+                  ],
+                },
+                {
+                  // Used by missed-call notifications so the user can jump
+                  // straight to the chat thread from the notification tray.
+                  id: "MISSED_CALL",
+                  actions: [
+                    { id: "view_chat", title: "View chat" },
                   ],
                 },
               ],
