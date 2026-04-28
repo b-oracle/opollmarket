@@ -886,6 +886,7 @@ const VoiceCallOverlay = ({
       const newState = !cameraOn;
       await room.localParticipant.setCameraEnabled(newState);
       setCameraOn(newState);
+      saveCallPreferences(callId, { cameraOn: newState });
       if (newState) {
         // Retry attachment up to 3 times with increasing delay
         const attachLocal = (attempt: number) => {
