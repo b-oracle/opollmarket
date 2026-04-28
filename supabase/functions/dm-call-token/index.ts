@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
           user_id: calleeId,
           title: "Incoming Call 📞",
           body: `${callerProfile?.display_name || "Someone"} is calling you`,
-          url: `/messages/${conversation_id}`,
+          url: `/messages/${conversation_id}?incoming_call_id=${encodeURIComponent(callData.id)}`,
           is_call: true,
           call_id: callData.id,
           data: {
