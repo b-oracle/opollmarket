@@ -13,6 +13,60 @@ import { logCallEvent } from "@/lib/callEvents";
 // it when the user accepts/declines or when the call FCM "ended" arrives.
 let activeCallVibrationCancel: (() => void) | null = null;
 
+// Persist the latest incoming call context so notification action buttons
+// (Accept / Mute / Decline) keep working even after a cold start, where the
+// OS may deliver the action with a stripped-down `extra` payload.
+const LATEST_CALL_KEY = "latest_incoming_call_v1";
+const LATEST_CALL_TTL_MS = 2 * 60 * 1000; // calls only ring for ~30–60s
+
+type LatestCall = {
+  call_id: string;
+  conversation_id: string;
+  caller_id?: string;
+  caller_name?: string;
+  saved_at: number;
+};
+
+const saveLatestCall = (data: Record<string, string>) => {
+  if (typeof window === "undefined") return;
+  const callId = data.call_id || "";
+  if (!callId) return;
+  try {
+    const payload: LatestCall = {
+      call_id: callId,
+      conversation_id: data.conversation_id || "",
+      caller_id: data.caller_id,
+      caller_name: data.caller_name,
+      saved_at: Date.now(),
+    };
+    localStorage.setItem(LATEST_CALL_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore quota/serialization errors
+  }
+};
+
+const readLatestCall = (): LatestCall | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(LATEST_CALL_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LatestCall;
+    if (!parsed?.call_id) return null;
+    if (Date.now() - parsed.saved_at > LATEST_CALL_TTL_MS) {
+      localStorage.removeItem(LATEST_CALL_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const clearLatestCall = () => {
+  if (typeof window === "undefined") return;
+  try { localStorage.removeItem(LATEST_CALL_KEY); } catch { /* ignore */ }
+};
+
 const stopForegroundCallRing = () => {
   if (activeCallVibrationCancel) {
     activeCallVibrationCancel();
