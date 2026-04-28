@@ -278,6 +278,7 @@ export const useNativePush = () => {
             // Stop any prior ring loop if a call lifecycle event arrives.
             if (isCallEnded) {
               stopForegroundCallRing();
+              clearSnoozeTimer();
               clearLatestCall();
               return;
             }
@@ -287,6 +288,9 @@ export const useNativePush = () => {
               // (Accept / Mute / Decline) can recover ids if the OS strips
               // the notification's `extra` payload.
               saveLatestCall(data);
+
+              // A new incoming-call push supersedes any prior snooze.
+              clearSnoozeTimer();
 
               // Start the looping WhatsApp-style ring pattern. The
               // IncomingCallBanner runs its own pattern when it mounts, but
