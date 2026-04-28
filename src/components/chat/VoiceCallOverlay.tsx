@@ -376,7 +376,7 @@ const VoiceCallOverlay = ({
       gracePeriodRef.current = setTimeout(() => {
         if (!endingRef.current) {
           recordCallLifecycle(callId, "grace_period_expired", { status: statusRef.current, level: "error" });
-          handleEnd();
+          markRecoverableDisconnect("participant_grace_expired", "Remote participant did not reconnect within the grace period");
         }
       }, GRACE_PERIOD_MS);
     });
@@ -561,7 +561,10 @@ const VoiceCallOverlay = ({
           // browser blocking insecure WebSocket on a non-HTTPS context.
           const reason = err?.message || err?.name || "Unknown error";
           toast.error("Failed to connect to call", { description: reason });
-          handleEnd();
+          markRecoverableDisconnect("livekit_connect", "LiveKit connect failed without ending the call", {
+            error: err?.message,
+            error_name: err?.name,
+          });
         }
       });
 
