@@ -9,6 +9,16 @@ export type MicrophonePermissionResult =
       errorMessage?: string;
     };
 
+const STORAGE_KEY = "mic-permission-cache-v1";
+type CachedState = "granted" | "denied" | "not_found" | "busy" | "unsupported";
+interface CachedEntry {
+  state: CachedState;
+  reason?: "unsupported" | "denied" | "not_found" | "busy" | "unknown";
+  errorName?: string;
+  errorMessage?: string;
+  ts: number;
+}
+
 const stopStream = (stream: MediaStream) => {
   try {
     stream.getTracks().forEach((track) => track.stop());
@@ -17,8 +27,53 @@ const stopStream = (stream: MediaStream) => {
   }
 };
 
-export const ensureMicrophonePermission = async (): Promise<MicrophonePermissionResult> => {
-  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+const readCache = (): CachedEntry | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedEntry;
+    if (!parsed || typeof parsed.state !== "string") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const writeCache = (entry: CachedEntry | null) => {
+  try {
+    if (!entry) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
+    }
+  } catch {
+    // ignore
+  }
+};
+
+const buildResultFromCache = (entry: CachedEntry): MicrophonePermissionResult | null => {
+  if (entry.state === "granted") return { ok: true };
+  if (entry.state === "denied") {
+    return {
+      ok: false,
+      reason: "denied",
+      title: "Microphone permission denied",
+      description: "Enable microphone access in the app settings, then try the call again.",
+      errorName: entry.errorName,
+      errorMessage: entry.errorMessage,
+    };
+  }
+  if (entry.state === "not_found") {
+    return {
+      ok: false,
+      reason: "not_found",
+      title: "No microphone found",
+      description: "Connect or enable a microphone, then try again.",
+      errorName: entry.errorName,
+      errorMessage: entry.errorMessage,
+    };
+  }
+  if (entry.state === "unsupported") {
     return {
       ok: false,
       reason: "unsupported",
@@ -26,32 +81,103 @@ export const ensureMicrophonePermission = async (): Promise<MicrophonePermission
       description: "This app build cannot access the microphone on this device.",
     };
   }
+  // "busy" — don't trust cache, force re-check
+  return null;
+};
 
+// Subscribe to permission changes once so cache invalidates automatically.
+let permissionListenerAttached = false;
+const attachPermissionListener = async () => {
+  if (permissionListenerAttached) return;
+  permissionListenerAttached = true;
+  try {
+    if (!navigator.permissions?.query) return;
+    const status = await navigator.permissions.query({ name: "microphone" as PermissionName });
+    const sync = () => {
+      if (status.state === "granted") {
+        writeCache({ state: "granted", ts: Date.now() });
+      } else if (status.state === "denied") {
+        writeCache({ state: "denied", reason: "denied", ts: Date.now() });
+      } else {
+        writeCache(null); // "prompt" — clear so next attempt re-asks
+      }
+    };
+    status.onchange = sync;
+  } catch {
+    // ignore — Android WebView often lacks "microphone" in Permissions API
+  }
+};
+
+export const clearMicrophonePermissionCache = () => writeCache(null);
+
+export const ensureMicrophonePermission = async (): Promise<MicrophonePermissionResult> => {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    const result: MicrophonePermissionResult = {
+      ok: false,
+      reason: "unsupported",
+      title: "Microphone unavailable",
+      description: "This app build cannot access the microphone on this device.",
+    };
+    writeCache({ state: "unsupported", reason: "unsupported", ts: Date.now() });
+    return result;
+  }
+
+  void attachPermissionListener();
+
+  // 1. Check Permissions API for ground truth (cheap, no prompt).
+  let permissionState: PermissionState | null = null;
   try {
     if (navigator.permissions?.query) {
       const status = await navigator.permissions.query({ name: "microphone" as PermissionName });
-      if (status.state === "denied") {
-        return {
-          ok: false,
-          reason: "denied",
-          title: "Microphone permission denied",
-          description: "Enable microphone access in the app settings, then try the call again.",
-          errorName: "PermissionDenied",
-        };
-      }
+      permissionState = status.state;
     }
   } catch {
-    // Android WebView may not support Permissions API for microphone.
+    // not supported — fall through
   }
 
+  // 2. Reuse cache if it agrees with the current Permissions API state.
+  const cached = readCache();
+  if (cached) {
+    const cacheImpliesGranted = cached.state === "granted";
+    const cacheImpliesDenied = cached.state === "denied";
+    const stillValid =
+      permissionState === null ||
+      (permissionState === "granted" && cacheImpliesGranted) ||
+      (permissionState === "denied" && cacheImpliesDenied) ||
+      (permissionState === "prompt" && false); // prompt always re-checks
+
+    if (stillValid) {
+      const fromCache = buildResultFromCache(cached);
+      if (fromCache) return fromCache;
+    } else {
+      writeCache(null);
+    }
+  }
+
+  // 3. If Permissions API says denied, short-circuit without prompting.
+  if (permissionState === "denied") {
+    const result: MicrophonePermissionResult = {
+      ok: false,
+      reason: "denied",
+      title: "Microphone permission denied",
+      description: "Enable microphone access in the app settings, then try the call again.",
+      errorName: "PermissionDenied",
+    };
+    writeCache({ state: "denied", reason: "denied", errorName: "PermissionDenied", ts: Date.now() });
+    return result;
+  }
+
+  // 4. Probe getUserMedia (will prompt on first use).
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
     stopStream(stream);
+    writeCache({ state: "granted", ts: Date.now() });
     return { ok: true };
   } catch (err: any) {
     const name = err?.name || "UnknownError";
     const message = err?.message || "";
     if (name === "NotAllowedError" || name === "SecurityError" || name === "PermissionDeniedError") {
+      writeCache({ state: "denied", reason: "denied", errorName: name, errorMessage: message, ts: Date.now() });
       return {
         ok: false,
         reason: "denied",
@@ -62,6 +188,7 @@ export const ensureMicrophonePermission = async (): Promise<MicrophonePermission
       };
     }
     if (name === "NotFoundError" || name === "DevicesNotFoundError" || name === "OverconstrainedError") {
+      writeCache({ state: "not_found", reason: "not_found", errorName: name, errorMessage: message, ts: Date.now() });
       return {
         ok: false,
         reason: "not_found",
@@ -72,6 +199,7 @@ export const ensureMicrophonePermission = async (): Promise<MicrophonePermission
       };
     }
     if (name === "NotReadableError" || name === "TrackStartError") {
+      // Don't cache — likely a transient device-busy state.
       return {
         ok: false,
         reason: "busy",
