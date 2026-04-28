@@ -38,7 +38,7 @@ type MarketRow = {
   participants: number | null;
   created_at: string;
   end_date: string | null;
-  resolved_at: string | null;
+  updated_at: string | null;
   resolved_side: string | null;
   winning_option_id: string | null;
   market_type: string | null;
@@ -144,7 +144,7 @@ const CreatorDashboard = () => {
       const { data: marketsData } = await supabase
         .from("markets")
         .select(
-          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, resolved_at, resolved_side, winning_option_id, market_type",
+          "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, updated_at, resolved_side, winning_option_id, market_type",
         )
         .eq("creator_wallet", user.id)
         .order("created_at", { ascending: false });
@@ -171,22 +171,28 @@ const CreatorDashboard = () => {
         return next;
       };
 
-      const [paidRes, pendingRes, refundRes] = await Promise.all([
-        applyWindow(
-          supabase
-            .from("transactions")
-            .select("market_id, amount")
-            .eq("user_id", user.id)
-            .eq("type", "commission")
-            .eq("status", "confirmed")
-            .in("market_id", ids),
-        ),
+      // Single source of truth for creator commissions: `pending_commissions`
+      // (rows are inserted as `pending` and updated to `released` when paid out;
+      // matching `transactions` rows for the released payout would double-count).
+      // Plus a fallback for legacy commissions that exist only in `transactions`
+      // (older markets where pending_commissions wasn't yet wired up).
+      const [pendingRes, legacyPaidRes, refundRes] = await Promise.all([
         applyWindow(
           supabase
             .from("pending_commissions" as any)
             .select("market_id, amount, status")
             .eq("user_id", user.id)
             .eq("type", "creator")
+            .in("market_id", ids),
+        ),
+        applyWindow(
+          supabase
+            .from("transactions")
+            .select("market_id, amount, created_at")
+            .eq("user_id", user.id)
+            .eq("type", "commission")
+            .eq("side", "creator")
+            .eq("status", "confirmed")
             .in("market_id", ids),
         ),
         applyWindow(
@@ -204,15 +210,26 @@ const CreatorDashboard = () => {
       const map: EarningsByMarket = {};
       const ensure = (id: string) => (map[id] ||= { realized: 0, pending: 0, liquidityReturn: 0 });
 
-      ((paidRes.data as any[]) || []).forEach((t) => {
-        if (t.market_id) ensure(t.market_id).realized += Number(t.amount) || 0;
-      });
+      // Track which (market_id) have pending_commissions data so we don't
+      // double-count legacy transactions for the same markets.
+      const marketsWithPendingData = new Set<string>();
+
       ((pendingRes.data as any[]) || []).forEach((c) => {
         if (!c.market_id) return;
+        marketsWithPendingData.add(c.market_id);
         const bucket = ensure(c.market_id);
-        if (c.status === "released") bucket.realized += Number(c.amount) || 0;
-        else if (c.status === "pending") bucket.pending += Number(c.amount) || 0;
+        const amt = Number(c.amount) || 0;
+        if (c.status === "released") bucket.realized += amt;
+        else if (c.status === "pending") bucket.pending += amt;
       });
+
+      // Legacy fallback: include `transactions` only for markets without
+      // any pending_commissions rows (those have already been counted above).
+      ((legacyPaidRes.data as any[]) || []).forEach((t) => {
+        if (!t.market_id || marketsWithPendingData.has(t.market_id)) return;
+        ensure(t.market_id).realized += Number(t.amount) || 0;
+      });
+
       ((refundRes.data as any[]) || []).forEach((t) => {
         if (t.market_id) ensure(t.market_id).liquidityReturn += Number(t.amount) || 0;
       });
@@ -246,7 +263,8 @@ const CreatorDashboard = () => {
         liquidityReturned += e.liquidityReturn;
       }
       participants += Number(m.participants) || 0;
-      liquidity += Number(m.liquidity) || 0;
+      // Active Liquidity = creator's own contributed liquidity (initial_liquidity) for active markets only
+      if (m.status === "active") liquidity += Number(m.initial_liquidity) || 0;
       if (m.status === "resolved") resolvedCount++;
       if (m.status === "active") activeCount++;
     }
@@ -258,11 +276,11 @@ const CreatorDashboard = () => {
     const toMs = dateWindow.to?.getTime();
     return markets.filter((m) => {
       if (filter !== "all" && m.status !== filter) return false;
-      // Apply date window only to resolved/cancelled markets (they have resolved_at).
-      // Active/pending/draft markets are always shown regardless of range.
+      // Apply date window only to resolved/cancelled markets (using updated_at as
+      // the resolution timestamp proxy). Active/pending/draft markets are always shown.
       if ((m.status === "resolved" || m.status === "cancelled") && (fromMs || toMs)) {
-        if (!m.resolved_at) return false;
-        const t = new Date(m.resolved_at).getTime();
+        if (!m.updated_at) return false;
+        const t = new Date(m.updated_at).getTime();
         if (fromMs && t < fromMs) return false;
         if (toMs && t > toMs) return false;
       }
@@ -295,7 +313,7 @@ const CreatorDashboard = () => {
       />
       <TopBar />
 
-      <main className="max-w-3xl mx-auto px-4 pt-4 lg:pl-64">
+      <main className="w-full max-w-none mx-0 px-3 sm:px-4 lg:px-6 pt-20 lg:pt-24">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-bold">Creator Dashboard</h1>
@@ -310,8 +328,8 @@ const CreatorDashboard = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          <StatCard label="Total Earned" value={`$${totals.realized.toFixed(2)}`} icon={DollarSign} color="text-emerald-500" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <StatCard label="Total Earned" value={`$${(totals.realized + totals.pending).toFixed(2)}`} icon={DollarSign} color="text-emerald-500" />
           <StatCard label="Pending Earnings" value={`$${totals.pending.toFixed(2)}`} icon={Hourglass} color="text-amber-500" />
           <StatCard label="Active Liquidity" value={`$${totals.liquidity.toFixed(2)}`} icon={Droplets} color="text-blue-500" />
           <StatCard label="Total Participants" value={totals.participants.toLocaleString()} icon={Users} color="text-violet-500" />
