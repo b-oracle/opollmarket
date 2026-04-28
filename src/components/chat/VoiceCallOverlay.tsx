@@ -429,7 +429,7 @@ const VoiceCallOverlay = ({
     if (isOutgoing) {
       autoTimeoutRef.current = setTimeout(() => {
         if (statusRef.current === "ringing") {
-          handleCancel();
+          handleTimeout();
         }
       }, 90_000);
     }
