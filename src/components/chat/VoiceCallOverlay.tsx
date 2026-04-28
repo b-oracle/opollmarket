@@ -323,23 +323,25 @@ const VoiceCallOverlay = ({
     });
 
     room.on(RoomEvent.Disconnected, () => {
-      if (!endingRef.current && !intentionalDisconnectRef.current && statusRef.current === "active") {
-        setReconnecting(true);
-        // Try auto-reconnect once
-        room.connect(livekitUrl, token)
-          .then(async () => {
-            await room.localParticipant.setMicrophoneEnabled(!muted);
-            if (cameraOn) await room.localParticipant.setCameraEnabled(true);
-            setReconnecting(false);
-          })
-          .catch(() => {
-            // Auto-reconnect failed — show manual rejoin button instead of ending
-            setReconnecting(false);
-            setShowRejoin(true);
-          });
-      } else if (!endingRef.current) {
-        handleEnd();
-      }
+      if (endingRef.current || intentionalDisconnectRef.current) return;
+      // Always attempt one auto-reconnect before tearing the call down,
+      // regardless of whether status flipped to "active" yet. Ending the
+      // call on a transient Disconnected during the connect/answer
+      // handshake was making calls drop the instant they were picked up.
+      setReconnecting(true);
+      room.connect(livekitUrl, token)
+        .then(async () => {
+          try { await room.localParticipant.setMicrophoneEnabled(!muted); } catch {}
+          if (cameraOn) {
+            try { await room.localParticipant.setCameraEnabled(true); } catch {}
+          }
+          setReconnecting(false);
+        })
+        .catch((err) => {
+          setReconnecting(false);
+          logCallEvent(callId, "failed", { stage: "auto_reconnect", error: err?.message });
+          setShowRejoin(true);
+        });
     });
 
     // Track local video publication to attach to ref
