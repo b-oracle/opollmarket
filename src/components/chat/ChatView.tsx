@@ -573,7 +573,7 @@ const ChatView = () => {
     setCalling(true);
     try {
       const mic = await ensureMicrophonePermission();
-      if (!mic.ok) {
+      if (mic.ok === false) {
         logCallEvent(callId, "failed", { stage: "mic_permission_preflight", reason: mic.reason, error_name: mic.errorName, error: mic.errorMessage });
         toast.error(mic.title, { description: mic.description });
         return;
@@ -617,7 +617,7 @@ const ChatView = () => {
     setCalling(true);
     try {
       const mic = await ensureMicrophonePermission();
-      if (!mic.ok) {
+      if (mic.ok === false) {
         logCallEvent(callId, "failed", { stage: "mic_permission_preflight", reason: mic.reason, error_name: mic.errorName, error: mic.errorMessage });
         toast.error(mic.title, { description: mic.description });
         return;
@@ -657,7 +657,7 @@ const ChatView = () => {
     setCalling(true);
     try {
       const mic = await ensureMicrophonePermission();
-      if (!mic.ok) {
+      if (mic.ok === false) {
         toast.error(mic.title, { description: mic.description });
         return;
       }
