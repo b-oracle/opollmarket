@@ -326,12 +326,24 @@ Deno.serve(async (req) => {
               ttl: "45s",
             },
             apns: {
-              headers: { "apns-priority": "10", "apns-push-type": "alert" },
+              headers: {
+                "apns-priority": "10",
+                "apns-push-type": "alert",
+              },
               payload: {
                 aps: {
+                  alert: {
+                    title: String(title),
+                    body: String(body || "Incoming call"),
+                  },
                   sound: "ringtone.caf",
-                  "content-available": 1,
+                  // Matches the UNNotificationCategory we register on the
+                  // client (LocalNotifications.registerActionTypes), so iOS
+                  // shows Accept / Mute / Decline buttons on the lockscreen
+                  // and notification center — same flow as Android.
+                  category: "INCOMING_CALL",
                   "mutable-content": 1,
+                  "interruption-level": "time-sensitive",
                 },
               },
             },
@@ -351,7 +363,16 @@ Deno.serve(async (req) => {
             apns: {
               headers: { "apns-priority": "10" },
               payload: {
-                aps: { sound: "default", "content-available": 1 },
+                aps: {
+                  sound: "default",
+                  "content-available": 1,
+                  // Missed-call pushes get a "View chat" action button on
+                  // iOS via the MISSED_CALL UNNotificationCategory we
+                  // register on the client.
+                  ...(stringifiedData.type === "call_missed"
+                    ? { category: "MISSED_CALL" }
+                    : {}),
+                },
               },
             },
           };

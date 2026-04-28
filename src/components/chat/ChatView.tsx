@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video, WifiOff } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, PhoneMissed, Video, WifiOff } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,56 @@ const ChatView = () => {
       }
     } catch { /* ignore quota / privacy mode */ }
   }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
+
+  // ── Missed-call banner ────────────────────────────────────────────────
+  // When a missed-call notification deep-links us into the thread it adds
+  // `?missed_call_id=<id>` to the URL. We surface a slim banner offering
+  // "Call back" and "Open thread" until the user dismisses it. Dismissal
+  // is persisted per call_id in sessionStorage so we don't keep re-showing
+  // the banner if the user navigates away and returns.
+  // Accept either deep-link param. We validate them below — if the id is
+  // malformed, references a different conversation, or is expired we just
+  // strip it from the URL and continue rendering the chat normally.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const rawMissedCallId = searchParams.get("missed_call_id");
+  const rawIncomingCallId = searchParams.get("incoming_call_id");
+  const isValidUuid = (v: string | null): v is string => !!v && UUID_RE.test(v);
+
+  // Track ids that have been validated (or rejected) so the banner & scroll
+  // effects only fire for known-good calls. `null` until validated.
+  const [validatedMissedCallId, setValidatedMissedCallId] = useState<string | null>(null);
+  const missedCallId = validatedMissedCallId;
+  const missedDismissKey = missedCallId ? `dm-missed-dismissed:${missedCallId}` : null;
+  const [missedDismissed, setMissedDismissed] = useState<boolean>(() => {
+    if (!missedDismissKey) return false;
+    try { return window.sessionStorage.getItem(missedDismissKey) === "1"; }
+    catch { return false; }
+  });
+  useEffect(() => {
+    // Reset dismissal state whenever the deep link points at a new call.
+    if (!missedDismissKey) { setMissedDismissed(false); return; }
+    try {
+      setMissedDismissed(window.sessionStorage.getItem(missedDismissKey) === "1");
+    } catch { setMissedDismissed(false); }
+  }, [missedDismissKey]);
+
+  const dismissMissedBanner = useCallback(() => {
+    if (missedDismissKey) {
+      try { window.sessionStorage.setItem(missedDismissKey, "1"); } catch { /* ignore */ }
+    }
+    setMissedDismissed(true);
+    // Strip the param so a refresh doesn't re-show the banner either.
+    const next = new URLSearchParams(searchParams);
+    next.delete("missed_call_id");
+    setSearchParams(next, { replace: true });
+  }, [missedDismissKey, searchParams, setSearchParams]);
+
+  // (Deep-link call-id validation effect lives below, after `conversationId`
+  // is resolved — see the block right after `const conversationId = ...`.)
+
+  // Track which missed_call_id we've already scrolled to so message-list
+  // updates / refetches don't re-trigger the highlight repeatedly.
+  const scrolledMissedCallRef = useRef<string | null>(null);
 
   // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
   // when the retry loop kicks off, used to drive a live countdown in the
@@ -203,6 +253,70 @@ const ChatView = () => {
   }, [paramId, user, navigate]);
 
   const conversationId = resolvedConvoId;
+
+  // Validate deep-link call ids. Strips bad params from the URL so the chat
+  // still opens cleanly to the conversation. Considered invalid when:
+  //   • missing / malformed UUID
+  //   • call row not found (deleted / wrong project)
+  //   • call belongs to a different conversation than the one we're viewing
+  //   • call is "expired": older than 24h (any status) — past that point a
+  //     "Call back" CTA is more noise than signal.
+  //   • for incoming_call_id: status is no longer "ringing" (already
+  //     answered/declined/missed elsewhere)
+  useEffect(() => {
+    if (!conversationId) return;
+    let cancelled = false;
+
+    const stripParams = (keys: string[]) => {
+      const next = new URLSearchParams(searchParams);
+      let changed = false;
+      for (const k of keys) {
+        if (next.has(k)) { next.delete(k); changed = true; }
+      }
+      if (changed) setSearchParams(next, { replace: true });
+    };
+
+    const validate = async (id: string | null, kind: "missed" | "incoming"): Promise<string | null> => {
+      if (!id) return null;
+      if (!isValidUuid(id)) return null;
+      try {
+        const { data, error } = await supabase
+          .from("dm_calls")
+          .select("id, conversation_id, created_at, ended_at, status")
+          .eq("id", id)
+          .maybeSingle();
+        if (error || !data) return null;
+        if (data.conversation_id !== conversationId) return null;
+        const refTs = (data as any).ended_at || (data as any).created_at;
+        if (refTs) {
+          const ageMs = Date.now() - new Date(refTs).getTime();
+          if (ageMs > 24 * 60 * 60 * 1000) return null; // expired
+        }
+        if (kind === "incoming" && data.status && data.status !== "ringing") {
+          return null;
+        }
+        return id;
+      } catch {
+        return null;
+      }
+    };
+
+    (async () => {
+      const [missedOk, incomingOk] = await Promise.all([
+        validate(rawMissedCallId, "missed"),
+        validate(rawIncomingCallId, "incoming"),
+      ]);
+      if (cancelled) return;
+      setValidatedMissedCallId(missedOk);
+      const toStrip: string[] = [];
+      if (rawMissedCallId && !missedOk) toStrip.push("missed_call_id");
+      if (rawIncomingCallId && !incomingOk) toStrip.push("incoming_call_id");
+      if (toStrip.length) stripParams(toStrip);
+    })();
+
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawMissedCallId, rawIncomingCallId, conversationId]);
 
   const { data: convo } = useQuery({
     queryKey: ["dm-conversation", conversationId],
@@ -342,6 +456,70 @@ const ChatView = () => {
       setTimeout(() => el.classList.remove("bg-primary/10"), 1500);
     }
   }, []);
+
+  // Deep-link: when arriving via `?missed_call_id=<id>` look up the call's
+  // `ended_at` timestamp, then find the matching `[CALL:missed:0]` system
+  // message (sent by the caller within a few seconds of `ended_at`) and
+  // scroll/highlight it. Runs once per call_id and waits until both the
+  // messages list and the call row are available.
+  useEffect(() => {
+    if (!missedCallId || !conversationId) return;
+    if (scrolledMissedCallRef.current === missedCallId) return;
+    if (!messages || messages.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: callRow, error } = await supabase
+          .from("dm_calls")
+          .select("ended_at, caller_id, conversation_id, status")
+          .eq("id", missedCallId)
+          .maybeSingle();
+        if (cancelled || error || !callRow) return;
+        if (callRow.conversation_id !== conversationId) return;
+
+        const endedAtMs = callRow.ended_at ? new Date(callRow.ended_at).getTime() : null;
+        // Find the closest [CALL:missed:*] message from the caller.
+        // dm_messages.created_at is written in the same RPC call that flips
+        // the status, so the gap is < ~2s in practice. Use a 60s window to
+        // be safe against clock skew.
+        const candidates = messages.filter(
+          (m) =>
+            m.sender_id === callRow.caller_id &&
+            typeof m.content === "string" &&
+            /^\[CALL:missed:/.test(m.content),
+        );
+        if (candidates.length === 0) return;
+
+        let target = candidates[candidates.length - 1];
+        if (endedAtMs != null) {
+          let bestDelta = Number.POSITIVE_INFINITY;
+          for (const m of candidates) {
+            const delta = Math.abs(new Date(m.created_at).getTime() - endedAtMs);
+            if (delta < bestDelta) {
+              bestDelta = delta;
+              target = m;
+            }
+          }
+          // Reject obviously unrelated matches.
+          if (bestDelta > 60_000) return;
+        }
+
+        scrolledMissedCallRef.current = missedCallId;
+        // Defer to next tick so the bubble is mounted by the time we scroll.
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          handleScrollToMessage(target.id);
+        });
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [missedCallId, conversationId, messages, handleScrollToMessage]);
 
   const handleAccept = async () => {
     if (!conversationId) return;
@@ -816,6 +994,47 @@ const ChatView = () => {
               setLastFailedCallId(null);
               setRejoinStatus(null);
             }}
+            aria-label="Dismiss"
+            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Missed-call banner — shown when the user deep-links into the
+          conversation from a missed-call notification. Offers a quick
+          "Call back" action and an "Open thread" action that just dismisses
+          the banner so they can read the conversation. */}
+      {missedCallId && !missedDismissed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center gap-2"
+        >
+          <PhoneMissed className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-xs text-foreground flex-1 truncate">
+            You missed a call from {otherName || "this contact"}.
+          </p>
+          <button
+            onClick={() => {
+              dismissMissedBanner();
+              handleStartCall(false);
+            }}
+            disabled={calling}
+            className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+          >
+            {calling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
+            Call back
+          </button>
+          <button
+            onClick={dismissMissedBanner}
+            className="text-xs font-semibold text-foreground bg-muted hover:bg-muted/80 px-3 py-1 rounded-md"
+          >
+            Open thread
+          </button>
+          <button
+            onClick={dismissMissedBanner}
             aria-label="Dismiss"
             className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
           >
