@@ -578,8 +578,31 @@ export const useNativePush = () => {
           } catch {
             // ignore
           }
-        }
+          }
 
+          // "View chat" — silences any active ring and opens the conversation
+          // thread. For an incoming call we mark it as a missed-call deep link
+          // (the user explicitly chose not to answer); for a missed-call
+          // notification we just navigate.
+          if (actionId === "view_chat") {
+            stopForegroundCallRing();
+            clearSnoozeTimer();
+            clearLatestCall();
+            const isFromIncoming =
+              (rawData as Record<string, string> | undefined)?.type === "incoming_call";
+            logCallEvent(callId, "viewed_chat", {
+              source: "notification_action",
+              from: isFromIncoming ? "incoming_call" : "missed_call",
+            });
+            if (convId && typeof window !== "undefined") {
+              const param = isFromIncoming ? "incoming_call_id" : "missed_call_id";
+              const suffix = callId
+                ? `?${param}=${encodeURIComponent(callId)}`
+                : "";
+              window.location.href = `/messages/${convId}${suffix}`;
+            }
+            return true;
+          }
 
         cleanup = () => {
           regSub.remove();
