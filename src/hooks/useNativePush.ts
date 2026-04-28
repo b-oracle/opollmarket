@@ -412,15 +412,47 @@ export const useNativePush = () => {
           }
 
           if (actionId === "mute") {
+            // Mute is a LOCAL-ONLY action: it silences ring/vibration on this
+            // device only. We never invoke an edge function, never write to
+            // dm_calls, and never notify the caller — from their perspective
+            // the call keeps ringing exactly as before. We snapshot the
+            // current call status purely for analytics so we can confirm the
+            // call was still actionable when the user muted.
             stopForegroundCallRing();
-            logCallEvent(callId, "muted", { source: "notification_action" });
-            // Re-arm the ring after SNOOZE_MS if the call is still pending,
-            // so a muted call doesn't silently disappear.
-            scheduleSnoozeRearm(callId);
+            let callStatus: string | null = null;
+            if (callId) {
+              try {
+                const { data: row } = await supabase
+                  .from("dm_calls")
+                  .select("status")
+                  .eq("id", callId)
+                  .maybeSingle();
+                callStatus = (row as { status?: string } | null)?.status ?? null;
+              } catch {
+                // analytics-only; ignore lookup failures
+              }
+            }
+            logCallEvent(callId, "muted", {
+              source: "notification_action",
+              local_only: true,
+              call_status: callStatus,
+            });
+            // Only re-arm if the call hasn't already left the ringing state.
+            // If it's already missed/declined/ended/accepted-elsewhere we
+            // skip the snooze entirely so we never re-buzz for a dead call.
+            if (!callStatus || callStatus === "ringing") {
+              scheduleSnoozeRearm(callId);
+            }
             try {
               window.dispatchEvent(
                 new CustomEvent("dm-call-action", {
-                  detail: { action: "mute", call_id: callId, snooze_ms: SNOOZE_MS },
+                  detail: {
+                    action: "mute",
+                    call_id: callId,
+                    snooze_ms: SNOOZE_MS,
+                    call_status: callStatus,
+                    local_only: true,
+                  },
                 }),
               );
             } catch { /* ignore */ }
