@@ -13,7 +13,8 @@ export type CallEventType =
   | "missed"
   | "rejoin"
   | "timeout"
-  | "cancelled";
+  | "cancelled"
+  | "muted";
 
 export const logCallEvent = (
   callId: string | null | undefined,

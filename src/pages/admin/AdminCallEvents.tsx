@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Loader2, Phone, PhoneIncoming, PhoneOff, PhoneMissed, CheckCircle2,
   XCircle, AlertTriangle, RefreshCw, Clock, LogIn, Search, ChevronDown, ChevronRight,
+  BellOff,
 } from "lucide-react";
 
 type CallEvent = {
@@ -40,6 +41,7 @@ const EVENT_META: Record<string, { label: string; icon: typeof Phone; tone: stri
   rejoin:    { label: "Rejoin",    icon: RefreshCw,    tone: "text-blue-400 bg-blue-400/10" },
   timeout:   { label: "Timeout",   icon: Clock,        tone: "text-amber-400 bg-amber-400/10" },
   cancelled: { label: "Cancelled", icon: AlertTriangle,tone: "text-amber-400 bg-amber-400/10" },
+  muted:     { label: "Muted",     icon: BellOff,      tone: "text-purple-400 bg-purple-400/10" },
 };
 
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, {
@@ -173,6 +175,7 @@ const AdminCallEvents = () => {
           <option value="cancelled">Cancelled</option>
           <option value="failed">Failed</option>
           <option value="timeout">Timeout</option>
+          <option value="muted">Muted</option>
         </select>
       </div>
 
