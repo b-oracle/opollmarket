@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
-import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, Video, WifiOff } from "lucide-react";
+import { ArrowLeft, Send, Gift, Loader2, Share2, Check, X, Phone, PhoneMissed, Video, WifiOff } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,38 @@ const ChatView = () => {
       }
     } catch { /* ignore quota / privacy mode */ }
   }, [rejoinStatus, rejoinStorageKey, lastFailedCallIdKey]);
+
+  // ── Missed-call banner ────────────────────────────────────────────────
+  // When a missed-call notification deep-links us into the thread it adds
+  // `?missed_call_id=<id>` to the URL. We surface a slim banner offering
+  // "Call back" and "Open thread" until the user dismisses it. Dismissal
+  // is persisted per call_id in sessionStorage so we don't keep re-showing
+  // the banner if the user navigates away and returns.
+  const missedCallId = searchParams.get("missed_call_id");
+  const missedDismissKey = missedCallId ? `dm-missed-dismissed:${missedCallId}` : null;
+  const [missedDismissed, setMissedDismissed] = useState<boolean>(() => {
+    if (!missedDismissKey) return false;
+    try { return window.sessionStorage.getItem(missedDismissKey) === "1"; }
+    catch { return false; }
+  });
+  useEffect(() => {
+    // Reset dismissal state whenever the deep link points at a new call.
+    if (!missedDismissKey) { setMissedDismissed(false); return; }
+    try {
+      setMissedDismissed(window.sessionStorage.getItem(missedDismissKey) === "1");
+    } catch { setMissedDismissed(false); }
+  }, [missedDismissKey]);
+
+  const dismissMissedBanner = useCallback(() => {
+    if (missedDismissKey) {
+      try { window.sessionStorage.setItem(missedDismissKey, "1"); } catch { /* ignore */ }
+    }
+    setMissedDismissed(true);
+    // Strip the param so a refresh doesn't re-show the banner either.
+    const next = new URLSearchParams(searchParams);
+    next.delete("missed_call_id");
+    setSearchParams(next, { replace: true });
+  }, [missedDismissKey, searchParams, setSearchParams]);
 
   // Absolute deadline (epoch ms) for the current auto-rejoin attempt — set
   // when the retry loop kicks off, used to drive a live countdown in the
@@ -816,6 +848,47 @@ const ChatView = () => {
               setLastFailedCallId(null);
               setRejoinStatus(null);
             }}
+            aria-label="Dismiss"
+            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Missed-call banner — shown when the user deep-links into the
+          conversation from a missed-call notification. Offers a quick
+          "Call back" action and an "Open thread" action that just dismisses
+          the banner so they can read the conversation. */}
+      {missedCallId && !missedDismissed && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="shrink-0 bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center gap-2"
+        >
+          <PhoneMissed className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-xs text-foreground flex-1 truncate">
+            You missed a call from {otherName || "this contact"}.
+          </p>
+          <button
+            onClick={() => {
+              dismissMissedBanner();
+              handleStartCall(false);
+            }}
+            disabled={calling}
+            className="text-xs font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+          >
+            {calling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Phone className="w-3 h-3" />}
+            Call back
+          </button>
+          <button
+            onClick={dismissMissedBanner}
+            className="text-xs font-semibold text-foreground bg-muted hover:bg-muted/80 px-3 py-1 rounded-md"
+          >
+            Open thread
+          </button>
+          <button
+            onClick={dismissMissedBanner}
             aria-label="Dismiss"
             className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted/40"
           >
