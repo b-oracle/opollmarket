@@ -17,6 +17,10 @@
 <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
 <uses-permission android:name="android.permission.TURN_SCREEN_ON" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<!-- Required by @capawesome-team/capacitor-android-foreground-service on Android 14+
+     so the in-call mic stays alive when the WebView backgrounds. -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
 <application ...>
 
