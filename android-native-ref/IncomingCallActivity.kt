@@ -81,6 +81,7 @@ class IncomingCallActivity : AppCompatActivity() {
                 action = CallActionReceiver.ACTION_DECLINE
                 putExtra("call_id", callId)
                 putExtra("conversation_id", conversationId)
+            })
             finish()
         }
 
