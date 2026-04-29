@@ -1,5 +1,5 @@
-// android/app/src/main/java/<your.package>/CallActionReceiver.kt
-package app.lovable.opollmarket
+// android/app/src/main/java/com/opollmarket/app/CallActionReceiver.kt
+package com.opollmarket.app
 
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
@@ -33,8 +33,8 @@ import kotlin.concurrent.thread
 class CallActionReceiver : BroadcastReceiver() {
 
     companion object {
-        const val ACTION_ACCEPT = "app.lovable.opollmarket.CALL_ACCEPT"
-        const val ACTION_DECLINE = "app.lovable.opollmarket.CALL_DECLINE"
+        const val ACTION_ACCEPT = "com.opollmarket.app.CALL_ACCEPT"
+        const val ACTION_DECLINE = "com.opollmarket.app.CALL_DECLINE"
         private const val CALL_NOTIFICATION_ID = 1001
         private const val TAG = "CallActionReceiver"
 

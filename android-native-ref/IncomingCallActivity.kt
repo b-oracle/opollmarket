@@ -1,5 +1,5 @@
-// android/app/src/main/java/<your.package>/IncomingCallActivity.kt
-package app.lovable.opollmarket
+// android/app/src/main/java/com/opollmarket/app/IncomingCallActivity.kt
+package com.opollmarket.app
 
 import android.app.KeyguardManager
 import android.app.NotificationManager
