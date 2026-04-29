@@ -28,6 +28,7 @@ class CallMessagingService : FirebaseMessagingService() {
         const val CALL_CHANNEL_ID = "incoming_calls"
         const val DEFAULT_CHANNEL_ID = "default"
         private const val CALL_NOTIFICATION_ID = 1001
+        private const val TAG = "CallMessagingService"
     }
 
     override fun onNewToken(token: String) {
