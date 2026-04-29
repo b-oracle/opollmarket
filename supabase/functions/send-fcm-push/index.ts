@@ -483,83 +483,74 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // For calls: include BOTH a `notification` block and rich `data`.
+      // For calls: split delivery by platform.
       //
-      //   • If our native FirebaseMessagingService (CallMessagingService) is
-      //     installed and the app process can run, it intercepts the data
-      //     payload first, cancels the system notification, and triggers the
-      //     full-screen IncomingCallActivity (CallKit-style lockscreen UI).
-      //   • If the service is NOT yet shipped, the app is force-killed by
-      //     the OEM, or Android Doze suppresses the data wake-up, the
-      //     `notification` block ensures the device still rings with a
-      //     heads-up notification on the high-importance "calls" channel —
-      //     so the callee actually sees the call instead of nothing. This
-      //     was previously failing silently (FCM 200 OK, device shows
-      //     nothing) when the data-only payload had no consumer.
+      //   • Android MUST be data-only (no top-level `notification` block).
+      //     If FCM includes a `notification` payload on Android, the OS
+      //     renders the system tray notification itself and never invokes
+      //     our FirebaseMessagingService.onMessageReceived, so the native
+      //     full-screen IncomingCallActivity (lockscreen CallKit-style UI)
+      //     never launches. Data-only + priority=HIGH wakes the app and
+      //     hands the payload to CallMessagingService, which posts the
+      //     full-screen intent itself.
+      //   • iOS non-VoIP tokens keep the `notification`+`apns` alert so the
+      //     device still rings via the INCOMING_CALL category. (True VoIP
+      //     pushes are routed through the direct-APNs branch above and
+      //     never reach this code.)
       //
       // For non-calls: keep notification+data so the system tray handles display.
+      const isAndroid = row.platform === "android";
+      const callData = {
+        ...stringifiedData,
+        type: "incoming_call",
+        title: String(title),
+        body: String(body || ""),
+        caller_id: stringifiedData.caller_id || "",
+        caller_name: stringifiedData.caller_name || String(title),
+        caller_avatar: stringifiedData.caller_avatar || "",
+      };
+
       const message: Record<string, unknown> = is_call
-        ? {
-            token: row.token,
-            notification: {
-              title: String(title),
-              body: String(body || "Incoming call"),
-            },
-            data: {
-              ...stringifiedData,
-              type: "incoming_call",
-              title: String(title),
-              body: String(body || ""),
-              caller_id: stringifiedData.caller_id || "",
-              caller_name: stringifiedData.caller_name || String(title),
-              caller_avatar: stringifiedData.caller_avatar || "",
-            },
-            android: {
-              priority: "HIGH",
-              ttl: "45s",
+        ? isAndroid
+          ? {
+              // Android: DATA-ONLY high-priority push. No `notification`
+              // block at any level, so onMessageReceived always fires.
+              token: row.token,
+              data: callData,
+              android: {
+                priority: "HIGH",
+                ttl: "45s",
+              },
+            }
+          : {
+              // iOS (non-VoIP fallback): alert-style push with INCOMING_CALL
+              // category so the lockscreen offers Accept/Decline buttons.
+              token: row.token,
               notification: {
-                // Must match the channel the native app creates with
-                // IMPORTANCE_HIGH + ringtone sound + bypass-DND. Falls back
-                // to "default" if the dedicated channel doesn't exist yet.
-                channel_id: "calls",
-                sound: "ringtone",
-                click_action: "FCM_PLUGIN_ACTIVITY",
-                // Tells Android this is a call-style notification — the OS
-                // will keep it visible and ringing, and on Android 10+ may
-                // surface it as a heads-up over the lockscreen even without
-                // a full-screen intent permission.
-                notification_priority: "PRIORITY_MAX",
-                visibility: "PUBLIC",
-                default_sound: false,
-                default_vibrate_timings: true,
+                title: String(title),
+                body: String(body || "Incoming call"),
               },
-            },
-            apns: {
-              headers: {
-                "apns-priority": "10",
-                "apns-push-type": "alert",
-                // Required by APNs HTTP/2; FCM normally injects this from
-                // the bundle id, but we set it explicitly for safety.
-                "apns-topic": apnsBundleId,
-              },
-              payload: {
-                aps: {
-                  alert: {
-                    title: String(title),
-                    body: String(body || "Incoming call"),
+              data: callData,
+              apns: {
+                headers: {
+                  "apns-priority": "10",
+                  "apns-push-type": "alert",
+                  "apns-topic": apnsBundleId,
+                },
+                payload: {
+                  aps: {
+                    alert: {
+                      title: String(title),
+                      body: String(body || "Incoming call"),
+                    },
+                    sound: "ringtone.caf",
+                    category: "INCOMING_CALL",
+                    "mutable-content": 1,
+                    "interruption-level": "time-sensitive",
                   },
-                  sound: "ringtone.caf",
-                  // Matches the UNNotificationCategory we register on the
-                  // client (LocalNotifications.registerActionTypes), so iOS
-                  // shows Accept / Mute / Decline buttons on the lockscreen
-                  // and notification center — same flow as Android.
-                  category: "INCOMING_CALL",
-                  "mutable-content": 1,
-                  "interruption-level": "time-sensitive",
                 },
               },
-            },
-          }
+            }
         : {
             token: row.token,
             notification: { title, body: body || "" },
