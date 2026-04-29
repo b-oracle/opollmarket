@@ -886,8 +886,20 @@ const VoiceCallOverlay = ({
           if (newStatus === "declined" || newStatus === "missed" || newStatus === "ended") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             setStatus("ended");
+            // Map the server status to a UI-friendly reason.
+            setEndReason(
+              newStatus === "declined"
+                ? "declined"
+                : newStatus === "missed"
+                ? "missed"
+                : "remote_end",
+            );
+            const durationSec = startTimeRef.current
+              ? Math.round((Date.now() - startTimeRef.current) / 1000)
+              : 0;
+            setFinalDuration(durationSec);
             roomRef.current?.disconnect();
-            setTimeout(onClose, 1500);
+            setTimeout(onClose, 2500);
           } else if (newStatus === "active") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
