@@ -1430,12 +1430,18 @@ const VoiceCallOverlay = ({
               </div>
             )}
 
+            {/* Floating status badge — top-center over the video feed */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
+              <CallStatusBadge
+                variant={badgeSpec.variant}
+                label={badgeSpec.label}
+                sublabel={badgeSpec.sublabel}
+              />
+            </div>
+
             {/* Name + duration overlay — positioned above controls */}
             <div className="absolute bottom-0 left-0 right-0 text-center z-10 pb-2">
               <h2 className="text-lg font-semibold text-foreground drop-shadow-md">{otherUserName}</h2>
-              <p className="text-sm text-muted-foreground">
-                {reconnecting ? "Reconnecting..." : waitingReconnect ? `Waiting for ${otherUserName}...` : formatTime(duration)}
-              </p>
             </div>
           </div>
         ) : (
