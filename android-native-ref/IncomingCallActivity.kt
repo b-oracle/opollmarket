@@ -74,11 +74,13 @@ class IncomingCallActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_decline).setOnClickListener {
             stopRinging()
             cancelCallNotification()
-            // Optional: fire a broadcast that calls your backend to mark rejected.
+            // Fire the broadcast so CallActionReceiver POSTs the decline to
+            // dm-call-token even when the webview hasn't started yet. Pass
+            // conversation_id for parity with the notification-button path.
             sendBroadcast(Intent(this, CallActionReceiver::class.java).apply {
                 action = CallActionReceiver.ACTION_DECLINE
                 putExtra("call_id", callId)
-            })
+                putExtra("conversation_id", conversationId)
             finish()
         }
 
