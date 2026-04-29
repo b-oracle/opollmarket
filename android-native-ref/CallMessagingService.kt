@@ -1,5 +1,5 @@
-// android/app/src/main/java/<your.package>/CallMessagingService.kt
-package app.lovable.opollmarket
+// android/app/src/main/java/com/opollmarket/app/CallMessagingService.kt
+package com.opollmarket.app
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
