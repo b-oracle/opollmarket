@@ -76,6 +76,21 @@ const VoiceCallOverlay = ({
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
+  // Surfaces *why* the call ended so the post-call screen can show
+  // "No answer" / "Declined" / "Call ended" / "Connection lost" instead of
+  // disappearing instantly.
+  type EndReason =
+    | "user_end"
+    | "user_cancel"
+    | "no_answer"
+    | "declined"
+    | "missed"
+    | "remote_end"
+    | "failed";
+  const [endReason, setEndReason] = useState<EndReason | null>(null);
+  // Final duration captured at end-time so the post-call screen keeps a
+  // stable number after the timer is cleared.
+  const [finalDuration, setFinalDuration] = useState<number | null>(null);
   const [muted, setMuted] = useState(persistedPrefs?.muted ?? false);
   const [speakerOn, setSpeakerOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(persistedPrefs?.cameraOn ?? startWithVideo);
