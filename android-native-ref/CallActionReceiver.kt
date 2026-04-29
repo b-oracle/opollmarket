@@ -17,18 +17,16 @@ import kotlin.concurrent.thread
  * Broadcast receiver for the Accept/Decline actions on the incoming-call
  * notification.
  *
- * Accept: opens MainActivity with the opoll://call/accept deep link so the
- * webview auto-joins the call. The JS layer (useCallDeepLink) handles the
- * server-side accept + UI navigation.
+ * BOTH actions launch MainActivity with an opoll:// deep link so the webview
+ * is guaranteed to come to the foreground. The JS layer (useCallDeepLink)
+ * then runs the appropriate side-effect:
+ *   • opoll://call/accept  → navigate to /messages/<conv>?call_id=…&auto_accept=1
+ *   • opoll://call/decline → POST dm-call-token { action: "decline" }
  *
- * Decline: hits the dm-call-token edge function directly from the receiver
- * so the call row flips to "declined" even when the app is killed. This
- * triggers the realtime listener on IncomingCallBanner.tsx to dismiss the
- * banner + stop any in-app ringing audio across all of the user's devices.
- *
- * The Supabase access token is cached into a tiny SharedPreferences entry by
- * the JS side (src/lib/nativeAuthCache.ts) on every auth state change, so
- * this background path can authenticate without the webview being alive.
+ * Decline ALSO fires the edge-function POST directly from the receiver as a
+ * background fallback so the call row flips to "declined" even if the
+ * webview is killed before it can run. The realtime listener on the caller's
+ * IncomingCallBanner picks that up and dismisses the banner everywhere.
  */
 class CallActionReceiver : BroadcastReceiver() {
 
@@ -49,43 +47,73 @@ class CallActionReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        cachedAppContext = context.applicationContext
+        val appCtx = context.applicationContext
         val callId = intent.getStringExtra("call_id").orEmpty()
         val conversationId = intent.getStringExtra("conversation_id").orEmpty()
+        Log.i(TAG, "onReceive action=${intent.action} callId=$callId conv=$conversationId")
 
         // Always cancel the visible notification first so feedback is instant.
-        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
-            .cancel(CALL_NOTIFICATION_ID)
+        runCatching {
+            (appCtx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .cancel(CALL_NOTIFICATION_ID)
+        }.onFailure { Log.w(TAG, "cancel notification failed", it) }
 
         when (intent.action) {
-            ACTION_ACCEPT -> {
-                val deepLink = Uri.parse(
-                    "opoll://call/accept?call_id=$callId&conversation_id=$conversationId"
-                )
-                val launch = Intent(context, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP
-                    action = Intent.ACTION_VIEW
-                    data = deepLink
-                    putExtra("auto_accept", true)
-                }
-                context.startActivity(launch)
-            }
-
+            ACTION_ACCEPT -> launchAppWithDeepLink(appCtx, "accept", callId, conversationId)
             ACTION_DECLINE -> {
-                if (callId.isEmpty()) return
-                // Fire the edge call on a worker thread — receivers have a
-                // ~10s budget; HTTP must not run on the main thread.
-                thread(start = true, name = "decline-call-$callId") {
-                    postDeclineToEdgeFunction(callId)
+                // 1) Best-effort background HTTP decline (works even if the
+                //    webview never starts).
+                if (callId.isNotEmpty()) {
+                    thread(start = true, name = "decline-call-$callId") {
+                        postDeclineToEdgeFunction(appCtx, callId)
+                    }
                 }
+                // 2) Also launch the app so the user sees an in-app
+                //    confirmation toast and the conversation if they want.
+                launchAppWithDeepLink(appCtx, "decline", callId, conversationId)
+            }
+            else -> Log.w(TAG, "unknown action: ${intent.action}")
+        }
+    }
+
+    private fun launchAppWithDeepLink(
+        ctx: Context,
+        action: String,
+        callId: String,
+        conversationId: String,
+    ) {
+        try {
+            val deepLink = Uri.parse(
+                "opoll://call/$action?call_id=$callId&conversation_id=$conversationId"
+            )
+            val launch = Intent(ctx, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                this.action = Intent.ACTION_VIEW
+                data = deepLink
+                putExtra("auto_accept", action == "accept")
+                putExtra("call_id", callId)
+                putExtra("conversation_id", conversationId)
+            }
+            ctx.startActivity(launch)
+            Log.i(TAG, "launched MainActivity with $deepLink")
+        } catch (t: Throwable) {
+            Log.e(TAG, "failed to launch MainActivity for $action", t)
+            // Fallback: launch the app's default intent (no deep link).
+            try {
+                val fallback = ctx.packageManager.getLaunchIntentForPackage(ctx.packageName)?.apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                if (fallback != null) ctx.startActivity(fallback)
+            } catch (t2: Throwable) {
+                Log.e(TAG, "fallback launch also failed", t2)
             }
         }
     }
 
-    private fun postDeclineToEdgeFunction(callId: String) {
-        val accessToken = SupabaseTokenCache.read(applicationContextOrNull())
+    private fun postDeclineToEdgeFunction(ctx: Context, callId: String) {
+        val accessToken = SupabaseTokenCache.read(ctx)
         if (accessToken.isNullOrBlank()) {
             Log.w(TAG, "no cached access token — skipping HTTP decline fallback")
             return
@@ -115,12 +143,6 @@ class CallActionReceiver : BroadcastReceiver() {
             Log.w(TAG, "decline HTTP failed", e)
         }
     }
-
-    // BroadcastReceiver doesn't expose applicationContext directly; cache it
-    // on the instance during onReceive. Kept here so postDeclineToEdgeFunction
-    // is testable in isolation.
-    private var cachedAppContext: Context? = null
-    private fun applicationContextOrNull(): Context? = cachedAppContext
 }
 
 /**
