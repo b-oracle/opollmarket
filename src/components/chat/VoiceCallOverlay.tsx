@@ -176,6 +176,7 @@ const VoiceCallOverlay = ({
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
+    setEndReason("user_end");
     if (timerRef.current) clearInterval(timerRef.current);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
@@ -188,6 +189,7 @@ const VoiceCallOverlay = ({
     const durationSec = startTimeRef.current
       ? Math.round((Date.now() - startTimeRef.current) / 1000)
       : 0;
+    setFinalDuration(durationSec);
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
@@ -198,8 +200,8 @@ const VoiceCallOverlay = ({
       body: { action: "end", call_id: callId },
     }).catch(() => {});
 
-    // Close after brief delay, with hard failsafe
-    setTimeout(onClose, 800);
+    // Hold the post-call screen long enough for the user to read why it ended
+    setTimeout(onClose, 2500);
   }, [callId, onClose]);
 
   const handleCancel = useCallback(() => {
@@ -211,6 +213,8 @@ const VoiceCallOverlay = ({
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
+    setEndReason("user_cancel");
+    setFinalDuration(0);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
@@ -226,7 +230,7 @@ const VoiceCallOverlay = ({
       body: { action: "cancel", call_id: callId },
     }).catch(() => {});
 
-    setTimeout(onClose, 500);
+    setTimeout(onClose, 2000);
   }, [callId, onClose]);
 
   // Auto-fired when the callee never answers within the ringing timeout.
@@ -241,6 +245,8 @@ const VoiceCallOverlay = ({
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
+    setEndReason("no_answer");
+    setFinalDuration(0);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
@@ -256,7 +262,7 @@ const VoiceCallOverlay = ({
       body: { action: "cancel", call_id: callId, reason: "no_answer" },
     }).catch(() => {});
 
-    setTimeout(onClose, 500);
+    setTimeout(onClose, 2500);
   }, [callId, onClose]);
 
   // Track whether the user intentionally muted, so we can auto-restore on app switch
