@@ -18,6 +18,7 @@ import { logCallEvent } from "@/lib/callEvents";
 import { ensureMicrophonePermission } from "@/lib/mediaPermissions";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
+import IncomingCallScreen from "./IncomingCallScreen";
 
 interface IncomingCall {
   id: string;
@@ -293,39 +294,16 @@ const IncomingCallBanner = () => {
 
   return (
     <>
-      {/* Incoming call banner */}
+      {/* Full-screen incoming call screen — in-app equivalent of the
+          Android lockscreen IncomingCallActivity. */}
       {incomingCall && !activeCall && (
-        <div className="fixed top-0 left-0 right-0 z-[9998] bg-primary text-primary-foreground px-4 py-3 flex items-center gap-3 animate-in slide-in-from-top" style={{ paddingTop: "max(0.75rem, var(--safe-top))" }}>
-          <div
-            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-            onClick={() => navigate(`/messages/${incomingCall.conversation_id}`)}
-          >
-            <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center overflow-hidden shrink-0">
-              {incomingCall.callerAvatar ? (
-                <img src={incomingCall.callerAvatar} className="w-full h-full object-cover" alt="" />
-              ) : (
-                <span className="text-sm font-bold">{incomingCall.callerName.charAt(0).toUpperCase()}</span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{incomingCall.callerName}</p>
-              <p className="text-xs opacity-80">Incoming voice call · Tap to open</p>
-            </div>
-          </div>
-          <button
-            onClick={handleDecline}
-            className="w-10 h-10 rounded-full bg-destructive flex items-center justify-center shrink-0 active:scale-95 transition-transform"
-          >
-            <PhoneOff className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleAnswer}
-            disabled={answering}
-            className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center shrink-0 active:scale-95 transition-transform"
-          >
-            <Phone className="w-5 h-5" />
-          </button>
-        </div>
+        <IncomingCallScreen
+          callerName={incomingCall.callerName}
+          callerAvatar={incomingCall.callerAvatar}
+          onAccept={handleAnswer}
+          onDecline={handleDecline}
+          answering={answering}
+        />
       )}
 
       {/* Active call overlay */}

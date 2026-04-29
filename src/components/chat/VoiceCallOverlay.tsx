@@ -12,6 +12,7 @@ import { recordCallLifecycle } from "@/lib/callLifecycleLog";
 import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
 import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
 import CallDebugOverlay from "./CallDebugOverlay";
+import CallStatusBadge, { type CallStatusVariant } from "./CallStatusBadge";
 
 interface VoiceCallOverlayProps {
   callId: string;
@@ -76,6 +77,21 @@ const VoiceCallOverlay = ({
   const [status, setStatus] = useState<CallStatus>(
     isOutgoing ? "ringing" : "connecting"
   );
+  // Surfaces *why* the call ended so the post-call screen can show
+  // "No answer" / "Declined" / "Call ended" / "Connection lost" instead of
+  // disappearing instantly.
+  type EndReason =
+    | "user_end"
+    | "user_cancel"
+    | "no_answer"
+    | "declined"
+    | "missed"
+    | "remote_end"
+    | "failed";
+  const [endReason, setEndReason] = useState<EndReason | null>(null);
+  // Final duration captured at end-time so the post-call screen keeps a
+  // stable number after the timer is cleared.
+  const [finalDuration, setFinalDuration] = useState<number | null>(null);
   const [muted, setMuted] = useState(persistedPrefs?.muted ?? false);
   const [speakerOn, setSpeakerOn] = useState(false);
   const [cameraOn, setCameraOn] = useState(persistedPrefs?.cameraOn ?? startWithVideo);
@@ -161,6 +177,7 @@ const VoiceCallOverlay = ({
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
+    setEndReason("user_end");
     if (timerRef.current) clearInterval(timerRef.current);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
@@ -173,6 +190,7 @@ const VoiceCallOverlay = ({
     const durationSec = startTimeRef.current
       ? Math.round((Date.now() - startTimeRef.current) / 1000)
       : 0;
+    setFinalDuration(durationSec);
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
@@ -183,8 +201,8 @@ const VoiceCallOverlay = ({
       body: { action: "end", call_id: callId },
     }).catch(() => {});
 
-    // Close after brief delay, with hard failsafe
-    setTimeout(onClose, 800);
+    // Hold the post-call screen long enough for the user to read why it ended
+    setTimeout(onClose, 2500);
   }, [callId, onClose]);
 
   const handleCancel = useCallback(() => {
@@ -196,6 +214,8 @@ const VoiceCallOverlay = ({
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
+    setEndReason("user_cancel");
+    setFinalDuration(0);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
@@ -211,7 +231,7 @@ const VoiceCallOverlay = ({
       body: { action: "cancel", call_id: callId },
     }).catch(() => {});
 
-    setTimeout(onClose, 500);
+    setTimeout(onClose, 2000);
   }, [callId, onClose]);
 
   // Auto-fired when the callee never answers within the ringing timeout.
@@ -226,6 +246,8 @@ const VoiceCallOverlay = ({
     endingRef.current = true;
     intentionalDisconnectRef.current = true;
     setStatus("ended");
+    setEndReason("no_answer");
+    setFinalDuration(0);
     if (inactivityTimeoutRef.current) { clearTimeout(inactivityTimeoutRef.current); inactivityTimeoutRef.current = null; }
     if (gracePeriodRef.current) { clearTimeout(gracePeriodRef.current); gracePeriodRef.current = null; }
     if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
@@ -241,7 +263,7 @@ const VoiceCallOverlay = ({
       body: { action: "cancel", call_id: callId, reason: "no_answer" },
     }).catch(() => {});
 
-    setTimeout(onClose, 500);
+    setTimeout(onClose, 2500);
   }, [callId, onClose]);
 
   // Track whether the user intentionally muted, so we can auto-restore on app switch
@@ -865,8 +887,20 @@ const VoiceCallOverlay = ({
           if (newStatus === "declined" || newStatus === "missed" || newStatus === "ended") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             setStatus("ended");
+            // Map the server status to a UI-friendly reason.
+            setEndReason(
+              newStatus === "declined"
+                ? "declined"
+                : newStatus === "missed"
+                ? "missed"
+                : "remote_end",
+            );
+            const durationSec = startTimeRef.current
+              ? Math.round((Date.now() - startTimeRef.current) / 1000)
+              : 0;
+            setFinalDuration(durationSec);
             roomRef.current?.disconnect();
-            setTimeout(onClose, 1500);
+            setTimeout(onClose, 2500);
           } else if (newStatus === "active") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
             if (autoTimeoutRef.current) { clearTimeout(autoTimeoutRef.current); autoTimeoutRef.current = null; }
@@ -1140,6 +1174,47 @@ const VoiceCallOverlay = ({
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // Derive a single visual+text status from the underlying call state machine.
+  // Used by <CallStatusBadge> in both the audio-only and video views.
+  const badgeSpec: { variant: CallStatusVariant; label: string; sublabel?: string } = (() => {
+    if (status === "ended") {
+      const labelByReason: Record<NonNullable<typeof endReason>, string> = {
+        user_end: "Call ended",
+        user_cancel: "Call cancelled",
+        no_answer: "No answer",
+        declined: "Call declined",
+        missed: "Missed call",
+        remote_end: "Call ended",
+        failed: "Call failed",
+      };
+      const label = endReason ? labelByReason[endReason] : "Call ended";
+      const sublabel =
+        finalDuration && finalDuration > 0 ? formatTime(finalDuration) : undefined;
+      return { variant: "ended", label, sublabel };
+    }
+    if (status === "active" && (reconnecting || waitingReconnect)) {
+      return {
+        variant: "reconnecting",
+        label: "Reconnecting…",
+        sublabel: waitingReconnect ? `Waiting for ${otherUserName}` : undefined,
+      };
+    }
+    if (status === "active") {
+      return {
+        variant: "active",
+        label: "Connected",
+        sublabel: formatTime(duration),
+      };
+    }
+    if (status === "ringing") {
+      return {
+        variant: "ringing",
+        label: isOutgoing ? "Ringing…" : "Incoming call",
+      };
+    }
+    return { variant: "connecting", label: "Connecting…" };
+  })();
+
   const hasAnyVideo = cameraOn || hasRemoteVideo || hasRemoteScreenShare || screenShareOn;
 
   // ── Mini call bar ──
@@ -1355,17 +1430,34 @@ const VoiceCallOverlay = ({
               </div>
             )}
 
+            {/* Floating status badge — top-center over the video feed */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 animate-fade-in">
+              <CallStatusBadge
+                variant={badgeSpec.variant}
+                label={badgeSpec.label}
+                sublabel={badgeSpec.sublabel}
+              />
+            </div>
+
             {/* Name + duration overlay — positioned above controls */}
             <div className="absolute bottom-0 left-0 right-0 text-center z-10 pb-2">
               <h2 className="text-lg font-semibold text-foreground drop-shadow-md">{otherUserName}</h2>
-              <p className="text-sm text-muted-foreground">
-                {reconnecting ? "Reconnecting..." : waitingReconnect ? `Waiting for ${otherUserName}...` : formatTime(duration)}
-              </p>
             </div>
           </div>
         ) : (
           /* Audio-only view — avatars with glow */
           <>
+            {/* Prominent status pill — sits above the avatar so the call
+                state (Ringing / Connected / Reconnecting / Ended) is the
+                first thing the user notices. */}
+            <div className="mb-5 animate-fade-in">
+              <CallStatusBadge
+                variant={badgeSpec.variant}
+                label={badgeSpec.label}
+                sublabel={badgeSpec.sublabel}
+              />
+            </div>
+
             <div className="flex items-center gap-6 mb-4">
               <div
                 className="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
@@ -1385,15 +1477,18 @@ const VoiceCallOverlay = ({
 
             <h2 className="text-xl font-semibold text-foreground mb-1">{otherUserName}</h2>
 
-            <p className="text-sm text-muted-foreground mb-8">
-              {status === "ringing" && "Calling..."}
-              {status === "connecting" && "Connecting..."}
-              {status === "active" && reconnecting && "Reconnecting..."}
-              {status === "active" && !reconnecting && showRejoin && "Disconnected — tap Rejoin"}
-              {status === "active" && !reconnecting && !showRejoin && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
-              {status === "active" && !reconnecting && !showRejoin && !waitingReconnect && formatTime(duration)}
-              {status === "ended" && "Call ended"}
-            </p>
+            {/* Secondary status line for the few cases the badge doesn't
+                already convey (rejoin prompt). The badge handles every
+                other state. */}
+            {status === "active" && !reconnecting && showRejoin ? (
+              <p className="text-sm text-muted-foreground mb-8">
+                Disconnected — tap Rejoin
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-8" aria-hidden>
+                &nbsp;
+              </p>
+            )}
           </>
         )}
       </div>

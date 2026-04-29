@@ -95,6 +95,10 @@ export default {
           "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-4px)" },
           "20%, 40%, 60%, 80%": { transform: "translateX(4px)" },
         },
+        "ping-slow": {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "75%, 100%": { transform: "scale(2)", opacity: "0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -102,6 +106,7 @@ export default {
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
         "banner-shimmer": "banner-shimmer 3s ease-in-out infinite",
         shake: "shake 0.4s ease-in-out",
+        "ping-slow": "ping-slow 1.6s cubic-bezier(0, 0, 0.2, 1) infinite",
       },
     },
   },
