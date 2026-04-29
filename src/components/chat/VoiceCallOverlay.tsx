@@ -1174,6 +1174,47 @@ const VoiceCallOverlay = ({
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
+  // Derive a single visual+text status from the underlying call state machine.
+  // Used by <CallStatusBadge> in both the audio-only and video views.
+  const badgeSpec: { variant: CallStatusVariant; label: string; sublabel?: string } = (() => {
+    if (status === "ended") {
+      const labelByReason: Record<NonNullable<typeof endReason>, string> = {
+        user_end: "Call ended",
+        user_cancel: "Call cancelled",
+        no_answer: "No answer",
+        declined: "Call declined",
+        missed: "Missed call",
+        remote_end: "Call ended",
+        failed: "Call failed",
+      };
+      const label = endReason ? labelByReason[endReason] : "Call ended";
+      const sublabel =
+        finalDuration && finalDuration > 0 ? formatTime(finalDuration) : undefined;
+      return { variant: "ended", label, sublabel };
+    }
+    if (status === "active" && (reconnecting || waitingReconnect)) {
+      return {
+        variant: "reconnecting",
+        label: "Reconnecting…",
+        sublabel: waitingReconnect ? `Waiting for ${otherUserName}` : undefined,
+      };
+    }
+    if (status === "active") {
+      return {
+        variant: "active",
+        label: "Connected",
+        sublabel: formatTime(duration),
+      };
+    }
+    if (status === "ringing") {
+      return {
+        variant: "ringing",
+        label: isOutgoing ? "Ringing…" : "Incoming call",
+      };
+    }
+    return { variant: "connecting", label: "Connecting…" };
+  })();
+
   const hasAnyVideo = cameraOn || hasRemoteVideo || hasRemoteScreenShare || screenShareOn;
 
   // ── Mini call bar ──
