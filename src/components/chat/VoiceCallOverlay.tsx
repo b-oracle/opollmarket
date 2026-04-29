@@ -1441,6 +1441,17 @@ const VoiceCallOverlay = ({
         ) : (
           /* Audio-only view — avatars with glow */
           <>
+            {/* Prominent status pill — sits above the avatar so the call
+                state (Ringing / Connected / Reconnecting / Ended) is the
+                first thing the user notices. */}
+            <div className="mb-5 animate-fade-in">
+              <CallStatusBadge
+                variant={badgeSpec.variant}
+                label={badgeSpec.label}
+                sublabel={badgeSpec.sublabel}
+              />
+            </div>
+
             <div className="flex items-center gap-6 mb-4">
               <div
                 className="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
@@ -1460,15 +1471,18 @@ const VoiceCallOverlay = ({
 
             <h2 className="text-xl font-semibold text-foreground mb-1">{otherUserName}</h2>
 
-            <p className="text-sm text-muted-foreground mb-8">
-              {status === "ringing" && "Calling..."}
-              {status === "connecting" && "Connecting..."}
-              {status === "active" && reconnecting && "Reconnecting..."}
-              {status === "active" && !reconnecting && showRejoin && "Disconnected — tap Rejoin"}
-              {status === "active" && !reconnecting && !showRejoin && waitingReconnect && `Waiting for ${otherUserName} to reconnect...`}
-              {status === "active" && !reconnecting && !showRejoin && !waitingReconnect && formatTime(duration)}
-              {status === "ended" && "Call ended"}
-            </p>
+            {/* Secondary status line for the few cases the badge doesn't
+                already convey (rejoin prompt). The badge handles every
+                other state. */}
+            {status === "active" && !reconnecting && showRejoin ? (
+              <p className="text-sm text-muted-foreground mb-8">
+                Disconnected — tap Rejoin
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mb-8" aria-hidden>
+                &nbsp;
+              </p>
+            )}
           </>
         )}
       </div>
