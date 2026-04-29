@@ -28,6 +28,7 @@ class CallMessagingService : FirebaseMessagingService() {
         const val CALL_CHANNEL_ID = "incoming_calls"
         const val DEFAULT_CHANNEL_ID = "default"
         private const val CALL_NOTIFICATION_ID = 1001
+        private const val TAG = "CallMessagingService"
     }
 
     override fun onNewToken(token: String) {
@@ -39,6 +40,7 @@ class CallMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         val data = message.data
+        android.util.Log.i(TAG, "onMessageReceived data=$data")
         if (data["type"] == "incoming_call") {
             showIncomingCall(data)
         } else {
@@ -55,6 +57,10 @@ class CallMessagingService : FirebaseMessagingService() {
         val callerAvatar = data["caller_avatar"].orEmpty()
         val conversationId = data["conversation_id"].orEmpty()
 
+        // Full-screen intent points at IncomingCallActivity (lockscreen UI).
+        // On Android 14+ devices that didn't grant USE_FULL_SCREEN_INTENT,
+        // the system gracefully falls back to a heads-up notification with
+        // the Accept/Decline action buttons below — those still work.
         val fullScreenIntent = Intent(this, IncomingCallActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra("call_id", callId)
@@ -67,6 +73,18 @@ class CallMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Tapping the body of the heads-up notification (NOT a button) should
+        // also open the in-app accept flow — same target as the Accept button.
+        val tapAcceptIntent = Intent(this, CallActionReceiver::class.java).apply {
+            action = CallActionReceiver.ACTION_ACCEPT
+            putExtra("call_id", callId)
+            putExtra("conversation_id", conversationId)
+        }
+        val tapAcceptPending = PendingIntent.getBroadcast(
+            this, (callId + "tap").hashCode(), tapAcceptIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val acceptIntent = Intent(this, CallActionReceiver::class.java).apply {
             action = CallActionReceiver.ACTION_ACCEPT
             putExtra("call_id", callId)
@@ -75,6 +93,7 @@ class CallMessagingService : FirebaseMessagingService() {
         val declineIntent = Intent(this, CallActionReceiver::class.java).apply {
             action = CallActionReceiver.ACTION_DECLINE
             putExtra("call_id", callId)
+            putExtra("conversation_id", conversationId)
         }
         val acceptPending = PendingIntent.getBroadcast(
             this, (callId + "a").hashCode(), acceptIntent,
@@ -92,9 +111,11 @@ class CallMessagingService : FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setOngoing(true)
-            .setAutoCancel(false)
+            // Auto-cancel so tapping the notification body dismisses it
+            // instead of leaving a stuck "ongoing" entry in the shade.
+            .setAutoCancel(true)
             .setFullScreenIntent(fullScreenPending, true)
-            .setContentIntent(fullScreenPending)
+            .setContentIntent(tapAcceptPending)
             .addAction(R.mipmap.ic_launcher, "Decline", declinePending)
             .addAction(R.mipmap.ic_launcher, "Accept", acceptPending)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -102,6 +123,7 @@ class CallMessagingService : FirebaseMessagingService() {
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(CALL_NOTIFICATION_ID, notification)
+        android.util.Log.i(TAG, "posted incoming-call notification id=$CALL_NOTIFICATION_ID call=$callId")
     }
 
     private fun showStandardNotification(data: Map<String, String>, message: RemoteMessage) {
