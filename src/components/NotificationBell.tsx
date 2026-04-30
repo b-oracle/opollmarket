@@ -191,7 +191,14 @@ const NotificationBell = () => {
   return (
     <div className="relative">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          const next = !open;
+          setOpen(next);
+          if (next && unreadCount > 0) {
+            // Auto-mark all as read when opening the bell
+            markAllRead();
+          }
+        }}
         className="relative w-9 h-9 rounded-full glass flex items-center justify-center transition-colors hover:bg-accent/50"
       >
         <Bell className="w-4 h-4" />
