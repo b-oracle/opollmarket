@@ -146,6 +146,30 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // ─── Outermost idempotency guard: ledger-based dedupe by (provider, event_key) ───
+    // event_key combines tx_ref/id + event + status. Re-deliveries short-circuit
+    // before any credit logic runs.
+    {
+      const refForKey =
+        (data as Record<string, unknown>).tx_ref ??
+        (data as Record<string, unknown>).reference ??
+        (data as Record<string, unknown>).id ??
+        "unknown";
+      const eventKey = `${refForKey}:${event}:${(data as Record<string, unknown>).status ?? ""}`;
+      const { data: ledgerOk } = await adminClient.rpc("record_webhook_event", {
+        _provider: "flutterwave",
+        _event_key: eventKey,
+        _payload: parsed.value.raw as Record<string, unknown>,
+      });
+      if (ledgerOk === false) {
+        console.log(`Duplicate Flutterwave webhook event ignored: ${eventKey}`);
+        return new Response(JSON.stringify({ status: "duplicate_ignored" }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // ─── Handle deposit (charge) completion ───
     if (event === "charge.completed" && data.status === "successful") {
       const chargeCheck = validateFlutterwaveCharge(data);
