@@ -124,6 +124,28 @@ const AdminDeposits = () => {
     },
   });
 
+  // Super-admin webhook replay — idempotent: if already confirmed, returns no-op.
+  const replayMutation = useMutation({
+    mutationFn: async ({ txId }: { txId: string }) => {
+      const { data, error } = await supabase.functions.invoke("replay-deposit-webhook", {
+        body: { transaction_id: txId },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
+      return data as { success: boolean; already_confirmed?: boolean; credited?: number };
+    },
+    onSuccess: (data) => {
+      if (data.already_confirmed) {
+        toast.info("Already credited — no action taken");
+      } else {
+        toast.success(`Replayed: credited $${Number(data.credited ?? 0).toFixed(2)}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to replay webhook");
+    },
+  });
+
   // ── Admin Direct Credit ──
   const [showCreditForm, setShowCreditForm] = useState(false);
   const [creditUserId, setCreditUserId] = useState("");
