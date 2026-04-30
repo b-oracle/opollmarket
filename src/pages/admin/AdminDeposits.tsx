@@ -21,6 +21,7 @@ import {
   Plus,
   X,
   Sparkles,
+  Repeat,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
