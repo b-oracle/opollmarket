@@ -154,6 +154,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     if (user) {
       localStorage.setItem(`community_last_read_${user.id}_${slug}`, new Date().toISOString());
       queryClient.invalidateQueries({ queryKey: ["unread-community"] });
+      queryClient.invalidateQueries({ queryKey: ["community-unread-per-slug"] });
     }
   }, [slug, user, messages.length, queryClient]);
 
