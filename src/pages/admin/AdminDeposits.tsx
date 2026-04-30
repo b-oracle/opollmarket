@@ -445,10 +445,33 @@ const AdminDeposits = () => {
                               )}
                             </div>
                           )}
-                          {d.status === "pending" && (
+                          {d.status === "pending" && !isSuperAdmin && (
                             <Badge variant="outline" className="text-xs text-muted-foreground">
                               No action needed
                             </Badge>
+                          )}
+                          {isSuperAdmin && d.status !== "confirmed" && (
+                            <div className="flex justify-end mt-1.5">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-[11px] gap-1 h-7 text-muted-foreground hover:text-foreground"
+                                disabled={replayMutation.isPending}
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `Replay webhook for ${d.display_name}?\n\nAmount: $${Number(d.amount).toFixed(2)}\nStatus: ${d.status}\nPayment ID: ${d.nowpayments_payment_id || "—"}\n\nIf already credited, this is a no-op (no double credit).`,
+                                    )
+                                  ) {
+                                    replayMutation.mutate({ txId: d.id });
+                                  }
+                                }}
+                                title="Super-admin: replay webhook (idempotent)"
+                              >
+                                <Repeat className="w-3.5 h-3.5" />
+                                Replay
+                              </Button>
+                            </div>
                           )}
                         </td>
                       )}
