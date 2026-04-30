@@ -21,6 +21,7 @@ import {
   Plus,
   X,
   Sparkles,
+  Repeat,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -120,6 +121,28 @@ const AdminDeposits = () => {
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to confirm deposit");
+    },
+  });
+
+  // Super-admin webhook replay — idempotent: if already confirmed, returns no-op.
+  const replayMutation = useMutation({
+    mutationFn: async ({ txId }: { txId: string }) => {
+      const { data, error } = await supabase.functions.invoke("replay-deposit-webhook", {
+        body: { transaction_id: txId },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
+      return data as { success: boolean; already_confirmed?: boolean; credited?: number };
+    },
+    onSuccess: (data) => {
+      if (data.already_confirmed) {
+        toast.info("Already credited — no action taken");
+      } else {
+        toast.success(`Replayed: credited $${Number(data.credited ?? 0).toFixed(2)}`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to replay webhook");
     },
   });
 
@@ -422,10 +445,33 @@ const AdminDeposits = () => {
                               )}
                             </div>
                           )}
-                          {d.status === "pending" && (
+                          {d.status === "pending" && !isSuperAdmin && (
                             <Badge variant="outline" className="text-xs text-muted-foreground">
                               No action needed
                             </Badge>
+                          )}
+                          {isSuperAdmin && d.status !== "confirmed" && (
+                            <div className="flex justify-end mt-1.5">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-[11px] gap-1 h-7 text-muted-foreground hover:text-foreground"
+                                disabled={replayMutation.isPending}
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `Replay webhook for ${d.display_name}?\n\nAmount: $${Number(d.amount).toFixed(2)}\nStatus: ${d.status}\nPayment ID: ${d.nowpayments_payment_id || "—"}\n\nIf already credited, this is a no-op (no double credit).`,
+                                    )
+                                  ) {
+                                    replayMutation.mutate({ txId: d.id });
+                                  }
+                                }}
+                                title="Super-admin: replay webhook (idempotent)"
+                              >
+                                <Repeat className="w-3.5 h-3.5" />
+                                Replay
+                              </Button>
+                            </div>
                           )}
                         </td>
                       )}
