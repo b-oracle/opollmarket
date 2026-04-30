@@ -768,6 +768,24 @@ Deno.serve(async (req) => {
     const payment_status = validation.value.payment_status;
     const order_id = validation.value.order_id;
 
+    // ─── Outermost idempotency guard: ledger-based dedupe by (provider, event_key) ───
+    // event_key = payment_id + status. A re-delivery of the same payment_id+status
+    // will fail the unique insert and short-circuit before any credit logic runs.
+    const ledgerClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const eventKey = `${payload.payment_id ?? order_id}:${payment_status}`;
+    const { data: ledgerOk } = await ledgerClient.rpc("record_webhook_event", {
+      _provider: "nowpayments",
+      _event_key: eventKey,
+      _payload: payload,
+    });
+    if (ledgerOk === false) {
+      console.log(`Duplicate webhook event ignored: ${eventKey}`);
+      return new Response("OK (duplicate)", { status: 200, headers: corsHeaders });
+    }
+
     // Handle partially_paid: mark deposit as "partial" for admin review (no balance credit)
     if (payment_status === "partially_paid") {
       console.log(`Partial payment received for order ${order_id}`);
