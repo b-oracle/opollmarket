@@ -79,6 +79,24 @@ Deno.serve(async (req) => {
       payload: body,
     });
 
+    // ─── Outermost idempotency guard: ledger-based dedupe by (provider, event_key) ───
+    // event_key = reference + normalized status. A re-delivery of the same
+    // (reference, status) tuple short-circuits before any credit logic runs.
+    {
+      const eventKey = `${reference}:${String(rawStatus).toLowerCase()}`;
+      const { data: ledgerOk } = await adminClient.rpc("record_webhook_event", {
+        _provider: "payaza",
+        _event_key: eventKey,
+        _payload: body as Record<string, unknown>,
+      });
+      if (ledgerOk === false) {
+        console.log(`Duplicate Payaza webhook event ignored: ${eventKey}`);
+        return new Response(JSON.stringify({ success: true, message: "Duplicate ignored" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // ── SECURITY: Verify this reference belongs to a real pending Payaza deposit ──
     // Only references starting with "payaza_" or "promo_" that were created by our
     // create-payaza-deposit / create-promotion-payaza functions will match.
