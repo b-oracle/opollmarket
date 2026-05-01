@@ -21,6 +21,20 @@ import androidx.appcompat.app.AppCompatActivity
  * Lockscreen incoming-call screen. Opened by the full-screen intent posted
  * from CallMessagingService. Plays ringtone + vibrates until the user accepts
  * or declines (or the system cancels the notification).
+ *
+ * Both buttons delegate to CallActionReceiver — the SAME path used by the
+ * notification's Accept/Decline action buttons. This guarantees identical
+ * behaviour everywhere (heads-up notification, lockscreen activity, etc.)
+ * and avoids two flaky issues we hit when buttons launched intents
+ * directly from this Activity:
+ *
+ *   1) Calling `startActivity(MainActivity)` from a lockscreen Activity on
+ *      Android 12+ is sometimes silently blocked by the background-activity-
+ *      launch restriction. Routing through a broadcast → PendingIntent
+ *      bypasses that.
+ *   2) The decline HTTP call needs to outlive `finish()`. The receiver uses
+ *      `goAsync()` to keep the broadcast process alive until the POST
+ *      completes; an Activity that finishes immediately cannot do that.
  */
 class IncomingCallActivity : AppCompatActivity() {
 
@@ -58,25 +72,23 @@ class IncomingCallActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_accept).setOnClickListener {
             stopRinging()
             cancelCallNotification()
-
-            // Open MainActivity with deep link so the webview auto-accepts.
-            val deepLink = Uri.parse("opoll://call/accept?call_id=$callId&conversation_id=$conversationId")
-            val launch = Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                action = Intent.ACTION_VIEW
-                data = deepLink
-                putExtra("auto_accept", true)
-            }
-            startActivity(launch)
+            // Delegate to the receiver — same path as the notification's
+            // Accept button. The receiver launches MainActivity with the
+            // accept deep link from a broadcast context, which the system
+            // permits even when this Activity is on the lockscreen.
+            sendBroadcast(Intent(this, CallActionReceiver::class.java).apply {
+                action = CallActionReceiver.ACTION_ACCEPT
+                putExtra("call_id", callId)
+                putExtra("conversation_id", conversationId)
+            })
             finish()
         }
 
         findViewById<Button>(R.id.btn_decline).setOnClickListener {
             stopRinging()
             cancelCallNotification()
-            // Fire the broadcast so CallActionReceiver POSTs the decline to
-            // dm-call-token even when the webview hasn't started yet. Pass
-            // conversation_id for parity with the notification-button path.
+            // Delegate to the receiver. The receiver uses goAsync() to keep
+            // the decline HTTP POST alive after this Activity finishes.
             sendBroadcast(Intent(this, CallActionReceiver::class.java).apply {
                 action = CallActionReceiver.ACTION_DECLINE
                 putExtra("call_id", callId)

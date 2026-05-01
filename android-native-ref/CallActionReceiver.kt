@@ -15,9 +15,9 @@ import kotlin.concurrent.thread
 
 /**
  * Broadcast receiver for the Accept/Decline actions on the incoming-call
- * notification.
+ * notification AND the lockscreen IncomingCallActivity buttons.
  *
- * BOTH actions launch MainActivity with an opoll:// deep link so the webview
+ * Both actions launch MainActivity with an opoll:// deep link so the webview
  * is guaranteed to come to the foreground. The JS layer (useCallDeepLink)
  * then runs the appropriate side-effect:
  *   • opoll://call/accept  → navigate to /messages/<conv>?call_id=…&auto_accept=1
@@ -25,8 +25,10 @@ import kotlin.concurrent.thread
  *
  * Decline ALSO fires the edge-function POST directly from the receiver as a
  * background fallback so the call row flips to "declined" even if the
- * webview is killed before it can run. The realtime listener on the caller's
- * IncomingCallBanner picks that up and dismisses the banner everywhere.
+ * webview is killed before it can run. We use goAsync() so the broadcast
+ * process is kept alive until the HTTP completes — this is critical when
+ * the Decline button comes from the lockscreen Activity (which calls
+ * finish() immediately after sending the broadcast).
  */
 class CallActionReceiver : BroadcastReceiver() {
 
@@ -59,18 +61,33 @@ class CallActionReceiver : BroadcastReceiver() {
         }.onFailure { Log.w(TAG, "cancel notification failed", it) }
 
         when (intent.action) {
-            ACTION_ACCEPT -> launchAppWithDeepLink(appCtx, "accept", callId, conversationId)
+            ACTION_ACCEPT -> {
+                // Launch the webview synchronously so the foreground intent
+                // is dispatched before onReceive returns.
+                launchAppWithDeepLink(appCtx, "accept", callId, conversationId)
+            }
             ACTION_DECLINE -> {
-                // 1) Best-effort background HTTP decline (works even if the
-                //    webview never starts).
+                // 1) Launch the app with the decline deep link first so the
+                //    webview can show feedback and run the realtime path
+                //    when present.
+                launchAppWithDeepLink(appCtx, "decline", callId, conversationId)
+
+                // 2) Best-effort background HTTP decline. We wrap it in
+                //    goAsync() so this process is kept alive until the POST
+                //    completes — the Activity that broadcast this will have
+                //    already called finish() and would otherwise be killed.
                 if (callId.isNotEmpty()) {
+                    val pending = goAsync()
                     thread(start = true, name = "decline-call-$callId") {
-                        postDeclineToEdgeFunction(appCtx, callId)
+                        try {
+                            postDeclineToEdgeFunction(appCtx, callId)
+                        } finally {
+                            // Always finish the broadcast so the OS can
+                            // reclaim the process.
+                            try { pending.finish() } catch (_: Throwable) { }
+                        }
                     }
                 }
-                // 2) Also launch the app so the user sees an in-app
-                //    confirmation toast and the conversation if they want.
-                launchAppWithDeepLink(appCtx, "decline", callId, conversationId)
             }
             else -> Log.w(TAG, "unknown action: ${intent.action}")
         }
@@ -87,6 +104,11 @@ class CallActionReceiver : BroadcastReceiver() {
                 "opoll://call/$action?call_id=$callId&conversation_id=$conversationId"
             )
             val launch = Intent(ctx, MainActivity::class.java).apply {
+                // FLAG_ACTIVITY_NEW_TASK is required when starting an activity
+                // from a non-Activity context (broadcast receiver).
+                // CLEAR_TOP + SINGLE_TOP routes to the existing instance and
+                // delivers the new intent via onNewIntent — which is what
+                // the Capacitor App plugin listens to for appUrlOpen events.
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                     Intent.FLAG_ACTIVITY_CLEAR_TOP or
                     Intent.FLAG_ACTIVITY_SINGLE_TOP
