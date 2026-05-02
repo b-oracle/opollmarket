@@ -865,7 +865,23 @@ const Create = () => {
     description: description.trim().length === 0 ? "Description is required" : description.trim().length < 20 ? "Must be at least 20 characters" : null,
     details: details.trim().length === 0 ? "More details are required" : details.trim().length < 20 ? "Must be at least 20 characters" : null,
     category: !category ? "Select a category" : null,
-    endDate: !endDate ? "Resolution date is required" : (autoResolve && category === "Twitter/X" && new Date(endDate) > new Date(Date.now() + 5 * 86400000)) ? "Twitter/X markets must resolve within 5 days" : null,
+    endDate: (() => {
+      if (!endDate) return "Resolution date is required";
+      // Sports markets use kickoff time; Twitter/X has its own 5-day cap
+      if (autoResolve && category === "Twitter/X") {
+        if (new Date(endDate) > new Date(Date.now() + 5 * 86400000)) return "Twitter/X markets must resolve within 5 days";
+        return null;
+      }
+      // Skip 3-day minimum for sports auto-resolve (kickoff-based)
+      if (autoResolve && category === "Sports") return null;
+      // Enforce minimum 3-day window so users have time to predict
+      const minEnd = new Date();
+      minEnd.setHours(0, 0, 0, 0);
+      minEnd.setDate(minEnd.getDate() + 3);
+      const picked = new Date(`${endDate}T00:00:00`);
+      if (picked < minEnd) return "Resolution date must be at least 3 days from today";
+      return null;
+    })(),
     resolutionSource: resolutionSource.trim().length === 0 ? "Resolution source is required" : resolutionSource.trim().length < 10 ? "Must be at least 10 characters" : null,
     initialLiquidity: !initialLiquidity ? "Initial liquidity is required" : parseFloat(initialLiquidity) < minLiquidity ? `Minimum ${minLiquidity} USDT` : null,
     options: marketType !== "binary" && options.filter(o => o.trim()).length < 2 ? "At least 2 options required" : null,
@@ -2726,7 +2742,11 @@ const Create = () => {
                   type="date"
                   value={endDate}
                   onChange={(e) => { setEndDate(e.target.value); markTouched("endDate"); }}
-                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                  min={
+                    autoResolve && category === "Sports"
+                      ? new Date(Date.now() + 86400000).toISOString().split("T")[0]
+                      : new Date(Date.now() + 3 * 86400000).toISOString().split("T")[0]
+                  }
                   max={autoResolve && category === "Twitter/X" ? new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0] : undefined}
                   className={`w-full bg-muted/50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-all ${
                     touched.endDate && errors.endDate ? "border-destructive focus:ring-destructive/30" : "border-border focus:ring-primary/30"

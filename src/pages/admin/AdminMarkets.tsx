@@ -400,7 +400,10 @@ const AdminMarkets = () => {
       trending: editState.trending,
       image_url: imageUrl || null,
     }).eq("id", editState.id);
-    if (error) toast.error("Failed to save changes");
+    if (error) {
+      console.error("Admin saveEdit error:", error);
+      toast.error(`Failed to save changes: ${error.message || error.code || "Unknown error"}`);
+    }
     else {
       toast.success("Market updated");
       logAuditEvent({ action: "market_edited", targetId: editState.id, targetType: "market", details: { title: editState.title.trim() } });
