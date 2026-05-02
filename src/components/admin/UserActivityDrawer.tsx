@@ -481,22 +481,41 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
       case "transactions":
         return (
           <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground px-1">
+              Showing {data.length} entries — every debit & credit, including AI fees and creator liquidity locks.
+            </p>
             {data.map((tx: any) => {
-              const badge = getTypeBadge(tx.type);
+              const effectiveType = tx._virtualType || tx.type;
+              const badge = getTypeBadge(effectiveType);
               const Icon = badge.icon;
+              const isDebit = DEBIT_TYPES.has(effectiveType);
+              const sign = isDebit ? "-" : "+";
+              const amountCls = isDebit ? "text-neon-no" : "text-neon-yes";
+              const label = effectiveType.replace(/_/g, " ");
               return (
                 <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
                   <div className={`p-2 rounded-lg bg-muted ${badge.cls}`}><Icon className="w-4 h-4" /></div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase">{tx.type}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold uppercase">{label}</span>
                       <span className={`text-[10px] font-semibold uppercase ${getStatusCls(tx.status)}`}>{tx.status}</span>
+                      {tx._synthetic && (
+                        <span className="text-[9px] font-semibold uppercase text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                          Reconstructed
+                        </span>
+                      )}
+                      {tx._virtualType && !tx._synthetic && (
+                        <span className="text-[9px] font-semibold uppercase text-violet-300 bg-violet-400/10 px-1.5 py-0.5 rounded">
+                          inferred
+                        </span>
+                      )}
                     </div>
                     {tx.markets?.title && <p className="text-xs text-muted-foreground truncate mt-0.5">{tx.markets.title}</p>}
+                    {tx.description && <p className="text-[10px] text-muted-foreground/80 mt-0.5 line-clamp-2">{tx.description}</p>}
                     <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(tx.created_at)}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold">${Number(tx.amount).toLocaleString()}</p>
+                    <p className={`text-sm font-bold ${amountCls}`}>{sign}${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     {tx.shares != null && <p className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(2)} shares</p>}
                   </div>
                 </div>
