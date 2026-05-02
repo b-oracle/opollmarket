@@ -304,6 +304,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       await supabase.from("transactions").update({
         status: "confirmed",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         amount: Number(requestedAmount),
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(requestedAmount),
@@ -316,6 +317,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(requestedAmount),
         status: "confirmed",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(requestedAmount),
         description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
