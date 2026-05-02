@@ -437,9 +437,31 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
       deposit: { cls: "text-primary", icon: ArrowDownToLine },
       withdrawal: { cls: "text-amber-500", icon: ArrowUpFromLine },
       bet: { cls: "text-primary", icon: Zap },
+      payout: { cls: "text-neon-yes", icon: Trophy },
+      commission: { cls: "text-emerald-500", icon: DollarSign },
+      refund: { cls: "text-blue-400", icon: RotateCcw },
+      gift_sent: { cls: "text-pink-400", icon: Gift },
+      gift_received: { cls: "text-pink-300", icon: Gift },
+      qt_one_sided_bonus: { cls: "text-amber-400", icon: Zap },
+      clawback: { cls: "text-red-500", icon: ShieldOff },
+      liquidity_lock: { cls: "text-cyan-400", icon: Droplets },
+      liquidity_unlock: { cls: "text-cyan-300", icon: Droplets },
+      market_creation_fee: { cls: "text-orange-400", icon: Store },
+      ai_generation_fee: { cls: "text-violet-400", icon: Zap },
+      platform_fee: { cls: "text-slate-400", icon: Receipt },
+      boost: { cls: "text-orange-500", icon: Flame },
+      broadcast: { cls: "text-orange-500", icon: Flame },
+      debt_settlement: { cls: "text-red-400", icon: AlertCircle },
     };
     return map[type] || { cls: "text-muted-foreground", icon: Receipt };
   };
+
+  // Treat these types as outflows (debits) for the +/- sign rendering
+  const DEBIT_TYPES = new Set([
+    "buy", "withdrawal", "bet", "gift_sent", "clawback", "liquidity_lock",
+    "market_creation_fee", "ai_generation_fee", "platform_fee", "boost",
+    "broadcast", "debt_settlement",
+  ]);
 
   const getStatusCls = (s: string) => {
     switch (s) {
