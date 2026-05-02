@@ -219,6 +219,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       await supabase.from("transactions").update({
         status: "wrong_asset",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: netReceived,
         net_amount_usd: netReceived,
       }).eq("id", matchedTx.id);
@@ -229,6 +230,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: requestedAmount,
         status: "wrong_asset",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: netReceived,
         net_amount_usd: netReceived,
       });
