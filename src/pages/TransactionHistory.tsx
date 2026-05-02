@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import DepositWithdrawModal from "@/components/DepositWithdrawModal";
+import OutstandingDebtBanner from "@/components/OutstandingDebtBanner";
 import {
   ArrowLeft, ArrowUpRight, ArrowDownLeft, ArrowUpFromLine, ArrowDownToLine,
   Gift, Repeat, BarChart3, Sparkles, Zap, ArrowUp, ArrowDown, ChevronDown,
@@ -170,6 +171,15 @@ const TransactionHistory = () => {
             <Repeat className="w-4 h-4 text-muted-foreground" />
           </motion.button>
         </div>
+
+        {/* Outstanding deposit debt — auto-settles on next deposit */}
+        <OutstandingDebtBanner
+          className="mb-4"
+          onDeposit={() => {
+            setModalTab("deposit");
+            setModalOpen(true);
+          }}
+        />
 
         {/* Filters */}
         <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide flex-nowrap whitespace-nowrap">

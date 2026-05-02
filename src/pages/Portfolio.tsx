@@ -48,6 +48,7 @@ import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders"
 import CopySubscriptions from "@/components/CopySubscriptions";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import OutstandingDebtBanner from "@/components/OutstandingDebtBanner";
 import { optionColors } from "@/lib/optionColors";
 
 interface PositionRow {
@@ -540,7 +541,11 @@ const Portfolio = () => {
           </p>
         </motion.div>
 
+        {/* Outstanding deposit debt — auto-settles on next deposit */}
+        <OutstandingDebtBanner className="mb-4" />
+
         {/* Summary cards */}
+
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
