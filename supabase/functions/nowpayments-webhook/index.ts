@@ -775,7 +775,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const eventKey = `${payload.payment_id ?? order_id}:${payment_status}`;
+    // Collapse "confirmed" and "finished" into the same dedupe bucket — NOWPayments
+    // sends BOTH for the same payment, and we only want to credit ONCE.
+    const dedupeStatus = (payment_status === "confirmed" || payment_status === "finished")
+      ? "credited"
+      : payment_status;
+    const eventKey = `${payload.payment_id ?? order_id}:${dedupeStatus}`;
     const { data: ledgerOk } = await ledgerClient.rpc("record_webhook_event", {
       _provider: "nowpayments",
       _event_key: eventKey,
