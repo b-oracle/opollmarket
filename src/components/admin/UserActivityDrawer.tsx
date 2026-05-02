@@ -394,6 +394,7 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
   };
 
   const renderContent = () => {
+    if (activeTab === "breakdown") return <BalanceBreakdown userId={userId} />;
     if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-primary animate-spin" /></div>;
     if (data.length === 0) return <p className="text-center text-muted-foreground py-12 text-sm">No {TABS.find(t => t.key === activeTab)?.label.toLowerCase()} found</p>;
 
