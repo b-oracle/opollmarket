@@ -389,6 +389,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         .update({
           status: "partial",
           nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
           amount: Number(creditAmount),
           gross_amount_usd: Number(netReceived),
           net_amount_usd: Number(creditAmount),
@@ -401,6 +402,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(creditAmount),
         status: "partial",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(creditAmount),
       });
