@@ -4583,15 +4583,27 @@ export type Database = {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
         Returns: Json
       }
-      deduct_market_liquidity: {
-        Args: {
-          _bonus_for_fee?: number
-          _fee_amount?: number
-          _liquidity_amount: number
-          _user_id: string
-        }
-        Returns: Json
-      }
+      deduct_market_liquidity:
+        | {
+            Args: {
+              _bonus_for_fee?: number
+              _fee_amount?: number
+              _liquidity_amount: number
+              _user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _bonus_for_fee?: number
+              _fee_amount?: number
+              _liquidity_amount: number
+              _log_transactions?: boolean
+              _market_id?: string
+              _user_id: string
+            }
+            Returns: Json
+          }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
