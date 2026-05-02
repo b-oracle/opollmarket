@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Receipt, BarChart3, MessageSquare, Bookmark, Gift, TrendingUp, TrendingDown,
   ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff, RotateCcw,
-  Wallet, DollarSign, Trophy, Skull, Flame, ClipboardList, Store, Droplets, AlertCircle
+  Wallet, DollarSign, Trophy, Skull, Flame, ClipboardList, Store, Droplets, AlertCircle, Calculator
 } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import BalanceBreakdown from "./BalanceBreakdown";
 
 interface UserActivityDrawerProps {
   open: boolean;
@@ -17,9 +18,10 @@ interface UserActivityDrawerProps {
   userName: string;
 }
 
-type Tab = "transactions" | "deposits" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals" | "boosts" | "audit_log";
+type Tab = "breakdown" | "transactions" | "deposits" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals" | "boosts" | "audit_log";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
+  { key: "breakdown", label: "Balance Breakdown", icon: Calculator },
   { key: "transactions", label: "Transactions", icon: Receipt },
   { key: "deposits", label: "Deposits", icon: ArrowDownToLine },
   { key: "positions", label: "Positions", icon: BarChart3 },
@@ -239,17 +241,18 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
 };
 
 const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDrawerProps) => {
-  const [activeTab, setActiveTab] = useState<Tab>("transactions");
+  const [activeTab, setActiveTab] = useState<Tab>("breakdown");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!open) return;
-    setActiveTab("transactions");
+    setActiveTab("breakdown");
   }, [open, userId]);
 
   useEffect(() => {
     if (!open) return;
+    if (activeTab === "breakdown") return; // handled by sub-component
     fetchTabData(activeTab);
   }, [open, activeTab, userId]);
 
@@ -391,6 +394,7 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
   };
 
   const renderContent = () => {
+    if (activeTab === "breakdown") return <BalanceBreakdown userId={userId} />;
     if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 text-primary animate-spin" /></div>;
     if (data.length === 0) return <p className="text-center text-muted-foreground py-12 text-sm">No {TABS.find(t => t.key === activeTab)?.label.toLowerCase()} found</p>;
 
