@@ -263,10 +263,13 @@ Deno.serve(async (req) => {
       if (marketRow.status !== "active") return err("Market is not active", 400);
 
       const betSide = side || "yes";
-      const price = betSide === "yes" ? Number(marketRow.yes_price) : Number(marketRow.no_price);
-      if (!price || price <= 0) return err("Invalid market price", 400);
+      const priceFraction = betSide === "yes" ? Number(marketRow.yes_price) : Number(marketRow.no_price);
+      if (!priceFraction || priceFraction <= 0) return err("Invalid market price", 400);
 
-      // Match BetModal logic: subtract prediction fee, then derive shares
+      // place-bet expects price in cents (0-100), not as a 0-1 fraction
+      const price = Math.round(priceFraction * 100);
+
+      // Match BetModal logic: subtract prediction fee, then derive shares (using fraction)
       const { data: commRow } = await admin
         .from("commission_settings")
         .select("prediction_fee_percent")
@@ -274,7 +277,7 @@ Deno.serve(async (req) => {
         .single();
       const feePct = Number(commRow?.prediction_fee_percent ?? 10) / 100;
       const poolAmount = amount * (1 - feePct);
-      const shares = poolAmount / price;
+      const shares = poolAmount / priceFraction;
 
       // Invoke the existing place-bet edge function
       const placeBetUrl = `${supabaseUrl}/functions/v1/place-bet`;
