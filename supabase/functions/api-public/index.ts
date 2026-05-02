@@ -252,6 +252,30 @@ Deno.serve(async (req) => {
       }
       if (side && !["yes", "no"].includes(side)) return err("Side must be 'yes' or 'no'");
 
+      // Resolve current market price + compute shares (place-bet requires price + shares)
+      const { data: marketRow, error: marketErr } = await admin
+        .from("markets")
+        .select("yes_price, no_price, status")
+        .eq("id", marketId)
+        .single();
+
+      if (marketErr || !marketRow) return err("Market not found", 404);
+      if (marketRow.status !== "active") return err("Market is not active", 400);
+
+      const betSide = side || "yes";
+      const price = betSide === "yes" ? Number(marketRow.yes_price) : Number(marketRow.no_price);
+      if (!price || price <= 0) return err("Invalid market price", 400);
+
+      // Match BetModal logic: subtract prediction fee, then derive shares
+      const { data: commRow } = await admin
+        .from("commission_settings")
+        .select("prediction_fee_percent")
+        .limit(1)
+        .single();
+      const feePct = Number(commRow?.prediction_fee_percent ?? 10) / 100;
+      const poolAmount = amount * (1 - feePct);
+      const shares = poolAmount / price;
+
       // Invoke the existing place-bet edge function
       const placeBetUrl = `${supabaseUrl}/functions/v1/place-bet`;
       const resp = await fetch(placeBetUrl, {
@@ -261,7 +285,7 @@ Deno.serve(async (req) => {
           Authorization: req.headers.get("authorization") || "",
           apikey: anonKey,
         },
-        body: JSON.stringify({ marketId, side, amount, optionId, apiKeyId: apiKeyRecord?.id }),
+        body: JSON.stringify({ marketId, side: betSide, amount, optionId, price, shares, apiKeyId: apiKeyRecord?.id }),
       });
 
       const result = await resp.json();
