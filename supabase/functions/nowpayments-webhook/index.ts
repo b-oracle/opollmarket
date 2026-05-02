@@ -219,6 +219,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       await supabase.from("transactions").update({
         status: "wrong_asset",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: netReceived,
         net_amount_usd: netReceived,
       }).eq("id", matchedTx.id);
@@ -229,6 +230,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: requestedAmount,
         status: "wrong_asset",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: netReceived,
         net_amount_usd: netReceived,
       });
@@ -302,6 +304,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       await supabase.from("transactions").update({
         status: "confirmed",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         amount: Number(requestedAmount),
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(requestedAmount),
@@ -314,6 +317,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(requestedAmount),
         status: "confirmed",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(requestedAmount),
         description: `Deposit confirmed. Overpaid by $${excess.toFixed(2)} credited to bonus balance.`,
@@ -385,6 +389,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         .update({
           status: "partial",
           nowpayments_payment_id: paymentIdStr,
+          payment_provider: "nowpayments",
           amount: Number(creditAmount),
           gross_amount_usd: Number(netReceived),
           net_amount_usd: Number(creditAmount),
@@ -397,6 +402,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(creditAmount),
         status: "partial",
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(creditAmount),
       });
@@ -464,6 +470,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       .update({
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         amount: Number(creditAmount),
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(creditAmount),
@@ -481,6 +488,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
         amount: Number(creditAmount),
         status: finalStatus,
         nowpayments_payment_id: paymentIdStr,
+        payment_provider: "nowpayments",
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(creditAmount),
       });
@@ -775,7 +783,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const eventKey = `${payload.payment_id ?? order_id}:${payment_status}`;
+    // Collapse "confirmed" and "finished" into the same dedupe bucket — NOWPayments
+    // sends BOTH for the same payment, and we only want to credit ONCE.
+    const dedupeStatus = (payment_status === "confirmed" || payment_status === "finished")
+      ? "credited"
+      : payment_status;
+    const eventKey = `${payload.payment_id ?? order_id}:${dedupeStatus}`;
     const { data: ledgerOk } = await ledgerClient.rpc("record_webhook_event", {
       _provider: "nowpayments",
       _event_key: eventKey,
