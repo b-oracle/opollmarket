@@ -263,13 +263,70 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
 
     switch (tab) {
       case "transactions": {
-        const { data: txns } = await supabase
-          .from("transactions")
-          .select("*, markets(title)")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-        result = txns || [];
+        // Pull every recorded transaction (debit + credit) — admin needs full visibility
+        const [{ data: txns }, { data: createdMarkets }] = await Promise.all([
+          supabase
+            .from("transactions")
+            .select("*, markets(title)")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(500),
+          // Synthesize creator-side debits (initial liquidity + creation fee) for markets
+          // that were created before those rows were logged into the transactions table.
+          supabase
+            .from("markets")
+            .select("id, title, liquidity, created_at, status")
+            .eq("creator_wallet", userId)
+            .neq("status", "draft")
+            .order("created_at", { ascending: false })
+            .limit(200),
+        ]);
+
+        const txList = (txns || []) as any[];
+
+        // Build a set of market_ids that already have a logged liquidity_lock / market_creation_fee tx
+        const loggedLiqMarkets = new Set(
+          txList
+            .filter((t) => t.market_id && (t.type === "liquidity_lock" || t.type === "market_creation_fee"))
+            .map((t) => t.market_id),
+        );
+
+        const synthetic: any[] = [];
+        for (const m of createdMarkets || []) {
+          if (loggedLiqMarkets.has(m.id)) continue;
+          if (Number(m.liquidity) > 0) {
+            synthetic.push({
+              id: `synthetic-liq-${m.id}`,
+              type: "liquidity_lock",
+              amount: Number(m.liquidity),
+              status: "confirmed",
+              created_at: m.created_at,
+              market_id: m.id,
+              markets: { title: m.title },
+              description: "Initial liquidity locked at market creation (historical, reconstructed)",
+              _synthetic: true,
+            });
+          }
+        }
+
+        // Re-classify generic "buy" rows that have no market_id — typically AI agent
+        // generation fees ($0.50) and other platform fees. Keeps the original type but
+        // tags a virtual sub-type for display.
+        for (const t of txList) {
+          if (t.type === "buy" && !t.market_id) {
+            const amt = Number(t.amount);
+            if (Math.abs(amt - 0.5) < 0.001) {
+              t._virtualType = "ai_generation_fee";
+            } else {
+              t._virtualType = "platform_fee";
+            }
+          }
+        }
+
+        const merged = [...txList, ...synthetic].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+        result = merged;
         break;
       }
       case "positions": {
