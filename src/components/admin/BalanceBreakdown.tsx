@@ -383,7 +383,7 @@ const BalanceBreakdown = ({ userId }: Props) => {
   return (
     <div className="space-y-3">
       {/* Top summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50">
           <p className="text-[10px] text-muted-foreground font-medium mb-1">Main Balance</p>
           <p className="text-sm font-bold">{fmt(data.mainBalance)}</p>
@@ -395,15 +395,6 @@ const BalanceBreakdown = ({ userId }: Props) => {
         <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50">
           <p className="text-[10px] text-muted-foreground font-medium mb-1">Total Balance</p>
           <p className="text-sm font-bold text-primary">{fmt(data.currentBalance)}</p>
-        </div>
-        <div className="p-2.5 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-[10px] text-muted-foreground font-medium mb-1">Outstanding Debt</p>
-          <p className={`text-sm font-bold ${data.outstandingDebt > 0 ? "text-red-500" : "text-muted-foreground"}`}>
-            {fmt(data.outstandingDebt)}
-          </p>
-          {data.outstandingDebtCount > 0 && (
-            <p className="text-[10px] text-muted-foreground">{data.outstandingDebtCount} pending</p>
-          )}
         </div>
       </div>
 
