@@ -241,17 +241,18 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
 };
 
 const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDrawerProps) => {
-  const [activeTab, setActiveTab] = useState<Tab>("transactions");
+  const [activeTab, setActiveTab] = useState<Tab>("breakdown");
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
     if (!open) return;
-    setActiveTab("transactions");
+    setActiveTab("breakdown");
   }, [open, userId]);
 
   useEffect(() => {
     if (!open) return;
+    if (activeTab === "breakdown") return; // handled by sub-component
     fetchTabData(activeTab);
   }, [open, activeTab, userId]);
 
