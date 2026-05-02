@@ -172,6 +172,15 @@ const TransactionHistory = () => {
           </motion.button>
         </div>
 
+        {/* Outstanding deposit debt — auto-settles on next deposit */}
+        <OutstandingDebtBanner
+          className="mb-4"
+          onDeposit={() => {
+            setModalTab("deposit");
+            setModalOpen(true);
+          }}
+        />
+
         {/* Filters */}
         <div className="flex gap-2 mb-3 overflow-x-auto scrollbar-hide flex-nowrap whitespace-nowrap">
           {(["all", "trades", "quick_trades", "deposits", "withdrawals", "payouts", "refunds", "sells"] as FilterType[]).map((f) => (
