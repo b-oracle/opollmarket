@@ -48,6 +48,7 @@ import { useUserLimitOrders, useCancelLimitOrder } from "@/hooks/useLimitOrders"
 import CopySubscriptions from "@/components/CopySubscriptions";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { useUserBalance } from "@/hooks/useUserBalance";
+import OutstandingDebtBanner from "@/components/OutstandingDebtBanner";
 import { optionColors } from "@/lib/optionColors";
 
 interface PositionRow {
