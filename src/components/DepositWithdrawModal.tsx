@@ -505,12 +505,14 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
         setPollInterval(null);
         queryClient.invalidateQueries({ queryKey: ["balance"] });
         queryClient.invalidateQueries({ queryKey: ["has_deposit"] });
+        queryClient.invalidateQueries({ queryKey: ["outstanding_debts"] });
         setStep("success");
       } else if (data?.status === "partial") {
         clearInterval(interval);
         setPollInterval(null);
         queryClient.invalidateQueries({ queryKey: ["balance"] });
         queryClient.invalidateQueries({ queryKey: ["has_deposit"] });
+        queryClient.invalidateQueries({ queryKey: ["outstanding_debts"] });
         const credited = Number(data.amount);
         setPartialInfo({
           credited,
