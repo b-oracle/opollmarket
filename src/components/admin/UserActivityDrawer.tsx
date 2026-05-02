@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Receipt, BarChart3, MessageSquare, Bookmark, Gift, TrendingUp, TrendingDown,
   ArrowUpFromLine, ArrowDownToLine, Zap, Banknote, Lock, Shield, ShieldOff, RotateCcw,
-  Wallet, DollarSign, Trophy, Skull, Flame, ClipboardList, Store, Droplets, AlertCircle
+  Wallet, DollarSign, Trophy, Skull, Flame, ClipboardList, Store, Droplets, AlertCircle, Calculator
 } from "lucide-react";
 import { format } from "date-fns";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import BalanceBreakdown from "./BalanceBreakdown";
 
 interface UserActivityDrawerProps {
   open: boolean;
@@ -17,9 +18,10 @@ interface UserActivityDrawerProps {
   userName: string;
 }
 
-type Tab = "transactions" | "deposits" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals" | "boosts" | "audit_log";
+type Tab = "breakdown" | "transactions" | "deposits" | "positions" | "quick_bets" | "comments" | "bookmarks" | "referrals" | "withdrawals" | "boosts" | "audit_log";
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
+  { key: "breakdown", label: "Balance Breakdown", icon: Calculator },
   { key: "transactions", label: "Transactions", icon: Receipt },
   { key: "deposits", label: "Deposits", icon: ArrowDownToLine },
   { key: "positions", label: "Positions", icon: BarChart3 },
