@@ -263,13 +263,70 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
 
     switch (tab) {
       case "transactions": {
-        const { data: txns } = await supabase
-          .from("transactions")
-          .select("*, markets(title)")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(50);
-        result = txns || [];
+        // Pull every recorded transaction (debit + credit) — admin needs full visibility
+        const [{ data: txns }, { data: createdMarkets }] = await Promise.all([
+          supabase
+            .from("transactions")
+            .select("*, markets(title)")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(500),
+          // Synthesize creator-side debits (initial liquidity + creation fee) for markets
+          // that were created before those rows were logged into the transactions table.
+          supabase
+            .from("markets")
+            .select("id, title, liquidity, created_at, status")
+            .eq("creator_wallet", userId)
+            .neq("status", "draft")
+            .order("created_at", { ascending: false })
+            .limit(200),
+        ]);
+
+        const txList = (txns || []) as any[];
+
+        // Build a set of market_ids that already have a logged liquidity_lock / market_creation_fee tx
+        const loggedLiqMarkets = new Set(
+          txList
+            .filter((t) => t.market_id && (t.type === "liquidity_lock" || t.type === "market_creation_fee"))
+            .map((t) => t.market_id),
+        );
+
+        const synthetic: any[] = [];
+        for (const m of createdMarkets || []) {
+          if (loggedLiqMarkets.has(m.id)) continue;
+          if (Number(m.liquidity) > 0) {
+            synthetic.push({
+              id: `synthetic-liq-${m.id}`,
+              type: "liquidity_lock",
+              amount: Number(m.liquidity),
+              status: "confirmed",
+              created_at: m.created_at,
+              market_id: m.id,
+              markets: { title: m.title },
+              description: "Initial liquidity locked at market creation (historical, reconstructed)",
+              _synthetic: true,
+            });
+          }
+        }
+
+        // Re-classify generic "buy" rows that have no market_id — typically AI agent
+        // generation fees ($0.50) and other platform fees. Keeps the original type but
+        // tags a virtual sub-type for display.
+        for (const t of txList) {
+          if (t.type === "buy" && !t.market_id) {
+            const amt = Number(t.amount);
+            if (Math.abs(amt - 0.5) < 0.001) {
+              t._virtualType = "ai_generation_fee";
+            } else {
+              t._virtualType = "platform_fee";
+            }
+          }
+        }
+
+        const merged = [...txList, ...synthetic].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        );
+        result = merged;
         break;
       }
       case "positions": {
@@ -380,9 +437,31 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
       deposit: { cls: "text-primary", icon: ArrowDownToLine },
       withdrawal: { cls: "text-amber-500", icon: ArrowUpFromLine },
       bet: { cls: "text-primary", icon: Zap },
+      payout: { cls: "text-neon-yes", icon: Trophy },
+      commission: { cls: "text-emerald-500", icon: DollarSign },
+      refund: { cls: "text-blue-400", icon: RotateCcw },
+      gift_sent: { cls: "text-pink-400", icon: Gift },
+      gift_received: { cls: "text-pink-300", icon: Gift },
+      qt_one_sided_bonus: { cls: "text-amber-400", icon: Zap },
+      clawback: { cls: "text-red-500", icon: ShieldOff },
+      liquidity_lock: { cls: "text-cyan-400", icon: Droplets },
+      liquidity_unlock: { cls: "text-cyan-300", icon: Droplets },
+      market_creation_fee: { cls: "text-orange-400", icon: Store },
+      ai_generation_fee: { cls: "text-violet-400", icon: Zap },
+      platform_fee: { cls: "text-slate-400", icon: Receipt },
+      boost: { cls: "text-orange-500", icon: Flame },
+      broadcast: { cls: "text-orange-500", icon: Flame },
+      debt_settlement: { cls: "text-red-400", icon: AlertCircle },
     };
     return map[type] || { cls: "text-muted-foreground", icon: Receipt };
   };
+
+  // Treat these types as outflows (debits) for the +/- sign rendering
+  const DEBIT_TYPES = new Set([
+    "buy", "withdrawal", "bet", "gift_sent", "clawback", "liquidity_lock",
+    "market_creation_fee", "ai_generation_fee", "platform_fee", "boost",
+    "broadcast", "debt_settlement",
+  ]);
 
   const getStatusCls = (s: string) => {
     switch (s) {
@@ -402,22 +481,41 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
       case "transactions":
         return (
           <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground px-1">
+              Showing {data.length} entries — every debit & credit, including AI fees and creator liquidity locks.
+            </p>
             {data.map((tx: any) => {
-              const badge = getTypeBadge(tx.type);
+              const effectiveType = tx._virtualType || tx.type;
+              const badge = getTypeBadge(effectiveType);
               const Icon = badge.icon;
+              const isDebit = DEBIT_TYPES.has(effectiveType);
+              const sign = isDebit ? "-" : "+";
+              const amountCls = isDebit ? "text-neon-no" : "text-neon-yes";
+              const label = effectiveType.replace(/_/g, " ");
               return (
                 <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
                   <div className={`p-2 rounded-lg bg-muted ${badge.cls}`}><Icon className="w-4 h-4" /></div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold uppercase">{tx.type}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold uppercase">{label}</span>
                       <span className={`text-[10px] font-semibold uppercase ${getStatusCls(tx.status)}`}>{tx.status}</span>
+                      {tx._synthetic && (
+                        <span className="text-[9px] font-semibold uppercase text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                          Reconstructed
+                        </span>
+                      )}
+                      {tx._virtualType && !tx._synthetic && (
+                        <span className="text-[9px] font-semibold uppercase text-violet-300 bg-violet-400/10 px-1.5 py-0.5 rounded">
+                          inferred
+                        </span>
+                      )}
                     </div>
                     {tx.markets?.title && <p className="text-xs text-muted-foreground truncate mt-0.5">{tx.markets.title}</p>}
+                    {tx.description && <p className="text-[10px] text-muted-foreground/80 mt-0.5 line-clamp-2">{tx.description}</p>}
                     <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(tx.created_at)}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-sm font-bold">${Number(tx.amount).toLocaleString()}</p>
+                    <p className={`text-sm font-bold ${amountCls}`}>{sign}${Number(tx.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     {tx.shares != null && <p className="text-[10px] text-muted-foreground">{Number(tx.shares).toFixed(2)} shares</p>}
                   </div>
                 </div>
