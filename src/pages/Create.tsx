@@ -1246,8 +1246,11 @@ const Create = () => {
       side: "initial_liquidity",
     });
 
-    // Record the creation fee transaction if fee bypass
-    if (feeBypass && !unlimitedMarkets) {
+    // Record the creation fee transaction if fee bypass.
+    // NOTE: When an escrow exists, `release_creation_fee_escrow` writes the
+    // `market_creation_fee` row atomically inside the database, so we only
+    // need to write it here for the non-escrow bypass path.
+    if (feeBypass && !unlimitedMarkets && !escrowId) {
       await supabase.from("transactions").insert({
         user_id: user.id,
         type: "buy",
@@ -1256,10 +1259,8 @@ const Create = () => {
         status: "confirmed",
         side: "market_creation_fee",
       });
-      // If no escrow was used (exceeded free limit path), credit platform pool now
-      if (!escrowId) {
-        await supabase.rpc("adjust_platform_pool" as any, { _delta: marketCreationFee });
-      }
+      // No escrow used (exceeded free limit path) — credit platform pool now
+      await supabase.rpc("adjust_platform_pool" as any, { _delta: marketCreationFee });
     }
 
     // Record auto-resolve fee transaction
