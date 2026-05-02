@@ -132,7 +132,7 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-user-summary", userId],
     queryFn: async () => {
-      const [txRes, qbRes, balRes, refRes] = await Promise.all([
+      const [txRes, qbRes, balRes, refRes, mktRes, liqRes, debtRes] = await Promise.all([
         supabase
           .from("transactions")
           .select("type, status, amount, side")
@@ -152,12 +152,30 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
           .from("referral_rewards")
           .select("amount")
           .eq("referrer_id", userId),
+        supabase
+          .from("markets")
+          .select("id", { count: "exact", head: true })
+          .eq("creator_wallet", userId)
+          .eq("status", "active"),
+        supabase
+          .from("transactions")
+          .select("amount")
+          .eq("user_id", userId)
+          .eq("status", "confirmed")
+          .eq("side", "initial_liquidity"),
+        supabase
+          .from("balance_debts")
+          .select("amount")
+          .eq("user_id", userId)
+          .eq("status", "pending"),
       ]);
 
       const txns = txRes.data || [];
       const qbs = qbRes.data || [];
       const bal = balRes.data;
       const refs = refRes.data || [];
+      const liqRows = liqRes.data || [];
+      const debtRows = debtRes.data || [];
 
       const deposited = txns.filter(t => t.type === "deposit").reduce((s, t) => s + Number(t.amount), 0);
       const withdrawn = txns.filter(t => t.type === "withdrawal").reduce((s, t) => s + Number(t.amount), 0);
@@ -173,36 +191,47 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
       const qtLosses = qbs.filter(q => q.status === "lost").reduce((s, q) => s + Number(q.amount), 0);
       const totalLosses = Math.max(0, buys - payouts - refunds) + qtLosses;
 
-      return { deposited, withdrawn, balance, totalWins, totalLosses };
+      const activeMarkets = mktRes.count || 0;
+      const liquidityAdded = liqRows.reduce((s, r: any) => s + Number(r.amount), 0);
+      const outstandingDebt = debtRows.reduce((s, r: any) => s + Number(r.amount), 0);
+
+      return { deposited, withdrawn, balance, totalWins, totalLosses, activeMarkets, liquidityAdded, outstandingDebt };
     },
     enabled: !!userId,
   });
 
   if (isLoading || !stats) return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
-      {[...Array(5)].map((_, i) => (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+      {[...Array(8)].map((_, i) => (
         <div key={i} className="h-16 rounded-xl bg-muted/30 animate-pulse" />
       ))}
     </div>
   );
 
   const cards = [
-    { label: "Deposited", value: stats.deposited, icon: ArrowDownToLine, cls: "text-primary" },
-    { label: "Withdrawn", value: stats.withdrawn, icon: ArrowUpFromLine, cls: "text-amber-500" },
-    { label: "Balance", value: stats.balance, icon: Wallet, cls: "text-foreground" },
-    { label: "Total Wins", value: stats.totalWins, icon: Trophy, cls: "text-green-500" },
-    { label: "Total Losses", value: stats.totalLosses, icon: Skull, cls: "text-red-500" },
+    { label: "Deposited", value: stats.deposited, icon: ArrowDownToLine, cls: "text-primary", isCount: false },
+    { label: "Withdrawn", value: stats.withdrawn, icon: ArrowUpFromLine, cls: "text-amber-500", isCount: false },
+    { label: "Balance", value: stats.balance, icon: Wallet, cls: "text-foreground", isCount: false },
+    { label: "Total Wins", value: stats.totalWins, icon: Trophy, cls: "text-green-500", isCount: false },
+    { label: "Total Losses", value: stats.totalLosses, icon: Skull, cls: "text-red-500", isCount: false, negative: true },
+    { label: "Active Markets", value: stats.activeMarkets, icon: Store, cls: "text-cyan-500", isCount: true },
+    { label: "Liquidity Added", value: stats.liquidityAdded, icon: Droplets, cls: "text-blue-500", isCount: false },
+    { label: "Outstanding Debt", value: stats.outstandingDebt, icon: AlertCircle, cls: stats.outstandingDebt > 0 ? "text-red-500" : "text-muted-foreground", isCount: false },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
-      {cards.map(c => (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+      {cards.map((c: any) => (
         <div key={c.label} className="p-2.5 rounded-xl bg-muted/30 border border-border/50">
           <div className="flex items-center gap-1.5 mb-1">
             <c.icon className={`w-3.5 h-3.5 ${c.cls}`} />
             <span className="text-[10px] text-muted-foreground font-medium">{c.label}</span>
           </div>
-          <p className={`text-sm font-bold ${c.cls}`}>{c.label === "Total Losses" ? "-" : ""}${c.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className={`text-sm font-bold ${c.cls}`}>
+            {c.isCount
+              ? c.value.toLocaleString()
+              : `${c.negative ? "-" : ""}$${Number(c.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          </p>
         </div>
       ))}
     </div>
