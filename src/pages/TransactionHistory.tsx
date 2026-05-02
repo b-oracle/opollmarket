@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import DepositWithdrawModal from "@/components/DepositWithdrawModal";
+import OutstandingDebtBanner from "@/components/OutstandingDebtBanner";
 import {
   ArrowLeft, ArrowUpRight, ArrowDownLeft, ArrowUpFromLine, ArrowDownToLine,
   Gift, Repeat, BarChart3, Sparkles, Zap, ArrowUp, ArrowDown, ChevronDown,
