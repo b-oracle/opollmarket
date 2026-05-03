@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logWebhookEvent } from "../_shared/webhookLog.ts";
 import { safeEqual, validateNowPaymentsPayload } from "../_shared/webhookValidation.ts";
+import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -345,6 +346,15 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
       type: "deposit",
     });
 
+    await sendNotificationEmail({
+      admin: supabase as any,
+      userId,
+      templateName: "deposit-completed",
+      prefKey: "email_deposit_completed",
+      idempotencyKey: `deposit-${paymentIdStr}`,
+      templateData: { amount: requestedAmount, method: "Crypto" },
+    });
+
     // Alert admins on unusually large overpayments
     if (cls.ratio >= thresholds.largeAlert) {
       await notifyAdmins(
@@ -511,6 +521,15 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     title: "Deposit Confirmed ✅",
     message: `Your deposit of $${Number(creditAmount).toFixed(2)} has been confirmed.`,
     type: "deposit",
+  });
+
+  await sendNotificationEmail({
+    admin: supabase as any,
+    userId,
+    templateName: "deposit-completed",
+    prefKey: "email_deposit_completed",
+    idempotencyKey: `deposit-credit-${userId}-${Number(creditAmount).toFixed(2)}-${Date.now()}`,
+    templateData: { amount: Number(creditAmount), method: "Crypto" },
   });
 
   console.log(`Credited $${creditAmount} (${finalStatus}) to user ${userId}`);
