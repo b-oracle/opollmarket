@@ -85,10 +85,19 @@ const Privacy = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-bold">Privacy Policy</h1>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition disabled:opacity-50"
+            aria-label="Download privacy policy as PDF"
+          >
+            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{downloading ? "Preparing…" : "Download PDF"}</span>
+          </button>
         </div>
       </div>
 
-      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
+      <div ref={contentRef} className="max-w-lg md:max-w-3xl mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
         {/* At-a-glance summary (matches /data-use disclosure required by Google verification) */}
         <section
           id="at-a-glance"
