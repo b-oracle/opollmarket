@@ -128,17 +128,26 @@ Deno.serve(async (req) => {
 
       const { data: activeBans } = await supabaseAdmin
         .from("space_bans")
-        .select("expires_at")
+        .select("expires_at, reason, banned_by, created_at")
         .eq("space_id", space_id)
         .eq("user_id", userId)
         .limit(1);
       if (activeBans && activeBans.length > 0) {
-        const exp = activeBans[0].expires_at as string | null;
-        const msg = exp
-          ? `You have been temporarily banned from this Space until ${new Date(exp).toLocaleString()}.`
+        const ban = activeBans[0] as { expires_at: string | null; reason: string | null; banned_by: string; created_at: string };
+        const msg = ban.expires_at
+          ? `You have been temporarily banned from this Space until ${new Date(ban.expires_at).toLocaleString()}.`
           : "You have been banned from this Space by the host.";
         return new Response(
-          JSON.stringify({ error: msg }),
+          JSON.stringify({
+            error: msg,
+            banned: true,
+            ban: {
+              expires_at: ban.expires_at,
+              reason: ban.reason,
+              banned_by: ban.banned_by,
+              created_at: ban.created_at,
+            },
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

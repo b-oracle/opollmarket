@@ -141,6 +141,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [connecting, setConnecting] = useState(true);
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [banInfo, setBanInfo] = useState<{
+    message: string;
+    reason: string | null;
+    expires_at: string | null;
+    banned_by_name?: string | null;
+  } | null>(null);
   const intentionalLeaveRef = useRef(false);
   const [muted, setMuted] = useState(true);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
@@ -942,6 +948,27 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const errMsg = error?.message || error?.context?.body?.error || data?.error;
         if (errMsg || (!data?.token)) {
           const msg = errMsg || "Failed to get voice token";
+          // Banned: show banner instead of just a toast
+          if (data?.banned && data?.ban) {
+            const ban = data.ban as { expires_at: string | null; reason: string | null; banned_by: string };
+            // Try to fetch the banner's display name
+            let bannedByName: string | null = null;
+            try {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("display_name, username")
+                .eq("id", ban.banned_by)
+                .maybeSingle();
+              bannedByName = prof?.display_name || prof?.username || null;
+            } catch { /* ignore */ }
+            setBanInfo({
+              message: typeof msg === "string" ? msg : "You have been banned from this Space.",
+              reason: ban.reason,
+              expires_at: ban.expires_at,
+              banned_by_name: bannedByName,
+            });
+            return;
+          }
           if (typeof msg === "string" && (msg.includes("ended") || msg.includes("isn't live"))) {
             toast.info("This Space isn't live yet or has already ended");
           } else if (msg === "LiveKit not configured") {
@@ -2315,6 +2342,89 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         onToggleMute={toggleMute}
         onLeave={handleLeave}
       />
+    );
+  }
+
+  // ============ BANNED MODE ============
+  if (banInfo) {
+    const expiresMs = banInfo.expires_at ? new Date(banInfo.expires_at).getTime() - Date.now() : null;
+    const fmtRemaining = (ms: number) => {
+      if (ms <= 0) return "any moment now";
+      const mins = Math.floor(ms / 60000);
+      if (mins < 60) return `in ${mins} minute${mins === 1 ? "" : "s"}`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 48) return `in ${hrs} hour${hrs === 1 ? "" : "s"}`;
+      const days = Math.floor(hrs / 24);
+      return `in ${days} day${days === 1 ? "" : "s"}`;
+    };
+    return (
+      <AnimatePresence>
+        <motion.div
+          key="ban-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-background/80 backdrop-blur-md z-[80]"
+          onClick={onClose}
+        />
+        <motion.div
+          key="ban-panel"
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 30, opacity: 0 }}
+          className="fixed inset-x-4 top-1/2 -translate-y-1/2 mx-auto max-w-md z-[81] bg-card border border-destructive/30 rounded-3xl p-6 shadow-2xl"
+        >
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
+              <Ban className="w-6 h-6 text-destructive" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-foreground">You can't join this Space</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {banInfo.banned_by_name
+                  ? `${banInfo.banned_by_name} has banned you from this Space.`
+                  : "The host has banned you from this Space."}
+              </p>
+            </div>
+          </div>
+
+          {banInfo.reason && (
+            <div className="mb-3 rounded-xl bg-muted/50 border border-border p-3">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+                Reason
+              </p>
+              <p className="text-sm text-foreground break-words">{banInfo.reason}</p>
+            </div>
+          )}
+
+          <div className="mb-5 rounded-xl bg-muted/30 border border-border p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mb-1">
+              {banInfo.expires_at ? "Estimated unblock" : "Duration"}
+            </p>
+            {banInfo.expires_at ? (
+              <>
+                <p className="text-sm text-foreground font-medium">
+                  {new Date(banInfo.expires_at).toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  You'll be able to rejoin {expiresMs !== null ? fmtRemaining(expiresMs) : "soon"}.
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-foreground">
+                This is a permanent ban. You won't be able to rejoin unless the host lifts it.
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:opacity-90 transition-opacity"
+          >
+            Got it
+          </button>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
