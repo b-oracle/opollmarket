@@ -195,6 +195,8 @@ Deno.serve(async (req) => {
     }
 
     // --- REMOVE CO-HOST ---
+    // When a co-host is removed they are demoted to a listener (NOT a speaker).
+    // They must be explicitly re-promoted by the host to speak again.
     if (action === "remove_cohost" && target_user_id) {
       requireHost();
       const newCoHosts = coHostIds.filter((id: string) => id !== target_user_id);
@@ -202,9 +204,20 @@ Deno.serve(async (req) => {
         .from("spaces")
         .update({ co_host_ids: newCoHosts })
         .eq("id", space_id);
+      // Revoke publish permissions in LiveKit so they can't keep speaking
+      try {
+        const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+        await svc.updateParticipant(roomName, target_user_id, undefined, {
+          canPublish: false,
+          canSubscribe: true,
+          canPublishData: true,
+        });
+      } catch (_e) {
+        // Participant may already be disconnected — ignore
+      }
       await supabaseAdmin
         .from("space_participants")
-        .update({ role: "speaker" })
+        .update({ role: "listener" })
         .eq("space_id", space_id)
         .eq("user_id", target_user_id);
       return new Response(JSON.stringify({ success: true, action: "removed_cohost" }), {
