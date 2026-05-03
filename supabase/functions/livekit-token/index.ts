@@ -117,12 +117,13 @@ Deno.serve(async (req) => {
     // Auto-expire temporary bans whose expires_at has passed.
     if (!isHost && !isCoHost && !["ban", "unban"].includes(action || "")) {
       const nowIso = new Date().toISOString();
-      // Clean up any expired bans for this user/space first
+      // Mark any expired bans for this user/space inactive (preserved for history)
       await supabaseAdmin
         .from("space_bans")
-        .delete()
+        .update({ is_active: false, expired_at: nowIso })
         .eq("space_id", space_id)
         .eq("user_id", userId)
+        .eq("is_active", true)
         .not("expires_at", "is", null)
         .lte("expires_at", nowIso);
 
@@ -131,6 +132,7 @@ Deno.serve(async (req) => {
         .select("expires_at, reason, banned_by, created_at")
         .eq("space_id", space_id)
         .eq("user_id", userId)
+        .eq("is_active", true)
         .limit(1);
       if (activeBans && activeBans.length > 0) {
         const ban = activeBans[0] as { expires_at: string | null; reason: string | null; banned_by: string; created_at: string };
@@ -385,13 +387,16 @@ Deno.serve(async (req) => {
       const expiresAt = Number.isFinite(durationMin) && durationMin > 0
         ? new Date(Date.now() + durationMin * 60_000).toISOString()
         : null;
-      // Insert ban record (idempotent via UNIQUE(space_id, user_id))
+      // Deactivate any existing active ban for this user/space, then insert fresh one
+      await supabaseAdmin
+        .from("space_bans")
+        .update({ is_active: false, expired_at: new Date().toISOString() })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id)
+        .eq("is_active", true);
       const { error: banErr } = await supabaseAdmin
         .from("space_bans")
-        .upsert(
-          { space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null, expires_at: expiresAt },
-          { onConflict: "space_id,user_id" }
-        );
+        .insert({ space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null, expires_at: expiresAt, is_active: true });
       if (banErr) throw new Error(banErr.message);
 
       // Remove from co-hosts if present
@@ -443,9 +448,10 @@ Deno.serve(async (req) => {
       requireMod();
       const { error: unbanErr } = await supabaseAdmin
         .from("space_bans")
-        .delete()
+        .update({ is_active: false, expired_at: new Date().toISOString() })
         .eq("space_id", space_id)
-        .eq("user_id", target_user_id);
+        .eq("user_id", target_user_id)
+        .eq("is_active", true);
       if (unbanErr) throw new Error(unbanErr.message);
 
       // Notify the unbanned user

@@ -13,6 +13,8 @@ type BanRow = {
   reason: string | null;
   expires_at: string | null;
   created_at: string;
+  is_active?: boolean | null;
+  expired_at?: string | null;
 };
 
 type ProfileLite = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
@@ -78,11 +80,12 @@ const AdminSpaceBans = () => {
     const q = search.trim().toLowerCase();
     const now = Date.now();
     return bans.filter((b) => {
-      // Status filter
-      const isExpired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
-      const isPermanent = !b.expires_at;
-      if (filter === "active" && isExpired) return false;
-      if (filter === "expired" && !isExpired) return false;
+      // Status filter — a ban is "active" only when is_active=true AND not yet expired
+      const timeExpired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
+      const isInactive = b.is_active === false || timeExpired;
+      const isPermanent = !b.expires_at && !isInactive;
+      if (filter === "active" && isInactive) return false;
+      if (filter === "expired" && !isInactive) return false;
       if (filter === "permanent" && !isPermanent) return false;
 
       if (!q) return true;
@@ -107,7 +110,7 @@ const AdminSpaceBans = () => {
     try {
       const { error } = await supabase
         .from("space_bans")
-        .delete()
+        .update({ is_active: false, expired_at: new Date().toISOString() } as any)
         .eq("id", b.id);
       if (error) throw error;
       // Notify the user that the ban was lifted
@@ -224,7 +227,7 @@ const AdminSpaceBans = () => {
                   const u = profiles[b.user_id];
                   const sp = spaces[b.space_id];
                   const rem = fmtRemaining(b.expires_at);
-                  const expired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
+                  const expired = b.is_active === false || (b.expires_at ? new Date(b.expires_at).getTime() <= now : false);
                   return (
                     <tr key={b.id} className="border-t border-border hover:bg-muted/20">
                       <td className="px-4 py-3">
