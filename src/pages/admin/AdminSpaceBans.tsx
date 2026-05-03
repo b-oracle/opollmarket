@@ -26,6 +26,13 @@ const AdminSpaceBans = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "expired" | "permanent">("active");
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick once a second so remaining-time labels stay live
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -132,14 +139,19 @@ const AdminSpaceBans = () => {
 
   const fmtRemaining = (expires: string | null) => {
     if (!expires) return { label: "Permanent", icon: <InfinityIcon className="w-3.5 h-3.5" /> };
-    const ms = new Date(expires).getTime() - Date.now();
+    const ms = new Date(expires).getTime() - now;
     if (ms <= 0) return { label: "Expired", icon: <Clock className="w-3.5 h-3.5" /> };
-    const mins = Math.floor(ms / 60000);
-    if (mins < 60) return { label: `${mins}m left`, icon: <Clock className="w-3.5 h-3.5" /> };
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 48) return { label: `${hrs}h left`, icon: <Clock className="w-3.5 h-3.5" /> };
-    const days = Math.floor(hrs / 24);
-    return { label: `${days}d left`, icon: <Clock className="w-3.5 h-3.5" /> };
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hrs = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    let label: string;
+    if (days > 0) label = `${days}d ${hrs}h left`;
+    else if (hrs > 0) label = `${hrs}h ${mins}m left`;
+    else if (mins > 0) label = `${mins}m ${secs}s left`;
+    else label = `${secs}s left`;
+    return { label, icon: <Clock className="w-3.5 h-3.5" /> };
   };
 
   return (
@@ -202,6 +214,7 @@ const AdminSpaceBans = () => {
                   <th className="text-left px-4 py-3">Banned by</th>
                   <th className="text-left px-4 py-3">Reason</th>
                   <th className="text-left px-4 py-3">Status</th>
+                  <th className="text-left px-4 py-3">Expires</th>
                   <th className="text-left px-4 py-3">Created</th>
                   <th className="text-right px-4 py-3">Actions</th>
                 </tr>
@@ -211,7 +224,7 @@ const AdminSpaceBans = () => {
                   const u = profiles[b.user_id];
                   const sp = spaces[b.space_id];
                   const rem = fmtRemaining(b.expires_at);
-                  const expired = b.expires_at ? new Date(b.expires_at).getTime() <= Date.now() : false;
+                  const expired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
                   return (
                     <tr key={b.id} className="border-t border-border hover:bg-muted/20">
                       <td className="px-4 py-3">
@@ -244,6 +257,20 @@ const AdminSpaceBans = () => {
                           {rem.icon}
                           {rem.label}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                        {b.expires_at ? (
+                          <div>
+                            <p className="text-foreground">{new Date(b.expires_at).toLocaleString()}</p>
+                            <p className="text-[10px] text-muted-foreground" title={new Date(b.expires_at).toISOString()}>
+                              {expired ? "ended" : `expires ${rem.label.replace(" left", "")} from now`}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <InfinityIcon className="w-3 h-3" /> Never
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                         {new Date(b.created_at).toLocaleString()}
