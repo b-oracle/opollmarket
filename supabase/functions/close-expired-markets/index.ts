@@ -102,13 +102,31 @@ Deno.serve(async (req) => {
         market_id: market.id,
       });
 
+      // Compute volume + participant count for the email
+      const { data: posStats } = await supabase
+        .from("positions")
+        .select("user_id, shares, avg_price")
+        .eq("market_id", market.id)
+        .gt("shares", 0);
+      const totalVolume = (posStats ?? []).reduce(
+        (s: number, p: any) => s + Number(p.shares ?? 0) * Number(p.avg_price ?? 0),
+        0,
+      );
+      const participantCount = new Set((posStats ?? []).map((p: any) => p.user_id)).size;
+
       await sendNotificationEmail({
         admin: supabase,
         userId: market.creator_wallet,
         templateName: "market-expired-creator",
         prefKey: "email_market_expired_creator",
         idempotencyKey: `market-expired-${market.id}`,
-        templateData: { marketTitle: market.title, marketId: market.id },
+        templateData: {
+          marketTitle: market.title,
+          marketId: market.id,
+          endedAt: new Date().toISOString(),
+          totalVolume: Math.round(totalVolume * 100) / 100,
+          participantCount,
+        },
       });
 
       // Notify all participants
