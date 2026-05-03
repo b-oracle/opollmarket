@@ -387,13 +387,16 @@ Deno.serve(async (req) => {
       const expiresAt = Number.isFinite(durationMin) && durationMin > 0
         ? new Date(Date.now() + durationMin * 60_000).toISOString()
         : null;
-      // Insert ban record (idempotent via UNIQUE(space_id, user_id))
+      // Deactivate any existing active ban for this user/space, then insert fresh one
+      await supabaseAdmin
+        .from("space_bans")
+        .update({ is_active: false, expired_at: new Date().toISOString() })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id)
+        .eq("is_active", true);
       const { error: banErr } = await supabaseAdmin
         .from("space_bans")
-        .upsert(
-          { space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null, expires_at: expiresAt },
-          { onConflict: "space_id,user_id" }
-        );
+        .insert({ space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null, expires_at: expiresAt, is_active: true });
       if (banErr) throw new Error(banErr.message);
 
       // Remove from co-hosts if present
