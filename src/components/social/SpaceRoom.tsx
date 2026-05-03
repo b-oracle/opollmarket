@@ -444,6 +444,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [actionTarget, setActionTarget] = useState<ParticipantInfo | null>(null);
   const [actionType, setActionType] = useState<"speaker" | "listener" | null>(null);
   const [banTarget, setBanTarget] = useState<ParticipantInfo | null>(null);
+  const [customBanValue, setCustomBanValue] = useState<string>("");
+  const [customBanUnit, setCustomBanUnit] = useState<"minutes" | "hours" | "days">("hours");
 
   // Speaker request state
   const [speakRequests, setSpeakRequests] = useState<Set<string>>(new Set());
@@ -3150,7 +3152,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     </p>
                   </div>
                 </div>
-
                 {/* Action buttons */}
                 <div className="space-y-2">
                   {actionType === "listener" && speakRequests.has(actionTarget.identity) && (
@@ -3335,6 +3336,52 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     </button>
                   ))}
                 </div>
+
+                {/* Custom duration */}
+                <div className="mb-3 rounded-xl border border-border bg-muted/30 p-3">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium mb-2">
+                    Custom duration
+                  </p>
+                  <div className="flex items-stretch gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      value={customBanValue}
+                      onChange={(e) => setCustomBanValue(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="e.g. 30"
+                      className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-background border border-border text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-destructive/40"
+                    />
+                    <select
+                      value={customBanUnit}
+                      onChange={(e) => setCustomBanUnit(e.target.value as "minutes" | "hours" | "days")}
+                      className="px-2 py-2 rounded-lg bg-background border border-border text-sm text-foreground"
+                    >
+                      <option value="minutes">minutes</option>
+                      <option value="hours">hours</option>
+                      <option value="days">days</option>
+                    </select>
+                    <button
+                      disabled={promoting === banTarget.identity || !customBanValue || Number(customBanValue) <= 0}
+                      onClick={() => {
+                        const n = Number(customBanValue);
+                        if (!Number.isFinite(n) || n <= 0) return;
+                        const mult = customBanUnit === "minutes" ? 1 : customBanUnit === "hours" ? 60 : 60 * 24;
+                        const mins = Math.floor(n * mult);
+                        const capped = Math.min(mins, 60 * 24 * 365);
+                        const target = banTarget.identity;
+                        setBanTarget(null);
+                        setCustomBanValue("");
+                        invokeAction("ban", target, { duration_minutes: capped });
+                      }}
+                      className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">Max 365 days. Whole numbers only.</p>
+                </div>
+
                 <button
                   disabled={promoting === banTarget.identity}
                   onClick={() => {
