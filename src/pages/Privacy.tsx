@@ -1,6 +1,8 @@
 import SEOHead from "@/components/SEOHead";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import BackToTop from "@/components/BackToTop";
 import LegalTableOfContents from "@/components/LegalTableOfContents";
 
@@ -30,6 +32,49 @@ const tocItems = [
 
 const Privacy = () => {
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!contentRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas"),
+      ]);
+      const node = contentRef.current;
+      const canvas = await html2canvas(node, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = margin;
+      pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - margin * 2;
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = margin - (imgHeight - heightLeft);
+        pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - margin * 2;
+      }
+      pdf.save("OPollMarket-Privacy-Policy.pdf");
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      toast.error("Could not generate PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
@@ -40,10 +85,19 @@ const Privacy = () => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-lg font-bold">Privacy Policy</h1>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            className="ml-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition disabled:opacity-50"
+            aria-label="Download privacy policy as PDF"
+          >
+            {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">{downloading ? "Preparing…" : "Download PDF"}</span>
+          </button>
         </div>
       </div>
 
-      <div className="max-w-lg md:max-w-3xl mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
+      <div ref={contentRef} className="max-w-lg md:max-w-3xl mx-auto px-4 pt-6 space-y-6 text-sm text-muted-foreground leading-relaxed">
         {/* At-a-glance summary (matches /data-use disclosure required by Google verification) */}
         <section
           id="at-a-glance"
