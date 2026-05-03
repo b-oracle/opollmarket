@@ -107,7 +107,7 @@ const AdminSpaceBans = () => {
     try {
       const { error } = await supabase
         .from("space_bans")
-        .delete()
+        .update({ is_active: false, expired_at: new Date().toISOString() } as any)
         .eq("id", b.id);
       if (error) throw error;
       // Notify the user that the ban was lifted
