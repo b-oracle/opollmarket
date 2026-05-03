@@ -139,14 +139,19 @@ const AdminSpaceBans = () => {
 
   const fmtRemaining = (expires: string | null) => {
     if (!expires) return { label: "Permanent", icon: <InfinityIcon className="w-3.5 h-3.5" /> };
-    const ms = new Date(expires).getTime() - Date.now();
+    const ms = new Date(expires).getTime() - now;
     if (ms <= 0) return { label: "Expired", icon: <Clock className="w-3.5 h-3.5" /> };
-    const mins = Math.floor(ms / 60000);
-    if (mins < 60) return { label: `${mins}m left`, icon: <Clock className="w-3.5 h-3.5" /> };
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 48) return { label: `${hrs}h left`, icon: <Clock className="w-3.5 h-3.5" /> };
-    const days = Math.floor(hrs / 24);
-    return { label: `${days}d left`, icon: <Clock className="w-3.5 h-3.5" /> };
+    const totalSec = Math.floor(ms / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hrs = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    let label: string;
+    if (days > 0) label = `${days}d ${hrs}h left`;
+    else if (hrs > 0) label = `${hrs}h ${mins}m left`;
+    else if (mins > 0) label = `${mins}m ${secs}s left`;
+    else label = `${secs}s left`;
+    return { label, icon: <Clock className="w-3.5 h-3.5" /> };
   };
 
   return (
