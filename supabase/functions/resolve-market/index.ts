@@ -241,7 +241,16 @@ async function handleResolve(
         templateName: "market-won",
         prefKey: "email_market_won",
         idempotencyKey: `market-won-${market_id}-${pos.user_id}`,
-        templateData: { marketTitle: market.title, payoutAmount: payout, marketId: market_id },
+        templateData: {
+          marketTitle: market.title,
+          marketId: market_id,
+          outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+          payoutAmount: payout,
+          stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
+          profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
+          shares: pos.shares,
+          avgPrice: pos.avg_price,
+        },
       });
     }
     // NORMAL: Two-sided market
