@@ -113,6 +113,21 @@ Deno.serve(async (req) => {
     const isCoHost = coHostIds.includes(userId);
     const hasModPowers = isHost || isCoHost;
 
+    // Block banned users from joining (allow host/co-host actions through)
+    if (!isHost && !isCoHost && !["ban", "unban"].includes(action || "")) {
+      const { count: banCount } = await supabaseAdmin
+        .from("space_bans")
+        .select("id", { count: "exact", head: true })
+        .eq("space_id", space_id)
+        .eq("user_id", userId);
+      if (banCount && banCount > 0) {
+        return new Response(
+          JSON.stringify({ error: "You have been banned from this Space by the host." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Private space join-gating
     if (space.is_private && !isHost && !isCoHost && !action) {
       const { count } = await supabaseAdmin
