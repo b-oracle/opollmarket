@@ -1,6 +1,8 @@
 import SEOHead from "@/components/SEOHead";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import BackToTop from "@/components/BackToTop";
 import LegalTableOfContents from "@/components/LegalTableOfContents";
 
