@@ -109,6 +109,7 @@ const AdminTelegram = lazy(() => import("./pages/admin/AdminTelegram"));
 const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
 const AdminEscrows = lazy(() => import("./pages/admin/AdminEscrows"));
 const AdminCallEvents = lazy(() => import("./pages/admin/AdminCallEvents"));
+const AdminSpaceBans = lazy(() => import("./pages/admin/AdminSpaceBans"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -597,6 +598,7 @@ const App = () => {
                           <Route path="support" element={<AdminSupport />} />
                           <Route path="escrows" element={<AdminEscrows />} />
                           <Route path="call-events" element={<AdminCallEvents />} />
+                          <Route path="space-bans" element={<AdminSpaceBans />} />
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />
