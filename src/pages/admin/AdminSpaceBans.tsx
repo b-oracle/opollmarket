@@ -214,6 +214,7 @@ const AdminSpaceBans = () => {
                   <th className="text-left px-4 py-3">Banned by</th>
                   <th className="text-left px-4 py-3">Reason</th>
                   <th className="text-left px-4 py-3">Status</th>
+                  <th className="text-left px-4 py-3">Expires</th>
                   <th className="text-left px-4 py-3">Created</th>
                   <th className="text-right px-4 py-3">Actions</th>
                 </tr>
