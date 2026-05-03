@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles, Monitor } from "lucide-react";
+import { Phone, MessageCircle, Eye, EyeOff, BarChart3, History, BellOff, Copy, Gift, DollarSign, Sparkles, Monitor, Mail, Trophy, Frown, Clock, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import { toast } from "sonner";
 
 interface UserSettings {
@@ -20,6 +20,11 @@ interface UserSettings {
   allow_dm_money: boolean;
   enable_gift_animations: boolean;
   allow_screen_sharing: boolean;
+  email_market_won: boolean;
+  email_market_lost: boolean;
+  email_market_expired_creator: boolean;
+  email_deposit_completed: boolean;
+  email_withdrawal_completed: boolean;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -35,6 +40,11 @@ const DEFAULT_SETTINGS: UserSettings = {
   allow_dm_money: true,
   enable_gift_animations: true,
   allow_screen_sharing: true,
+  email_market_won: true,
+  email_market_lost: true,
+  email_market_expired_creator: true,
+  email_deposit_completed: true,
+  email_withdrawal_completed: true,
 };
 
 const SETTING_GROUPS = [
@@ -63,6 +73,16 @@ const SETTING_GROUPS = [
       { key: "mute_notifications" as const, label: "Mute Notifications", desc: "Silence all push notifications", icon: BellOff },
       { key: "allow_copy_trading" as const, label: "Allow Copy Trading", desc: "Let others copy your trades", icon: Copy },
       { key: "enable_gift_animations" as const, label: "Gift Animations", desc: "Show fun animations on gift taps", icon: Sparkles },
+    ],
+  },
+  {
+    title: "Email Notifications",
+    items: [
+      { key: "email_market_won" as const, label: "Prediction Won", desc: "Email me when my prediction wins", icon: Trophy },
+      { key: "email_market_lost" as const, label: "Prediction Lost", desc: "Email me when my prediction loses", icon: Frown },
+      { key: "email_market_expired_creator" as const, label: "My Market Expired", desc: "Email me when a market I created ends", icon: Clock },
+      { key: "email_deposit_completed" as const, label: "Deposit Confirmed", desc: "Email me when a deposit is credited", icon: ArrowDownToLine },
+      { key: "email_withdrawal_completed" as const, label: "Withdrawal Updates", desc: "Email me when a withdrawal is processed", icon: ArrowUpFromLine },
     ],
   },
 ];
