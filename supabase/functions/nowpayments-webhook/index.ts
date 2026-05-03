@@ -528,7 +528,7 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
     userId,
     templateName: "deposit-completed",
     prefKey: "email_deposit_completed",
-    idempotencyKey: `deposit-credit-${userId}-${Number(creditAmount).toFixed(2)}-${Date.now()}`,
+    idempotencyKey: `deposit-credit-${paymentIdStr}`,
     templateData: { amount: Number(creditAmount), method: "Crypto" },
   });
 
