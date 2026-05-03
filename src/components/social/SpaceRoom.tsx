@@ -147,6 +147,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     expires_at: string | null;
     banned_by_name?: string | null;
   } | null>(null);
+  const [banNow, setBanNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!banInfo?.expires_at) return;
+    const id = setInterval(() => setBanNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [banInfo?.expires_at]);
   const intentionalLeaveRef = useRef(false);
   const [muted, setMuted] = useState(true);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
