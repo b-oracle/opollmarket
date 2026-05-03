@@ -7,45 +7,16 @@ const PREVIEW_SW_CLEANUP_KEY = "opoll_preview_sw_cleanup_v1";
 const PREVIEW_SW_RELOAD_KEY = "opoll_preview_sw_reload_v1";
 
 // Service workers break Lovable preview/iframe sessions by serving stale assets.
-// Clean up any old registrations once, then reload a single time without SW control.
+// Clean up any old registrations silently — DO NOT reload, since iframe
+// sessionStorage can be cleared between reloads, causing infinite loops.
 if (typeof window !== "undefined") {
   void (async () => {
     if (!isPwaBlockedContext()) return;
-
-    let alreadyCleaned = false;
     try {
-      alreadyCleaned = window.sessionStorage?.getItem(PREVIEW_SW_CLEANUP_KEY) === "1";
+      await cleanupBlockedPwaContext();
     } catch {
-      alreadyCleaned = false;
+      // ignore
     }
-
-    if (alreadyCleaned) return;
-
-    try {
-      window.sessionStorage?.setItem(PREVIEW_SW_CLEANUP_KEY, "1");
-    } catch {
-      // Ignore storage access errors.
-    }
-
-    const hadServiceWorkerState = await cleanupBlockedPwaContext();
-    if (!hadServiceWorkerState) return;
-
-    let alreadyReloaded = false;
-    try {
-      alreadyReloaded = window.sessionStorage?.getItem(PREVIEW_SW_RELOAD_KEY) === "1";
-    } catch {
-      alreadyReloaded = false;
-    }
-
-    if (alreadyReloaded) return;
-
-    try {
-      window.sessionStorage?.setItem(PREVIEW_SW_RELOAD_KEY, "1");
-    } catch {
-      // Ignore storage access errors.
-    }
-
-    window.location.replace(window.location.href);
   })();
 }
 
@@ -146,40 +117,44 @@ if (!rootElement) {
 createRoot(rootElement).render(<App />);
 
 // One-time blank-screen recovery: if app failed to mount any UI, clear stale SW/cache and reload.
-window.setTimeout(async () => {
-  const hasMountedContent =
-    rootElement.childElementCount > 0 ||
-    (rootElement.textContent?.trim().length ?? 0) > 0;
+// DISABLED inside the Lovable preview iframe — sessionStorage can be cleared between
+// reloads there, causing infinite refresh loops.
+if (!isPwaBlockedContext()) {
+  window.setTimeout(async () => {
+    const hasMountedContent =
+      rootElement.childElementCount > 0 ||
+      (rootElement.textContent?.trim().length ?? 0) > 0;
 
-  if (hasMountedContent) return;
+    if (hasMountedContent) return;
 
-  let attempts = 0;
-  try {
-    attempts = Number(window.sessionStorage?.getItem("boot_recovery") || "0");
-  } catch {
-    attempts = 0;
-  }
-
-  if (attempts >= 1) return;
-
-  try {
-    window.sessionStorage?.setItem("boot_recovery", String(attempts + 1));
-  } catch {
-    // ignore storage errors
-  }
-
-  try {
-    if ("serviceWorker" in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
+    let attempts = 0;
+    try {
+      attempts = Number(window.sessionStorage?.getItem("boot_recovery") || "0");
+    } catch {
+      attempts = 0;
     }
-    if ("caches" in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((k) => caches.delete(k)));
-    }
-  } catch {
-    // ignore cleanup failures
-  }
 
-  window.location.reload();
-}, 5000);
+    if (attempts >= 1) return;
+
+    try {
+      window.sessionStorage?.setItem("boot_recovery", String(attempts + 1));
+    } catch {
+      // ignore storage errors
+    }
+
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch {
+      // ignore cleanup failures
+    }
+
+    window.location.reload();
+  }, 5000);
+}

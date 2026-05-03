@@ -50,7 +50,19 @@ class ErrorBoundary extends Component<Props, State> {
       error.message?.includes("error loading dynamically imported module");
     const reloadCount = getChunkReloadCount();
 
-    if (isChunkError && reloadCount < 2) {
+    // Avoid auto-reload inside Lovable preview iframe — sessionStorage can be
+    // cleared between reloads, causing infinite refresh loops.
+    let inPreviewIframe = false;
+    try {
+      inPreviewIframe =
+        window.self !== window.top ||
+        window.location.hostname.includes("id-preview--") ||
+        window.location.hostname.includes("lovableproject.com");
+    } catch {
+      inPreviewIframe = true;
+    }
+
+    if (isChunkError && reloadCount < 2 && !inPreviewIframe) {
       return { hasError: true, error, isAutoReloading: true };
     }
     return { hasError: true, error, isAutoReloading: false };
