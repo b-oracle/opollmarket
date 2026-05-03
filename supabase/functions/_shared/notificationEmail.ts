@@ -1,5 +1,7 @@
-// Shared helper to send a transactional notification email respecting user preferences.
-// All errors are swallowed and logged — emails should never break critical flows.
+// Shared helper to enqueue a transactional notification email into the
+// durable outbox. Actual HTTP delivery happens in `process-notification-emails`
+// with retries + dead-letter queue. This way a transient failure (5xx,
+// timeout, rate-limit) cannot drop a critical user notification.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 
 type AdminClient = ReturnType<typeof createClient>;
@@ -29,26 +31,8 @@ export async function sendNotificationEmail({
   templateData,
 }: SendArgs): Promise<void> {
   try {
-    // Idempotency claim: ensures the same logical event (cron re-run, webhook
-    // redelivery, edge function retry) only enqueues one email.
-    const { data: claimed, error: claimErr } = await admin.rpc(
-      "claim_notification_email",
-      {
-        _idempotency_key: idempotencyKey,
-        _template_name: templateName,
-        _user_id: userId,
-      },
-    );
-    if (claimErr) {
-      console.warn("sendNotificationEmail: claim failed, skipping", templateName, claimErr);
-      return;
-    }
-    if (claimed !== true) {
-      // Already enqueued by a previous run — silent skip.
-      return;
-    }
-
-    // Pull profile email + settings preference
+    // Resolve recipient email + preference at enqueue time (cheap, and lets
+    // us short-circuit unsubscribed/no-email users without a queue slot).
     const [{ data: profile }, { data: settings }] = await Promise.all([
       admin.from("profiles").select("email").eq("id", userId).maybeSingle(),
       admin
@@ -61,30 +45,25 @@ export async function sendNotificationEmail({
     const email = (profile as any)?.email as string | undefined;
     if (!email) return;
 
-    // Default = enabled if no row yet
     const enabled = settings == null ? true : ((settings as any)[prefKey] ?? true);
     if (!enabled) return;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Insert into outbox; ON CONFLICT (idempotency_key) DO NOTHING gives us
+    // dedup across cron re-runs, webhook redeliveries, and edge retries.
+    const { error } = await admin
+      .from("notification_email_outbox")
+      .insert({
+        idempotency_key: idempotencyKey,
+        template_name: templateName,
+        user_id: userId,
+        recipient_email: email,
+        template_data: templateData ?? {},
+        pref_key: prefKey,
+      });
 
-    const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${serviceRoleKey}`,
-        apikey: serviceRoleKey,
-      },
-      body: JSON.stringify({
-        templateName,
-        recipientEmail: email,
-        idempotencyKey,
-        templateData: templateData ?? {},
-      }),
-    });
-
-    if (!res.ok) {
-      console.warn("sendNotificationEmail: non-2xx", templateName, res.status, await res.text().catch(() => ""));
+    if (error && (error as any).code !== "23505") {
+      // 23505 = unique_violation = already enqueued, expected
+      console.warn("sendNotificationEmail enqueue failed", templateName, error);
     }
   } catch (err) {
     console.warn("sendNotificationEmail failed", templateName, err);

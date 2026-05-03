@@ -5,6 +5,8 @@ project_id = "dqtjuhqndncanfwgjwva"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.process-notification-emails]
+    verify_jwt = true
   [functions.create-boost-payment]
     verify_jwt = false
   [functions.create-deposit]
