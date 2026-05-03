@@ -5,7 +5,11 @@ import { cleanupBlockedPwaContext, isPwaBlockedContext } from "@/lib/pwa";
 const DISMISSED_SW_KEY = "opoll_sw_dismissed_version";
 const APPLIED_SW_KEY = "opoll_sw_applied_version";
 const UPDATE_COOLDOWN_KEY = "opoll_sw_update_cooldown";
+const SESSION_UPDATED_KEY = "opoll_sw_updated_this_session";
 const UPDATE_POLL_MS = 10 * 60 * 1000;
+// Suppress new update prompts for 6h after the user applies an update,
+// to prevent loops where each reload finds a newly-built sw.js.
+const POST_UPDATE_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 const getWorkerVersion = (worker: ServiceWorker | null | undefined): string | null => {
   return worker?.scriptURL ?? null;
@@ -69,9 +73,12 @@ export const usePWAUpdate = () => {
     (candidate: ServiceWorker, registration: ServiceWorkerRegistration): boolean => {
       if (blockedContext) return false;
 
-      // Cooldown: suppress prompts for 30s after an update was applied
-      const cooldownUntil = safeStorage.getSession(UPDATE_COOLDOWN_KEY);
+      // Cooldown: suppress prompts after an update was applied (loop guard)
+      const cooldownUntil = safeStorage.getLocal(UPDATE_COOLDOWN_KEY);
       if (cooldownUntil && Date.now() < Number(cooldownUntil)) return false;
+
+      // Only allow one update prompt per browser session to prevent loops
+      if (safeStorage.getSession(SESSION_UPDATED_KEY) === "1") return false;
 
       const candidateVersion = getWorkerVersion(candidate);
       if (!candidateVersion) return false;
@@ -156,10 +163,9 @@ export const usePWAUpdate = () => {
           }
         }, UPDATE_POLL_MS);
 
-        // Do an immediate update check when app is visible
-        if (document.visibilityState === "visible") {
-          registration.update();
-        }
+        // Skip the immediate post-boot update check — it was the main loop
+        // trigger after a reload. The 10-min poll + visibilitychange handler
+        // still pick up genuine updates without re-prompting on every reload.
       }
     },
     onRegisterError(error) {
@@ -219,18 +225,21 @@ export const usePWAUpdate = () => {
       }
     }
 
-    // Set a 30-second cooldown to prevent re-prompting after reload
-    safeStorage.setSession(UPDATE_COOLDOWN_KEY, String(Date.now() + 30_000));
+    // Mark this session so we don't re-prompt after the upcoming reload,
+    // and set a long cross-session cooldown to break update loops caused
+    // by frequent rebuilds producing a fresh sw.js on every visit.
+    safeStorage.setSession(SESSION_UPDATED_KEY, "1");
+    safeStorage.setLocal(
+      UPDATE_COOLDOWN_KEY,
+      String(Date.now() + POST_UPDATE_COOLDOWN_MS)
+    );
 
     if (waitingSW) {
       waitingSW.postMessage({ type: "SKIP_WAITING" });
     }
 
-    // Call the vite-pwa helper then do a single controlled reload
+    // vite-pwa helper performs a single reload once the new SW takes control
     updateServiceWorker(true);
-
-    // Give the new SW a moment to activate, then reload once
-    setTimeout(() => window.location.reload(), 600);
   }, [blockedContext, waitingSW, updateServiceWorker]);
 
   const dismiss = useCallback(() => {
