@@ -371,11 +371,16 @@ Deno.serve(async (req) => {
       if (isCoHost && !isHost && coHostIds.includes(target_user_id)) {
         throw new Error("Co-hosts cannot ban other co-hosts");
       }
+      // Optional duration in minutes for temporary bans (null/0 = permanent)
+      const durationMin = Number(body.duration_minutes);
+      const expiresAt = Number.isFinite(durationMin) && durationMin > 0
+        ? new Date(Date.now() + durationMin * 60_000).toISOString()
+        : null;
       // Insert ban record (idempotent via UNIQUE(space_id, user_id))
       const { error: banErr } = await supabaseAdmin
         .from("space_bans")
         .upsert(
-          { space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null },
+          { space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null, expires_at: expiresAt },
           { onConflict: "space_id,user_id" }
         );
       if (banErr) throw new Error(banErr.message);
