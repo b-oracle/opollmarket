@@ -1053,8 +1053,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
         room.on(RoomEvent.DataReceived, handleDataReceived);
-        room.on(RoomEvent.Disconnected, async () => {
-          if (cancelled || intentionalLeaveRef.current) {
+        room.on(RoomEvent.Disconnected, async (reason?: any) => {
+          // If the host kicked this user, do NOT auto-reconnect.
+          // LiveKit emits DisconnectReason.PARTICIPANT_REMOVED (numeric value 4) when removeParticipant is called.
+          const wasKicked =
+            reason === 4 ||
+            reason === "PARTICIPANT_REMOVED" ||
+            (typeof reason === "string" && reason.toUpperCase().includes("REMOVED"));
+
+          if (cancelled || intentionalLeaveRef.current || wasKicked) {
+            if (wasKicked && !cancelled) {
+              toast.info("You were removed from this Space by the host");
+            }
             if (!cancelled) {
               setConnected(false);
               onClose();
@@ -1072,9 +1082,17 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   body: { space_id: spaceId },
                 });
                 if (reconData?.error) {
-                  // Space ended or not live
-                  if (typeof reconData.error === "string" && (reconData.error.includes("ended") || reconData.error.includes("isn't live"))) {
-                    toast.info("This Space has ended");
+                  // Space ended, not live, or user was kicked
+                  if (typeof reconData.error === "string" && (
+                    reconData.error.includes("ended") ||
+                    reconData.error.includes("isn't live") ||
+                    reconData.error.toLowerCase().includes("removed") ||
+                    reconData.error.toLowerCase().includes("kicked") ||
+                    reconData.error.toLowerCase().includes("banned")
+                  )) {
+                    toast.info(reconData.error.toLowerCase().includes("removed") || reconData.error.toLowerCase().includes("kicked")
+                      ? "You were removed from this Space"
+                      : "This Space has ended");
                     setReconnecting(false);
                     onClose();
                     return;
