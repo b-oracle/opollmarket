@@ -2670,6 +2670,7 @@ export type Database = {
         Row: {
           banned_by: string
           created_at: string
+          expires_at: string | null
           id: string
           reason: string | null
           space_id: string
@@ -2678,6 +2679,7 @@ export type Database = {
         Insert: {
           banned_by: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           reason?: string | null
           space_id: string
@@ -2686,6 +2688,7 @@ export type Database = {
         Update: {
           banned_by?: string
           created_at?: string
+          expires_at?: string | null
           id?: string
           reason?: string | null
           space_id?: string
