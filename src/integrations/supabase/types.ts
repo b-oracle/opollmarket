@@ -2670,8 +2670,10 @@ export type Database = {
         Row: {
           banned_by: string
           created_at: string
+          expired_at: string | null
           expires_at: string | null
           id: string
+          is_active: boolean
           reason: string | null
           space_id: string
           user_id: string
@@ -2679,8 +2681,10 @@ export type Database = {
         Insert: {
           banned_by: string
           created_at?: string
+          expired_at?: string | null
           expires_at?: string | null
           id?: string
+          is_active?: boolean
           reason?: string | null
           space_id: string
           user_id: string
@@ -2688,8 +2692,10 @@ export type Database = {
         Update: {
           banned_by?: string
           created_at?: string
+          expired_at?: string | null
           expires_at?: string | null
           id?: string
+          is_active?: boolean
           reason?: string | null
           space_id?: string
           user_id?: string
@@ -4649,6 +4655,12 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      expire_space_bans: {
+        Args: never
+        Returns: {
+          expired_count: number
+        }[]
       }
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
       flag_unverified_liquidity: {
