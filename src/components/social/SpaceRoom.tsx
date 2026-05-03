@@ -3167,6 +3167,79 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           )}
         </AnimatePresence>
 
+        {/* Ban duration picker */}
+        <AnimatePresence>
+          {banTarget && (
+            <>
+              <motion.div
+                key="ban-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setBanTarget(null)}
+                className="fixed inset-0 z-40 bg-background/70 backdrop-blur-sm"
+              />
+              <motion.div
+                key="ban-sheet"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-card border-t border-border p-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]"
+              >
+                <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-muted" />
+                <div className="mb-4 flex items-center gap-2 text-destructive">
+                  <Ban className="w-5 h-5" />
+                  <h3 className="text-base font-semibold">Ban {banTarget.name || "user"}</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Choose how long they should be blocked from this Space. They'll be removed immediately and won't be able to rejoin until the ban ends.
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  {[
+                    { label: "15 minutes", mins: 15 },
+                    { label: "1 hour", mins: 60 },
+                    { label: "24 hours", mins: 60 * 24 },
+                    { label: "7 days", mins: 60 * 24 * 7 },
+                  ].map((opt) => (
+                    <button
+                      key={opt.mins}
+                      disabled={promoting === banTarget.identity}
+                      onClick={() => {
+                        const target = banTarget.identity;
+                        setBanTarget(null);
+                        invokeAction("ban", target, { duration_minutes: opt.mins });
+                      }}
+                      className="px-3 py-3 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive text-sm font-medium transition-colors"
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  disabled={promoting === banTarget.identity}
+                  onClick={() => {
+                    const target = banTarget.identity;
+                    setBanTarget(null);
+                    if (window.confirm("Permanently ban this user from this Space?")) {
+                      invokeAction("ban", target);
+                    }
+                  }}
+                  className="w-full mt-1 px-4 py-3 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Permanent ban
+                </button>
+                <button
+                  onClick={() => setBanTarget(null)}
+                  className="w-full mt-2 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Emoji picker overlay for targeted emoji */}
         <AnimatePresence>
           {emojiTarget && (
