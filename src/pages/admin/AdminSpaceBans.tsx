@@ -103,6 +103,18 @@ const AdminSpaceBans = () => {
         .delete()
         .eq("id", b.id);
       if (error) throw error;
+      // Notify the user that the ban was lifted
+      try {
+        const sp = spaces[b.space_id];
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from("notifications").insert({
+          user_id: b.user_id,
+          actor_id: user?.id ?? null,
+          title: "Your Space ban was lifted ✅",
+          message: `You can now rejoin "${sp?.title || "the Space"}".`,
+          type: "space_unbanned",
+        });
+      } catch { /* non-blocking */ }
       setBans((prev) => prev.filter((x) => x.id !== b.id));
       toast.success("Ban revoked");
     } catch (e: any) {
