@@ -299,21 +299,48 @@ async function handleResolve(
         templateName: "market-won",
         prefKey: "email_market_won",
         idempotencyKey: `market-won-${market_id}-${pos.user_id}`,
-        templateData: { marketTitle: market.title, payoutAmount: payout, marketId: market_id },
+        templateData: {
+          marketTitle: market.title,
+          marketId: market_id,
+          outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+          payoutAmount: payout,
+          stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
+          profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
+          shares: pos.shares,
+          avgPrice: pos.avg_price,
+        },
       });
     }
   }
 
-  // ── Notify losers via email (one per unique user) ──
-  const losingUserIds = Array.from(new Set(losingPositions.map((p: any) => p.user_id)));
-  for (const uid of losingUserIds) {
+  // ── Notify losers via email (one per unique user, aggregated stake) ──
+  const losingByUser = new Map<string, { stake: number; shares: number; sides: Set<string> }>();
+  for (const p of losingPositions as any[]) {
+    const key = p.user_id as string;
+    const cur = losingByUser.get(key) ?? { stake: 0, shares: 0, sides: new Set<string>() };
+    cur.stake += p.shares * p.avg_price;
+    cur.shares += p.shares;
+    if (p.side) cur.sides.add(p.side);
+    losingByUser.set(key, cur);
+  }
+  for (const [uid, agg] of losingByUser) {
+    const yourOutcomeLabel = agg.sides.size === 1
+      ? Array.from(agg.sides)[0].toUpperCase()
+      : undefined;
     await sendNotificationEmail({
       admin: adminClient,
-      userId: uid as string,
+      userId: uid,
       templateName: "market-lost",
       prefKey: "email_market_lost",
       idempotencyKey: `market-lost-${market_id}-${uid}`,
-      templateData: { marketTitle: market.title, marketId: market_id },
+      templateData: {
+        marketTitle: market.title,
+        marketId: market_id,
+        outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+        yourOutcomeLabel,
+        stake: Math.round(agg.stake * 100) / 100,
+        shares: Math.round(agg.shares * 100) / 100,
+      },
     });
   }
 
