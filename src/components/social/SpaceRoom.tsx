@@ -431,6 +431,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   // Participant action sheet state
   const [actionTarget, setActionTarget] = useState<ParticipantInfo | null>(null);
   const [actionType, setActionType] = useState<"speaker" | "listener" | null>(null);
+  const [banTarget, setBanTarget] = useState<ParticipantInfo | null>(null);
 
   // Speaker request state
   const [speakRequests, setSpeakRequests] = useState<Set<string>>(new Set());
