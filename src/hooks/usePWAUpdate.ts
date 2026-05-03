@@ -73,9 +73,12 @@ export const usePWAUpdate = () => {
     (candidate: ServiceWorker, registration: ServiceWorkerRegistration): boolean => {
       if (blockedContext) return false;
 
-      // Cooldown: suppress prompts for 30s after an update was applied
-      const cooldownUntil = safeStorage.getSession(UPDATE_COOLDOWN_KEY);
+      // Cooldown: suppress prompts after an update was applied (loop guard)
+      const cooldownUntil = safeStorage.getLocal(UPDATE_COOLDOWN_KEY);
       if (cooldownUntil && Date.now() < Number(cooldownUntil)) return false;
+
+      // Only allow one update prompt per browser session to prevent loops
+      if (safeStorage.getSession(SESSION_UPDATED_KEY) === "1") return false;
 
       const candidateVersion = getWorkerVersion(candidate);
       if (!candidateVersion) return false;
