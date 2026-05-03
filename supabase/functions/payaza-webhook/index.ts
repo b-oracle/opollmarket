@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { logWebhookEvent } from "../_shared/webhookLog.ts";
 import { safeEqual, validatePayazaPayload } from "../_shared/webhookValidation.ts";
 import { errorResponse } from "../_shared/errors.ts";
+import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -282,6 +283,15 @@ Deno.serve(async (req) => {
       title: "Deposit Confirmed! 🎉",
       message: `Your deposit of $${depositAmount.toFixed(2)} has been credited to your balance.`,
       type: "deposit",
+    });
+
+    await sendNotificationEmail({
+      admin: adminClient as any,
+      userId: tx.user_id,
+      templateName: "deposit-completed",
+      prefKey: "email_deposit_completed",
+      idempotencyKey: `deposit-payaza-${reference}`,
+      templateData: { amount: depositAmount, method: "Payaza" },
     });
 
     // Handle promotion activations if this is a promotion deposit
