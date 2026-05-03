@@ -3142,9 +3142,9 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   {/* Ban — host/co-host only, prevents the user from rejoining this Space */}
                   <button
                     onClick={() => {
-                      if (window.confirm("Ban this user from this Space? They won't be able to rejoin until you unban them.")) {
-                        invokeAction("ban", actionTarget.identity);
-                      }
+                      setBanTarget(actionTarget);
+                      setActionTarget(null);
+                      setActionType(null);
                     }}
                     disabled={promoting === actionTarget.identity}
                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/15 hover:bg-destructive/25 text-destructive transition-colors"
@@ -3152,7 +3152,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <Ban className="w-5 h-5" />
                     <div className="flex-1 text-left">
                       <p className="text-sm font-semibold">Ban from Space</p>
-                      <p className="text-[10px] opacity-80">Permanently blocks rejoining this Space</p>
+                      <p className="text-[10px] opacity-80">Choose permanent or timed ban</p>
                     </div>
                   </button>
                   <button
