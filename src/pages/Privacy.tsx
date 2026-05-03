@@ -32,6 +32,49 @@ const tocItems = [
 
 const Privacy = () => {
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadPdf = async () => {
+    if (!contentRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import("jspdf"),
+        import("html2canvas"),
+      ]);
+      const node = contentRef.current;
+      const canvas = await html2canvas(node, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        useCORS: true,
+        windowWidth: node.scrollWidth,
+      });
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+      const imgWidth = pageWidth - margin * 2;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = margin;
+      pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight - margin * 2;
+      while (heightLeft > 0) {
+        pdf.addPage();
+        position = margin - (imgHeight - heightLeft);
+        pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - margin * 2;
+      }
+      pdf.save("OPollMarket-Privacy-Policy.pdf");
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      toast.error("Could not generate PDF. Please try again.");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
