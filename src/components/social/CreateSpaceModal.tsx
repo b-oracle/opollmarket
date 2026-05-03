@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, Lock, Search, UserPlus, UserMinus, Tv } from "lucide-react";
+import { X, Radio, Loader2, Calendar, Clock, ShieldAlert, ShieldCheck, Lock, Search, UserPlus, UserMinus, Tv, BadgeCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import MarketTagSelector, { type MarketTag } from "./MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
@@ -350,11 +351,46 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                 </div>
               )}
 
-              {!isVerified && verificationLevel !== null && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
-                  <ShieldAlert className="w-4 h-4 shrink-0" />
-                  <span>Only verified members (Blue or Gold tick) can host Spaces.</span>
-                </div>
+              {/* Host eligibility status */}
+              {verificationLevel !== null && (
+                isVerified ? (
+                  <div className={`flex items-start gap-2 p-3 rounded-xl border text-xs ${
+                    verificationLevel === "gold"
+                      ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-600 dark:text-yellow-400"
+                      : "bg-sky-500/10 border-sky-500/30 text-sky-600 dark:text-sky-400"
+                  }`}>
+                    <BadgeCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold">
+                        {verificationLevel === "gold" ? "Gold tick — eligible to host" : "Blue tick — eligible to host"}
+                      </p>
+                      <p className="opacity-80 mt-0.5">
+                        You can start or schedule Spaces. Your audience is people you follow and people who follow you.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                    <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1.5">
+                      <p className="font-semibold">Hosting blocked — verification required</p>
+                      <p className="opacity-90">
+                        Only members with a Blue or Gold tick can host Spaces. Your account currently has no verification badge.
+                      </p>
+                      <p className="opacity-90">
+                        Next steps: connect a wallet holding the verification NFT (Blue) or the gold-tier token balance (Gold), then refresh your verification from your profile.
+                      </p>
+                      <Link
+                        to="/profile"
+                        onClick={onClose}
+                        className="inline-flex items-center gap-1 mt-1 px-2.5 py-1 rounded-md bg-destructive text-destructive-foreground font-semibold hover:opacity-90"
+                      >
+                        <ShieldCheck className="w-3 h-3" />
+                        Get verified
+                      </Link>
+                    </div>
+                  </div>
+                )
               )}
 
               {mode === "scheduled" && (
