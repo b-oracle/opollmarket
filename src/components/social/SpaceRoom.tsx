@@ -1545,7 +1545,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     toast.info("Request declined");
   };
 
-  const invokeAction = async (action: string, target_user_id?: string) => {
+  const invokeAction = async (action: string, target_user_id?: string, extra?: Record<string, unknown>) => {
     // Client-side guard: only verified users can be made co-host (unless toggle allows unverified)
     if (action === "make_cohost" && target_user_id) {
       const allowUnverified = isFeatureEnabled("allow_unverified_spaces");
@@ -1559,7 +1559,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     setPromoting(target_user_id || action);
     try {
       const { data, error } = await supabase.functions.invoke("livekit-token", {
-        body: { space_id: spaceId, action, target_user_id },
+        body: { space_id: spaceId, action, target_user_id, ...(extra || {}) },
       });
       if (error || data?.error) toast.error(data?.error || `Failed to ${action}`);
       else toast.success(
