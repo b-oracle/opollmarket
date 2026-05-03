@@ -13,6 +13,8 @@ type BanRow = {
   reason: string | null;
   expires_at: string | null;
   created_at: string;
+  is_active?: boolean | null;
+  expired_at?: string | null;
 };
 
 type ProfileLite = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
