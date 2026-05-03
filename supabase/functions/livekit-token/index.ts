@@ -448,9 +448,10 @@ Deno.serve(async (req) => {
       requireMod();
       const { error: unbanErr } = await supabaseAdmin
         .from("space_bans")
-        .delete()
+        .update({ is_active: false, expired_at: new Date().toISOString() })
         .eq("space_id", space_id)
-        .eq("user_id", target_user_id);
+        .eq("user_id", target_user_id)
+        .eq("is_active", true);
       if (unbanErr) throw new Error(unbanErr.message);
 
       // Notify the unbanned user
