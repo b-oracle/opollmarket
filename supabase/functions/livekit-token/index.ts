@@ -113,6 +113,21 @@ Deno.serve(async (req) => {
     const isCoHost = coHostIds.includes(userId);
     const hasModPowers = isHost || isCoHost;
 
+    // Block banned users from joining (allow host/co-host actions through)
+    if (!isHost && !isCoHost && !["ban", "unban"].includes(action || "")) {
+      const { count: banCount } = await supabaseAdmin
+        .from("space_bans")
+        .select("id", { count: "exact", head: true })
+        .eq("space_id", space_id)
+        .eq("user_id", userId);
+      if (banCount && banCount > 0) {
+        return new Response(
+          JSON.stringify({ error: "You have been banned from this Space by the host." }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Private space join-gating
     if (space.is_private && !isHost && !isCoHost && !action) {
       const { count } = await supabaseAdmin
@@ -331,7 +346,62 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- END SPACE (host deletes room so everyone disconnects) ---
+    // --- BAN (kick + add to space_bans so user can't rejoin) ---
+    if (action === "ban" && target_user_id) {
+      requireMod();
+      if (target_user_id === space.host_id) {
+        throw new Error("You cannot ban the host");
+      }
+      if (isCoHost && !isHost && coHostIds.includes(target_user_id)) {
+        throw new Error("Co-hosts cannot ban other co-hosts");
+      }
+      // Insert ban record (idempotent via UNIQUE(space_id, user_id))
+      const { error: banErr } = await supabaseAdmin
+        .from("space_bans")
+        .upsert(
+          { space_id, user_id: target_user_id, banned_by: userId, reason: body.reason ?? null },
+          { onConflict: "space_id,user_id" }
+        );
+      if (banErr) throw new Error(banErr.message);
+
+      // Remove from co-hosts if present
+      if (coHostIds.includes(target_user_id)) {
+        const newCoHosts = coHostIds.filter((id: string) => id !== target_user_id);
+        await supabaseAdmin.from("spaces").update({ co_host_ids: newCoHosts }).eq("id", space_id);
+      }
+
+      // Force-disconnect from the live room
+      try {
+        const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
+        await svc.removeParticipant(roomName, target_user_id);
+      } catch { /* may already be gone */ }
+
+      await supabaseAdmin
+        .from("space_participants")
+        .update({ left_at: new Date().toISOString(), role: "banned" })
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+
+      return new Response(JSON.stringify({ success: true, action: "banned" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- UNBAN ---
+    if (action === "unban" && target_user_id) {
+      requireMod();
+      const { error: unbanErr } = await supabaseAdmin
+        .from("space_bans")
+        .delete()
+        .eq("space_id", space_id)
+        .eq("user_id", target_user_id);
+      if (unbanErr) throw new Error(unbanErr.message);
+      return new Response(JSON.stringify({ success: true, action: "unbanned" }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     if (action === "end_space") {
       requireHost();
       const svc = new RoomServiceClient(httpUrl, apiKey, apiSecret);
