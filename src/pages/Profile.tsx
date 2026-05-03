@@ -1259,8 +1259,11 @@ const Profile = () => {
                             if (!avatarUrl && avatarFile) { setSavingProfile(false); return; }
                           }
 
-                          // Check name moderation result (should be done by now)
-                          const { data: nameModData } = await nameModPromise;
+                          // Check name moderation result with a hard timeout (fail-open)
+                          const modTimeout = new Promise<{ data: null }>((resolve) =>
+                            setTimeout(() => resolve({ data: null }), 4000)
+                          );
+                          const { data: nameModData } = (await Promise.race([nameModPromise, modTimeout])) as any;
                           if (nameModData?.flagged) {
                             supabase.from("moderation_logs").insert({
                               content_type: "display_name",
