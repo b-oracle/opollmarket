@@ -1886,6 +1886,27 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_email_claims: {
+        Row: {
+          created_at: string
+          idempotency_key: string
+          template_name: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          idempotency_key: string
+          template_name: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          idempotency_key?: string
+          template_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -4607,6 +4628,14 @@ export type Database = {
       claim_market_for_resolution: {
         Args: { _market_id: string }
         Returns: Json
+      }
+      claim_notification_email: {
+        Args: {
+          _idempotency_key: string
+          _template_name: string
+          _user_id?: string
+        }
+        Returns: boolean
       }
       claim_webhook_boost: {
         Args: { _market_id: string; _payer: string; _payment_id: string }

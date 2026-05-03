@@ -29,6 +29,25 @@ export async function sendNotificationEmail({
   templateData,
 }: SendArgs): Promise<void> {
   try {
+    // Idempotency claim: ensures the same logical event (cron re-run, webhook
+    // redelivery, edge function retry) only enqueues one email.
+    const { data: claimed, error: claimErr } = await admin.rpc(
+      "claim_notification_email",
+      {
+        _idempotency_key: idempotencyKey,
+        _template_name: templateName,
+        _user_id: userId,
+      },
+    );
+    if (claimErr) {
+      console.warn("sendNotificationEmail: claim failed, skipping", templateName, claimErr);
+      return;
+    }
+    if (claimed !== true) {
+      // Already enqueued by a previous run — silent skip.
+      return;
+    }
+
     // Pull profile email + settings preference
     const [{ data: profile }, { data: settings }] = await Promise.all([
       admin.from("profiles").select("email").eq("id", userId).maybeSingle(),
