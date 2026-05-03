@@ -26,6 +26,13 @@ const AdminSpaceBans = () => {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "expired" | "permanent">("active");
   const [revoking, setRevoking] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Tick once a second so remaining-time labels stay live
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
