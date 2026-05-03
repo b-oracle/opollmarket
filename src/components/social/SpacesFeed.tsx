@@ -89,7 +89,9 @@ const SpacesFeed = () => {
             <p className="text-sm font-semibold">Start a Space</p>
             <p className="text-[10px] text-muted-foreground">Go live or schedule for later</p>
             <p className="text-[9px] text-muted-foreground/60 mt-0.5">
-              Visible only to people you follow and people who follow you.
+              {isFeatureEnabled("public_spaces_open")
+                ? "Public Spaces are visible to everyone on the platform."
+                : "Visible only to people you follow and people who follow you."}
             </p>
           </div>
         </motion.button>
@@ -98,8 +100,14 @@ const SpacesFeed = () => {
       {liveSpaces.length === 0 && scheduledSpaces.length === 0 && recordedSpaces.length === 0 ? (
         <div className="flex flex-col items-center py-12">
           <Users className="w-8 h-8 text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">No Spaces from your network yet</p>
-          <p className="text-[10px] text-muted-foreground mt-1">Follow more people or invite your community to start a Space.</p>
+          <p className="text-sm text-muted-foreground">
+            {isFeatureEnabled("public_spaces_open") ? "No live Spaces right now" : "No Spaces from your network yet"}
+          </p>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {isFeatureEnabled("public_spaces_open")
+              ? "Be the first to start one and reach the whole community."
+              : "Follow more people or invite your community to start a Space."}
+          </p>
         </div>
       ) : (
         <>
