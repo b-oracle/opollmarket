@@ -80,11 +80,12 @@ const AdminSpaceBans = () => {
     const q = search.trim().toLowerCase();
     const now = Date.now();
     return bans.filter((b) => {
-      // Status filter
-      const isExpired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
-      const isPermanent = !b.expires_at;
-      if (filter === "active" && isExpired) return false;
-      if (filter === "expired" && !isExpired) return false;
+      // Status filter — a ban is "active" only when is_active=true AND not yet expired
+      const timeExpired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
+      const isInactive = b.is_active === false || timeExpired;
+      const isPermanent = !b.expires_at && !isInactive;
+      if (filter === "active" && isInactive) return false;
+      if (filter === "expired" && !isInactive) return false;
       if (filter === "permanent" && !isPermanent) return false;
 
       if (!q) return true;
