@@ -1907,6 +1907,63 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_email_outbox: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locked_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          pref_key: string | null
+          recipient_email: string | null
+          sent_at: string | null
+          status: string
+          template_data: Json
+          template_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          pref_key?: string | null
+          recipient_email?: string | null
+          sent_at?: string | null
+          status?: string
+          template_data?: Json
+          template_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          locked_at?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          pref_key?: string | null
+          recipient_email?: string | null
+          sent_at?: string | null
+          status?: string
+          template_data?: Json
+          template_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_id: string | null
@@ -4636,6 +4693,33 @@ export type Database = {
           _user_id?: string
         }
         Returns: boolean
+      }
+      claim_notification_email_outbox: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locked_at: string | null
+          max_attempts: number
+          next_attempt_at: string
+          pref_key: string | null
+          recipient_email: string | null
+          sent_at: string | null
+          status: string
+          template_data: Json
+          template_name: string
+          updated_at: string
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification_email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_webhook_boost: {
         Args: { _market_id: string; _payer: string; _payment_id: string }
