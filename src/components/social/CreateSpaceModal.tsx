@@ -70,8 +70,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
   if (!user) return null;
 
-  const allowUnverified = isFeatureEnabled("allow_unverified_spaces");
-  const isVerified = verificationLevel === "blue" || verificationLevel === "gold" || allowUnverified;
+  const isVerified = verificationLevel === "blue" || verificationLevel === "gold";
 
   const handleCreate = async () => {
     const trimmed = title.trim();
@@ -351,7 +350,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                 </div>
               )}
 
-              {!isVerified && verificationLevel !== null && !allowUnverified && (
+              {!isVerified && verificationLevel !== null && (
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs">
                   <ShieldAlert className="w-4 h-4 shrink-0" />
                   <span>Only verified members (Blue or Gold tick) can host Spaces.</span>
