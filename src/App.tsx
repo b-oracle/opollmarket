@@ -214,7 +214,7 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   if (isLoading) return <PageFallback />;
   if (isAdmin || isSuperAdmin) return <>{children}</>;
 
-  const allowedPaths = ["/maintenance", "/auth", "/terms", "/privacy", "/disclaimer", "/reset-password", "/forgot-password"];
+  const allowedPaths = ["/maintenance", "/auth", "/terms", "/privacy", "/disclaimer", "/reset-password", "/forgot-password", "/unsubscribe"];
   if (isMaintenanceActive() && !allowedPaths.some((p) => location.pathname.startsWith(p))) {
     return <Navigate to="/maintenance" replace />;
   }
@@ -227,7 +227,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const userId = user?.id ?? null;
 
-  const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
+  const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/unsubscribe", "/terms", "/privacy", "/disclaimer"];
   const isAllowed = allowedPaths.some(p => location.pathname.startsWith(p));
 
   // Check localStorage cache first (instant, no network)
@@ -285,7 +285,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
   const [secReqs, setSecReqs] = useState({ require_pin: false, require_totp: false });
   const processedUserRef = useRef<string | null>(null);
 
-  const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/setup-security", "/terms", "/privacy", "/disclaimer"];
+  const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/unsubscribe", "/setup-security", "/terms", "/privacy", "/disclaimer"];
   const isLoginAllowed = loginAllowedPaths.some(p => location.pathname.startsWith(p));
 
   const isSessionVerified = useCallback((uid: string) => {
