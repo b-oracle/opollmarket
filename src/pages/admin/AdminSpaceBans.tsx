@@ -227,7 +227,7 @@ const AdminSpaceBans = () => {
                   const u = profiles[b.user_id];
                   const sp = spaces[b.space_id];
                   const rem = fmtRemaining(b.expires_at);
-                  const expired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
+                  const expired = b.is_active === false || (b.expires_at ? new Date(b.expires_at).getTime() <= now : false);
                   return (
                     <tr key={b.id} className="border-t border-border hover:bg-muted/20">
                       <td className="px-4 py-3">
