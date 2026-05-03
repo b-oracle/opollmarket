@@ -3138,6 +3138,22 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                     <UserX className="w-5 h-5" />
                     <span className="text-sm font-medium">Remove from Space</span>
                   </button>
+                  {/* Ban — host/co-host only, prevents the user from rejoining this Space */}
+                  <button
+                    onClick={() => {
+                      if (window.confirm("Ban this user from this Space? They won't be able to rejoin until you unban them.")) {
+                        invokeAction("ban", actionTarget.identity);
+                      }
+                    }}
+                    disabled={promoting === actionTarget.identity}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-destructive/15 hover:bg-destructive/25 text-destructive transition-colors"
+                  >
+                    <Ban className="w-5 h-5" />
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-semibold">Ban from Space</p>
+                      <p className="text-[10px] opacity-80">Permanently blocks rejoining this Space</p>
+                    </div>
+                  </button>
                   <button
                     onClick={() => { setActionTarget(null); setActionType(null); }}
                     className="w-full flex items-center justify-center px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 text-muted-foreground transition-colors"
