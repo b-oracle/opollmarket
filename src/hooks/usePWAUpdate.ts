@@ -225,18 +225,21 @@ export const usePWAUpdate = () => {
       }
     }
 
-    // Set a 30-second cooldown to prevent re-prompting after reload
-    safeStorage.setSession(UPDATE_COOLDOWN_KEY, String(Date.now() + 30_000));
+    // Mark this session so we don't re-prompt after the upcoming reload,
+    // and set a long cross-session cooldown to break update loops caused
+    // by frequent rebuilds producing a fresh sw.js on every visit.
+    safeStorage.setSession(SESSION_UPDATED_KEY, "1");
+    safeStorage.setLocal(
+      UPDATE_COOLDOWN_KEY,
+      String(Date.now() + POST_UPDATE_COOLDOWN_MS)
+    );
 
     if (waitingSW) {
       waitingSW.postMessage({ type: "SKIP_WAITING" });
     }
 
-    // Call the vite-pwa helper then do a single controlled reload
+    // vite-pwa helper performs a single reload once the new SW takes control
     updateServiceWorker(true);
-
-    // Give the new SW a moment to activate, then reload once
-    setTimeout(() => window.location.reload(), 600);
   }, [blockedContext, waitingSW, updateServiceWorker]);
 
   const dismiss = useCallback(() => {
