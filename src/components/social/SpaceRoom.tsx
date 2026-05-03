@@ -1568,7 +1568,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         action === "demote" ? "Moved to listeners" :
         action === "mute" ? "Participant muted" :
         action === "kick" ? "Participant removed" :
-        action === "ban" ? "Participant banned from this Space" :
+        action === "ban" ? (data?.expires_at ? `Banned until ${new Date(data.expires_at).toLocaleString()}` : "Participant banned from this Space") :
         action === "unban" ? "Ban lifted" :
         action === "make_cohost" ? "Made co-host 👑" :
         action === "remove_cohost" ? "Co-host removed" :
