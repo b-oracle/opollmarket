@@ -224,7 +224,7 @@ const AdminSpaceBans = () => {
                   const u = profiles[b.user_id];
                   const sp = spaces[b.space_id];
                   const rem = fmtRemaining(b.expires_at);
-                  const expired = b.expires_at ? new Date(b.expires_at).getTime() <= Date.now() : false;
+                  const expired = b.expires_at ? new Date(b.expires_at).getTime() <= now : false;
                   return (
                     <tr key={b.id} className="border-t border-border hover:bg-muted/20">
                       <td className="px-4 py-3">
@@ -257,6 +257,20 @@ const AdminSpaceBans = () => {
                           {rem.icon}
                           {rem.label}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
+                        {b.expires_at ? (
+                          <div>
+                            <p className="text-foreground">{new Date(b.expires_at).toLocaleString()}</p>
+                            <p className="text-[10px] text-muted-foreground" title={new Date(b.expires_at).toISOString()}>
+                              {expired ? "ended" : `expires ${rem.label.replace(" left", "")} from now`}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <InfinityIcon className="w-3 h-3" /> Never
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
                         {new Date(b.created_at).toLocaleString()}
