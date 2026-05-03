@@ -141,6 +141,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [connecting, setConnecting] = useState(true);
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
+  const [banInfo, setBanInfo] = useState<{
+    message: string;
+    reason: string | null;
+    expires_at: string | null;
+    banned_by_name?: string | null;
+  } | null>(null);
   const intentionalLeaveRef = useRef(false);
   const [muted, setMuted] = useState(true);
   const [participants, setParticipants] = useState<ParticipantInfo[]>([]);
