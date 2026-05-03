@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
 import { getErrorMessage } from "../_shared/errors.ts";
+import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -233,8 +234,16 @@ async function handleResolve(
       });
 
       totalPaidOut += payout;
+
+      await sendNotificationEmail({
+        admin: adminClient,
+        userId: pos.user_id,
+        templateName: "market-won",
+        prefKey: "email_market_won",
+        idempotencyKey: `market-won-${market_id}-${pos.user_id}`,
+        templateData: { marketTitle: market.title, payoutAmount: payout, marketId: market_id },
+      });
     }
-  } else {
     // NORMAL: Two-sided market
     // For multi-option/range markets, use capital-first parimutuel model
     const totalWinnerShares = winningPositions.reduce((s, p) => s + p.shares, 0);
@@ -274,7 +283,29 @@ async function handleResolve(
       });
 
       totalPaidOut += payout;
+
+      await sendNotificationEmail({
+        admin: adminClient,
+        userId: pos.user_id,
+        templateName: "market-won",
+        prefKey: "email_market_won",
+        idempotencyKey: `market-won-${market_id}-${pos.user_id}`,
+        templateData: { marketTitle: market.title, payoutAmount: payout, marketId: market_id },
+      });
     }
+  }
+
+  // ── Notify losers via email (one per unique user) ──
+  const losingUserIds = Array.from(new Set(losingPositions.map((p: any) => p.user_id)));
+  for (const uid of losingUserIds) {
+    await sendNotificationEmail({
+      admin: adminClient,
+      userId: uid as string,
+      templateName: "market-lost",
+      prefKey: "email_market_lost",
+      idempotencyKey: `market-lost-${market_id}-${uid}`,
+      templateData: { marketTitle: market.title, marketId: market_id },
+    });
   }
 
   // ── oSURE: Process insurance claims ──

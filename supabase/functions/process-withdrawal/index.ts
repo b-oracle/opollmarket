@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -126,6 +127,15 @@ Deno.serve(async (req) => {
         message: `Your withdrawal of $${Number(withdrawal.amount).toFixed(2)} has been processed.`,
         type: "withdrawal",
       });
+
+      await sendNotificationEmail({
+        admin: adminClient as any,
+        userId: withdrawal.user_id,
+        templateName: "withdrawal-completed",
+        prefKey: "email_withdrawal_completed",
+        idempotencyKey: `withdrawal-approved-${withdrawal_id}`,
+        templateData: { amount: Number(withdrawal.amount), status: "approved" },
+      });
     } else {
       // Reject: refund balance atomically (no fee was credited yet, so nothing to reverse).
       await adminClient.rpc("adjust_balance", {
@@ -156,6 +166,15 @@ Deno.serve(async (req) => {
         title: "Withdrawal Rejected",
         message: `Your withdrawal of $${Number(withdrawal.amount).toFixed(2)} was rejected.${admin_note ? " Reason: " + admin_note : ""} Funds have been refunded.`,
         type: "withdrawal",
+      });
+
+      await sendNotificationEmail({
+        admin: adminClient as any,
+        userId: withdrawal.user_id,
+        templateName: "withdrawal-completed",
+        prefKey: "email_withdrawal_completed",
+        idempotencyKey: `withdrawal-rejected-${withdrawal_id}`,
+        templateData: { amount: Number(withdrawal.amount), status: "rejected", reason: admin_note || undefined },
       });
     }
 

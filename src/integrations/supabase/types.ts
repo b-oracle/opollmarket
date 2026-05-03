@@ -3866,6 +3866,11 @@ export type Database = {
           allow_dms: boolean
           allow_screen_sharing: boolean
           created_at: string
+          email_deposit_completed: boolean
+          email_market_expired_creator: boolean
+          email_market_lost: boolean
+          email_market_won: boolean
+          email_withdrawal_completed: boolean
           enable_gift_animations: boolean
           id: string
           mute_notifications: boolean
@@ -3884,6 +3889,11 @@ export type Database = {
           allow_dms?: boolean
           allow_screen_sharing?: boolean
           created_at?: string
+          email_deposit_completed?: boolean
+          email_market_expired_creator?: boolean
+          email_market_lost?: boolean
+          email_market_won?: boolean
+          email_withdrawal_completed?: boolean
           enable_gift_animations?: boolean
           id?: string
           mute_notifications?: boolean
@@ -3902,6 +3912,11 @@ export type Database = {
           allow_dms?: boolean
           allow_screen_sharing?: boolean
           created_at?: string
+          email_deposit_completed?: boolean
+          email_market_expired_creator?: boolean
+          email_market_lost?: boolean
+          email_market_won?: boolean
+          email_withdrawal_completed?: boolean
           enable_gift_animations?: boolean
           id?: string
           mute_notifications?: boolean

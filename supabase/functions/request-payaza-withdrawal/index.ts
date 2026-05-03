@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -449,6 +450,15 @@ Deno.serve(async (req) => {
         title: "Withdrawal Sent! 🎉",
         message: `₦${ngnPayout.toLocaleString()} has been sent to your bank account (${account_number}).${feeNote}`,
         type: "withdrawal",
+      });
+
+      await sendNotificationEmail({
+        admin: adminClient as any,
+        userId,
+        templateName: "withdrawal-completed",
+        prefKey: "email_withdrawal_completed",
+        idempotencyKey: `withdrawal-payaza-${userId}-${Date.now()}`,
+        templateData: { amount: Number(amount), status: "sent" },
       });
 
       return new Response(

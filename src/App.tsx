@@ -69,6 +69,7 @@ const CreatorDashboard = lazy(() => import("./pages/CreatorDashboard"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const BusinessLayout = lazy(() => import("./pages/business/BusinessLayout"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
@@ -213,7 +214,7 @@ const MaintenanceGuard = ({ children }: { children: React.ReactNode }) => {
   if (isLoading) return <PageFallback />;
   if (isAdmin || isSuperAdmin) return <>{children}</>;
 
-  const allowedPaths = ["/maintenance", "/auth", "/terms", "/privacy", "/disclaimer", "/reset-password", "/forgot-password"];
+  const allowedPaths = ["/maintenance", "/auth", "/terms", "/privacy", "/disclaimer", "/reset-password", "/forgot-password", "/unsubscribe"];
   if (isMaintenanceActive() && !allowedPaths.some((p) => location.pathname.startsWith(p))) {
     return <Navigate to="/maintenance" replace />;
   }
@@ -226,7 +227,7 @@ const SecuritySetupGuard = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const userId = user?.id ?? null;
 
-  const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/terms", "/privacy", "/disclaimer"];
+  const allowedPaths = ["/setup-security", "/auth", "/reset-password", "/forgot-password", "/unsubscribe", "/terms", "/privacy", "/disclaimer"];
   const isAllowed = allowedPaths.some(p => location.pathname.startsWith(p));
 
   // Check localStorage cache first (instant, no network)
@@ -284,7 +285,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
   const [secReqs, setSecReqs] = useState({ require_pin: false, require_totp: false });
   const processedUserRef = useRef<string | null>(null);
 
-  const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/setup-security", "/terms", "/privacy", "/disclaimer"];
+  const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/unsubscribe", "/setup-security", "/terms", "/privacy", "/disclaimer"];
   const isLoginAllowed = loginAllowedPaths.some(p => location.pathname.startsWith(p));
 
   const isSessionVerified = useCallback((uid: string) => {
@@ -548,6 +549,7 @@ const App = () => {
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
+                        <Route path="/unsubscribe" element={<Unsubscribe />} />
                         <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
                         <Route path="/commissions" element={<Commissions />} />
