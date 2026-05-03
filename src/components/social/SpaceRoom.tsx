@@ -2347,15 +2347,18 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // ============ BANNED MODE ============
   if (banInfo) {
-    const expiresMs = banInfo.expires_at ? new Date(banInfo.expires_at).getTime() - Date.now() : null;
-    const fmtRemaining = (ms: number) => {
+    const expiresMs = banInfo.expires_at ? new Date(banInfo.expires_at).getTime() - banNow : null;
+    const fmtRemainingLong = (ms: number) => {
       if (ms <= 0) return "any moment now";
-      const mins = Math.floor(ms / 60000);
-      if (mins < 60) return `in ${mins} minute${mins === 1 ? "" : "s"}`;
-      const hrs = Math.floor(mins / 60);
-      if (hrs < 48) return `in ${hrs} hour${hrs === 1 ? "" : "s"}`;
-      const days = Math.floor(hrs / 24);
-      return `in ${days} day${days === 1 ? "" : "s"}`;
+      const totalSec = Math.floor(ms / 1000);
+      const days = Math.floor(totalSec / 86400);
+      const hrs = Math.floor((totalSec % 86400) / 3600);
+      const mins = Math.floor((totalSec % 3600) / 60);
+      const secs = totalSec % 60;
+      if (days > 0) return `in ${days}d ${hrs}h ${mins}m`;
+      if (hrs > 0) return `in ${hrs}h ${mins}m ${secs}s`;
+      if (mins > 0) return `in ${mins}m ${secs}s`;
+      return `in ${secs}s`;
     };
     return (
       <AnimatePresence>
@@ -2403,11 +2406,11 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             </p>
             {banInfo.expires_at ? (
               <>
-                <p className="text-sm text-foreground font-medium">
+                <p className="text-sm text-foreground font-medium" title={new Date(banInfo.expires_at).toISOString()}>
                   {new Date(banInfo.expires_at).toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  You'll be able to rejoin {expiresMs !== null ? fmtRemaining(expiresMs) : "soon"}.
+                <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                  You'll be able to rejoin {expiresMs !== null ? fmtRemainingLong(expiresMs) : "soon"}.
                 </p>
               </>
             ) : (
