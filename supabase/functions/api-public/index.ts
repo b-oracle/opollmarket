@@ -243,9 +243,15 @@ Deno.serve(async (req) => {
       if (!userId) return err("User authentication required", 401);
 
       const body = await req.json();
-      const { marketId, side, amount, optionId } = body;
+      // Accept both camelCase and snake_case for partner integrations
+      const marketId = body.marketId ?? body.market_id;
+      const optionId = body.optionId ?? body.option_id;
+      const side = body.side;
+      const amount = typeof body.amount === "string" ? Number(body.amount) : body.amount;
 
-      if (!marketId || !amount) return err("Missing marketId or amount");
+      if (!marketId || amount === undefined || amount === null || Number.isNaN(amount)) {
+        return err("Missing marketId or amount");
+      }
       if (typeof amount !== "number" || amount <= 0 || amount > 10000) return err("Amount must be between 0 and 10000");
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(marketId)) {
         return err("Invalid marketId format");
