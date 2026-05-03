@@ -29,6 +29,7 @@ import {
   Send,
   VolumeX,
   UserX,
+  Ban,
   Circle,
   CircleStop,
   Bell,
