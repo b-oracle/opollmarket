@@ -155,7 +155,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Private space join-gating
+    // ── Kick cooldown ──
+    // When a host removes a user, `space_participants.role` is set to "kicked".
+    // The client's auto-reconnect logic can't always detect PARTICIPANT_REMOVED
+    // synchronously, so without this gate the user would immediately request a
+    // new token and rejoin. Block re-entry for KICK_COOLDOWN_MS after the kick.
+    const KICK_COOLDOWN_MS = 5 * 60 * 1000;
+    if (!isHost && !isCoHost && !["ban", "unban"].includes(action || "")) {
+      const { data: lastPart } = await supabaseAdmin
+        .from("space_participants")
+        .select("role, left_at")
+        .eq("space_id", space_id)
+        .eq("user_id", userId)
+        .order("joined_at", { ascending: false })
+        .limit(1);
+      const last = lastPart?.[0] as { role?: string; left_at?: string | null } | undefined;
+      if (last?.role === "kicked" && last.left_at) {
+        const kickedAt = new Date(last.left_at).getTime();
+        const elapsed = Date.now() - kickedAt;
+        if (elapsed < KICK_COOLDOWN_MS) {
+          const minsLeft = Math.max(1, Math.ceil((KICK_COOLDOWN_MS - elapsed) / 60000));
+          return new Response(
+            JSON.stringify({
+              error: `You were removed from this Space by the host. You can try rejoining in about ${minsLeft} minute${minsLeft === 1 ? "" : "s"}.`,
+              kicked: true,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+
     if (space.is_private && !isHost && !isCoHost && !action) {
       const { count } = await supabaseAdmin
         .from("space_invites")
