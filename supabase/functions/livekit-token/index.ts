@@ -412,6 +412,26 @@ Deno.serve(async (req) => {
         .eq("space_id", space_id)
         .eq("user_id", target_user_id);
 
+      // Notify the banned user
+      try {
+        const { data: spaceTitle } = await supabaseAdmin
+          .from("spaces").select("title").eq("id", space_id).maybeSingle();
+        const titleText = spaceTitle?.title || "a Space";
+        const reasonText = body.reason ? ` Reason: ${body.reason}.` : "";
+        const durText = expiresAt
+          ? ` You can rejoin after ${new Date(expiresAt).toLocaleString()}.`
+          : " This is a permanent ban.";
+        await supabaseAdmin.from("notifications").insert({
+          user_id: target_user_id,
+          actor_id: userId,
+          title: "You were banned from a Space 🚫",
+          message: `You've been banned from "${titleText}".${reasonText}${durText}`,
+          type: "space_banned",
+        });
+      } catch (e) {
+        console.error("[livekit-token] failed to send ban notification", e);
+      }
+
       return new Response(JSON.stringify({ success: true, action: "banned", expires_at: expiresAt }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
