@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -99,6 +100,15 @@ Deno.serve(async (req) => {
         message: `Your market "${market.title}" has ended and is now awaiting resolution.`,
         type: "info",
         market_id: market.id,
+      });
+
+      await sendNotificationEmail({
+        admin: supabase,
+        userId: market.creator_wallet,
+        templateName: "market-expired-creator",
+        prefKey: "email_market_expired_creator",
+        idempotencyKey: `market-expired-${market.id}`,
+        templateData: { marketTitle: market.title, marketId: market.id },
       });
 
       // Notify all participants
