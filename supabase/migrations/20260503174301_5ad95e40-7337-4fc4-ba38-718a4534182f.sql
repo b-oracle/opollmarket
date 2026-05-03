@@ -1,0 +1,2 @@
+UPDATE public.profiles SET referred_by = NULL WHERE referred_by = id OR referred_by IN ('cec1e746-a073-4841-b8a6-15e85b1c4a3a'::uuid, 'cef65e17-6d57-4ce4-8eec-82a0906f9bc5'::uuid);
+ALTER TABLE public.profiles VALIDATE CONSTRAINT profiles_no_self_referral;
