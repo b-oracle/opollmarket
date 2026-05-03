@@ -70,8 +70,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
 
   if (!user) return null;
 
-  const allowUnverified = isFeatureEnabled("allow_unverified_spaces");
-  const isVerified = verificationLevel === "blue" || verificationLevel === "gold" || allowUnverified;
+  const isVerified = verificationLevel === "blue" || verificationLevel === "gold";
 
   const handleCreate = async () => {
     const trimmed = title.trim();
