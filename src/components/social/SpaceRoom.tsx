@@ -948,6 +948,27 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         const errMsg = error?.message || error?.context?.body?.error || data?.error;
         if (errMsg || (!data?.token)) {
           const msg = errMsg || "Failed to get voice token";
+          // Banned: show banner instead of just a toast
+          if (data?.banned && data?.ban) {
+            const ban = data.ban as { expires_at: string | null; reason: string | null; banned_by: string };
+            // Try to fetch the banner's display name
+            let bannedByName: string | null = null;
+            try {
+              const { data: prof } = await supabase
+                .from("profiles")
+                .select("display_name, username")
+                .eq("id", ban.banned_by)
+                .maybeSingle();
+              bannedByName = prof?.display_name || prof?.username || null;
+            } catch { /* ignore */ }
+            setBanInfo({
+              message: typeof msg === "string" ? msg : "You have been banned from this Space.",
+              reason: ban.reason,
+              expires_at: ban.expires_at,
+              banned_by_name: bannedByName,
+            });
+            return;
+          }
           if (typeof msg === "string" && (msg.includes("ended") || msg.includes("isn't live"))) {
             toast.info("This Space isn't live yet or has already ended");
           } else if (msg === "LiveKit not configured") {
