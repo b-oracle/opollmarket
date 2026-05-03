@@ -403,7 +403,7 @@ Deno.serve(async (req) => {
         .eq("space_id", space_id)
         .eq("user_id", target_user_id);
 
-      return new Response(JSON.stringify({ success: true, action: "banned" }), {
+      return new Response(JSON.stringify({ success: true, action: "banned", expires_at: expiresAt }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
