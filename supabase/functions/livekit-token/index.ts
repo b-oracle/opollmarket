@@ -113,16 +113,32 @@ Deno.serve(async (req) => {
     const isCoHost = coHostIds.includes(userId);
     const hasModPowers = isHost || isCoHost;
 
-    // Block banned users from joining (allow host/co-host actions through)
+    // Block banned users from joining (allow host/co-host actions through).
+    // Auto-expire temporary bans whose expires_at has passed.
     if (!isHost && !isCoHost && !["ban", "unban"].includes(action || "")) {
-      const { count: banCount } = await supabaseAdmin
+      const nowIso = new Date().toISOString();
+      // Clean up any expired bans for this user/space first
+      await supabaseAdmin
         .from("space_bans")
-        .select("id", { count: "exact", head: true })
+        .delete()
         .eq("space_id", space_id)
-        .eq("user_id", userId);
-      if (banCount && banCount > 0) {
+        .eq("user_id", userId)
+        .not("expires_at", "is", null)
+        .lte("expires_at", nowIso);
+
+      const { data: activeBans } = await supabaseAdmin
+        .from("space_bans")
+        .select("expires_at")
+        .eq("space_id", space_id)
+        .eq("user_id", userId)
+        .limit(1);
+      if (activeBans && activeBans.length > 0) {
+        const exp = activeBans[0].expires_at as string | null;
+        const msg = exp
+          ? `You have been temporarily banned from this Space until ${new Date(exp).toLocaleString()}.`
+          : "You have been banned from this Space by the host.";
         return new Response(
-          JSON.stringify({ error: "You have been banned from this Space by the host." }),
+          JSON.stringify({ error: msg }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
