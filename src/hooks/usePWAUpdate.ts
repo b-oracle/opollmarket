@@ -163,10 +163,9 @@ export const usePWAUpdate = () => {
           }
         }, UPDATE_POLL_MS);
 
-        // Do an immediate update check when app is visible
-        if (document.visibilityState === "visible") {
-          registration.update();
-        }
+        // Skip the immediate post-boot update check — it was the main loop
+        // trigger after a reload. The 10-min poll + visibilitychange handler
+        // still pick up genuine updates without re-prompting on every reload.
       }
     },
     onRegisterError(error) {
