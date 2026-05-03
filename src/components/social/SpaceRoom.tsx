@@ -1119,15 +1119,19 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   body: { space_id: spaceId },
                 });
                 if (reconData?.error) {
-                  // Space ended, not live, or user was kicked
-                  if (typeof reconData.error === "string" && (
-                    reconData.error.includes("ended") ||
-                    reconData.error.includes("isn't live") ||
-                    reconData.error.toLowerCase().includes("removed") ||
-                    reconData.error.toLowerCase().includes("kicked") ||
-                    reconData.error.toLowerCase().includes("banned")
-                  )) {
-                    toast.info(reconData.error.toLowerCase().includes("removed") || reconData.error.toLowerCase().includes("kicked")
+                  // Space ended, not live, or user was kicked/banned
+                  const errStr = typeof reconData.error === "string" ? reconData.error : "";
+                  const lower = errStr.toLowerCase();
+                  if (
+                    reconData?.kicked ||
+                    reconData?.banned ||
+                    errStr.includes("ended") ||
+                    errStr.includes("isn't live") ||
+                    lower.includes("removed") ||
+                    lower.includes("kicked") ||
+                    lower.includes("banned")
+                  ) {
+                    toast.info(reconData?.kicked || lower.includes("removed") || lower.includes("kicked")
                       ? "You were removed from this Space"
                       : "This Space has ended");
                     setReconnecting(false);
