@@ -447,6 +447,23 @@ Deno.serve(async (req) => {
         .eq("space_id", space_id)
         .eq("user_id", target_user_id);
       if (unbanErr) throw new Error(unbanErr.message);
+
+      // Notify the unbanned user
+      try {
+        const { data: spaceTitle } = await supabaseAdmin
+          .from("spaces").select("title").eq("id", space_id).maybeSingle();
+        const titleText = spaceTitle?.title || "a Space";
+        await supabaseAdmin.from("notifications").insert({
+          user_id: target_user_id,
+          actor_id: userId,
+          title: "Your Space ban was lifted ✅",
+          message: `You can now rejoin "${titleText}".`,
+          type: "space_unbanned",
+        });
+      } catch (e) {
+        console.error("[livekit-token] failed to send unban notification", e);
+      }
+
       return new Response(JSON.stringify({ success: true, action: "unbanned" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
