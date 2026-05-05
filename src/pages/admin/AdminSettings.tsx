@@ -1412,6 +1412,76 @@ const AdminSettings = () => {
           </div>
         </TabsContent>
 
+        {/* BONUSES TAB */}
+        <TabsContent value="bonuses" className="space-y-6 mt-4">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <p className="text-xs text-muted-foreground">
+              All bonuses below are credited to the user's <span className="font-semibold text-foreground">bonus balance</span>, which can be spent on the platform but is <span className="font-semibold text-foreground">not withdrawable</span>.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Registration Bonus
+                </CardTitle>
+                <CardDescription className="text-xs">Credited to a new user's bonus balance once they verify their email and the account is created.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="registrationBonus" className="text-xs">Bonus Amount ($)</Label>
+                  <Input id="registrationBonus" type="number" min={0} step={0.5} value={registrationBonus} onChange={(e) => setRegistrationBonus(e.target.value)} placeholder="2" disabled={!canEdit} />
+                  <p className="text-[10px] text-muted-foreground">Set 0 to disable. Current: ${registrationBonusNum.toFixed(2)}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Referral Bonus
+                </CardTitle>
+                <CardDescription className="text-xs">Credited to the referrer's bonus balance when a new user registers using their referral link.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="referralReward" className="text-xs">Bonus Amount ($)</Label>
+                  <Input id="referralReward" type="number" min={0} step={0.5} value={referralReward} onChange={(e) => setReferralReward(e.target.value)} placeholder="2" disabled={!canEdit} />
+                  {referralNum < 0 && <p className="text-xs text-destructive">Cannot be negative.</p>}
+                  <p className="text-[10px] text-muted-foreground">Set 0 to disable. Current: ${referralNum.toFixed(2)}</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="xl:col-span-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-primary" /> Welcome Deposit Bonus
+                </CardTitle>
+                <CardDescription className="text-xs">Optional bonus matched on a user's first deposit (KYC-verified). Enable via the "Welcome Bonus" feature toggle.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="welcomeBonusPercent" className="text-xs">Bonus Percent (%)</Label>
+                    <Input id="welcomeBonusPercent" type="number" min={0} max={100} step={1} value={welcomeBonusPercent} onChange={(e) => setWelcomeBonusPercent(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">% of first deposit amount</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="welcomeBonusCap" className="text-xs">Max Bonus ($)</Label>
+                    <Input id="welcomeBonusCap" type="number" min={0} step={1} value={welcomeBonusCap} onChange={(e) => setWelcomeBonusCap(e.target.value)} disabled={!canEdit} />
+                    <p className="text-[10px] text-muted-foreground">Capped at this amount</p>
+                  </div>
+                </div>
+                {welcomeBonusPercentNum > 0 && welcomeBonusCapNum > 0 && (
+                  <p className="text-[10px] text-muted-foreground">Example: $20 deposit → ${Math.min(20 * welcomeBonusPercentNum / 100, welcomeBonusCapNum).toFixed(2)} bonus</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
         {/* ═══════ CREATORS TAB ═══════ */}
         <TabsContent value="creators" className="space-y-6 mt-4">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
