@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
     // Bulk update: fetch all active Twitter markets and update their counts
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
-      .select("id, twitter_metric_type, twitter_resource_id, created_at, end_date")
+      .select("id, twitter_metric_type, twitter_resource_id, created_at, end_date, auto_resolve_deadline")
       .in("status", ["active", "ended"])
       .not("twitter_metric_type", "is", null)
       .not("twitter_resource_id", "is", null);
@@ -271,7 +271,10 @@ Deno.serve(async (req) => {
       let count: number | null = null;
       if (isRangeMetric || (isImpressionsMetric && isUserBased)) {
         const startTime = new Date(market.created_at).toISOString();
-        const endTime = new Date(market.end_date + "T23:59:59Z").toISOString();
+        // Prefer auto_resolve_deadline (the true measurement window) over end_date
+        const endTime = market.auto_resolve_deadline
+          ? new Date(market.auto_resolve_deadline).toISOString()
+          : new Date(market.end_date + "T23:59:59Z").toISOString();
         if (isImpressionsMetric && isUserBased) {
           count = await fetchUserImpressionsInRange(resourceId, bearerToken, startTime, endTime);
         } else {
