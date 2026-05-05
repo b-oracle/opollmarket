@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { compressImage } from "@/lib/imageCompression";
+import kycSelfieSample from "@/assets/kyc-selfie-sample.png";
+import { AlertTriangle } from "lucide-react";
 
 const collectDeviceInfo = () => ({
   screen_width: window.screen?.width,
@@ -320,7 +322,31 @@ const KycSubmissionForm = ({ onSkip }: { onSkip?: () => void }) => {
             </div>
             <div>
               <Label className="text-xs">Selfie (holding note with date + name + "Opollmarket")</Label>
-              <div className="mt-1">
+
+              <div className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 flex gap-3">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
+                  <span className="font-semibold">Important:</span> Your selfie must clearly show you holding a piece of paper with{" "}
+                  <span className="font-bold">OPOLLMARKET</span> and{" "}
+                  <span className="font-bold">today's date ({new Date().toLocaleDateString()})</span> handwritten on it. Submissions without this exact format will be <span className="font-semibold">rejected</span>.
+                </div>
+              </div>
+
+              <div className="mt-2 flex justify-center">
+                <figure className="flex flex-col items-center gap-1">
+                  <img
+                    src={kycSelfieSample}
+                    alt="Sample of person holding paper with OPOLLMARKET and today's date written on it"
+                    width={160}
+                    height={160}
+                    loading="lazy"
+                    className="w-40 h-40 object-contain rounded-lg border border-border bg-background"
+                  />
+                  <figcaption className="text-[10px] text-muted-foreground">Sample — yours should look like this</figcaption>
+                </figure>
+              </div>
+
+              <div className="mt-2">
                 <label className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border cursor-pointer hover:bg-muted/50 transition-colors">
                   <Camera className="w-4 h-4 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground truncate">{selfieFile?.name || "Upload selfie photo"}</span>
