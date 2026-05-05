@@ -521,10 +521,17 @@ const AdminMarkets = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(
-        `Voided "${market.title}" — refunded ${data.users_refunded} users $${Number(data.total_refunded || 0).toFixed(2)}` +
-        (data.users_clawed_back ? `; clawed back $${Number(data.total_clawed_back).toFixed(2)} from ${data.users_clawed_back} users` : "")
-      );
+      setRefundSummary({
+        title: "Market Voided & Refunded",
+        marketTitle: market.title,
+        variant: "voided",
+        usersRefunded: data?.users_refunded,
+        totalRefunded: data?.total_refunded,
+        usersClawedBack: data?.users_clawed_back,
+        totalClawedBack: data?.total_clawed_back,
+        commissionsVoided: data?.commissions_voided,
+        reason: reason.trim(),
+      });
       // Client-side audit shadow (server already wrote the canonical entry)
       logAuditEvent({
         action: "market_voided_and_refunded",
