@@ -430,7 +430,25 @@ const ConversationList = () => {
             ) : (
               <div className="divide-y divide-border">
                 {pendingRequests.map((c) => (
-                  <ConversationItem key={c.id} c={c} navigate={navigate} isPending />
+                  <ConversationItem
+                    key={c.id}
+                    c={c}
+                    navigate={navigate}
+                    isPending
+                    currentUserId={user?.id}
+                    onCancel={async (id) => {
+                      if (!confirm("Cancel this message request? This will remove the conversation for both of you.")) return;
+                      try {
+                        await supabase.from("dm_messages" as any).delete().eq("conversation_id", id);
+                        const { error } = await supabase.from("dm_conversations" as any).delete().eq("id", id);
+                        if (error) throw error;
+                        toast.success("Request cancelled");
+                        queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
+                      } catch (e: any) {
+                        toast.error(e?.message || "Failed to cancel request");
+                      }
+                    }}
+                  />
                 ))}
               </div>
             )
