@@ -387,54 +387,98 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   const creditAmount = requestedAmount > 0
     ? Math.min(netReceived > 0 ? netReceived : requestedAmount, requestedAmount)
     : netReceived;
-  const isPartial = creditAmount < requestedAmount * 0.98; // 2% tolerance
+  // 0.2% tolerance — anything less triggers the top-up flow
+  const TOPUP_TOLERANCE = 0.998;
+  const TOPUP_DEADLINE_MS = 60 * 60 * 1000; // 1 hour
+  const isPartial = requestedAmount > 0 && creditAmount < requestedAmount * TOPUP_TOLERANCE;
 
-  // REJECT partial payments — do NOT credit, flag for admin review
+  // PARTIAL → AWAITING TOP-UP flow.
+  // Hold the deposit for up to 1 hour so the user can send the difference.
+  // A scheduled job (expire_awaiting_topup_deposits) moves it to admin_review on expiry.
   if (isPartial) {
-    console.warn(`PARTIAL DEPOSIT REJECTED: received $${creditAmount.toFixed(2)} of $${requestedAmount.toFixed(2)} for payment ${paymentIdStr}. NOT crediting.`);
+    const shortfall = Number(requestedAmount) - Number(creditAmount);
+    const deadline = new Date(Date.now() + TOPUP_DEADLINE_MS).toISOString();
+
+    console.warn(`AWAITING TOP-UP: received $${creditAmount.toFixed(2)} of $${requestedAmount.toFixed(2)} for payment ${paymentIdStr}. Shortfall $${shortfall.toFixed(2)}. Deadline ${deadline}.`);
 
     if (matchedTx) {
       await supabase
         .from("transactions")
         .update({
-          status: "partial",
+          status: "awaiting_topup",
           nowpayments_payment_id: paymentIdStr,
           payment_provider: "nowpayments",
-          amount: Number(creditAmount),
+          amount: Number(requestedAmount),
           gross_amount_usd: Number(netReceived),
           net_amount_usd: Number(creditAmount),
+          received_amount_usd: Number(creditAmount),
+          shortfall_usd: Number(shortfall),
+          topup_deadline: deadline,
+          description: `Partial deposit — awaiting top-up of $${shortfall.toFixed(2)} (1h window).`,
         })
         .eq("id", matchedTx.id);
     } else {
       await supabase.from("transactions").insert({
         user_id: userId,
         type: "deposit",
-        amount: Number(creditAmount),
-        status: "partial",
+        amount: Number(requestedAmount),
+        status: "awaiting_topup",
         nowpayments_payment_id: paymentIdStr,
         payment_provider: "nowpayments",
         gross_amount_usd: Number(netReceived),
         net_amount_usd: Number(creditAmount),
+        received_amount_usd: Number(creditAmount),
+        shortfall_usd: Number(shortfall),
+        topup_deadline: deadline,
+        description: `Partial deposit — awaiting top-up of $${shortfall.toFixed(2)} (1h window).`,
       });
     }
 
-    // Notify user
-    const shortfall = Number(requestedAmount) - Number(creditAmount);
+    // Notify user with clear instructions to top-up
     await supabase.from("notifications").insert({
       user_id: userId,
-      title: "Partial Deposit — Not Credited ⚠️",
-      message: `You sent $${Number(creditAmount).toFixed(2)} of the $${Number(requestedAmount).toFixed(2)} required. Partial deposits are not credited. Please contact support or retry with the full amount.`,
+      title: "Top-Up Required ⏳",
+      message: `We received $${Number(creditAmount).toFixed(2)} of your $${Number(requestedAmount).toFixed(2)} deposit. Please send the remaining $${shortfall.toFixed(2)} to the same payment address within 1 hour to be credited automatically. After 1 hour the deposit will be held for manual review.`,
       type: "deposit",
     });
 
-    // Notify admins (with recommended credit amount + clear status)
+    // Notify API partner (if this deposit was initiated via API key)
+    try {
+      if (matchedTx?.id) {
+        const { data: txMeta } = await supabase
+          .from("transactions")
+          .select("api_key_id")
+          .eq("id", matchedTx.id)
+          .maybeSingle();
+        if (txMeta?.api_key_id) {
+          await supabase.functions.invoke("webhook-dispatch", {
+            body: {
+              api_key_id: txMeta.api_key_id,
+              event: "deposit.awaiting_topup",
+              data: {
+                payment_id: paymentIdStr,
+                user_id: userId,
+                requested_amount: Number(requestedAmount),
+                received_amount: Number(creditAmount),
+                shortfall: Number(shortfall),
+                topup_deadline: deadline,
+              },
+            },
+          });
+        }
+      }
+    } catch (whErr) {
+      console.error("Partner webhook dispatch failed (awaiting_topup):", whErr);
+    }
+
+    // Light admin signal (no urgent action — auto-resolves on top-up or admin_review)
     await notifyAdmins(
       supabase,
-      "⚠️ Partial Deposit Flagged",
-      `User ${userId.slice(0, 8)}… payment ${paymentIdStr}: received $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (shortfall $${shortfall.toFixed(2)}, ratio ${(cls.ratio).toFixed(2)}). Status: partial. Recommended credit if approved: $${cls.recommendedCredit.toFixed(2)}.`,
+      "ℹ️ Deposit Awaiting Top-Up",
+      `User ${userId.slice(0, 8)}… payment ${paymentIdStr}: received $${Number(creditAmount).toFixed(2)} of $${Number(requestedAmount).toFixed(2)} (shortfall $${shortfall.toFixed(2)}). 1h top-up window started.`,
     );
 
-    return; // Do NOT credit
+    return; // Do NOT credit yet
   }
 
   const finalStatus = "confirmed";
