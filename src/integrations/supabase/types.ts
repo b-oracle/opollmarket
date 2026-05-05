@@ -3688,9 +3688,12 @@ export type Database = {
           option_id: string | null
           payment_provider: string | null
           price: number | null
+          received_amount_usd: number | null
           shares: number | null
+          shortfall_usd: number | null
           side: string | null
           status: string
+          topup_deadline: string | null
           tx_hash: string | null
           type: string
           user_id: string
@@ -3711,9 +3714,12 @@ export type Database = {
           option_id?: string | null
           payment_provider?: string | null
           price?: number | null
+          received_amount_usd?: number | null
           shares?: number | null
+          shortfall_usd?: number | null
           side?: string | null
           status?: string
+          topup_deadline?: string | null
           tx_hash?: string | null
           type: string
           user_id: string
@@ -3734,9 +3740,12 @@ export type Database = {
           option_id?: string | null
           payment_provider?: string | null
           price?: number | null
+          received_amount_usd?: number | null
           shares?: number | null
+          shortfall_usd?: number | null
           side?: string | null
           status?: string
+          topup_deadline?: string | null
           tx_hash?: string | null
           type?: string
           user_id?: string
@@ -5023,6 +5032,16 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      expire_awaiting_topup_deposits: {
+        Args: never
+        Returns: {
+          payment_id: string
+          received: number
+          requested: number
+          transaction_id: string
+          user_id: string
+        }[]
       }
       expire_space_bans: {
         Args: never
