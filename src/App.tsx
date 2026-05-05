@@ -78,6 +78,7 @@ const BusinessCustomization = lazy(() => import("./pages/business/BusinessCustom
 const BusinessDeposits = lazy(() => import("./pages/business/BusinessDeposits"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminMarkets = lazy(() => import("./pages/admin/AdminMarkets"));
+const AdminBlockedResolutions = lazy(() => import("./pages/admin/AdminBlockedResolutions"));
 const AdminComments = lazy(() => import("./pages/admin/AdminComments"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 const AdminCreateMarket = lazy(() => import("./pages/admin/AdminCreateMarket"));
