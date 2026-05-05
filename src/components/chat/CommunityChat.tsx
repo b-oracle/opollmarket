@@ -58,6 +58,7 @@ interface CommunityMessage {
   tagged_market_ids: string[];
   tagged_markets?: MarketTag[];
   created_at: string;
+  edited_at?: string | null;
   profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
 
