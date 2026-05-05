@@ -88,13 +88,35 @@ async function handleResolve(
     });
   }
 
-  const { market_id, winning_side, winning_option_id } = await req.json();
+  const { market_id, winning_side, winning_option_id, force } = await req.json();
 
   if (!market_id) {
     return new Response(JSON.stringify({ error: "market_id required" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  // Defensive guard: refuse to manually resolve an auto-resolve market before its declared deadline,
+  // unless force=true is supplied by a super_admin. This prevents premature resolution of Twitter /
+  // sports / price markets whose measurement window has not yet closed.
+  {
+    const { data: preCheck } = await adminClient
+      .from("markets")
+      .select("auto_resolve, auto_resolve_deadline")
+      .eq("id", market_id)
+      .single();
+    if (preCheck?.auto_resolve && preCheck.auto_resolve_deadline) {
+      const deadline = new Date(preCheck.auto_resolve_deadline as string);
+      if (new Date() < deadline && !(force === true && isSuperAdmin)) {
+        return new Response(
+          JSON.stringify({
+            error: `Cannot resolve before auto_resolve_deadline (${deadline.toISOString()}). Pass force=true as a super_admin to override.`,
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
   }
 
   // Atomically claim the market for resolution (row lock prevents concurrent double-resolve)
