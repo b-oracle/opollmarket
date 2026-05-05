@@ -37,8 +37,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Rate limit check
-    if (!checkRateLimit(user.id)) {
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Pre-check: are we currently locked? Use a dry-run by reading the table.
+    const { data: existingAttempt } = await adminClient
+      .from("user_security_attempts")
+      .select("locked_until")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingAttempt?.locked_until && new Date(existingAttempt.locked_until) > new Date()) {
       return new Response(JSON.stringify({ error: "Too many attempts. Please wait 5 minutes." }), {
         status: 429, headers: corsHeaders,
       });
