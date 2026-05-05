@@ -485,6 +485,46 @@ const AdminMarkets = () => {
     }
   };
 
+  const confirmVoidAndRefund = async () => {
+    if (!voidState) return;
+    const { market, reason } = voidState;
+    if (reason.trim().length < 10) {
+      toast.error("Please provide a reason of at least 10 characters");
+      return;
+    }
+    setVoiding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("void-and-refund", {
+        body: { market_id: market.id, reason: reason.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(
+        `Voided "${market.title}" — refunded ${data.users_refunded} users $${Number(data.total_refunded || 0).toFixed(2)}` +
+        (data.users_clawed_back ? `; clawed back $${Number(data.total_clawed_back).toFixed(2)} from ${data.users_clawed_back} users` : "")
+      );
+      // Client-side audit shadow (server already wrote the canonical entry)
+      logAuditEvent({
+        action: "market_voided_and_refunded",
+        targetId: market.id,
+        targetType: "market",
+        details: { title: market.title, reason: reason.trim(), previous_status: data.previous_status },
+      });
+      setVoidState(null);
+      fetchMarkets();
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (/Failed to send a request to the Edge Function|Failed to fetch|network|timeout/i.test(msg)) {
+        toast.message("Void is processing in the background. Refreshing in a moment…");
+        setTimeout(() => fetchMarkets(), 4000);
+        setVoidState(null);
+      } else {
+        toast.error(msg || "Failed to void market");
+      }
+    }
+    setVoiding(false);
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Permanently delete this market and all related data?")) return;
     const market = markets.find(m => m.id === id);
