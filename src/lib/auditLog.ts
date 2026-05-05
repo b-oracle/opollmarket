@@ -8,6 +8,7 @@ type AuditAction =
   | "market_approved"
   | "market_rejected"
   | "market_cancelled"
+  | "market_voided_and_refunded"
   | "market_resolved"
   | "market_edited"
   | "market_deleted"
