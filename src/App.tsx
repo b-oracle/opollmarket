@@ -569,6 +569,7 @@ const App = () => {
                         <Route path="/admin" element={<AdminLayout />}>
                           <Route index element={<AdminDashboard />} />
                           <Route path="markets" element={<AdminMarkets />} />
+                          <Route path="blocked-resolutions" element={<AdminBlockedResolutions />} />
                           <Route path="create-market" element={<AdminCreateMarket />} />
                           <Route path="comments" element={<AdminComments />} />
                           <Route path="transactions" element={<AdminTransactions />} />
