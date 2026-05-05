@@ -32,7 +32,10 @@ Deno.serve(async (req) => {
         .select("id, title, creator_wallet")
         .eq("status", "active")
         .lte("end_date", today)
-        .or("sport_match_id.is.null,auto_resolve.eq.false"),
+        // Exclude sports auto-resolve markets (handled by auto_resolve_deadline branch below)
+        .or("sport_match_id.is.null,auto_resolve.eq.false")
+        // Exclude Twitter auto-resolve markets — they close at auto_resolve_deadline, not end_date
+        .or("twitter_metric_type.is.null,auto_resolve.eq.false"),
       supabase
         .from("markets")
         .select("id, title, creator_wallet")
