@@ -1103,6 +1103,16 @@ const AdminMarkets = () => {
                                   )}
                                 </>
                               )}
+                              {/* Emergency Void & Refund — super-admin only, on any non-cancelled market (including resolved) */}
+                              {isSuperAdmin && m.status !== "cancelled" && (
+                                <button
+                                  onClick={() => setVoidState({ market: m, reason: "" })}
+                                  className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors"
+                                  title="Emergency: Void & Refund (overrides outcome, audit-logged)"
+                                >
+                                  <AlertOctagon className="w-4 h-4" />
+                                </button>
+                              )}
                               <button
                                 onClick={async () => {
                                   const newVal = !m.is_hidden;
