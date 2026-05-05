@@ -13,6 +13,7 @@ import BulkCSVImport from "@/components/admin/BulkCSVImport";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
 import { useAuth } from "@/hooks/useAuth";
+import RefundSummaryDialog, { RefundSummary } from "@/components/admin/RefundSummaryDialog";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
@@ -116,6 +117,7 @@ const AdminMarkets = () => {
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [cancellingPendingId, setCancellingPendingId] = useState<string | null>(null);
+  const [refundSummary, setRefundSummary] = useState<RefundSummary | null>(null);
   const [moderatorReviewingId, setModeratorReviewingId] = useState<string | null>(null);
   const [moderatorNameMap, setModeratorNameMap] = useState<Map<string, string>>(new Map());
   const [endedCount, setEndedCount] = useState(0);
@@ -330,8 +332,18 @@ const AdminMarkets = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      const feeMsg = data?.creation_fee_forfeited > 0 ? ` Creation fee ($${data.creation_fee_forfeited}) forfeited.` : "";
-      toast.success(`Market rejected.${feeMsg} Liquidity refunded.`);
+      setRefundSummary({
+        title: "Market Rejected",
+        marketTitle: market?.title,
+        variant: "rejected",
+        usersRefunded: data?.users_refunded,
+        totalRefunded: data?.total_refunded,
+        creationFeeForfeited: data?.creation_fee_forfeited,
+        liquidityRefunded: data?.liquidity_refunded,
+        commissionsVoided: data?.commissions_voided,
+        aiGenerationFeeNonRefundable: 0.5,
+        reason: "Content moderation violation",
+      });
       logAuditEvent({ action: "market_rejected", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
       fetchPendingMarkets();
@@ -477,7 +489,17 @@ const AdminMarkets = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Market cancelled! ${data.users_refunded} users refunded $${data.total_refunded?.toFixed(2)}`);
+      setRefundSummary({
+        title: "Market Cancelled — Refunded",
+        marketTitle: market?.title,
+        variant: "cancelled",
+        usersRefunded: data?.users_refunded,
+        totalRefunded: data?.total_refunded,
+        creationFeeRefunded: data?.creation_fee_refunded,
+        liquidityRefunded: data?.liquidity_refunded,
+        commissionsVoided: data?.commissions_voided,
+        aiGenerationFeeNonRefundable: 0.5,
+      });
       logAuditEvent({ action: "market_cancelled", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
     } catch (err: any) {
@@ -499,10 +521,17 @@ const AdminMarkets = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(
-        `Voided "${market.title}" — refunded ${data.users_refunded} users $${Number(data.total_refunded || 0).toFixed(2)}` +
-        (data.users_clawed_back ? `; clawed back $${Number(data.total_clawed_back).toFixed(2)} from ${data.users_clawed_back} users` : "")
-      );
+      setRefundSummary({
+        title: "Market Voided & Refunded",
+        marketTitle: market.title,
+        variant: "voided",
+        usersRefunded: data?.users_refunded,
+        totalRefunded: data?.total_refunded,
+        usersClawedBack: data?.users_clawed_back,
+        totalClawedBack: data?.total_clawed_back,
+        commissionsVoided: data?.commissions_voided,
+        reason: reason.trim(),
+      });
       // Client-side audit shadow (server already wrote the canonical entry)
       logAuditEvent({
         action: "market_voided_and_refunded",
@@ -591,6 +620,11 @@ const AdminMarkets = () => {
 
   return (
     <div className="space-y-4">
+      <RefundSummaryDialog
+        open={!!refundSummary}
+        onOpenChange={(o) => { if (!o) setRefundSummary(null); }}
+        summary={refundSummary}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Markets ({searchedMarkets.length})</h2>
         <div className="flex items-center gap-2 flex-wrap">
@@ -770,7 +804,16 @@ const AdminMarkets = () => {
                             });
                             if (error) throw error;
                             if (data?.error) throw new Error(data.error);
-                            toast.success("Market cancelled — full refund issued.");
+                            setRefundSummary({
+                              title: "Pending Market Cancelled",
+                              marketTitle: m.title,
+                              variant: "cancelled",
+                              creationFeeRefunded: data?.creation_fee_refunded,
+                              liquidityRefunded: data?.liquidity_refunded,
+                              totalRefunded: data?.total_refunded,
+                              usersRefunded: data?.users_refunded,
+                              aiGenerationFeeNonRefundable: 0.5,
+                            });
                             logAuditEvent({ action: "market_cancelled", targetId: m.id, targetType: "market", details: { title: m.title, pending: true } });
                             fetchMarkets();
                             fetchPendingMarkets();
