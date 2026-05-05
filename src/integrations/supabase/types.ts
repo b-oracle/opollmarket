@@ -1692,6 +1692,9 @@ export type Database = {
           pinned_trending: boolean
           polymarket_event_slug: string | null
           polymarket_id: string | null
+          resolution_block_reason: string | null
+          resolution_blocked: boolean
+          resolution_blocked_at: string | null
           resolution_source: string
           resolved_side: string | null
           simulated_participants: number
@@ -1747,6 +1750,9 @@ export type Database = {
           pinned_trending?: boolean
           polymarket_event_slug?: string | null
           polymarket_id?: string | null
+          resolution_block_reason?: string | null
+          resolution_blocked?: boolean
+          resolution_blocked_at?: string | null
           resolution_source: string
           resolved_side?: string | null
           simulated_participants?: number
@@ -1802,6 +1808,9 @@ export type Database = {
           pinned_trending?: boolean
           polymarket_event_slug?: string | null
           polymarket_id?: string | null
+          resolution_block_reason?: string | null
+          resolution_blocked?: boolean
+          resolution_blocked_at?: string | null
           resolution_source?: string
           resolved_side?: string | null
           simulated_participants?: number
