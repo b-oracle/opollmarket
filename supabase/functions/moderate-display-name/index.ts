@@ -20,6 +20,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = await requireAuthAndRateLimit(req, { perMinute: 20 });
+  if (!auth.ok) return auth.response;
+
   try {
     const { name } = await req.json();
 
