@@ -481,7 +481,25 @@ Deno.serve(async (req) => {
           const deadline = tm.auto_resolve_deadline ? new Date(tm.auto_resolve_deadline) : new Date(tm.end_date);
           if (new Date() <= deadline) continue; // Not past deadline yet
 
-          const count = tm.twitter_current_count ?? 0;
+          // Force-refresh the count for this single market so we resolve on the
+          // true value at the deadline rather than a stale cached number.
+          let count = tm.twitter_current_count ?? 0;
+          try {
+            const { data: refreshed } = await adminClient.functions.invoke("fetch-twitter-metrics", {
+              body: {
+                market_id: tm.id,
+                metric_type: tm.twitter_metric_type,
+                resource_id: tm.twitter_resource_id,
+              },
+              headers: { Authorization: `Bearer ${serviceRoleKey}` },
+            });
+            if (typeof refreshed?.count === "number") {
+              count = refreshed.count;
+              await adminClient.from("markets").update({ twitter_current_count: count }).eq("id", tm.id);
+            }
+          } catch (refreshErr) {
+            console.warn("Twitter resolve: count refresh failed, using cached", tm.id, refreshErr);
+          }
           const options = (tm.market_options || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
 
           // ── Binary Twitter markets ──
