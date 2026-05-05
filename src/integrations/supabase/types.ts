@@ -848,6 +848,24 @@ export type Database = {
         }
         Relationships: []
       }
+      community_reads: {
+        Row: {
+          community_slug: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          community_slug: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          community_slug?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       copy_settings: {
         Row: {
           auto_copy: boolean
