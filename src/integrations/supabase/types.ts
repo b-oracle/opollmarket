@@ -578,6 +578,7 @@ export type Database = {
           quick_trade_fee_percent: number
           referral_reward_amount: number
           referrer_commission_percent: number
+          registration_bonus_amount: number
           social_ad_price: number
           token_contract_address: string | null
           token_decimals: number | null
@@ -665,6 +666,7 @@ export type Database = {
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
           referrer_commission_percent?: number
+          registration_bonus_amount?: number
           social_ad_price?: number
           token_contract_address?: string | null
           token_decimals?: number | null
@@ -752,6 +754,7 @@ export type Database = {
           quick_trade_fee_percent?: number
           referral_reward_amount?: number
           referrer_commission_percent?: number
+          registration_bonus_amount?: number
           social_ad_price?: number
           token_contract_address?: string | null
           token_decimals?: number | null
@@ -4439,25 +4442,44 @@ export type Database = {
       }
       public_commission_settings: {
         Row: {
+          admin_fee_percent: number | null
           ai_generation_cost: number | null
           auto_resolve_fee: number | null
+          bc400_pool_balance: number | null
           bc400_pool_percent: number | null
           blue_max_free_markets: number | null
+          blue_revenue_share_percent: number | null
+          blue_trending_multiplier: number | null
           boost_flash_price: number | null
           boost_standard_price: number | null
           boost_whale_price: number | null
           broadcast_price: number | null
+          copy_trade_commission_percent: number | null
           creator_fee_blue_percent: number | null
           creator_fee_gold_percent: number | null
           creator_fee_percent: number | null
           deposit_expiry_minutes: number | null
+          deposit_large_overpay_alert: number | null
           deposit_max_amount: number | null
           deposit_min_amount: number | null
+          deposit_overpay_threshold: number | null
+          deposit_partial_threshold: number | null
           deposit_provider: string | null
+          deposit_wrong_asset_high: number | null
+          deposit_wrong_asset_low: number | null
           exit_fee_percent: number | null
+          fallback_naira_rate: number | null
+          fallback_payout_naira_rate: number | null
           gift_fee_percent: number | null
           gold_max_free_markets: number | null
+          gold_revenue_share_percent: number | null
+          gold_trending_multiplier: number | null
+          id: string | null
+          kyc_tier1_daily_limit: number | null
+          kyc_tier2_daily_limit: number | null
+          liquidity_return_fee_percent: number | null
           market_creation_fee: number | null
+          max_daily_withdrawals: number | null
           max_drafts_blue: number | null
           max_drafts_gold: number | null
           max_drafts_none: number | null
@@ -4466,12 +4488,15 @@ export type Database = {
           min_nft_balance: number | null
           min_token_balance: number | null
           min_withdrawal_amount: number | null
+          naira_payout_markdown: number | null
+          naira_rate_markup: number | null
           nft_buy_url: string | null
           nft_contract_address: string | null
           osure_100_premium: number | null
           osure_25_premium: number | null
           osure_50_premium: number | null
           osure_enabled: boolean | null
+          payaza_mode: string | null
           payout_provider: string | null
           prediction_fee_percent: number | null
           prediction_max_bet: number | null
@@ -4482,6 +4507,7 @@ export type Database = {
           qt_enabled_timeframes: string | null
           qt_max_bet: number | null
           qt_min_bet: number | null
+          qt_one_sided_bonus: boolean | null
           qt_streak_2x: number | null
           qt_streak_3x: number | null
           qt_streak_4x: number | null
@@ -4489,14 +4515,195 @@ export type Database = {
           quick_trade_fee_percent: number | null
           referral_reward_amount: number | null
           referrer_commission_percent: number | null
+          registration_bonus_amount: number | null
           social_ad_price: number | null
           token_contract_address: string | null
           token_decimals: number | null
+          updated_at: string | null
+          updated_by: string | null
           welcome_bonus_cap: number | null
           welcome_bonus_percent: number | null
+          withdrawal_anomaly_threshold: number | null
           withdrawal_cooldown_minutes: number | null
+          withdrawal_fee_percent: number | null
           withdrawal_limit_enabled: boolean | null
           withdrawal_multiplier: number | null
+        }
+        Insert: {
+          admin_fee_percent?: number | null
+          ai_generation_cost?: number | null
+          auto_resolve_fee?: number | null
+          bc400_pool_balance?: number | null
+          bc400_pool_percent?: number | null
+          blue_max_free_markets?: number | null
+          blue_revenue_share_percent?: number | null
+          blue_trending_multiplier?: number | null
+          boost_flash_price?: number | null
+          boost_standard_price?: number | null
+          boost_whale_price?: number | null
+          broadcast_price?: number | null
+          copy_trade_commission_percent?: number | null
+          creator_fee_blue_percent?: number | null
+          creator_fee_gold_percent?: number | null
+          creator_fee_percent?: number | null
+          deposit_expiry_minutes?: number | null
+          deposit_large_overpay_alert?: number | null
+          deposit_max_amount?: number | null
+          deposit_min_amount?: number | null
+          deposit_overpay_threshold?: number | null
+          deposit_partial_threshold?: number | null
+          deposit_provider?: string | null
+          deposit_wrong_asset_high?: number | null
+          deposit_wrong_asset_low?: number | null
+          exit_fee_percent?: number | null
+          fallback_naira_rate?: number | null
+          fallback_payout_naira_rate?: number | null
+          gift_fee_percent?: number | null
+          gold_max_free_markets?: number | null
+          gold_revenue_share_percent?: number | null
+          gold_trending_multiplier?: number | null
+          id?: string | null
+          kyc_tier1_daily_limit?: number | null
+          kyc_tier2_daily_limit?: number | null
+          liquidity_return_fee_percent?: number | null
+          market_creation_fee?: number | null
+          max_daily_withdrawals?: number | null
+          max_drafts_blue?: number | null
+          max_drafts_gold?: number | null
+          max_drafts_none?: number | null
+          min_gold_token_balance?: number | null
+          min_liquidity?: number | null
+          min_nft_balance?: number | null
+          min_token_balance?: number | null
+          min_withdrawal_amount?: number | null
+          naira_payout_markdown?: number | null
+          naira_rate_markup?: number | null
+          nft_buy_url?: string | null
+          nft_contract_address?: string | null
+          osure_100_premium?: number | null
+          osure_25_premium?: number | null
+          osure_50_premium?: number | null
+          osure_enabled?: boolean | null
+          payaza_mode?: string | null
+          payout_provider?: string | null
+          prediction_fee_percent?: number | null
+          prediction_max_bet?: number | null
+          prediction_min_bet?: number | null
+          push_prompt_cooldown_days?: number | null
+          qt_disabled_assets?: string | null
+          qt_enabled_assets?: string | null
+          qt_enabled_timeframes?: string | null
+          qt_max_bet?: number | null
+          qt_min_bet?: number | null
+          qt_one_sided_bonus?: boolean | null
+          qt_streak_2x?: number | null
+          qt_streak_3x?: number | null
+          qt_streak_4x?: number | null
+          qt_streak_5x?: number | null
+          quick_trade_fee_percent?: number | null
+          referral_reward_amount?: number | null
+          referrer_commission_percent?: number | null
+          registration_bonus_amount?: number | null
+          social_ad_price?: number | null
+          token_contract_address?: string | null
+          token_decimals?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          welcome_bonus_cap?: number | null
+          welcome_bonus_percent?: number | null
+          withdrawal_anomaly_threshold?: number | null
+          withdrawal_cooldown_minutes?: number | null
+          withdrawal_fee_percent?: number | null
+          withdrawal_limit_enabled?: boolean | null
+          withdrawal_multiplier?: number | null
+        }
+        Update: {
+          admin_fee_percent?: number | null
+          ai_generation_cost?: number | null
+          auto_resolve_fee?: number | null
+          bc400_pool_balance?: number | null
+          bc400_pool_percent?: number | null
+          blue_max_free_markets?: number | null
+          blue_revenue_share_percent?: number | null
+          blue_trending_multiplier?: number | null
+          boost_flash_price?: number | null
+          boost_standard_price?: number | null
+          boost_whale_price?: number | null
+          broadcast_price?: number | null
+          copy_trade_commission_percent?: number | null
+          creator_fee_blue_percent?: number | null
+          creator_fee_gold_percent?: number | null
+          creator_fee_percent?: number | null
+          deposit_expiry_minutes?: number | null
+          deposit_large_overpay_alert?: number | null
+          deposit_max_amount?: number | null
+          deposit_min_amount?: number | null
+          deposit_overpay_threshold?: number | null
+          deposit_partial_threshold?: number | null
+          deposit_provider?: string | null
+          deposit_wrong_asset_high?: number | null
+          deposit_wrong_asset_low?: number | null
+          exit_fee_percent?: number | null
+          fallback_naira_rate?: number | null
+          fallback_payout_naira_rate?: number | null
+          gift_fee_percent?: number | null
+          gold_max_free_markets?: number | null
+          gold_revenue_share_percent?: number | null
+          gold_trending_multiplier?: number | null
+          id?: string | null
+          kyc_tier1_daily_limit?: number | null
+          kyc_tier2_daily_limit?: number | null
+          liquidity_return_fee_percent?: number | null
+          market_creation_fee?: number | null
+          max_daily_withdrawals?: number | null
+          max_drafts_blue?: number | null
+          max_drafts_gold?: number | null
+          max_drafts_none?: number | null
+          min_gold_token_balance?: number | null
+          min_liquidity?: number | null
+          min_nft_balance?: number | null
+          min_token_balance?: number | null
+          min_withdrawal_amount?: number | null
+          naira_payout_markdown?: number | null
+          naira_rate_markup?: number | null
+          nft_buy_url?: string | null
+          nft_contract_address?: string | null
+          osure_100_premium?: number | null
+          osure_25_premium?: number | null
+          osure_50_premium?: number | null
+          osure_enabled?: boolean | null
+          payaza_mode?: string | null
+          payout_provider?: string | null
+          prediction_fee_percent?: number | null
+          prediction_max_bet?: number | null
+          prediction_min_bet?: number | null
+          push_prompt_cooldown_days?: number | null
+          qt_disabled_assets?: string | null
+          qt_enabled_assets?: string | null
+          qt_enabled_timeframes?: string | null
+          qt_max_bet?: number | null
+          qt_min_bet?: number | null
+          qt_one_sided_bonus?: boolean | null
+          qt_streak_2x?: number | null
+          qt_streak_3x?: number | null
+          qt_streak_4x?: number | null
+          qt_streak_5x?: number | null
+          quick_trade_fee_percent?: number | null
+          referral_reward_amount?: number | null
+          referrer_commission_percent?: number | null
+          registration_bonus_amount?: number | null
+          social_ad_price?: number | null
+          token_contract_address?: string | null
+          token_decimals?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+          welcome_bonus_cap?: number | null
+          welcome_bonus_percent?: number | null
+          withdrawal_anomaly_threshold?: number | null
+          withdrawal_cooldown_minutes?: number | null
+          withdrawal_fee_percent?: number | null
+          withdrawal_limit_enabled?: boolean | null
+          withdrawal_multiplier?: number | null
         }
         Relationships: []
       }
