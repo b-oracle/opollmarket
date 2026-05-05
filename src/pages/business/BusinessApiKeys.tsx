@@ -177,6 +177,31 @@ const BusinessApiKeys = () => {
             <p className="text-[10px] text-muted-foreground mt-3">
               Permissions: <code className="text-foreground">read</code> for GET endpoints, <code className="text-foreground">trade</code> for trading/market actions, <code className="text-foreground">deposit</code> for deposits. User-scoped endpoints require a Bearer token.
             </p>
+
+            {/* Deposit lifecycle & top-up flow */}
+            <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
+              <p className="text-xs font-semibold text-amber-500">Deposit Lifecycle (updated)</p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Crypto deposits returned by <code className="text-foreground">deposit-status</code> can resolve to one of these statuses:
+              </p>
+              <ul className="text-[11px] text-muted-foreground space-y-1 list-disc pl-4">
+                <li><code className="text-foreground">pending</code> — invoice created, awaiting customer payment.</li>
+                <li><code className="text-foreground">confirmed</code> — full amount received (within 0.2% tolerance) and credited.</li>
+                <li>
+                  <code className="text-foreground">awaiting_topup</code> — customer underpaid by more than 0.2%. Response includes
+                  <code className="text-foreground"> received_amount_usd</code>, <code className="text-foreground">shortfall_usd</code>, and
+                  <code className="text-foreground"> topup_deadline</code> (1 hour). The customer may send the remaining amount to the same payment address;
+                  once received, the deposit auto-credits.
+                </li>
+                <li><code className="text-foreground">admin_review</code> — top-up window expired without resolution. Held for manual review by Opoll staff.</li>
+                <li><code className="text-foreground">wrong_asset</code> / <code className="text-foreground">expired</code> — flagged for review.</li>
+              </ul>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                If a webhook URL is configured, your endpoint receives a <code className="text-foreground">deposit.awaiting_topup</code> event
+                with <code className="text-foreground">{`{ payment_id, user_id, requested_amount, received_amount, shortfall, topup_deadline }`}</code>
+                as soon as a partial payment is detected, followed by <code className="text-foreground">deposit.confirmed</code> if the customer tops up in time.
+              </p>
+            </div>
           </div>
         )}
       </div>
