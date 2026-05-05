@@ -18,6 +18,7 @@ type NavItem = {
 const navItems: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, end: true, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/markets", label: "Markets", icon: ShoppingBag, roles: ["super_admin", "admin", "moderator"] },
+  { to: "/admin/blocked-resolutions", label: "Blocked Resolutions", icon: ShieldAlert, roles: ["super_admin"] },
   { to: "/admin/create-market", label: "Create Market", icon: PlusCircle, roles: ["super_admin"] },
   { to: "/admin/predictions", label: "Predictions", icon: TrendingUp, roles: ["super_admin", "admin"] },
   { to: "/admin/quick-trade", label: "Quick Trade", icon: Zap, roles: ["super_admin", "admin"] },
