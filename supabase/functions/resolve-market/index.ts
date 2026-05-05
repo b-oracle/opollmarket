@@ -97,15 +97,27 @@ async function handleResolve(
     });
   }
 
-  // Defensive guard: refuse to manually resolve an auto-resolve market before its declared deadline,
-  // unless force=true is supplied by a super_admin. This prevents premature resolution of Twitter /
-  // sports / price markets whose measurement window has not yet closed.
+  // Defensive guards: refuse to mark a market YES/NO when an abnormal termination
+  // condition has been detected, or when an auto-resolve market is being resolved
+  // before its measurement deadline. Both can be overridden only by a super_admin
+  // with force=true (use with extreme caution; prefer voiding the market).
   {
     const { data: preCheck } = await adminClient
       .from("markets")
-      .select("auto_resolve, auto_resolve_deadline")
+      .select("auto_resolve, auto_resolve_deadline, resolution_blocked, resolution_block_reason, status")
       .eq("id", market_id)
       .single();
+
+    if (preCheck?.resolution_blocked && !(force === true && isSuperAdmin)) {
+      return new Response(
+        JSON.stringify({
+          error: `Resolution is blocked for this market: ${preCheck.resolution_block_reason || "abnormal termination detected"}. Void the market or have a super_admin pass force=true after manual review.`,
+          code: "RESOLUTION_BLOCKED",
+        }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (preCheck?.auto_resolve && preCheck.auto_resolve_deadline) {
       const deadline = new Date(preCheck.auto_resolve_deadline as string);
       if (new Date() < deadline && !(force === true && isSuperAdmin)) {
