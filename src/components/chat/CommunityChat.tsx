@@ -558,6 +558,26 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
         </Button>
       </div>
 
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Delete message?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              This message will be removed for everyone in the community.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <AlertDialogContent className="max-w-xs rounded-2xl">
           <AlertDialogHeader>
