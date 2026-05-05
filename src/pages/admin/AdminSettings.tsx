@@ -101,6 +101,7 @@ const AdminSettings = () => {
   const [osure100Premium, setOsure100Premium] = useState("30");
   const [welcomeBonusPercent, setWelcomeBonusPercent] = useState("0");
   const [welcomeBonusCap, setWelcomeBonusCap] = useState("0");
+  const [registrationBonus, setRegistrationBonus] = useState("2");
   const [giftFeePercent, setGiftFeePercent] = useState("2");
   const [predictionMinBet, setPredictionMinBet] = useState("1");
   const [predictionMaxBet, setPredictionMaxBet] = useState("10000");
