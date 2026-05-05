@@ -811,6 +811,7 @@ export type Database = {
           community_slug: string
           content: string
           created_at: string
+          edited_at: string | null
           id: string
           image_url: string | null
           reactions: Json
@@ -824,6 +825,7 @@ export type Database = {
           community_slug: string
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           image_url?: string | null
           reactions?: Json
@@ -837,6 +839,7 @@ export type Database = {
           community_slug?: string
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           image_url?: string | null
           reactions?: Json
