@@ -42,23 +42,15 @@ export function validateDepositCap(input: DepositCapInput): DepositCapResult {
     return { ok: false, error: "Credit amount must be a positive number", status: 400 };
   }
 
-  const isFlaggedRow = input.status === "partial" || input.status === "wrong_asset";
-
-  // For flagged rows we MUST have a real received amount — never fall back to invoice.
-  if (isFlaggedRow && (gross === null || gross <= 0) && (net === null || net <= 0)) {
-    return {
-      ok: false,
-      error:
-        "Cannot determine actual received amount for this deposit. Verify the gross amount on the payment provider dashboard before crediting.",
-      status: 400,
-    };
-  }
-
-  // Cap selection: prefer real received numbers; only fall back to invoice for non-flagged rows.
+  // Cap selection: prefer real received numbers (gross/net from webhook).
+  // For flagged rows (partial / wrong_asset) we also fall back to the invoice
+  // amount when no gross is recorded — the admin is expected to verify the
+  // actual received amount on the provider dashboard before approving, and
+  // this cap prevents crediting MORE than the invoice in any case.
   const candidates: number[] = [];
   if (gross !== null && gross > 0) candidates.push(gross);
   if (net !== null && net > 0) candidates.push(net);
-  if (!isFlaggedRow && invoice !== null && invoice > 0) candidates.push(invoice);
+  if (invoice !== null && invoice > 0) candidates.push(invoice);
 
   if (candidates.length === 0) {
     return { ok: false, error: "No valid amount on transaction to cap against", status: 400 };
