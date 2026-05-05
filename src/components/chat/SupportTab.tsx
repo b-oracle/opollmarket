@@ -298,9 +298,14 @@ const SupportTab = ({ onOpenChat }: { onOpenChat?: (ticketId: string, isStaff: b
                     <StatusIcon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold truncate block">
-                      {isStaff && t.profile ? `${t.profile.display_name}: ` : ""}{t.subject}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {t.ticket_number ? (
+                        <span className="text-[10px] font-mono font-bold text-primary shrink-0">#{t.ticket_number}</span>
+                      ) : null}
+                      <span className="text-sm font-semibold truncate block">
+                        {isStaff && t.profile ? `${t.profile.display_name}: ` : ""}{t.subject}
+                      </span>
+                    </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.color}`}>
                         {sc.label}

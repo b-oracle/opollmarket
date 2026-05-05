@@ -127,6 +127,9 @@ const AdminSupport = () => {
               onClick={() => setActiveTicket(t.id)}
             >
               <div className="flex items-center gap-2 mb-1">
+                {t.ticket_number ? (
+                  <span className="text-[11px] font-mono font-bold text-primary shrink-0">#{t.ticket_number}</span>
+                ) : null}
                 <span className="text-sm font-semibold flex-1 truncate">{t.subject}</span>
                 {t.category && (
                   <Badge variant="secondary" className="text-[10px] h-5">
