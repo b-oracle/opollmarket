@@ -498,12 +498,19 @@ Deno.serve(async (req) => {
 
       if (twitterMarkets && twitterMarkets.length > 0) {
         for (const tm of twitterMarkets) {
+          // GUARDRAIL: skip if already flagged for manual review
+          if ((tm as any).resolution_blocked) {
+            console.warn(`Twitter market ${tm.id}: resolution blocked — skipping`);
+            continue;
+          }
+
           const deadline = tm.auto_resolve_deadline ? new Date(tm.auto_resolve_deadline) : new Date(tm.end_date);
           if (new Date() <= deadline) continue; // Not past deadline yet
 
           // Force-refresh the count for this single market so we resolve on the
           // true value at the deadline rather than a stale cached number.
           let count = tm.twitter_current_count ?? 0;
+          let refreshOk = false;
           try {
             const { data: refreshed } = await adminClient.functions.invoke("fetch-twitter-metrics", {
               body: {
@@ -515,10 +522,27 @@ Deno.serve(async (req) => {
             });
             if (typeof refreshed?.count === "number") {
               count = refreshed.count;
+              refreshOk = true;
               await adminClient.from("markets").update({ twitter_current_count: count }).eq("id", tm.id);
             }
           } catch (refreshErr) {
             console.warn("Twitter resolve: count refresh failed, using cached", tm.id, refreshErr);
+          }
+
+          // GUARDRAIL: abnormal termination if we have no fresh count AND no cached count.
+          // Marking such a market as YES/NO would be unfair (the same root cause that broke
+          // BG / Elon / Instablog9ja markets). Flag for manual review instead.
+          if (!refreshOk && (tm.twitter_current_count === null || tm.twitter_current_count === undefined)) {
+            await adminClient
+              .from("markets")
+              .update({
+                resolution_blocked: true,
+                resolution_block_reason: `Twitter metric refresh failed at deadline and no cached count was available (resource ${tm.twitter_resource_id}, metric ${tm.twitter_metric_type})`,
+                resolution_blocked_at: new Date().toISOString(),
+              })
+              .eq("id", tm.id);
+            console.warn(`Twitter market ${tm.id}: blocked — no metric data at deadline`);
+            continue;
           }
           const options = (tm.market_options || []).sort((a: any, b: any) => a.sort_order - b.sort_order);
 
