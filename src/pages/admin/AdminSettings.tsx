@@ -1349,22 +1349,7 @@ const AdminSettings = () => {
 
         {/* ═══════ WITHDRAWALS TAB ═══════ */}
         <TabsContent value="withdrawals" className="space-y-6 mt-4">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-primary" /> Referral Reward
-                </CardTitle>
-                <CardDescription className="text-xs">Fixed amount credited to referrer's bonus balance on first prediction by referral.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="referralReward" className="text-xs">Reward Amount ($)</Label>
-                  <Input id="referralReward" type="number" min={0} step={0.5} value={referralReward} onChange={(e) => setReferralReward(e.target.value)} placeholder="5" />
-                  {referralNum < 0 && <p className="text-xs text-destructive">Cannot be negative.</p>}
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 gap-6">
 
             <Card>
               <CardHeader className="pb-3">
