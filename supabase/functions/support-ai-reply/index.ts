@@ -34,6 +34,26 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
+    // ===== Auth: require ticket owner OR staff =====
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const callerId = userData.user.id;
+
     const { ticket_id } = await req.json();
     if (!ticket_id) throw new Error("ticket_id required");
 
@@ -51,6 +71,21 @@ serve(async (req) => {
       .eq("id", ticket_id)
       .single();
     if (tErr || !ticket) throw new Error("Ticket not found");
+
+    // Authorize: caller must own the ticket OR be staff/admin
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId);
+    const roles = (roleRows || []).map((r: any) => r.role);
+    const isStaff = roles.some((r: string) =>
+      ["support", "moderator", "admin", "super_admin"].includes(r)
+    );
+    if (ticket.user_id !== callerId && !isStaff) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Fetch conversation history
     const { data: msgs } = await supabase
