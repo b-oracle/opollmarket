@@ -792,7 +792,16 @@ const AdminMarkets = () => {
                             });
                             if (error) throw error;
                             if (data?.error) throw new Error(data.error);
-                            toast.success("Market cancelled — full refund issued.");
+                            setRefundSummary({
+                              title: "Pending Market Cancelled",
+                              marketTitle: m.title,
+                              variant: "cancelled",
+                              creationFeeRefunded: data?.creation_fee_refunded,
+                              liquidityRefunded: data?.liquidity_refunded,
+                              totalRefunded: data?.total_refunded,
+                              usersRefunded: data?.users_refunded,
+                              aiGenerationFeeNonRefundable: 0.5,
+                            });
                             logAuditEvent({ action: "market_cancelled", targetId: m.id, targetType: "market", details: { title: m.title, pending: true } });
                             fetchMarkets();
                             fetchPendingMarkets();
