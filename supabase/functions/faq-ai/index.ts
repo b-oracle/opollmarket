@@ -1,4 +1,5 @@
 import { getErrorMessage } from "../_shared/errors.ts";
+import { requireAuthAndRateLimit } from "../_shared/auth.ts";
 
 
 const corsHeaders = {
@@ -186,6 +187,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const auth = await requireAuthAndRateLimit(req, { perMinute: 20 });
+  if (!auth.ok) return auth.response;
 
   try {
     const { question } = await req.json();
