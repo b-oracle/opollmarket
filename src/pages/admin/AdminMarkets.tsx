@@ -124,6 +124,8 @@ const AdminMarkets = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchDeleting, setBatchDeleting] = useState(false);
+  const [voidState, setVoidState] = useState<{ market: MarketRow; reason: string } | null>(null);
+  const [voiding, setVoiding] = useState(false);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
