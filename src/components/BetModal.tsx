@@ -129,8 +129,9 @@ const BetModal = ({ open, onClose, side, price, marketTitle, marketId, optionId,
   const shares = poolAmount > 0 && effectivePrice > 0 ? poolAmount / (effectivePrice / 100) : 0;
   const potentialPayout = shares;
 
-  // oSURE insurance
-  const osureEnabled = commission?.osure_enabled !== false;
+  // oSURE insurance — require explicit true so we never flash the step while
+  // settings are still loading or if the admin has disabled the feature.
+  const osureEnabled = commission?.osure_enabled === true;
   const insurancePremiumPercent = insuranceTier === 25 ? (commission?.osure_25_premium ?? 10) : insuranceTier === 50 ? (commission?.osure_50_premium ?? 20) : insuranceTier === 100 ? (commission?.osure_100_premium ?? 30) : 0;
   const insurancePremium = insuranceTier ? numAmount * (insurancePremiumPercent / 100) : 0;
   const insuranceCoverage = insuranceTier ? poolAmount * (insuranceTier / 100) : 0;
