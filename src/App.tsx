@@ -561,6 +561,7 @@ const App = () => {
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/privacy" element={<Privacy />} />
                         <Route path="/data-use" element={<DataUse />} />
+                        <Route path="/delete-account" element={<DeleteAccount />} />
                         <Route path="/maintenance" element={<Maintenance />} />
                         <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
                         <Route path="/user/:id" element={<UserProfile />} />
