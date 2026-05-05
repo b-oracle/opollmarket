@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import logoLight from "@/assets/blue-opoll-logo.png";
-import { Video, HelpCircle, FileText, Shield, Scale, Eye } from "lucide-react";
+import { Video, HelpCircle, FileText, Shield, Scale, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSocialLinks } from "@/hooks/useSocialLinks";
 import SocialIcon from "@/components/SocialIcon";
@@ -12,6 +12,7 @@ const footerLinks = [
   { icon: Scale, label: "Disclaimer", href: "/disclaimer" },
   { icon: FileText, label: "Terms & Conditions", href: "/terms" },
   { icon: Shield, label: "Privacy Policy", href: "/privacy" },
+  { icon: Trash2, label: "Delete Account", href: "/delete-account" },
 ];
 
 const DesktopFooter = () => {
