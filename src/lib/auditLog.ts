@@ -23,7 +23,9 @@ type AuditAction =
   | "balance_adjusted"
   | "settings_updated"
   | "user_blocked"
-  | "user_unblocked";
+  | "user_unblocked"
+  | "blocked_market_voided"
+  | "blocked_market_force_resolved";
 
 interface AuditLogParams {
   action: AuditAction;
