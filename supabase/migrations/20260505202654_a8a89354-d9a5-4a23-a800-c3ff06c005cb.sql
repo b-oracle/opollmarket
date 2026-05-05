@@ -1,0 +1,1 @@
+GRANT SELECT ON public.public_commission_settings TO anon, authenticated;
