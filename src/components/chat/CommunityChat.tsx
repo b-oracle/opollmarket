@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp } from "lucide-react";
+import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp, Pencil, Trash2, Check } from "lucide-react";
 import MarketTagSelector, { type MarketTag } from "@/components/social/MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
 import { Input } from "@/components/ui/input";
