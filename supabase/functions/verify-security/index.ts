@@ -8,24 +8,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Simple in-memory rate limiter: max 5 attempts per user per 5 minutes
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 5 * 60 * 1000;
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(userId);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(userId, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= MAX_ATTEMPTS) {
-    return false;
-  }
-  entry.count++;
-  return true;
-}
+// Persistent rate limiting via DB RPC `record_security_attempt`
+// (in-memory limits are ineffective across warm edge instances).
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -53,8 +37,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Rate limit check
-    if (!checkRateLimit(user.id)) {
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Pre-check: are we currently locked? Use a dry-run by reading the table.
+    const { data: existingAttempt } = await adminClient
+      .from("user_security_attempts")
+      .select("locked_until")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingAttempt?.locked_until && new Date(existingAttempt.locked_until) > new Date()) {
       return new Response(JSON.stringify({ error: "Too many attempts. Please wait 5 minutes." }), {
         status: 429, headers: corsHeaders,
       });
@@ -119,9 +114,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Persist attempt outcome (atomic counter; locks after N failures)
+    const { data: attemptResult } = await adminClient.rpc("record_security_attempt", {
+      _user_id: user.id,
+      _success: valid,
+    });
+
+    if (!valid && (attemptResult as any)?.allowed === false) {
+      return new Response(JSON.stringify({ error: "Too many attempts. Please wait 5 minutes." }), {
+        status: 429, headers: corsHeaders,
+      });
+    }
+
     if (valid) {
-      // Reset rate limit on success
-      attempts.delete(user.id);
       await adminClient
         .from("user_security_settings")
         .update({ last_verified_at: new Date().toISOString() })
