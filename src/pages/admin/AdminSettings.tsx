@@ -1564,32 +1564,8 @@ const AdminSettings = () => {
               </CardContent>
             </Card>
 
-            {/* Welcome Bonus */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Gift className="w-4 h-4 text-primary" /> Welcome Bonus
-                </CardTitle>
-                <CardDescription className="text-xs">First deposit bonus for KYC-verified users. Enable via the "Welcome Bonus" feature toggle above.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="welcomeBonusPercent" className="text-xs">Bonus Percent (%)</Label>
-                    <Input id="welcomeBonusPercent" type="number" min={0} max={100} step={1} value={welcomeBonusPercent} onChange={(e) => setWelcomeBonusPercent(e.target.value)} disabled={!canEdit} />
-                    <p className="text-[10px] text-muted-foreground">% of first deposit amount</p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="welcomeBonusCap" className="text-xs">Max Bonus ($)</Label>
-                    <Input id="welcomeBonusCap" type="number" min={0} step={1} value={welcomeBonusCap} onChange={(e) => setWelcomeBonusCap(e.target.value)} disabled={!canEdit} />
-                    <p className="text-[10px] text-muted-foreground">Capped at this amount</p>
-                  </div>
-                </div>
-                {welcomeBonusPercentNum > 0 && welcomeBonusCapNum > 0 && (
-                  <p className="text-[10px] text-muted-foreground">Example: $20 deposit → ${Math.min(20 * welcomeBonusPercentNum / 100, welcomeBonusCapNum).toFixed(2)} bonus</p>
-                )}
-              </CardContent>
-            </Card>
+            {/* Welcome Bonus moved to dedicated Bonuses tab */}
+
 
             {/* Gift Fee */}
             <Card>
