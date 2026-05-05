@@ -528,15 +528,21 @@ function ConversationItem({
   c,
   navigate,
   isPending,
+  currentUserId,
+  onCancel,
 }: {
   c: ConversationRow;
   navigate: (path: string) => void;
   isPending?: boolean;
+  currentUserId?: string;
+  onCancel?: (id: string) => void;
 }) {
+  const isInitiator = isPending && currentUserId && (c as any).initiated_by === currentUserId;
   return (
+    <div className="relative w-full flex items-center">
     <button
       onClick={() => navigate(`/messages/${c.id}`)}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
+      className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
     >
       <div className="relative w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
         {c.other_user?.avatar_url ? (
