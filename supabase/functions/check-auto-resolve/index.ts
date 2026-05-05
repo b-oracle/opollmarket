@@ -324,11 +324,31 @@ Deno.serve(async (req) => {
       const currentPrice = prices[asset];
       const now = new Date();
 
+      // GUARDRAIL: skip if already flagged for manual review
+      if ((market as any).resolution_blocked) {
+        console.warn(`Market ${market.id}: resolution blocked — skipping auto-resolve`);
+        continue;
+      }
+
       let winningSide: string | null = null;
 
       if (currentPrice !== null && conditionMet(currentPrice, targetPrice, operator)) {
         winningSide = "yes";
       } else if (now > deadline) {
+        // Deadline passed without target hit — but only resolve NO if we have a
+        // confirmed price feed. Missing data is an abnormal termination → block.
+        if (currentPrice === null) {
+          console.warn(`Market ${market.id}: deadline passed but price feed missing — blocking resolution`);
+          await adminClient
+            .from("markets")
+            .update({
+              resolution_blocked: true,
+              resolution_block_reason: `Price feed unavailable for ${asset} at deadline ${deadline.toISOString()}`,
+              resolution_blocked_at: new Date().toISOString(),
+            })
+            .eq("id", market.id);
+          continue;
+        }
         winningSide = "no";
       }
 
