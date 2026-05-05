@@ -114,9 +114,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Persist attempt outcome (atomic counter; locks after N failures)
+    const { data: attemptResult } = await adminClient.rpc("record_security_attempt", {
+      _user_id: user.id,
+      _success: valid,
+    });
+
+    if (!valid && (attemptResult as any)?.allowed === false) {
+      return new Response(JSON.stringify({ error: "Too many attempts. Please wait 5 minutes." }), {
+        status: 429, headers: corsHeaders,
+      });
+    }
+
     if (valid) {
-      // Reset rate limit on success
-      attempts.delete(user.id);
       await adminClient
         .from("user_security_settings")
         .update({ last_verified_at: new Date().toISOString() })
