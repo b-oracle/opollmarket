@@ -26,19 +26,30 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const nowIso = new Date().toISOString();
 
-    const [genericRes, sportsRes] = await Promise.all([
+    const [genericRes, sportsRes, twitterRes] = await Promise.all([
       supabase
         .from("markets")
         .select("id, title, creator_wallet")
         .eq("status", "active")
         .lte("end_date", today)
-        .or("sport_match_id.is.null,auto_resolve.eq.false"),
+        // Exclude sports auto-resolve markets (handled by auto_resolve_deadline branch below)
+        .or("sport_match_id.is.null,auto_resolve.eq.false")
+        // Exclude Twitter auto-resolve markets — they close at auto_resolve_deadline, not end_date
+        .or("twitter_metric_type.is.null,auto_resolve.eq.false"),
       supabase
         .from("markets")
         .select("id, title, creator_wallet")
         .eq("status", "active")
         .eq("auto_resolve", true)
         .not("sport_match_id", "is", null)
+        .not("auto_resolve_deadline", "is", null)
+        .lte("auto_resolve_deadline", nowIso),
+      supabase
+        .from("markets")
+        .select("id, title, creator_wallet")
+        .eq("status", "active")
+        .eq("auto_resolve", true)
+        .not("twitter_metric_type", "is", null)
         .not("auto_resolve_deadline", "is", null)
         .lte("auto_resolve_deadline", nowIso),
     ]);
@@ -57,10 +68,17 @@ Deno.serve(async (req) => {
         headers: corsHeaders,
       });
     }
+    if (twitterRes.error) {
+      console.error("Twitter fetch error:", twitterRes.error);
+    }
 
     // Merge & dedupe
     const seen = new Set<string>();
-    const expiredMarkets = [...(genericRes.data || []), ...(sportsRes.data || [])].filter((m) => {
+    const expiredMarkets = [
+      ...(genericRes.data || []),
+      ...(sportsRes.data || []),
+      ...(twitterRes.data || []),
+    ].filter((m) => {
       if (seen.has(m.id)) return false;
       seen.add(m.id);
       return true;
