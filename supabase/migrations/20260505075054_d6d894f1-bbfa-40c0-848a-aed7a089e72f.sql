@@ -1,0 +1,1 @@
+DELETE FROM public.transactions WHERE id IN ('01b3aadb-1b0e-4b00-a078-6263ad8d3343','1e4eb1c6-973c-4b7c-9ec5-75a04cd42d80','c0961df5-471e-4a6c-871a-44ec0486e698','20c74ad1-941a-4165-8054-ce3b34b516f2') AND status='partial' AND type='deposit';
