@@ -383,7 +383,10 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
 
 
 
-  // Normal credit flow — cap at requested amount as safety net
+  // Settlement rule: credit EXACTLY what the user actually paid (net of provider fees),
+  // capped at the invoice amount as a safety net for slight overpays.
+  // We never inflate a partial deposit up to the invoice — even within tolerance,
+  // the user only gets credited for what they actually sent.
   const creditAmount = requestedAmount > 0
     ? Math.min(netReceived > 0 ? netReceived : requestedAmount, requestedAmount)
     : netReceived;
