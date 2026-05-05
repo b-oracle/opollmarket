@@ -620,6 +620,11 @@ const AdminMarkets = () => {
 
   return (
     <div className="space-y-4">
+      <RefundSummaryDialog
+        open={!!refundSummary}
+        onOpenChange={(o) => { if (!o) setRefundSummary(null); }}
+        summary={refundSummary}
+      />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl sm:text-2xl font-bold">Markets ({searchedMarkets.length})</h2>
         <div className="flex items-center gap-2 flex-wrap">
