@@ -104,7 +104,7 @@ export const useUnreadCounts = () => {
 
   const markCommunityRead = (slug: string) => {
     if (user) {
-      localStorage.setItem(`community_last_read_${user.id}_${slug}`, new Date().toISOString());
+      void markCommunityReadRemote(user.id, slug);
     }
   };
 
