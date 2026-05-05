@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp } from "lucide-react";
+import { ArrowLeft, Send, X, Reply, Copy, BadgeCheck, TrendingUp, Pencil, Trash2, Check } from "lucide-react";
 import MarketTagSelector, { type MarketTag } from "@/components/social/MarketTagSelector";
 import { optimizedImageUrl } from "@/lib/optimizedImage";
 import { Input } from "@/components/ui/input";
@@ -58,6 +58,7 @@ interface CommunityMessage {
   tagged_market_ids: string[];
   tagged_markets?: MarketTag[];
   created_at: string;
+  edited_at?: string | null;
   profile?: { display_name: string; avatar_url: string | null; verification_level?: string };
 }
 
@@ -73,6 +74,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -213,6 +217,47 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     setActiveReactionId(null);
   }, [user, slug, queryClient]);
 
+  const beginEdit = useCallback((m: CommunityMessage) => {
+    setEditingId(m.id);
+    setEditingText(m.content);
+    setActiveReactionId(null);
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editingId) return;
+    const trimmed = editingText.trim();
+    if (!trimmed) {
+      toast.error("Message cannot be empty");
+      return;
+    }
+    const { error } = await supabase
+      .from("community_messages" as any)
+      .update({ content: trimmed } as any)
+      .eq("id", editingId);
+    if (error) {
+      toast.error("Failed to edit message");
+      return;
+    }
+    setEditingId(null);
+    setEditingText("");
+    queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
+  }, [editingId, editingText, slug, queryClient]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deletingId) return;
+    const { error } = await supabase
+      .from("community_messages" as any)
+      .delete()
+      .eq("id", deletingId);
+    if (error) {
+      toast.error("Failed to delete message");
+    } else {
+      toast.success("Message deleted");
+      queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
+    }
+    setDeletingId(null);
+  }, [deletingId, slug, queryClient]);
+
   return (
     <div className="flex flex-col h-full relative">
       {isFeatureEnabled("chat_doodle_bg") && <ChatDoodleBackground />}
@@ -317,6 +362,24 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                         >
                           <Copy className="w-3 h-3 text-muted-foreground" />
                         </button>
+                        {m.user_id === user?.id && (
+                          <>
+                            <button
+                              onClick={() => beginEdit(m)}
+                              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
+                              title="Edit"
+                            >
+                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                            <button
+                              onClick={() => { setDeletingId(m.id); setActiveReactionId(null); }}
+                              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3 text-destructive" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </>
                   )}
@@ -330,6 +393,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     )}
                     <span className="text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                      {m.edited_at && <span className="ml-1 italic">(edited)</span>}
                     </span>
                   </div>
                   {m.reply_to_content && (
@@ -338,7 +402,36 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                       <p className="text-[11px] text-muted-foreground truncate">{m.reply_to_content}</p>
                     </div>
                   )}
-                  <p className="text-sm break-words">{m.content}</p>
+                  {editingId === m.id ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Input
+                        autoFocus
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEdit(); }
+                          if (e.key === "Escape") { setEditingId(null); setEditingText(""); }
+                        }}
+                        className="h-7 text-sm flex-1"
+                      />
+                      <button
+                        onClick={saveEdit}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
+                        title="Save"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => { setEditingId(null); setEditingText(""); }}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent shrink-0"
+                        title="Cancel"
+                      >
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm break-words">{m.content}</p>
+                  )}
                   {m.image_url && (
                     <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover" alt="" />
                    )}
@@ -464,6 +557,26 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
           <Send className="w-4 h-4" />
         </Button>
       </div>
+
+      <AlertDialog open={!!deletingId} onOpenChange={(open) => !open && setDeletingId(null)}>
+        <AlertDialogContent className="max-w-xs rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Delete message?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              This message will be removed for everyone in the community.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl text-sm">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="rounded-xl text-sm bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <AlertDialogContent className="max-w-xs rounded-2xl">
