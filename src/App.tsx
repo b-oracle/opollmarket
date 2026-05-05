@@ -119,6 +119,7 @@ const Disclaimer = lazy(() => import("./pages/Disclaimer"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const DataUse = lazy(() => import("./pages/DataUse"));
+const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Maintenance = lazy(() => import("./pages/Maintenance"));
 const QuickTrade = lazy(() => import("./pages/QuickTrade"));
@@ -560,6 +561,7 @@ const App = () => {
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/privacy" element={<Privacy />} />
                         <Route path="/data-use" element={<DataUse />} />
+                        <Route path="/delete-account" element={<DeleteAccount />} />
                         <Route path="/maintenance" element={<Maintenance />} />
                         <Route path="/quick-trade" element={<FeatureGate featureKey="quick_trade"><QuickTrade /></FeatureGate>} />
                         <Route path="/user/:id" element={<UserProfile />} />
