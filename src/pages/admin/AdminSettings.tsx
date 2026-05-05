@@ -564,6 +564,7 @@ const AdminSettings = () => {
                   osure_100_premium: osure100PremiumNum,
                    welcome_bonus_percent: welcomeBonusPercentNum,
                    welcome_bonus_cap: welcomeBonusCapNum,
+                   registration_bonus_amount: registrationBonusNum,
                     gift_fee_percent: giftFeePercentNum,
                     prediction_min_bet: predictionMinBetNum,
                     prediction_max_bet: predictionMaxBetNum,
