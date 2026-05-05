@@ -13,6 +13,7 @@ import BulkCSVImport from "@/components/admin/BulkCSVImport";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { useAdminContext } from "./AdminLayout";
 import { useAuth } from "@/hooks/useAuth";
+import RefundSummaryDialog, { RefundSummary } from "@/components/admin/RefundSummaryDialog";
 
 const CATEGORIES = ["Crypto", "AI & Tech", "Science", "Economy", "Entertainment", "Sports", "Politics", "Other"];
 
