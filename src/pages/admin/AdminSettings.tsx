@@ -375,6 +375,7 @@ const AdminSettings = () => {
         setOsure100Premium(String(d.osure_100_premium ?? 30));
         setWelcomeBonusPercent(String(d.welcome_bonus_percent ?? 0));
         setWelcomeBonusCap(String(d.welcome_bonus_cap ?? 0));
+        setRegistrationBonus(String((d as any).registration_bonus_amount ?? 2));
         setGiftFeePercent(String(d.gift_fee_percent ?? 2));
         setPredictionMinBet(String(d.prediction_min_bet ?? 1));
         setPredictionMaxBet(String(d.prediction_max_bet ?? 10000));
