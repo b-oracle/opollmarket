@@ -3917,6 +3917,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_security_attempts: {
+        Row: {
+          attempt_count: number
+          locked_until: string | null
+          updated_at: string
+          user_id: string
+          window_started_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          locked_until?: string | null
+          updated_at?: string
+          user_id: string
+          window_started_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          locked_until?: string | null
+          updated_at?: string
+          user_id?: string
+          window_started_at?: string
+        }
+        Relationships: []
+      }
       user_security_settings: {
         Row: {
           created_at: string
@@ -4826,61 +4850,49 @@ export type Database = {
       }
       public_profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
           display_name: string | null
           id: string | null
           interests: string[] | null
-          is_blocked: boolean | null
           is_public: boolean | null
-          kyc_status: string | null
-          referred_by: string | null
-          social_tutorial_seen: boolean | null
           twitter_avatar_url: string | null
           twitter_username: string | null
           unlimited_markets: boolean | null
-          updated_at: string | null
+          username: string | null
           verification_level: string | null
-          wallet_address: string | null
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string | null
           interests?: string[] | null
-          is_blocked?: boolean | null
           is_public?: boolean | null
-          kyc_status?: string | null
-          referred_by?: string | null
-          social_tutorial_seen?: boolean | null
           twitter_avatar_url?: string | null
           twitter_username?: string | null
           unlimited_markets?: boolean | null
-          updated_at?: string | null
+          username?: string | null
           verification_level?: string | null
-          wallet_address?: string | null
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
           id?: string | null
           interests?: string[] | null
-          is_blocked?: boolean | null
           is_public?: boolean | null
-          kyc_status?: string | null
-          referred_by?: string | null
-          social_tutorial_seen?: boolean | null
           twitter_avatar_url?: string | null
           twitter_username?: string | null
           unlimited_markets?: boolean | null
-          updated_at?: string | null
+          username?: string | null
           verification_level?: string | null
-          wallet_address?: string | null
         }
         Relationships: []
       }
@@ -5090,6 +5102,44 @@ export type Database = {
         }[]
       }
       get_live_space_user_ids: { Args: never; Returns: string[] }
+      get_my_profile: {
+        Args: never
+        Returns: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          created_at: string
+          date_of_birth: string | null
+          display_name: string | null
+          email: string | null
+          gender: string | null
+          id: string
+          interests: string[] | null
+          is_blocked: boolean
+          is_public: boolean
+          kyc_status: string
+          location: string | null
+          referred_by: string | null
+          social_tutorial_seen: boolean
+          twitter_avatar_url: string | null
+          twitter_id: string | null
+          twitter_linked_at: string | null
+          twitter_username: string | null
+          unlimited_markets: boolean
+          updated_at: string
+          username: string
+          verification_level: string
+          wallet_address: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_platform_user_count: { Args: never; Returns: number }
       get_platform_volume: {
         Args: never
@@ -5169,6 +5219,44 @@ export type Database = {
         }[]
       }
       get_user_id_by_username: { Args: { _username: string }; Returns: string }
+      get_user_profile_admin: {
+        Args: { _user_id: string }
+        Returns: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          created_at: string
+          date_of_birth: string | null
+          display_name: string | null
+          email: string | null
+          gender: string | null
+          id: string
+          interests: string[] | null
+          is_blocked: boolean
+          is_public: boolean
+          kyc_status: string
+          location: string | null
+          referred_by: string | null
+          social_tutorial_seen: boolean
+          twitter_avatar_url: string | null
+          twitter_id: string | null
+          twitter_linked_at: string | null
+          twitter_username: string | null
+          unlimited_markets: boolean
+          updated_at: string
+          username: string
+          verification_level: string
+          wallet_address: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_user_trade_count: {
         Args: { _user_id: string }
         Returns: {
@@ -5268,6 +5356,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_security_attempt: {
+        Args: { _success: boolean; _user_id: string }
+        Returns: Json
       }
       record_webhook_event: {
         Args: { _event_key: string; _payload?: Json; _provider: string }
