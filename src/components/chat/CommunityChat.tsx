@@ -393,6 +393,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     )}
                     <span className="text-[10px] text-muted-foreground">
                       {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                      {m.edited_at && <span className="ml-1 italic">(edited)</span>}
                     </span>
                   </div>
                   {m.reply_to_content && (
@@ -401,7 +402,36 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                       <p className="text-[11px] text-muted-foreground truncate">{m.reply_to_content}</p>
                     </div>
                   )}
-                  <p className="text-sm break-words">{m.content}</p>
+                  {editingId === m.id ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Input
+                        autoFocus
+                        value={editingText}
+                        onChange={(e) => setEditingText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveEdit(); }
+                          if (e.key === "Escape") { setEditingId(null); setEditingText(""); }
+                        }}
+                        className="h-7 text-sm flex-1"
+                      />
+                      <button
+                        onClick={saveEdit}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shrink-0"
+                        title="Save"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => { setEditingId(null); setEditingText(""); }}
+                        className="w-7 h-7 flex items-center justify-center rounded-full bg-muted hover:bg-accent shrink-0"
+                        title="Cancel"
+                      >
+                        <X className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-sm break-words">{m.content}</p>
+                  )}
                   {m.image_url && (
                     <img src={m.image_url} className="mt-1 rounded-lg max-w-[200px] max-h-[200px] object-cover" alt="" />
                    )}
