@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { fetchCommunityReads, markCommunityReadRemote } from "@/lib/communityReads";
 
 /**
  * Returns unread counts for support tickets and community messages.
@@ -67,10 +68,11 @@ export const useUnreadCounts = () => {
 
       if (!memberships || memberships.length === 0) return 0;
 
+      const reads = await fetchCommunityReads(user.id);
+
       let total = 0;
       for (const m of memberships) {
-        const lastRead = localStorage.getItem(`community_last_read_${user.id}_${m.community_slug}`);
-        const since = lastRead || "2000-01-01T00:00:00Z";
+        const since = reads[m.community_slug] || "2000-01-01T00:00:00Z";
 
         const { count } = await supabase
           .from("community_messages" as any)
@@ -102,7 +104,7 @@ export const useUnreadCounts = () => {
 
   const markCommunityRead = (slug: string) => {
     if (user) {
-      localStorage.setItem(`community_last_read_${user.id}_${slug}`, new Date().toISOString());
+      void markCommunityReadRemote(user.id, slug);
     }
   };
 

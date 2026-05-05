@@ -152,7 +152,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   // Mark community as read on mount and whenever new messages arrive
   useEffect(() => {
     if (user) {
-      localStorage.setItem(`community_last_read_${user.id}_${slug}`, new Date().toISOString());
+      import("@/lib/communityReads").then(({ markCommunityReadRemote }) => {
+        void markCommunityReadRemote(user.id, slug);
+      });
       queryClient.invalidateQueries({ queryKey: ["unread-community"] });
       queryClient.invalidateQueries({ queryKey: ["community-unread-per-slug"] });
     }
