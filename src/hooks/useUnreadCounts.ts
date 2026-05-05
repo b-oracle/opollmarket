@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { fetchCommunityReads, markCommunityReadRemote } from "@/lib/communityReads";
 
 /**
  * Returns unread counts for support tickets and community messages.
