@@ -445,6 +445,7 @@ const AdminSettings = () => {
   const osure100PremiumNum = parseFloat(osure100Premium) || 30;
   const welcomeBonusPercentNum = parseFloat(welcomeBonusPercent) || 0;
   const welcomeBonusCapNum = parseFloat(welcomeBonusCap) || 0;
+  const registrationBonusNum = parseFloat(registrationBonus) || 0;
   const giftFeePercentNum = parseFloat(giftFeePercent) || 2;
   const predictionMinBetNum = parseFloat(predictionMinBet) || 1;
   const predictionMaxBetNum = parseFloat(predictionMaxBet) || 10000;
