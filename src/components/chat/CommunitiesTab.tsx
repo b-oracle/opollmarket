@@ -70,10 +70,10 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
     queryKey: ["community-unread-per-slug", user?.id],
     queryFn: async () => {
       if (!user) return {};
+      const reads = await fetchCommunityReads(user.id);
       const counts: Record<string, number> = {};
       for (const c of COMMUNITIES) {
-        const lastRead = localStorage.getItem(`community_last_read_${user.id}_${c.slug}`);
-        const since = lastRead || "2000-01-01T00:00:00Z";
+        const since = reads[c.slug] || "2000-01-01T00:00:00Z";
         const { count } = await supabase
           .from("community_messages" as any)
           .select("id", { count: "exact", head: true })
