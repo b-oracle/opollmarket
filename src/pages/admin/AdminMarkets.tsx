@@ -1435,6 +1435,90 @@ const AdminMarkets = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Emergency Void & Refund modal */}
+      <AnimatePresence>
+        {voidState && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => !voiding && setVoidState(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card border-2 border-red-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-red-500/10 text-red-500">
+                  <AlertOctagon className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-red-500">Emergency: Void &amp; Refund</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Overrides any outcome and refunds every participant in full. This action is permanent and audit-logged.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="rounded-lg bg-muted/40 p-3">
+                  <div className="text-xs text-muted-foreground">Market</div>
+                  <div className="font-medium truncate">{voidState.market.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Status: <span className="font-mono">{voidState.market.status}</span>
+                    {voidState.market.resolved_side && (
+                      <> · Resolved as <span className="font-mono">{voidState.market.resolved_side.toUpperCase()}</span></>
+                    )}
+                  </div>
+                </div>
+
+                <ul className="text-xs text-muted-foreground list-disc pl-5 space-y-1">
+                  <li>Reverses any payouts already credited (clawback).</li>
+                  <li>Refunds every confirmed buy at face value.</li>
+                  <li>Refunds creation fee &amp; returns initial liquidity.</li>
+                  <li>Voids pending commissions and platform-pool fees.</li>
+                  <li>Notifies all affected users.</li>
+                </ul>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">
+                    Reason (required, ≥10 chars — recorded in audit log)
+                  </label>
+                  <textarea
+                    value={voidState.reason}
+                    onChange={(e) => setVoidState({ ...voidState, reason: e.target.value })}
+                    placeholder="e.g. Source data was inconclusive at deadline; market resolved prematurely."
+                    rows={3}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                    disabled={voiding}
+                  />
+                  <div className="text-[11px] text-muted-foreground mt-1">{voidState.reason.trim().length}/10</div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-5">
+                <button
+                  onClick={() => setVoidState(null)}
+                  disabled={voiding}
+                  className="flex-1 px-4 py-2 rounded-lg border border-border hover:bg-muted text-sm font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmVoidAndRefund}
+                  disabled={voiding || voidState.reason.trim().length < 10}
+                  className="flex-1 px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {voiding ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertOctagon className="w-4 h-4" />}
+                  Void &amp; Refund
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
