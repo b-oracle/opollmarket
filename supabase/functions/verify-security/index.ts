@@ -8,24 +8,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Simple in-memory rate limiter: max 5 attempts per user per 5 minutes
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 5 * 60 * 1000;
-
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(userId);
-  if (!entry || now > entry.resetAt) {
-    attempts.set(userId, { count: 1, resetAt: now + WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= MAX_ATTEMPTS) {
-    return false;
-  }
-  entry.count++;
-  return true;
-}
+// Persistent rate limiting via DB RPC `record_security_attempt`
+// (in-memory limits are ineffective across warm edge instances).
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
