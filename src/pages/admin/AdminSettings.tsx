@@ -983,6 +983,9 @@ const AdminSettings = () => {
           <TabsTrigger value="withdrawals" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
             <ArrowUpFromLine className="w-3.5 h-3.5 hidden sm:inline" /> Withdrawals
           </TabsTrigger>
+          <TabsTrigger value="bonuses" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
+            <Gift className="w-3.5 h-3.5 hidden sm:inline" /> Bonuses
+          </TabsTrigger>
           <TabsTrigger value="creators" className="flex-1 min-w-[100px] text-xs sm:text-sm gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 hidden sm:inline" /> Creators
           </TabsTrigger>
