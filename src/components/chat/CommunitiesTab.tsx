@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import CategoryIcon from "@/components/CategoryIcon";
 import { Users, ChevronRight } from "lucide-react";
 import CommunityChat from "./CommunityChat";
+import { fetchCommunityReads } from "@/lib/communityReads";
 
 const COMMUNITIES = [
   { slug: "crypto", label: "Crypto" },
