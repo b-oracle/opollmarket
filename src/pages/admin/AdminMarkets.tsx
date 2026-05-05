@@ -489,7 +489,17 @@ const AdminMarkets = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Market cancelled! ${data.users_refunded} users refunded $${data.total_refunded?.toFixed(2)}`);
+      setRefundSummary({
+        title: "Market Cancelled — Refunded",
+        marketTitle: market?.title,
+        variant: "cancelled",
+        usersRefunded: data?.users_refunded,
+        totalRefunded: data?.total_refunded,
+        creationFeeRefunded: data?.creation_fee_refunded,
+        liquidityRefunded: data?.liquidity_refunded,
+        commissionsVoided: data?.commissions_voided,
+        aiGenerationFeeNonRefundable: 0.5,
+      });
       logAuditEvent({ action: "market_cancelled", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
     } catch (err: any) {
