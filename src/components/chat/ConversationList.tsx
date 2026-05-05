@@ -7,7 +7,8 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
-import { ArrowLeft, Plus, MessageCircle, Search, Inbox, Phone, Users, HelpCircle, Settings } from "lucide-react";
+import { ArrowLeft, Plus, MessageCircle, Search, Inbox, Phone, Users, HelpCircle, Settings, X } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { formatDistanceToNow } from "date-fns";
 import SEOHead from "@/components/SEOHead";
@@ -429,7 +430,25 @@ const ConversationList = () => {
             ) : (
               <div className="divide-y divide-border">
                 {pendingRequests.map((c) => (
-                  <ConversationItem key={c.id} c={c} navigate={navigate} isPending />
+                  <ConversationItem
+                    key={c.id}
+                    c={c}
+                    navigate={navigate}
+                    isPending
+                    currentUserId={user?.id}
+                    onCancel={async (id) => {
+                      if (!confirm("Cancel this message request? This will remove the conversation for both of you.")) return;
+                      try {
+                        await supabase.from("dm_messages" as any).delete().eq("conversation_id", id);
+                        const { error } = await supabase.from("dm_conversations" as any).delete().eq("id", id);
+                        if (error) throw error;
+                        toast.success("Request cancelled");
+                        queryClient.invalidateQueries({ queryKey: ["dm-conversations"] });
+                      } catch (e: any) {
+                        toast.error(e?.message || "Failed to cancel request");
+                      }
+                    }}
+                  />
                 ))}
               </div>
             )
@@ -509,15 +528,21 @@ function ConversationItem({
   c,
   navigate,
   isPending,
+  currentUserId,
+  onCancel,
 }: {
   c: ConversationRow;
   navigate: (path: string) => void;
   isPending?: boolean;
+  currentUserId?: string;
+  onCancel?: (id: string) => void;
 }) {
+  const isInitiator = isPending && currentUserId && (c as any).initiated_by === currentUserId;
   return (
+    <div className="relative w-full flex items-center">
     <button
       onClick={() => navigate(`/messages/${c.id}`)}
-      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
+      className="flex-1 flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors text-left"
     >
       <div className="relative w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
         {c.other_user?.avatar_url ? (
@@ -557,6 +582,17 @@ function ConversationItem({
         </span>
       )}
     </button>
+    {isPending && onCancel && (
+      <button
+        onClick={(e) => { e.stopPropagation(); onCancel(c.id); }}
+        className="mr-3 p-2 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+        aria-label={isInitiator ? "Cancel request" : "Decline request"}
+        title={isInitiator ? "Cancel request" : "Decline request"}
+      >
+        <X className="w-4 h-4" />
+      </button>
+    )}
+    </div>
   );
 }
 
