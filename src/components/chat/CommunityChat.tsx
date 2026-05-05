@@ -362,6 +362,24 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                         >
                           <Copy className="w-3 h-3 text-muted-foreground" />
                         </button>
+                        {m.user_id === user?.id && (
+                          <>
+                            <button
+                              onClick={() => beginEdit(m)}
+                              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-accent transition-colors flex-shrink-0"
+                              title="Edit"
+                            >
+                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                            </button>
+                            <button
+                              onClick={() => { setDeletingId(m.id); setActiveReactionId(null); }}
+                              className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors flex-shrink-0"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3 h-3 text-destructive" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </>
                   )}
