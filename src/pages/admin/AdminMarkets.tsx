@@ -332,8 +332,18 @@ const AdminMarkets = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      const feeMsg = data?.creation_fee_forfeited > 0 ? ` Creation fee ($${data.creation_fee_forfeited}) forfeited.` : "";
-      toast.success(`Market rejected.${feeMsg} Liquidity refunded.`);
+      setRefundSummary({
+        title: "Market Rejected",
+        marketTitle: market?.title,
+        variant: "rejected",
+        usersRefunded: data?.users_refunded,
+        totalRefunded: data?.total_refunded,
+        creationFeeForfeited: data?.creation_fee_forfeited,
+        liquidityRefunded: data?.liquidity_refunded,
+        commissionsVoided: data?.commissions_voided,
+        aiGenerationFeeNonRefundable: 0.5,
+        reason: "Content moderation violation",
+      });
       logAuditEvent({ action: "market_rejected", targetId: id, targetType: "market", details: { title: market?.title } });
       fetchMarkets();
       fetchPendingMarkets();
