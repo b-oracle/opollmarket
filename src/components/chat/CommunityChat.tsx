@@ -74,6 +74,9 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [taggedMarkets, setTaggedMarkets] = useState<MarketTag[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
