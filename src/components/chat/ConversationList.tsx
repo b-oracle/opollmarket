@@ -582,6 +582,17 @@ function ConversationItem({
         </span>
       )}
     </button>
+    {isPending && onCancel && (
+      <button
+        onClick={(e) => { e.stopPropagation(); onCancel(c.id); }}
+        className="mr-3 p-2 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+        aria-label={isInitiator ? "Cancel request" : "Decline request"}
+        title={isInitiator ? "Cancel request" : "Decline request"}
+      >
+        <X className="w-4 h-4" />
+      </button>
+    )}
+    </div>
   );
 }
 
