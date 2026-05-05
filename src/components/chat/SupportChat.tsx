@@ -194,7 +194,13 @@ const SupportChat = ({ ticketId, onBack, isStaff = false }: SupportChatProps) =>
         </button>
         <div className="flex-1 min-w-0">
           <h2 className="text-sm font-bold truncate">{ticket?.subject || "Support"}</h2>
-          <span className={`text-[10px] capitalize ${statusColor}`}>{ticket?.status || "open"}</span>
+          <div className="flex items-center gap-1.5">
+            {ticket?.ticket_number ? (
+              <span className="text-[10px] font-mono text-primary font-semibold">#{ticket.ticket_number}</span>
+            ) : null}
+            {ticket?.ticket_number ? <span className="text-[10px] text-muted-foreground">·</span> : null}
+            <span className={`text-[10px] capitalize ${statusColor}`}>{ticket?.status || "open"}</span>
+          </div>
         </div>
         {!isLocked && (
           <div className="flex gap-1.5 shrink-0">
