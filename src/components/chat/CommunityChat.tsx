@@ -217,6 +217,47 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
     setActiveReactionId(null);
   }, [user, slug, queryClient]);
 
+  const beginEdit = useCallback((m: CommunityMessage) => {
+    setEditingId(m.id);
+    setEditingText(m.content);
+    setActiveReactionId(null);
+  }, []);
+
+  const saveEdit = useCallback(async () => {
+    if (!editingId) return;
+    const trimmed = editingText.trim();
+    if (!trimmed) {
+      toast.error("Message cannot be empty");
+      return;
+    }
+    const { error } = await supabase
+      .from("community_messages" as any)
+      .update({ content: trimmed } as any)
+      .eq("id", editingId);
+    if (error) {
+      toast.error("Failed to edit message");
+      return;
+    }
+    setEditingId(null);
+    setEditingText("");
+    queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
+  }, [editingId, editingText, slug, queryClient]);
+
+  const confirmDelete = useCallback(async () => {
+    if (!deletingId) return;
+    const { error } = await supabase
+      .from("community_messages" as any)
+      .delete()
+      .eq("id", deletingId);
+    if (error) {
+      toast.error("Failed to delete message");
+    } else {
+      toast.success("Message deleted");
+      queryClient.invalidateQueries({ queryKey: ["community-messages", slug] });
+    }
+    setDeletingId(null);
+  }, [deletingId, slug, queryClient]);
+
   return (
     <div className="flex flex-col h-full relative">
       {isFeatureEnabled("chat_doodle_bg") && <ChatDoodleBackground />}
