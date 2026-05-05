@@ -77,7 +77,7 @@ export const useCommissionSettings = () => {
           boost_whale_price: 150,
           broadcast_price: 5,
           bc400_pool_percent: 0,
-          osure_enabled: true,
+          osure_enabled: false,
           osure_25_premium: 10,
           osure_50_premium: 20,
           osure_100_premium: 30,
