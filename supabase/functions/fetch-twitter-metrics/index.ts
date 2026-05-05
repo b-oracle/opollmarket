@@ -210,12 +210,15 @@ Deno.serve(async (req) => {
       if ((isRangeMetric || (isImpressionsMetric && isUserBased)) && body.market_id) {
         const { data: mkt } = await adminClient
           .from("markets")
-          .select("created_at, end_date")
+          .select("created_at, end_date, auto_resolve_deadline")
           .eq("id", body.market_id)
           .single();
         if (mkt) {
           const startTime = new Date(mkt.created_at).toISOString();
-          const endTime = new Date(mkt.end_date + "T23:59:59Z").toISOString();
+          // Prefer auto_resolve_deadline (the true measurement window) over end_date
+          const endTime = mkt.auto_resolve_deadline
+            ? new Date(mkt.auto_resolve_deadline).toISOString()
+            : new Date(mkt.end_date + "T23:59:59Z").toISOString();
           if (isImpressionsMetric && isUserBased) {
             count = await fetchUserImpressionsInRange(body.resource_id, bearerToken, startTime, endTime);
           } else {
