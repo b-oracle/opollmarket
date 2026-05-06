@@ -61,6 +61,7 @@ const Auth = () => {
   const [rememberedName, setRememberedName] = useState<string | null>(null);
   const [showLoginSecurity, setShowLoginSecurity] = useState(false);
   const [loginSecReqs, setLoginSecReqs] = useState<{ require_pin: boolean; require_totp: boolean }>({ require_pin: false, require_totp: false });
+  const [loginSecurityUserId, setLoginSecurityUserId] = useState<string | null>(null);
   const { signIn, signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -194,6 +195,7 @@ const Auth = () => {
 
           if (needPin || needTotp) {
             setLoginSecReqs({ require_pin: !!needPin, require_totp: !!needTotp });
+            setLoginSecurityUserId(userId);
             setShowLoginSecurity(true);
             return;
           }
@@ -490,10 +492,11 @@ const Auth = () => {
         }}
         onVerified={() => {
           setShowLoginSecurity(false);
-          // Use user from useAuth() synchronously — avoids async race condition
-          if (user?.id) {
-            try { localStorage.setItem(`login_sec_verified_${user.id}`, Date.now().toString()); } catch {}
+          const verifiedUserId = loginSecurityUserId || user?.id;
+          if (verifiedUserId) {
+            try { localStorage.setItem(`login_sec_verified_${verifiedUserId}`, Date.now().toString()); } catch {}
           }
+          setLoginSecurityUserId(null);
           toast.success("Logged in successfully!");
           const redirectTo = searchParams.get("redirect");
           navigate(redirectTo || "/");
