@@ -290,6 +290,10 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
   const loginAllowedPaths = ["/auth", "/reset-password", "/forgot-password", "/unsubscribe", "/setup-security", "/terms", "/privacy", "/disclaimer"];
   const isLoginAllowed = loginAllowedPaths.some(p => location.pathname.startsWith(p));
 
+  useEffect(() => {
+    if (isLoginAllowed) setShowModal(false);
+  }, [isLoginAllowed]);
+
   const isSessionVerified = useCallback((uid: string) => {
     try {
       const val = localStorage.getItem(`${LOGIN_SECURITY_VERIFIED_KEY}${uid}`);
@@ -373,7 +377,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
 
   // Process security settings once loaded — determine if modal is needed
   useEffect(() => {
-    if (!userId || loading || skipQuery) return;
+    if (!userId || loading || skipQuery || isLoginAllowed) return;
     if (secLoading) return;
     if (processedUserRef.current === userId) return;
 
@@ -394,7 +398,7 @@ const LoginSecurityGuard = ({ children }: { children: React.ReactNode }) => {
       markSessionVerified(userId);
     }
     processedUserRef.current = userId;
-  }, [userId, loading, skipQuery, secLoading, isError, secSettings, markSessionVerified]);
+  }, [userId, loading, skipQuery, isLoginAllowed, secLoading, isError, secSettings, markSessionVerified]);
 
   const handleVerified = useCallback(() => {
     setShowModal(false);
