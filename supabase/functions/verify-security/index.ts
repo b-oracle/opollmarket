@@ -63,11 +63,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const adminClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
     const { data: settings } = await adminClient
       .from("user_security_settings")
       .select("pin_hash, totp_secret, pin_enabled, totp_enabled")
