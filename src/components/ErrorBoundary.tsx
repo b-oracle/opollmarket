@@ -11,19 +11,28 @@ interface State {
   isAutoReloading: boolean;
 }
 
+// Use localStorage with a timestamp window so the counter survives across
+// reloads in PWA/standalone contexts where sessionStorage can be wiped on
+// each navigation, which previously caused infinite chunk-reload loops.
+const RELOAD_WINDOW_MS = 10 * 60 * 1000;
+const RELOAD_KEY = "chunk_reload_at";
+
 const getChunkReloadCount = () => {
   try {
-    const raw = window.sessionStorage?.getItem("chunk_reload") ?? "0";
-    const parsed = parseInt(raw, 10);
-    return Number.isFinite(parsed) ? parsed : 0;
+    const raw = window.localStorage?.getItem(RELOAD_KEY) ?? "";
+    if (!raw) return 0;
+    const ts = parseInt(raw, 10);
+    if (!Number.isFinite(ts)) return 0;
+    if (Date.now() - ts > RELOAD_WINDOW_MS) return 0;
+    return 1;
   } catch {
     return 0;
   }
 };
 
-const setChunkReloadCount = (count: number) => {
+const setChunkReloadCount = (_count: number) => {
   try {
-    window.sessionStorage?.setItem("chunk_reload", String(count));
+    window.localStorage?.setItem(RELOAD_KEY, String(Date.now()));
   } catch {
     // ignore storage access errors
   }
@@ -31,7 +40,7 @@ const setChunkReloadCount = (count: number) => {
 
 const clearChunkReloadCount = () => {
   try {
-    window.sessionStorage?.removeItem("chunk_reload");
+    window.localStorage?.removeItem(RELOAD_KEY);
   } catch {
     // ignore storage access errors
   }

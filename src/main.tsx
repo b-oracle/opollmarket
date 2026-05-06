@@ -117,27 +117,36 @@ if (!rootElement) {
 createRoot(rootElement).render(<App />);
 
 // One-time blank-screen recovery: if app failed to mount any UI, clear stale SW/cache and reload.
-// DISABLED inside the Lovable preview iframe — sessionStorage can be cleared between
-// reloads there, causing infinite refresh loops.
+// Uses localStorage with a timestamp window so the counter survives across reloads
+// in PWA/standalone contexts where sessionStorage can be wiped between page loads,
+// which previously caused infinite refresh loops.
 if (!isPwaBlockedContext()) {
   window.setTimeout(async () => {
     const hasMountedContent =
       rootElement.childElementCount > 0 ||
       (rootElement.textContent?.trim().length ?? 0) > 0;
 
-    if (hasMountedContent) return;
-
-    let attempts = 0;
-    try {
-      attempts = Number(window.sessionStorage?.getItem("boot_recovery") || "0");
-    } catch {
-      attempts = 0;
+    if (hasMountedContent) {
+      try {
+        window.localStorage?.removeItem("boot_recovery_at");
+      } catch {
+        // ignore
+      }
+      return;
     }
 
-    if (attempts >= 1) return;
+    // Only allow one recovery reload per 10-minute window across the whole app.
+    const RECOVERY_WINDOW_MS = 10 * 60 * 1000;
+    let lastAt = 0;
+    try {
+      lastAt = Number(window.localStorage?.getItem("boot_recovery_at") || "0");
+    } catch {
+      lastAt = 0;
+    }
+    if (lastAt && Date.now() - lastAt < RECOVERY_WINDOW_MS) return;
 
     try {
-      window.sessionStorage?.setItem("boot_recovery", String(attempts + 1));
+      window.localStorage?.setItem("boot_recovery_at", String(Date.now()));
     } catch {
       // ignore storage errors
     }
@@ -156,5 +165,5 @@ if (!isPwaBlockedContext()) {
     }
 
     window.location.reload();
-  }, 5000);
+  }, 8000);
 }
