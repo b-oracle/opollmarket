@@ -36,6 +36,7 @@ import ResolutionSummary from "@/components/ResolutionSummary";
 import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
+import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -843,6 +844,12 @@ const MarketDetail = () => {
           </div>
           {market.isCryptoRound && market.autoResolveAsset ? (
             <div className="relative">
+              <CryptoRoundStatusTimeline
+                endsAt={market.autoResolveDeadline || market.endDate}
+                startsAt={market.createdAt}
+                status={market.status}
+                className="mb-3"
+              />
               <CryptoRoundLiveChart
                 asset={market.autoResolveAsset}
                 targetPrice={market.autoResolveTargetPrice ?? null}
