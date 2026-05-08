@@ -152,7 +152,7 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
           <div>
             <p className="text-xs text-muted-foreground font-medium">Winning Outcome</p>
             <p className="text-lg font-bold" style={{ color: winColor }}>
-              {isCryptoRound && resolvedSide === "yes" ? "UP" : isCryptoRound && resolvedSide === "no" ? "DOWN" : winningLabel}
+              {displayWinningLabel}
             </p>
           </div>
         </div>
