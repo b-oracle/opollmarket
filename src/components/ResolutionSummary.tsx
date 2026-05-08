@@ -301,7 +301,7 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
         <ProfitShareCard
           ref={profitCardRef}
           market={marketTitle || "Prediction Market"}
-          side={winningLabel}
+          side={displayWinningLabel}
           profit={netPnl}
           payout={totalPayout}
           displayName={displayName}
