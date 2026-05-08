@@ -17,6 +17,12 @@ export type ReplayInput = {
   actorId: string;
   transactionId?: string;
   paymentId?: string;
+  /** Super-admin manual credit (used when Payaza API is unreachable / IP not whitelisted). */
+  manualOverride?: boolean;
+  /** Payaza transaction reference the admin pasted from the Payaza dashboard. */
+  manualReference?: string;
+  /** Optional admin note describing why the manual credit was needed. */
+  manualNote?: string;
 };
 
 export type ReplayDeps = {
