@@ -529,6 +529,12 @@ async function creditPayazaManual(
     return { status: 400, body: { error: "Payaza reference looks invalid." } };
   }
 
+  // The reference the admin pastes MUST match the transaction's own payment ID.
+  // This prevents admins from crediting arbitrary deposits with random references.
+  if (ref !== tx.nowpayments_payment_id) {
+    return { status: 400, body: { error: "The reference you entered does not match this transaction's payment ID." } };
+  }
+
   const creditAmount = Number(tx.amount);
   if (!(creditAmount > 0)) {
     return { status: 400, body: { error: "Transaction has no positive amount to credit" } };
