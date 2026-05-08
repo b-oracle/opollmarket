@@ -1014,8 +1014,8 @@ const MarketDetail = () => {
                   </div>
                 ) : (
                   <>
-                    <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
-                    <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+                    <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">{market?.isCryptoRound ? `Buy Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}</button>
+                    <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">{market?.isCryptoRound ? `Buy Down ${noPercent}¢` : `Buy No ${noPercent}¢`}</button>
                   </>
                 )}
               </div>
@@ -1036,8 +1036,8 @@ const MarketDetail = () => {
                   </div>
             ) : (
               <>
-                <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy Yes {yesPercent}¢</button>
-                <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">Buy No {noPercent}¢</button>
+                <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">{market?.isCryptoRound ? `Buy Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}</button>
+                <button onClick={() => { setBetSide("no"); setBetOpen(true); }} className="flex-1 min-w-0 btn-no py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">{market?.isCryptoRound ? `Buy Down ${noPercent}¢` : `Buy No ${noPercent}¢`}</button>
               </>
             )}
           </div>
