@@ -638,6 +638,11 @@ const MarketDetail = () => {
       }
 
       if (cancelled) return;
+      // Skip navigation if we're already on the target route (e.g. another
+      // tab/effect already navigated, or nextId === current id somehow).
+      if (nextId === id || window.location.pathname === `/market/${nextId}`) {
+        return;
+      }
       // Always proceed with navigation, even if every prefetch failed.
       try { queryClient.invalidateQueries({ queryKey: ["markets"] }); } catch {}
       navigate(`/market/${nextId}`, { replace: true });
