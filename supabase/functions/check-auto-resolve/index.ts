@@ -386,42 +386,76 @@ Deno.serve(async (req) => {
       const losers = losingPositions || [];
       const isOneSided = losers.length === 0 || winners.length === 0;
 
-      if (winners.length === 0) {
-        console.log(`Market ${market.id}: One-sided loss — platform profit`);
-      } else if (isOneSided && losers.length === 0) {
-        const { data: feeSettings } = await adminClient
-          .from("commission_settings")
-          .select("admin_fee_percent")
-          .limit(1)
-          .single();
-        const adminFeePercent = feeSettings?.admin_fee_percent ?? 2;
+      // ── Payout policy (mirrors quick_trade one-sided semantics) ──
+      // 1) Everyone WINS (no losers) → full capital refund, no fee
+      // 2) Everyone LOSES (no winners) → refund capital + small bonus (qt_one_sided_bonus)
+      // 3) Mixed → losers pay winners ($1/share)
+      const ONE_SIDED_BONUS_RATE = 0.005; // 0.5%, parity with quick trade
 
+      if (isOneSided && losers.length === 0 && winners.length > 0) {
+        // Everyone wins → full refund
         for (const pos of winners) {
-          const capital = pos.shares * pos.avg_price;
-          const fee = capital * (adminFeePercent / 100);
-          const payout = capital - fee;
-          if (payout <= 0) continue;
-
-          await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
-
+          const refund = Number(pos.shares) * Number(pos.avg_price);
+          if (refund <= 0) continue;
+          await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: refund, _bonus_delta: 0, _insurance_delta: 0 });
           await adminClient.from("transactions").insert({
             user_id: pos.user_id,
             market_id: market.id,
             option_id: pos.option_id,
-            type: "payout",
-            amount: payout,
+            type: "refund",
+            amount: refund,
             side: pos.side,
             shares: pos.shares,
             price: pos.avg_price,
             status: "confirmed",
           });
         }
+      } else if (isOneSided && winners.length === 0 && losers.length > 0) {
+        // Everyone loses → check the qt_one_sided_bonus toggle
+        const { data: bonusSettings } = await adminClient
+          .from("commission_settings")
+          .select("qt_one_sided_bonus")
+          .limit(1)
+          .single();
+        const applyBonus = bonusSettings?.qt_one_sided_bonus !== false;
+
+        for (const pos of losers) {
+          const capital = Number(pos.shares) * Number(pos.avg_price);
+          if (capital <= 0) continue;
+          const bonus = applyBonus ? capital * ONE_SIDED_BONUS_RATE : 0;
+          const refund = capital + bonus;
+
+          await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: refund, _bonus_delta: 0, _insurance_delta: 0 });
+
+          await adminClient.from("transactions").insert({
+            user_id: pos.user_id,
+            market_id: market.id,
+            option_id: pos.option_id,
+            type: "refund",
+            amount: refund,
+            side: pos.side,
+            shares: pos.shares,
+            price: pos.avg_price,
+            status: "confirmed",
+          });
+
+          if (bonus > 0) {
+            await adminClient.from("transactions").insert({
+              user_id: pos.user_id,
+              market_id: market.id,
+              type: "qt_one_sided_bonus",
+              amount: bonus,
+              side: "credit",
+              status: "confirmed",
+            });
+          }
+        }
       } else {
+        // Mixed → losers pay winners (full $1/share to winners)
         for (const pos of winners) {
-          const payout = pos.shares;
-
+          const payout = Number(pos.shares);
+          if (payout <= 0) continue;
           await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
-
           await adminClient.from("transactions").insert({
             user_id: pos.user_id,
             market_id: market.id,
