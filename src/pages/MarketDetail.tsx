@@ -455,6 +455,40 @@ const MarketDetail = () => {
   const queryClient = useQueryClient();
   const { user, isSuperAdmin } = useAuth();
   const { data: market, isLoading, isError } = useMarket(id);
+
+  // Auto-redirect to the next round once a crypto Up/Down round is resolved
+  // and the spawner cron creates the new market. Polls every 4s.
+  useEffect(() => {
+    if (!market?.isCryptoRound) return;
+    if (market.status !== "resolved") return;
+    if (!market.autoResolveAsset) return;
+
+    let cancelled = false;
+    const poll = async () => {
+      const { data } = await supabase
+        .from("markets")
+        .select("id")
+        .eq("is_crypto_round", true)
+        .eq("auto_resolve_asset", market.autoResolveAsset)
+        .eq("status", "active")
+        .neq("id", market.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (cancelled) return;
+      if (data?.id) {
+        queryClient.invalidateQueries({ queryKey: ["markets"] });
+        navigate(`/market/${data.id}`, { replace: true });
+      }
+    };
+    poll();
+    const iv = setInterval(poll, 4000);
+    return () => {
+      cancelled = true;
+      clearInterval(iv);
+    };
+  }, [market?.id, market?.isCryptoRound, market?.status, market?.autoResolveAsset, navigate, queryClient]);
+
   const { boostDetails } = useActiveBoosts();
   const activeBoost = id ? boostDetails.get(id) : undefined;
   const { track } = useAnalytics();
