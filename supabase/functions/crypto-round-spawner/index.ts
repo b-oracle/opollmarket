@@ -206,7 +206,16 @@ Deno.serve(async (req) => {
     }
 
     // 3. For each pair, find the most recent round; if it has ended (or force), spawn the next
-    const now = new Date();
+    // Pin "now" to the database clock so the spawn boundary and the
+    // resulting round's start/end timestamps are consistent with the
+    // deadlines the resolver evaluates against. Edge runtimes can drift
+    // several seconds vs Postgres, which would otherwise either skip a
+    // spawn (latestEnd > now is wrongly true) or shorten the new round.
+    const { data: dbNowRow, error: dbNowErr } = await admin.rpc("db_now");
+    if (dbNowErr) {
+      console.warn("db_now() failed, using runtime clock:", dbNowErr);
+    }
+    const now = dbNowRow ? new Date(dbNowRow as string) : new Date();
     let spawned = 0;
     const errors: string[] = [];
     const priceCache: Record<string, number | null> = {};

@@ -286,6 +286,15 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Authoritative "now" — pulled from Postgres so deadline comparisons
+    // can't drift due to edge-runtime clock skew. Falls back to runtime
+    // clock if the RPC fails for any reason.
+    const { data: dbNowRow, error: dbNowErr } = await adminClient.rpc("db_now");
+    if (dbNowErr) {
+      console.warn("db_now() failed, using runtime clock:", dbNowErr);
+    }
+    const now = dbNowRow ? new Date(dbNowRow as string) : new Date();
+
     // Fetch all active auto-resolve markets
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
@@ -328,7 +337,7 @@ Deno.serve(async (req) => {
       const operator = market.auto_resolve_operator as string;
       const deadline = new Date(market.auto_resolve_deadline as string);
       const currentPrice = prices[asset];
-      const now = new Date();
+      // `now` is hoisted above the loop and pinned to the DB clock.
 
       // GUARDRAIL: skip if already flagged for manual review
       if ((market as any).resolution_blocked) {
@@ -665,7 +674,7 @@ Deno.serve(async (req) => {
           }
 
           const deadline = tm.auto_resolve_deadline ? new Date(tm.auto_resolve_deadline) : new Date(tm.end_date);
-          if (new Date() <= deadline) continue; // Not past deadline yet
+          if (now <= deadline) continue; // Not past deadline yet (DB-clock authoritative)
 
           // Force-refresh the count for this single market so we resolve on the
           // true value at the deadline rather than a stale cached number.
