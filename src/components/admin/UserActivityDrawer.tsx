@@ -158,6 +158,7 @@ const UserSummaryCards = ({ userId }: { userId: string }) => {
           .from("markets")
           .select("id", { count: "exact", head: true })
           .eq("creator_wallet", userId)
+          .or("is_crypto_round.is.null,is_crypto_round.eq.false")
           .eq("status", "active"),
         supabase
           .from("transactions")
