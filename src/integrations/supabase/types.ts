@@ -1063,6 +1063,53 @@ export type Database = {
           },
         ]
       }
+      crypto_round_spawn_log: {
+        Row: {
+          actor_id: string | null
+          asset: string | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          market_id: string | null
+          message: string | null
+          open_price: number | null
+          source: string
+          status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          asset?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          market_id?: string | null
+          message?: string | null
+          open_price?: number | null
+          source?: string
+          status?: string
+        }
+        Update: {
+          actor_id?: string | null
+          asset?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          market_id?: string | null
+          message?: string | null
+          open_price?: number | null
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_round_spawn_log_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dm_call_events: {
         Row: {
           actor_id: string | null
