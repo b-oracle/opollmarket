@@ -1725,6 +1725,8 @@ export default function QuickTrade() {
             asset={selectedAsset.symbol}
             currentPrice={currentPrice}
             timeframeLabel={selectedTimeframe.label}
+            poolUp={poolUp}
+            poolDown={poolDown}
           />
 
           <Suspense fallback={<div className="h-40" />}>
