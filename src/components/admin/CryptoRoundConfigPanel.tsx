@@ -66,6 +66,7 @@ const CryptoRoundConfigPanel = () => {
   const [logsLoading, setLogsLoading] = useState(true);
   const [autoSpawnOn, setAutoSpawnOn] = useState<boolean>(true);
   const [savingAutoSpawn, setSavingAutoSpawn] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ asset: string; duration_minutes: number } | null>(null);
 
   const load = async () => {
     setLoading(true);
