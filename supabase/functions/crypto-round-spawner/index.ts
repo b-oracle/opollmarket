@@ -87,6 +87,57 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // ── Parse body for optional targeted/manual spawn ────────────────────────
+    let body: {
+      source?: string;
+      asset?: string;
+      duration_minutes?: number;
+      force?: boolean;
+      actor_id?: string;
+    } = {};
+    try {
+      if (req.method === "POST") body = await req.json();
+    } catch (_) { /* no body */ }
+    const source = body.source ?? "cron";
+    const targetAsset = body.asset?.toUpperCase();
+    const targetDur = body.duration_minutes;
+    const force = body.force === true;
+
+    // Resolve actor (admin who triggered) when JWT supplied
+    let actorId: string | null = body.actor_id ?? null;
+    if (!actorId) {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+            global: { headers: { Authorization: authHeader } },
+          });
+          const { data } = await userClient.auth.getUser();
+          actorId = data.user?.id ?? null;
+        } catch (_) { /* anon */ }
+      }
+    }
+
+    const writeLog = async (entry: {
+      asset?: string | null;
+      duration_minutes?: number | null;
+      market_id?: string | null;
+      status: string;
+      message?: string;
+      open_price?: number | null;
+    }) => {
+      await admin.from("crypto_round_spawn_log").insert({
+        asset: entry.asset ?? null,
+        duration_minutes: entry.duration_minutes ?? null,
+        market_id: entry.market_id ?? null,
+        source,
+        actor_id: actorId,
+        status: entry.status,
+        message: entry.message ?? null,
+        open_price: entry.open_price ?? null,
+      });
+    };
+
     // 1. Resolve a system creator (super_admin)
     const { data: saRole } = await admin
       .from("user_roles")
@@ -96,6 +147,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!saRole) {
+      await writeLog({ asset: targetAsset, duration_minutes: targetDur, status: "error", message: "No super_admin user configured" });
       return new Response(JSON.stringify({ error: "No super_admin user configured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -110,29 +162,36 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const creatorName = creatorProfile?.display_name ?? "OPOLL";
 
-    // 2. Load all enabled (asset, duration) pairs
-    const { data: configs, error: cfgErr } = await admin
+    // 2. Load pairs (filter to the targeted one if specified)
+    let cfgQuery = admin
       .from("crypto_round_config")
-      .select("asset, duration_minutes, initial_liquidity_usd, category")
-      .eq("enabled", true);
+      .select("asset, duration_minutes, initial_liquidity_usd, category, enabled");
+
+    if (targetAsset && targetDur) {
+      cfgQuery = cfgQuery.eq("asset", targetAsset).eq("duration_minutes", targetDur);
+    } else {
+      cfgQuery = cfgQuery.eq("enabled", true);
+    }
+
+    const { data: configs, error: cfgErr } = await cfgQuery;
 
     if (cfgErr) {
+      await writeLog({ asset: targetAsset, duration_minutes: targetDur, status: "error", message: cfgErr.message });
       return new Response(JSON.stringify({ error: cfgErr.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (!configs || configs.length === 0) {
-      return new Response(JSON.stringify({ message: "No enabled pairs", spawned: 0 }), {
+      return new Response(JSON.stringify({ message: "No matching pairs", spawned: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 3. For each pair, find the most recent round; if it has ended, spawn the next
+    // 3. For each pair, find the most recent round; if it has ended (or force), spawn the next
     const now = new Date();
     let spawned = 0;
     const errors: string[] = [];
-    // Cache prices per asset across pairs to minimise API calls
     const priceCache: Record<string, number | null> = {};
 
     for (const cfg of configs) {
@@ -151,8 +210,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       const latestEnd = latest ? new Date(latest.end_time as string) : null;
-      // Only spawn if the latest round has already ended (or doesn't exist)
-      if (latestEnd && latestEnd > now) continue;
+      // Only spawn if the latest round has already ended (or doesn't exist), unless force
+      if (!force && latestEnd && latestEnd > now) {
+        await writeLog({
+          asset, duration_minutes: dur, status: "skipped",
+          message: `Active round still running until ${latestEnd.toISOString()}`,
+        });
+        continue;
+      }
 
       // Fetch open price
       if (!(asset in priceCache)) {
@@ -161,13 +226,13 @@ Deno.serve(async (req) => {
       const openPrice = priceCache[asset];
       if (openPrice === null) {
         errors.push(`No price for ${asset}`);
+        await writeLog({ asset, duration_minutes: dur, status: "error", message: "No price feed available" });
         continue;
       }
 
       const start = new Date(now.getTime());
       const end = new Date(start.getTime() + dur * 60_000);
 
-      // Insert market (status active, auto-resolve via existing cron)
       const { data: market, error: mErr } = await admin
         .from("markets")
         .insert({
@@ -187,7 +252,6 @@ Deno.serve(async (req) => {
           yes_price: 0.5,
           no_price: 0.5,
           is_crypto_round: true,
-          // Plug into existing auto-resolve cron:
           auto_resolve: true,
           auto_resolve_asset: asset,
           auto_resolve_target_price: openPrice,
@@ -199,6 +263,7 @@ Deno.serve(async (req) => {
 
       if (mErr || !market) {
         errors.push(`Insert market ${asset}/${dur}m failed: ${mErr?.message}`);
+        await writeLog({ asset, duration_minutes: dur, status: "error", message: `Market insert failed: ${mErr?.message}`, open_price: openPrice });
         continue;
       }
 
@@ -214,17 +279,22 @@ Deno.serve(async (req) => {
         });
 
       if (metaErr) {
-        // Roll back the market — meta is the source of truth for the spawner
         await admin.from("markets").delete().eq("id", market.id);
         errors.push(`Insert meta ${asset}/${dur}m failed: ${metaErr.message}`);
+        await writeLog({ asset, duration_minutes: dur, status: "error", message: `Meta insert failed: ${metaErr.message}`, open_price: openPrice });
         continue;
       }
 
       spawned++;
+      await writeLog({
+        asset, duration_minutes: dur, market_id: market.id,
+        status: "success", open_price: openPrice,
+        message: `Spawned ${asset} ${dur}m round @ $${openPrice}`,
+      });
     }
 
     return new Response(
-      JSON.stringify({ spawned, errors, checked: configs.length }),
+      JSON.stringify({ spawned, errors, checked: configs.length, source }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
