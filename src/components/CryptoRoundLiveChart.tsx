@@ -94,7 +94,7 @@ const CryptoRoundLiveChart = ({
   const [width, setWidth] = useState(600);
 
   type RangeKey = "1m" | "5m" | "15m" | "all";
-  const [range, setRange] = useState<RangeKey>("all");
+  const [range, setRange] = useState<RangeKey>("1m");
   const RANGE_MS: Record<RangeKey, number | null> = {
     "1m": 60_000,
     "5m": 5 * 60_000,
