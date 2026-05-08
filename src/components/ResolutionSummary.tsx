@@ -121,7 +121,15 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
 
   return (
     <div className="space-y-3 mb-4">
-      {/* Winning outcome banner */}
+      {/* Resolution status timeline */}
+      <TransactionStatusTracker
+        kind="resolve"
+        stages={buildResolveStages({
+          status: marketMeta?.status,
+          resolved_at: (marketMeta as any)?.moderator_reviewed_at,
+          end_date: marketMeta?.end_date,
+        })}
+      />
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
