@@ -197,6 +197,18 @@ const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Prop
           );
         })}
       </ol>
+
+      {/* Post-round CTA — send users Home to find the freshly spawned round */}
+      {isFinished && (
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold py-2 hover:opacity-90 active:scale-[0.98] transition"
+        >
+          <Home className="w-3.5 h-3.5" />
+          View active rounds
+        </button>
+      )}
     </div>
   );
 };
