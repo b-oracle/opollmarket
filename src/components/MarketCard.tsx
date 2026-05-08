@@ -312,7 +312,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center backdrop-blur-sm">
                   <ThumbsDown className="w-10 h-10 text-destructive" />
                 </div>
-                <span className="text-lg font-bold neon-no">Buy No {noPercent}¢</span>
+                <span className="text-lg font-bold neon-no">{market.isCryptoRound ? `Down ${noPercent}¢` : `Buy No ${noPercent}¢`}</span>
               </motion.div>
             </motion.div>
           </>
