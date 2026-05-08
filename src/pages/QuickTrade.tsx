@@ -1716,18 +1716,47 @@ export default function QuickTrade() {
 
 
           {/* Pool info */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-            <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-2.5 sm:p-3 text-center">
-              <ArrowUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
-              <p className="text-base sm:text-lg font-bold text-green-500">${poolUp.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">UP Pool</p>
-            </div>
-            <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-2.5 sm:p-3 text-center">
-              <ArrowDown className="w-4 h-4 text-destructive mx-auto mb-1" />
-              <p className="text-base sm:text-lg font-bold text-destructive">${poolDown.toFixed(2)}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">DOWN Pool</p>
-            </div>
-          </div>
+          {(() => {
+            const poolTotal = poolUp + poolDown;
+            const upPct = poolTotal > 0 ? (poolUp / poolTotal) * 100 : 50;
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-2">
+                  <div className="rounded-xl border border-green-500/20 bg-green-500/5 p-2.5 sm:p-3 text-center transition-colors duration-300">
+                    <ArrowUp className="w-4 h-4 text-green-500 mx-auto mb-1" />
+                    <AnimatedNumber
+                      value={poolUp}
+                      decimals={2}
+                      prefix="$"
+                      className="text-base sm:text-lg font-bold text-green-500 tabular-nums block"
+                    />
+                    <p className="text-[10px] text-muted-foreground uppercase">UP Pool</p>
+                  </div>
+                  <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-2.5 sm:p-3 text-center transition-colors duration-300">
+                    <ArrowDown className="w-4 h-4 text-destructive mx-auto mb-1" />
+                    <AnimatedNumber
+                      value={poolDown}
+                      decimals={2}
+                      prefix="$"
+                      className="text-base sm:text-lg font-bold text-destructive tabular-nums block"
+                    />
+                    <p className="text-[10px] text-muted-foreground uppercase">DOWN Pool</p>
+                  </div>
+                </div>
+                {/* Smooth pool ratio bar */}
+                <div className="h-1.5 w-full rounded-full overflow-hidden flex bg-muted/40 mb-3 sm:mb-4">
+                  <div
+                    className="h-full bg-green-500 transition-[width] duration-500 ease-out"
+                    style={{ width: `${upPct}%` }}
+                  />
+                  <div
+                    className="h-full bg-destructive transition-[width] duration-500 ease-out"
+                    style={{ width: `${100 - upPct}%` }}
+                  />
+                </div>
+              </>
+            );
+          })()}
 
            <QuickTradeBetControls
             userBet={userBet}
