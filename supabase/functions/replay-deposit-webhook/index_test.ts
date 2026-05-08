@@ -302,6 +302,16 @@ Deno.test("payaza pending — refuses to credit", async () => {
   assertEquals(state.rpcCalls.find((c) => c.fn === "adjust_balance"), undefined);
 });
 
+Deno.test("payaza auth failure — returns safe admin response without crediting", async () => {
+  const { admin, state } = makeFakeAdmin({ txs: [payazaTx()] });
+  const { fn: fetchImpl } = makeFetch({ message: "Forbidden" }, { status: 403 });
+  const r = await replayDeposit(admin, fetchImpl, "np", { actorId: "admin-1", transactionId: "tx-1" }, { payazaSecretKey: "ps" });
+  assertEquals(r.status, 200);
+  assertEquals(r.body.success, false);
+  assertEquals(r.body.code, "PAYAZA_AUTH");
+  assertEquals(state.rpcCalls.find((c) => c.fn === "adjust_balance"), undefined);
+});
+
 Deno.test("payaza wrong currency — blocked", async () => {
   const { admin, state } = makeFakeAdmin({ txs: [payazaTx()] });
   const { fn: fetchImpl } = makeFetch({ data: { transactionStatus: "SUCCESSFUL", currency: { code: "USD" } } });
