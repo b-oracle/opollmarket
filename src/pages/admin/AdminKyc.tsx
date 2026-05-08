@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminContext } from "./AdminLayout";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Camera, Monitor } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Camera, Monitor, ShieldCheck } from "lucide-react";
 
 type KycSubmission = {
   id: string;
@@ -30,6 +31,9 @@ type KycSubmission = {
 
 const AdminKyc = () => {
   const { canEdit } = useAdminContext();
+  const { isSupport, isSuperAdmin, isAdmin } = useAuth();
+  // Support staff can review KYC submissions even though canEdit is false for them.
+  const canReview = canEdit || isSupport || isSuperAdmin || isAdmin;
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
@@ -90,7 +94,11 @@ const AdminKyc = () => {
   };
 
   const handleAction = async (submission: KycSubmission, action: "approved" | "rejected") => {
-    if (!canEdit) return;
+    if (!canReview) return;
+    if (action === "rejected" && !adminNote.trim()) {
+      toast.error("Please provide a rejection reason");
+      return;
+    }
     setProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke("review-kyc", {
@@ -252,13 +260,26 @@ const AdminKyc = () => {
                   <p className="text-xs text-muted-foreground italic">Note: {sub.admin_note}</p>
                 )}
 
+                {/* Review metadata for non-pending submissions */}
+                {sub.status !== "pending" && (sub.reviewed_at || sub.reviewed_by) && (
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground border-t border-border pt-2">
+                    <ShieldCheck className="w-3 h-3" />
+                    {sub.reviewed_at && (
+                      <span>Reviewed {new Date(sub.reviewed_at).toLocaleString()}</span>
+                    )}
+                    {sub.reviewed_by && (
+                      <span>· by {sub.reviewed_by.slice(0, 8)}…</span>
+                    )}
+                  </div>
+                )}
+
                 {/* Review actions */}
-                {sub.status === "pending" && canEdit && (
+                {sub.status === "pending" && canReview && (
                   <div className="space-y-2 pt-2 border-t border-border">
                     {reviewingId === sub.id ? (
                       <>
                         <Input
-                          placeholder="Admin note (optional, shown to user on rejection)"
+                          placeholder="Reason (required for rejection, shown to user)"
                           value={adminNote}
                           onChange={(e) => setAdminNote(e.target.value)}
                           className="text-xs"
