@@ -476,11 +476,34 @@ const MarketDetail = () => {
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (cancelled) return;
-      if (data?.id) {
-        queryClient.invalidateQueries({ queryKey: ["markets"] });
-        navigate(`/market/${data.id}`, { replace: true });
+      if (cancelled || !data?.id) return;
+
+      const nextId = data.id as string;
+
+      // Preload the next round's full market detail + warm the live price feed
+      // BEFORE navigating, so the countdown, chart and resolution UI render
+      // instantly instead of flashing a loading state.
+      try {
+        await Promise.all([
+          queryClient.prefetchQuery({
+            queryKey: ["market", nextId],
+            queryFn: async () => {
+              const { data: detail, error } = await fetchMarketDetail(supabase, nextId);
+              if (error || !detail) return null;
+              return mapDbToMarket(detail as any);
+            },
+          }),
+          market.autoResolveAsset
+            ? fetchCryptoPrice(market.autoResolveAsset).catch(() => null)
+            : Promise.resolve(null),
+        ]);
+      } catch (e) {
+        console.warn("[crypto-round] prefetch next round failed:", e);
       }
+
+      if (cancelled) return;
+      queryClient.invalidateQueries({ queryKey: ["markets"] });
+      navigate(`/market/${nextId}`, { replace: true });
     };
     poll();
     const iv = setInterval(poll, 4000);
