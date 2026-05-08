@@ -2,20 +2,11 @@
  * Unified haptic & vibration helper.
  * Works across:
  *   1. Capacitor native (Android/iOS) — uses @capacitor/haptics
- *   2. Despia native wrapper — uses despia:// URLs
- *   3. Web / PWA — uses navigator.vibrate fallback
+ *   2. Web / PWA — uses navigator.vibrate fallback
  *
  * Safe no-op when none are available.
  */
 import { Capacitor } from "@capacitor/core";
-import {
-  hapticLight as despiaLight,
-  hapticSuccess as despiaSuccess,
-  hapticWarning as despiaWarning,
-  hapticError as despiaError,
-  hapticHeavy as despiaHeavy,
-  isDespiaNative,
-} from "./despia";
 
 const isCapacitorNative = (): boolean => {
   try {
