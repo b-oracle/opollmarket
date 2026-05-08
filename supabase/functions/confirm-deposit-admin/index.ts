@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Check admin role
+    // Check admin/super_admin/support role
     const { data: hasRole } = await adminClient.rpc("has_role", {
       _user_id: user.id,
       _role: "admin",
@@ -50,8 +50,12 @@ Deno.serve(async (req) => {
       _user_id: user.id,
       _role: "super_admin",
     });
+    const { data: hasSupportRole } = await adminClient.rpc("has_role", {
+      _user_id: user.id,
+      _role: "support",
+    });
 
-    if (!hasRole && !hasSuperRole) {
+    if (!hasRole && !hasSuperRole && !hasSupportRole) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
