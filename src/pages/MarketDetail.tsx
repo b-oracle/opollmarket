@@ -488,7 +488,8 @@ const MarketDetail = () => {
       // the chart's first tick lands before the user sees it). Also seed the
       // chart's per-round point cache so it never paints empty.
       try {
-        const [, livePrice] = await Promise.all([
+        const uid = user?.id;
+        const results = await Promise.all([
           queryClient.prefetchQuery({
             queryKey: ["market", nextId],
             queryFn: async () => {
@@ -497,6 +498,61 @@ const MarketDetail = () => {
               return mapDbToMarket(detail as any);
             },
           }),
+          // Recent trades (BetHistory / OrderBook)
+          queryClient.prefetchQuery({
+            queryKey: ["orderbook-trades", nextId],
+            queryFn: async () => {
+              const { data } = await supabase
+                .from("public_market_trades")
+                .select("id, side, amount, price, shares, created_at")
+                .eq("market_id", nextId)
+                .in("side", ["yes", "no"])
+                .order("created_at", { ascending: false })
+                .limit(100);
+              return data || [];
+            },
+          }),
+          // Resolution market meta
+          queryClient.prefetchQuery({
+            queryKey: ["resolution-meta", nextId],
+            queryFn: async () => {
+              const { data } = await supabase
+                .from("markets")
+                .select("status, end_date, moderator_reviewed_at, is_crypto_round")
+                .eq("id", nextId)
+                .maybeSingle();
+              return data;
+            },
+          }),
+          // Per-user resolution data (positions + payouts) — only if signed in
+          uid
+            ? queryClient.prefetchQuery({
+                queryKey: ["resolution-positions", nextId, uid],
+                queryFn: async () => {
+                  const { data } = await supabase
+                    .from("positions")
+                    .select("id, side, shares, avg_price, option_id")
+                    .eq("market_id", nextId)
+                    .eq("user_id", uid)
+                    .gt("shares", 0);
+                  return data || [];
+                },
+              })
+            : Promise.resolve(),
+          uid
+            ? queryClient.prefetchQuery({
+                queryKey: ["resolution-payouts", nextId, uid],
+                queryFn: async () => {
+                  const { data } = await supabase
+                    .from("transactions")
+                    .select("amount, side, type")
+                    .eq("market_id", nextId)
+                    .eq("user_id", uid)
+                    .in("type", ["payout", "refund", "one_sided_refund"]);
+                  return data || [];
+                },
+              })
+            : Promise.resolve(),
           new Promise<number | null>((resolve) => {
             let resolved = false;
             const finish = (p: number | null) => {
@@ -520,6 +576,7 @@ const MarketDetail = () => {
             }, 1200);
           }),
         ]);
+        const livePrice = results[results.length - 1] as number | null;
 
         if (livePrice != null && nextDeadline) {
           primeCryptoRoundCache(nextAsset, nextDeadline, livePrice);
