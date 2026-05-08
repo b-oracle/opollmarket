@@ -231,8 +231,6 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       return <ChartSkeleton text="Building chart..." />;
     }
 
-    const ChartComponent = chartType === "poly" ? PolylineChart : SimpleAreaChart;
-
     // Round-anchored x-axis (Polymarket-style left → right) — applied only to SimpleAreaChart
     const roundStartMs = activeRound ? new Date(activeRound.created_at).getTime() : null;
     const roundEndMs = roundStartMs && activeRound ? roundStartMs + activeRound.duration_seconds * 1000 : null;
