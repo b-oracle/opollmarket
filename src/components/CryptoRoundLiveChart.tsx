@@ -235,9 +235,6 @@ const CryptoRoundLiveChart = ({
   const padRight = 56;
   const chartW = W - padRight;
 
-  const tMin = startMs;
-  const tMax = endMs;
-
   const tMin = useMemo(() => {
     const span = RANGE_MS[range];
     if (!span) return startMs;
