@@ -461,10 +461,18 @@ const MarketDetail = () => {
 
   // Auto-redirect to the next round once a crypto Up/Down round is resolved
   // and the spawner cron creates the new market. Polls every 4s.
+  // `redirectingRef` ensures we only fire the prefetch+navigate sequence ONCE
+  // per resolved market, even if React re-renders, StrictMode double-mounts,
+  // or the 4s interval ticks while a previous poll is still in-flight.
+  const redirectingRef = useRef(false);
+  useEffect(() => {
+    redirectingRef.current = false;
+  }, [market?.id]);
   useEffect(() => {
     if (!market?.isCryptoRound) return;
     if (market.status !== "resolved") return;
     if (!market.autoResolveAsset) return;
+    if (REDIRECTED_FROM.has(market.id)) return;
 
     let cancelled = false;
     const poll = async () => {
