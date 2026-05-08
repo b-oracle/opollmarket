@@ -40,6 +40,7 @@ import CryptoRoundLiveChart, { primeCryptoRoundCache } from "@/components/Crypto
 import { primeMarketCommentsCache } from "@/components/CommentsDrawer";
 import { subscribeToPriceStream } from "@/lib/cryptoPriceProvider";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
+import ChartSkeleton from "@/components/ChartSkeleton";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
