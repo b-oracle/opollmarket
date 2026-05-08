@@ -75,7 +75,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const noPercent = Math.round(market.noPrice * 100);
   const isMulti = market.marketType === "multi" || market.marketType === "range";
   const showBoosted = isBoosted || market.trending;
-  const isEnded = market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(market.endDate).getTime() < Date.now();
+  // For crypto Up/Down rounds prefer the precise deadline (e.g. 15-min mark)
+  // over the date-only end_date column, which would otherwise read end-of-day.
+  const effectiveEnd = market.isCryptoRound && market.autoResolveDeadline
+    ? market.autoResolveDeadline
+    : market.endDate;
+  const isEnded = market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(effectiveEnd).getTime() < Date.now();
 
   // Real hooks for like, bookmark, comments
   const { user } = useAuth();
