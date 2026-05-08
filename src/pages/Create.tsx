@@ -1077,13 +1077,13 @@ const Create = () => {
       }
       if (imageFile && !earlyImageUrl) {
         toast.error("Image upload failed. No charge was taken.");
-        setSubmitStep("error");
+        failSubmit("Image upload failed. Please try a different image.");
         isSubmittingRef.current = false;
         return;
       }
       if (!earlyImageUrl) {
         toast.error("A cover image is required.");
-        setSubmitStep("error");
+        failSubmit("A cover image is required.");
         isSubmittingRef.current = false;
         return;
       }
@@ -1100,7 +1100,7 @@ const Create = () => {
       .single();
 
     if (balError || !bal) {
-      setSubmitStep("error");
+      failSubmit(balError?.message || "Could not fetch your balance", balError);
       toast.error("Could not fetch your balance");
       return;
     }
@@ -1123,14 +1123,14 @@ const Create = () => {
     );
 
     if (deductError) {
-      setSubmitStep("error");
-      toast.error("Failed to deduct liquidity from your balance");
+      failSubmit(deductError.message || "Failed to deduct liquidity from your balance", deductError);
+      toast.error(deductError.message || "Failed to deduct liquidity from your balance");
       return;
     }
 
     const result = typeof deductResult === "string" ? JSON.parse(deductResult) : deductResult;
     if (!result?.success) {
-      setSubmitStep("error");
+      failSubmit(result?.error || "Insufficient balance for market creation", result);
       toast.error(result?.error || "Insufficient balance for market creation", {
         action: {
           label: "Deposit Now",
