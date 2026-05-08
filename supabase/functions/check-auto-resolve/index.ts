@@ -378,12 +378,20 @@ Deno.serve(async (req) => {
 
       let winningSide: string | null = null;
 
-      if (currentPrice !== null && conditionMet(currentPrice, targetPrice, operator)) {
+      // Crypto Up/Down rounds MUST run for their full duration. The target
+      // price is the OPEN price, so checking `conditionMet` before the
+      // deadline would resolve the round to YES on the very first cron tick
+      // (any tick at-or-above open). Defer condition evaluation until the
+      // deadline has actually passed.
+      const isCryptoRound = (market as any).is_crypto_round === true;
+
+      if (!isCryptoRound && currentPrice !== null && conditionMet(currentPrice, targetPrice, operator)) {
+        // Non-crypto auto-resolve markets: early-resolve as soon as target hit.
         winningSide = "yes";
       } else if (now > deadline) {
-        // Deadline passed without target hit — but only resolve NO if we have a
-        // confirmed price feed. Missing data is an abnormal termination → block.
+        // Deadline passed — evaluate final outcome.
         if (currentPrice === null) {
+          // Missing price feed at deadline → block for manual review.
           console.warn(`Market ${market.id}: deadline passed but price feed missing — blocking resolution`);
           await adminClient
             .from("markets")
@@ -395,7 +403,7 @@ Deno.serve(async (req) => {
             .eq("id", market.id);
           continue;
         }
-        winningSide = "no";
+        winningSide = conditionMet(currentPrice, targetPrice, operator) ? "yes" : "no";
       }
 
       if (!winningSide) continue;
