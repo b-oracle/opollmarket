@@ -71,7 +71,7 @@ const CryptoRoundConfigPanel = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("crypto_round_config")
-      .select("id, asset, duration_minutes, enabled, initial_liquidity_usd")
+      .select("id, asset, duration_minutes, enabled")
       .order("asset", { ascending: true })
       .order("duration_minutes", { ascending: true });
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
