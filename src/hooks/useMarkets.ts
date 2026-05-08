@@ -59,7 +59,7 @@ const isTimeoutError = (error: unknown) =>
 
 const publicReadClient = createStatelessReadClient();
 
-const mapDbToMarket = (db: DbMarket): Market => ({
+export const mapDbToMarket = (db: DbMarket): Market => ({
   id: db.id,
   title: db.title,
   description: db.description,
