@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { optionColors } from "@/lib/optionColors";
 import ShareModal from "@/components/ShareModal";
 import ProfitShareCard from "@/components/ProfitShareCard";
+import TransactionStatusTracker, { buildResolveStages } from "@/components/TransactionStatusTracker";
 
 interface ResolutionSummaryProps {
   marketId: string;
@@ -95,6 +96,19 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
     enabled: !!user?.id,
   });
 
+  const { data: marketMeta } = useQuery({
+    queryKey: ["resolution-meta", marketId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("markets")
+        .select("status, end_date, moderator_reviewed_at")
+        .eq("id", marketId)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: 5000,
+  });
+
   const totalPayout = payoutTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) ?? 0;
   const hasPositions = userPositions && userPositions.length > 0;
   const didWin = totalPayout > 0;
@@ -107,7 +121,15 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
 
   return (
     <div className="space-y-3 mb-4">
-      {/* Winning outcome banner */}
+      {/* Resolution status timeline */}
+      <TransactionStatusTracker
+        kind="resolve"
+        stages={buildResolveStages({
+          status: marketMeta?.status,
+          resolved_at: (marketMeta as any)?.moderator_reviewed_at,
+          end_date: marketMeta?.end_date,
+        })}
+      />
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

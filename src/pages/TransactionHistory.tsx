@@ -9,6 +9,10 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import OutstandingDebtBanner from "@/components/OutstandingDebtBanner";
+import TransactionStatusTracker, {
+  buildWithdrawalStages,
+  buildPayoutStages,
+} from "@/components/TransactionStatusTracker";
 import {
   ArrowLeft, ArrowUpRight, ArrowDownLeft, ArrowUpFromLine, ArrowDownToLine,
   Gift, Repeat, BarChart3, Sparkles, Zap, ArrowUp, ArrowDown, ChevronDown,
@@ -354,6 +358,37 @@ const TransactionHistory = () => {
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        {(tx.type === "withdraw" || tx.type === "withdrawal") && (
+                          <div className="mt-3">
+                            <TransactionStatusTracker
+                              kind="withdrawal"
+                              stages={buildWithdrawalStages({
+                                status: tx.status,
+                                created_at: tx.created_at,
+                                updated_at: (tx as any).updated_at,
+                                tx_hash: tx.tx_hash,
+                                nowpayments_id: tx.nowpayments_payment_id,
+                              })}
+                              txHash={tx.tx_hash}
+                              externalId={tx.nowpayments_payment_id}
+                              network={(tx as any).crypto_currency || (tx as any).payment_provider}
+                              failed={tx.status === "failed" || tx.status === "rejected"}
+                              failedReason={(tx as any).admin_note || undefined}
+                            />
+                          </div>
+                        )}
+                        {(tx.type === "payout" || tx.type === "refund" || tx.type === "one_sided_refund") && (
+                          <div className="mt-3">
+                            <TransactionStatusTracker
+                              kind="payout"
+                              stages={buildPayoutStages(
+                                { status: tx.status, created_at: tx.created_at, type: tx.type },
+                                { resolved_at: (tx as any).markets?.resolved_at, status: (tx as any).markets?.status },
+                              )}
+                              externalId={tx.id}
+                            />
+                          </div>
+                        )}
                         <div className="mt-3 pt-3 border-t border-border/50 grid grid-cols-2 gap-2 text-[11px]">
                           {marketTitle && (
                             <div className="col-span-2"><span className="text-muted-foreground">Market</span><p className="font-semibold truncate">{tx.market_id ? <span className="text-primary underline cursor-pointer" onClick={(e) => { e.stopPropagation(); navigate(`/market/${tx.market_id}`); }}>{marketTitle}</span> : marketTitle}</p></div>
