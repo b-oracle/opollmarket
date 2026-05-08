@@ -2563,6 +2563,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                 </span>
               )}
             </button>
+            {/* Share button — share live space without minimizing */}
+            <button
+              onClick={() => setShareOpen(true)}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Share space"
+              aria-label="Share space"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
             {/* Minimize button */}
             <button onClick={toggleMinimize}
               className="w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors"
