@@ -152,6 +152,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       }
       domainMinRef.current = tMin;
       domainMaxRef.current = tMax;
+      const dRange = tMax - tMin;
       const useTimeX = windowStartMs != null && windowEndMs != null && windowEndMs > windowStartMs;
       const winStart = windowStartMs ?? 0;
       const winEnd = windowEndMs ?? 1;
