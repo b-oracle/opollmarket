@@ -552,7 +552,8 @@ const App = () => {
                         <Route path="/portfolio" element={<FeatureGate featureKey="portfolio"><Portfolio /></FeatureGate>} />
                         <Route path="/creator" element={<CreatorDashboard />} />
                         <Route path="/profile" element={<Profile />} />
-                        <Route path="/transactions" element={<TransactionHistory />} />
+                       <Route path="/transactions" element={<TransactionHistory />} />
+                       <Route path="/up-down/history" element={<UpDownHistory />} />
                         <Route path="/messages" element={<FeatureGate featureKey="dm_chat"><Messages /></FeatureGate>} />
                         <Route path="/messages/:conversationId" element={<FeatureGate featureKey="dm_chat"><MessageThread /></FeatureGate>} />
                         <Route path="/auth" element={<Auth />} />
