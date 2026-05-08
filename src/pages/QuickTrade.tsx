@@ -31,6 +31,7 @@ import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
 import QuickTradeChart from "@/components/quick-trade/QuickTradeChart";
 import QuickTradeBetControls from "@/components/quick-trade/QuickTradeBetControls";
+import LiveBetsTicker from "@/components/quick-trade/LiveBetsTicker";
 import PriceToBeatHeader from "@/components/quick-trade/PriceToBeatHeader";
 
 import { useChartEngine } from "@/hooks/useChartEngine";
@@ -1757,6 +1758,8 @@ export default function QuickTrade() {
               </>
             );
           })()}
+
+           <LiveBetsTicker roundId={activeRound?.id} className="mb-2" />
 
            <QuickTradeBetControls
             userBet={userBet}
