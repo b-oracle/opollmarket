@@ -447,7 +447,7 @@ const AdminDeposits = () => {
                               )}
                             </div>
                           )}
-                          {d.status === "pending" && !isSuperAdmin && (
+                          {d.status === "pending" && !canHandleDeposits && (
                             <Badge variant="outline" className="text-xs text-muted-foreground">
                               No action needed
                             </Badge>
