@@ -11,6 +11,10 @@ This folder is a reference — copy files into your Android Studio project at th
 - User taps **Accept** → `IncomingCallActivity` (or the notification's Accept `PendingIntent.getActivity`) launches `MainActivity` **directly** with `opoll://call/accept?call_id=…&conversation_id=…`. The webview foregrounds instantly and `useCallDeepLink` navigates to `/messages/<conversation_id>?call_id=...&auto_accept=1`, where `ChatView`'s auto-accept effect joins the call. ⚠️ Accept must NEVER hop through a `BroadcastReceiver` to launch `MainActivity` — Android 10+ Background-Activity-Launch rules silently drop activity starts from background broadcasts on most OEMs (Samsung/Xiaomi/etc.), which makes the call appear to "do nothing" until the user opens the app manually. Direct `PendingIntent.getActivity` / `startActivity` from the foreground `IncomingCallActivity` carries the foreground activation token and bypasses BAL — same path WhatsApp uses.
 - User taps **Decline** → `CallActionReceiver` is fine (and preferred) because it uses `goAsync()` to keep the decline-HTTP POST alive after the notification dismisses, and it does not need to bring the app to the foreground.
 
+## OEM verification
+
+Before each release, run [OEM_VERIFICATION.md](./OEM_VERIFICATION.md) on at least one Samsung, one Xiaomi, and one Pixel device (Android 12, 13, 14). It documents per-OEM permission toggles (Samsung "Never sleeping apps", MIUI Autostart, Vivo "Background popup interface", etc.) that must be enabled for the Accept deep-link to work reliably, plus `adb logcat` filters for diagnosing failures.
+
 ## Files
 
 ```
