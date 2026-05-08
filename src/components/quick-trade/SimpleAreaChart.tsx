@@ -152,10 +152,20 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       }
       domainMinRef.current = tMin;
       domainMaxRef.current = tMax;
-      const dRange = tMax - tMin;
+      const useTimeX = windowStartMs != null && windowEndMs != null && windowEndMs > windowStartMs;
+      const winStart = windowStartMs ?? 0;
+      const winEnd = windowEndMs ?? 1;
+      const winRange = winEnd - winStart;
 
       const toY = (price: number) => padTop + (h - padTop - padBot) * (1 - (price - tMin) / dRange);
-      const toX = (i: number) => (i / (pts - 1)) * chartW;
+      const toX = (i: number) => {
+        if (useTimeX) {
+          const ts = buf[i * 2];
+          const x = ((ts - winStart) / winRange) * chartW;
+          return Math.max(0, Math.min(chartW, x));
+        }
+        return (i / (pts - 1)) * chartW;
+      };
 
       // Grid lines
       const step = dRange / 5;
