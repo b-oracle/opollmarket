@@ -101,13 +101,15 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
     queryFn: async () => {
       const { data } = await supabase
         .from("markets")
-        .select("status, end_date, moderator_reviewed_at")
+        .select("status, end_date, moderator_reviewed_at, is_crypto_round")
         .eq("id", marketId)
         .maybeSingle();
       return data;
     },
     refetchInterval: 5000,
   });
+
+  const isCryptoRound = !!(marketMeta as any)?.is_crypto_round;
 
   const totalPayout = payoutTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) ?? 0;
   const hasPositions = userPositions && userPositions.length > 0;
