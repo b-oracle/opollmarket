@@ -43,6 +43,11 @@ import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
+// Module-level set of resolved-market ids we have already navigated away from.
+// Survives component re-mounts (e.g. StrictMode) within the same session so we
+// never trigger the spawn-redirect twice for the same round.
+const REDIRECTED_FROM = new Set<string>();
+
 const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; creatorUserId: string }) => {
   const navigate = useNavigate();
   const { data: profile } = useQuery({
