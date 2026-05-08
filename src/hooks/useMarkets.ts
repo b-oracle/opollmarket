@@ -160,6 +160,8 @@ const fetchCreatorMarkets = async (client: typeof supabase, userId: string) => {
 
 export const useMarkets = () => {
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const cryptoUpDownEnabled = isFeatureEnabled("crypto_up_down");
 
   const shouldRetry = (failureCount: number, error: unknown) => {
     if (isTimeoutError(error)) return false;
