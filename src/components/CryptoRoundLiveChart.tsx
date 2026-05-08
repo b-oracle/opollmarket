@@ -214,8 +214,8 @@ const CryptoRoundLiveChart = ({
       const my = ((cur.y + next.y) / 2).toFixed(2);
       d += ` Q${cur.x.toFixed(2)},${cur.y.toFixed(2)} ${mx},${my}`;
     }
-    const last = pts[pts.length - 1];
-    d += ` T${last.x.toFixed(2)},${last.y.toFixed(2)}`;
+    const lastPt = pts[pts.length - 1];
+    d += ` T${lastPt.x.toFixed(2)},${lastPt.y.toFixed(2)}`;
     return d;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points, width, lo, hi, tMin, tMax, H]);
