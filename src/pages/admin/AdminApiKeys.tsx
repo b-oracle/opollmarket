@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAdminContext } from "./AdminLayout";
 import { format, formatDistanceToNow } from "date-fns";
+import { KeyUsageChart } from "@/components/admin/KeyUsageChart";
 
 interface ApiKey {
   id: string;
@@ -88,6 +89,7 @@ const AdminApiKeys = () => {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [owners, setOwners] = useState<Map<string, OwnerProfile>>(new Map());
   const [requestStats, setRequestStats] = useState<Map<string, RequestStats>>(new Map());
+  const [keyLogs, setKeyLogs] = useState<Map<string, { endpoint: string; created_at: string }[]>>(new Map());
   const [webhookStats, setWebhookStats] = useState<Map<string, WebhookStats>>(new Map());
   const [recentWebhooks, setRecentWebhooks] = useState<WebhookEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +177,14 @@ const AdminApiKeys = () => {
         .slice(0, 5);
     }
     setRequestStats(statsMap);
+
+    // Per-key raw log buckets for charting
+    const perKey = new Map<string, { endpoint: string; created_at: string }[]>();
+    for (const log of logArr) {
+      if (!perKey.has(log.api_key_id)) perKey.set(log.api_key_id, []);
+      perKey.get(log.api_key_id)!.push({ endpoint: log.endpoint, created_at: log.created_at });
+    }
+    setKeyLogs(perKey);
 
     // Fetch webhook events
     const { data: whEvents } = await supabase
@@ -424,10 +434,17 @@ const AdminApiKeys = () => {
                   </div>
                 </div>
 
-                {/* Expanded: Top Endpoints */}
+                {/* Expanded: Usage Analytics */}
                 {expandedAnalytics.has(k.id) && (
-                  <div className="border-t border-border/30 px-4 py-3 space-y-2">
-                    <h4 className="text-xs font-semibold flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Top Endpoints</h4>
+                  <div className="border-t border-border/30 px-4 py-3 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5" /> Requests Over Time
+                      </h4>
+                      <KeyUsageChart logs={keyLogs.get(k.id) || []} />
+                    </div>
+                    <div className="space-y-2 pt-2 border-t border-border/30">
+                      <h4 className="text-xs font-semibold flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Top Endpoints</h4>
                     {rs?.top_endpoints.length ? (
                       <div className="space-y-1.5">
                         {rs.top_endpoints.map(ep => {
@@ -446,6 +463,7 @@ const AdminApiKeys = () => {
                     ) : (
                       <p className="text-xs text-muted-foreground">No requests yet</p>
                     )}
+                    </div>
                   </div>
                 )}
 
