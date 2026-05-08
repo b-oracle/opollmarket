@@ -434,10 +434,17 @@ const AdminApiKeys = () => {
                   </div>
                 </div>
 
-                {/* Expanded: Top Endpoints */}
+                {/* Expanded: Usage Analytics */}
                 {expandedAnalytics.has(k.id) && (
-                  <div className="border-t border-border/30 px-4 py-3 space-y-2">
-                    <h4 className="text-xs font-semibold flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Top Endpoints</h4>
+                  <div className="border-t border-border/30 px-4 py-3 space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5" /> Requests Over Time
+                      </h4>
+                      <KeyUsageChart logs={keyLogs.get(k.id) || []} />
+                    </div>
+                    <div className="space-y-2 pt-2 border-t border-border/30">
+                      <h4 className="text-xs font-semibold flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" /> Top Endpoints</h4>
                     {rs?.top_endpoints.length ? (
                       <div className="space-y-1.5">
                         {rs.top_endpoints.map(ep => {
