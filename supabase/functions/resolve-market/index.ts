@@ -165,6 +165,17 @@ async function handleResolve(
     winning_option_id: winning_option_id || null,
   };
 
+  // For crypto Up/Down rounds, surface UP/DOWN labels in emails / X posts instead of YES/NO
+  const isCryptoRound = !!(market as any).is_crypto_round;
+  const sideToLabel = (s?: string | null): string | undefined => {
+    if (!s) return undefined;
+    if (isCryptoRound) {
+      if (s === "yes") return "UP";
+      if (s === "no") return "DOWN";
+    }
+    return s.toUpperCase();
+  };
+
   if (market.market_type === "binary" && winning_side) {
     updateData.yes_price = winning_side === "yes" ? 1 : 0;
     updateData.no_price = winning_side === "no" ? 1 : 0;
@@ -278,7 +289,7 @@ async function handleResolve(
         templateData: {
           marketTitle: market.title,
           marketId: market_id,
-          outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+          outcomeLabel: sideToLabel(winning_side),
           payoutAmount: payout,
           stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
           profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
@@ -336,7 +347,7 @@ async function handleResolve(
         templateData: {
           marketTitle: market.title,
           marketId: market_id,
-          outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+          outcomeLabel: sideToLabel(winning_side),
           payoutAmount: payout,
           stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
           profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
@@ -359,7 +370,7 @@ async function handleResolve(
   }
   for (const [uid, agg] of losingByUser) {
     const yourOutcomeLabel = agg.sides.size === 1
-      ? Array.from(agg.sides)[0].toUpperCase()
+      ? sideToLabel(Array.from(agg.sides)[0])
       : undefined;
     await sendNotificationEmail({
       admin: adminClient,
@@ -370,7 +381,7 @@ async function handleResolve(
       templateData: {
         marketTitle: market.title,
         marketId: market_id,
-        outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+        outcomeLabel: sideToLabel(winning_side),
         yourOutcomeLabel,
         stake: Math.round(agg.stake * 100) / 100,
         shares: Math.round(agg.shares * 100) / 100,
@@ -482,7 +493,9 @@ async function handleResolve(
 
   // Auto-post to official X account
   try {
-    const outcomeLabel = winning_side === "yes" ? "Yes ✅" : winning_side === "no" ? "No ❌" : (winning_option_id ? winning_side : winning_side);
+    const outcomeLabel = isCryptoRound
+      ? (winning_side === "yes" ? "Up 📈" : winning_side === "no" ? "Down 📉" : winning_side)
+      : (winning_side === "yes" ? "Yes ✅" : winning_side === "no" ? "No ❌" : (winning_option_id ? winning_side : winning_side));
     await fetch(`${supabaseUrl}/functions/v1/twitter-auto-post`, {
       method: "POST",
       headers: {
