@@ -42,6 +42,81 @@ const formatTimeAgo = (dateStr: string) => {
   return `${days}d`;
 };
 
+// Module-level cache for prefetched comment threads. Keyed by `${marketId}|${identityId}`
+// so per-user "liked" state is correct. TTL keeps stale data from sticking around.
+const PRIMED_COMMENTS_CACHE = new Map<string, { topLevel: Comment[]; ts: number }>();
+const PRIMED_TTL_MS = 15_000;
+
+const loadCommentsThread = async (marketId: string, identityId: string): Promise<Comment[]> => {
+  const { data: allComments, error } = await supabase
+    .from("comments")
+    .select("*")
+    .eq("market_id", marketId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+
+  let likedIds = new Set<string>();
+  if (identityId) {
+    const { data: userLikes } = await supabase
+      .from("comment_likes")
+      .select("comment_id")
+      .eq("wallet_address", identityId);
+    likedIds = new Set(userLikes?.map((l) => l.comment_id) || []);
+  }
+
+  const authorIds = [...new Set((allComments || []).map((c) => c.author_wallet).filter(Boolean))] as string[];
+  const profileMap = new Map<string, { avatar_url: string | null; verification_level: string }>();
+  if (authorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, avatar_url, verification_level")
+      .in("id", authorIds);
+    for (const p of profiles || []) {
+      profileMap.set(p.id, { avatar_url: p.avatar_url, verification_level: p.verification_level });
+    }
+  }
+
+  const commentMap = new Map<string, Comment>();
+  const topLevel: Comment[] = [];
+  for (const c of allComments || []) {
+    const profile = c.author_wallet ? profileMap.get(c.author_wallet) : null;
+    commentMap.set(c.id, {
+      ...c,
+      liked: likedIds.has(c.id),
+      replies: [],
+      avatar_url: profile?.avatar_url || null,
+      verification_level: (profile?.verification_level || "none") as VerificationLevel,
+    });
+  }
+  for (const c of allComments || []) {
+    const comment = commentMap.get(c.id)!;
+    if (c.parent_id && commentMap.has(c.parent_id)) {
+      commentMap.get(c.parent_id)!.replies!.push(comment);
+    } else if (!c.parent_id) {
+      topLevel.push(comment);
+    }
+  }
+  for (const c of commentMap.values()) {
+    c.replies?.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }
+  return topLevel;
+};
+
+/**
+ * Prefetch and cache the comments thread for a market so that when the user
+ * subsequently opens the drawer it renders instantly without a loading spinner.
+ * Safe to call repeatedly — fire-and-forget.
+ */
+export const primeMarketCommentsCache = async (marketId: string, identityId = "") => {
+  if (!marketId) return;
+  try {
+    const topLevel = await loadCommentsThread(marketId, identityId);
+    PRIMED_COMMENTS_CACHE.set(`${marketId}|${identityId}`, { topLevel, ts: Date.now() });
+  } catch (e) {
+    // best-effort prefetch; ignore failures
+  }
+};
+
 const CommentItem = ({
   comment,
   isReply = false,
