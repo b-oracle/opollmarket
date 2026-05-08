@@ -165,6 +165,17 @@ async function handleResolve(
     winning_option_id: winning_option_id || null,
   };
 
+  // For crypto Up/Down rounds, surface UP/DOWN labels in emails / X posts instead of YES/NO
+  const isCryptoRound = !!(market as any).is_crypto_round;
+  const sideToLabel = (s?: string | null): string | undefined => {
+    if (!s) return undefined;
+    if (isCryptoRound) {
+      if (s === "yes") return "UP";
+      if (s === "no") return "DOWN";
+    }
+    return s.toUpperCase();
+  };
+
   if (market.market_type === "binary" && winning_side) {
     updateData.yes_price = winning_side === "yes" ? 1 : 0;
     updateData.no_price = winning_side === "no" ? 1 : 0;
