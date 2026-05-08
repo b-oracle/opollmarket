@@ -135,6 +135,7 @@ const UserProfile = () => {
         .from("markets")
         .select("id, title, image_url, category, yes_price, no_price, status, volume, participants, end_date, market_type")
         .eq("creator_wallet", profileUserId)
+        .or("is_crypto_round.is.null,is_crypto_round.eq.false")
         .in("status", ["active", "ended", "resolved"])
         .order("created_at", { ascending: false })
         .limit(20);
