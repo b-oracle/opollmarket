@@ -278,6 +278,7 @@ const UserActivityDrawer = ({ open, onClose, userId, userName }: UserActivityDra
             .from("markets")
             .select("id, title, liquidity, created_at, status")
             .eq("creator_wallet", userId)
+            .or("is_crypto_round.is.null,is_crypto_round.eq.false")
             .neq("status", "draft")
             .order("created_at", { ascending: false })
             .limit(200),
