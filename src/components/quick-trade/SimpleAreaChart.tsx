@@ -269,13 +269,22 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
     <div ref={containerRef} className="w-full select-none relative" style={{ height: fullscreen ? "100%" : CHART_H_DEFAULT }}>
       <canvas ref={canvasRef} className="w-full h-full block" />
 
-      {/* Price axis labels */}
+      {/* Price axis labels — hide ticks too close to the live/entry colored badges */}
       <div className="absolute right-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 64 : 48 }}>
-        {overlay.gridLevels.map((level, i) => (
-          <span key={i} className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none ${fullscreen ? "text-[11px]" : "text-[8px]"}`} style={{ top: `${level.yPct}%`, transform: "translateY(-50%)", right: 0 }}>
-            {fmtPrice(level.price, assetClass)}
-          </span>
-        ))}
+        {overlay.gridLevels.map((level, i) => {
+          const tooCloseToLive = Math.abs(level.yPct - overlay.lastY) < 7;
+          const tooCloseToEntry = overlay.entryVisible && Math.abs(level.yPct - overlay.entryY) < 7;
+          if (tooCloseToLive || tooCloseToEntry) return null;
+          return (
+            <span
+              key={i}
+              className={`absolute tabular-nums text-muted-foreground text-right pr-1 leading-none rounded-sm bg-background/60 backdrop-blur-[1px] px-0.5 ${fullscreen ? "text-[11px]" : "text-[9px]"}`}
+              style={{ top: `${level.yPct}%`, transform: "translateY(-50%)", right: 0 }}
+            >
+              {fmtPrice(level.price, assetClass)}
+            </span>
+          );
+        })}
       </div>
 
       {/* Current price badge */}
@@ -333,19 +342,30 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
           return (1 - p) * 100;
         };
         const isUpBet = userBet.side !== "down";
+        // Sort by yPct ascending and drop labels closer than ~9% to the previous one
+        // so they never stack on top of each other on narrow widths.
+        const placed: { dollars: number; yPct: number }[] = [];
+        const sorted = levels
+          .map((l) => ({ dollars: l.dollars, yPct: yPct(l.price) }))
+          .sort((a, b) => a.yPct - b.yPct);
+        for (const lvl of sorted) {
+          if (placed.length === 0 || Math.abs(lvl.yPct - placed[placed.length - 1].yPct) >= 9) {
+            placed.push(lvl);
+          }
+        }
         return (
-          <div className="absolute left-0 top-0 bottom-0 pointer-events-none" style={{ width: 36 }}>
-            {levels.map((lvl, i) => {
+          <div className="absolute left-0 top-0 bottom-0 pointer-events-none" style={{ width: fullscreen ? 40 : 30 }}>
+            {placed.map((lvl, i) => {
               const winning = isUpBet ? lvl.dollars >= 0 : lvl.dollars <= 0;
               return (
                 <span
                   key={i}
-                  className={`absolute tabular-nums font-bold text-[10px] leading-none pl-1 ${
-                    winning ? "text-green-500" : "text-destructive"
-                  }`}
-                  style={{ top: `${yPct(lvl.price)}%`, transform: "translateY(-50%)", left: 0 }}
+                  className={`absolute tabular-nums font-bold leading-none rounded-sm bg-background/70 backdrop-blur-[1px] px-1 ${
+                    fullscreen ? "text-[10px]" : "text-[9px]"
+                  } ${winning ? "text-green-500" : "text-destructive"}`}
+                  style={{ top: `${Math.max(2, Math.min(98, lvl.yPct))}%`, transform: "translateY(-50%)", left: 2 }}
                 >
-                  {lvl.dollars >= 0 ? "+ " : "- "}${Math.abs(Math.round(lvl.dollars))}
+                  {lvl.dollars >= 0 ? "+" : "−"}${Math.abs(Math.round(lvl.dollars))}
                 </span>
               );
             })}
