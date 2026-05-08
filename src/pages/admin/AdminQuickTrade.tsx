@@ -4,6 +4,7 @@ import { Loader2, Zap, TrendingUp, TrendingDown, Users, DollarSign, Timer, BarCh
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import AdminPagination from "@/components/admin/AdminPagination";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import CryptoRoundConfigPanel from "@/components/admin/CryptoRoundConfigPanel";
 
 type RangeKey = "7d" | "30d" | "all";
 const RANGES: { key: RangeKey; label: string; days: number | null }[] = [
