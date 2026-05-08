@@ -46,6 +46,16 @@ const AdminDeposits = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
+  const pendingReplayRef = useRef<{ txId: string; expectedRef: string } | null>(null);
+
+  // Mask a payment ID so it can't be copy-pasted; admin must verify externally.
+  function maskPaymentId(id: string | null): string {
+    if (!id) return "—";
+    if (id.length <= 12) return "•".repeat(id.length);
+    const visibleStart = id.slice(0, 4);
+    const visibleEnd = id.slice(-4);
+    return `${visibleStart}…${visibleEnd}`;
+  }
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-deposits", page, statusFilter, search],
