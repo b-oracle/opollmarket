@@ -512,6 +512,7 @@ const App = () => {
             <SidebarStateProvider>
               <TooltipProvider>
                 <AppSplash />
+                <CallJoinSplash />
                 <Toaster />
                 <Sonner />
                 <PWAUpdatePrompt />
