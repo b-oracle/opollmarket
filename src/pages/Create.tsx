@@ -1254,8 +1254,8 @@ const Create = () => {
         });
         setEscrowId(null);
       }
-      setSubmitStep("error");
       const errorMsg = error?.message || "Unknown error";
+      failSubmit(`Failed to save market: ${errorMsg}`, error);
       toast.error(`Failed to save market: ${errorMsg}. Your balance has been refunded.`);
       return;
     }
