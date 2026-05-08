@@ -286,8 +286,8 @@ const CryptoRoundLiveChart = ({
   // visually smoother than straight-line segments — especially on mobile where
   // jagged sub-pixel polylines look noisy.
   const linePath = useMemo(() => {
-    if (points.length === 0) return "";
-    const pts = points.map((p) => ({ x: toX(p.t), y: toY(p.p) }));
+    if (visiblePoints.length === 0) return "";
+    const pts = visiblePoints.map((p) => ({ x: toX(p.t), y: toY(p.p) }));
     if (pts.length === 1) return `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
     let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
     for (let i = 1; i < pts.length - 1; i++) {
@@ -301,10 +301,10 @@ const CryptoRoundLiveChart = ({
     d += ` T${lastPt.x.toFixed(2)},${lastPt.y.toFixed(2)}`;
     return d;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, width, lo, hi, tMin, tMax, H]);
+  }, [visiblePoints, width, lo, hi, tMin, tMax, H]);
 
-  const areaPath = points.length
-    ? `${linePath} L${toX(points[points.length - 1].t).toFixed(2)},${H - padBot} L${toX(points[0].t).toFixed(2)},${H - padBot} Z`
+  const areaPath = visiblePoints.length
+    ? `${linePath} L${toX(visiblePoints[visiblePoints.length - 1].t).toFixed(2)},${H - padBot} L${toX(visiblePoints[0].t).toFixed(2)},${H - padBot} Z`
     : "";
 
   // Y-axis ticks (4)
