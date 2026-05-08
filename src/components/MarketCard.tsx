@@ -546,6 +546,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <span className="px-1.5 py-0.5 rounded-full text-[9px] font-semibold flex items-center gap-0.5 bg-destructive/15 text-destructive border border-destructive/30 shrink-0">
                 <Radio className="w-2.5 h-2.5 animate-pulse" /> Live
               </span>
+              {market.isCryptoRound && (
+                <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-0.5 bg-primary/15 text-primary border border-primary/30 shrink-0 uppercase tracking-wider">
+                  <Zap className="w-2.5 h-2.5" /> Preset · Ready
+                </span>
+              )}
               {market.sportType && market.sportMatchId && (
                 <div className="shrink-0"><LiveScoreBadge sportType={market.sportType} matchId={market.sportMatchId} /></div>
               )}

@@ -515,7 +515,7 @@ const Index = () => {
                 } : undefined}
 
               >
-                {market.participants === 0 && user?.id === market.creatorAddress && (
+                {market.participants === 0 && user?.id === market.creatorAddress && !market.isCryptoRound && (
                   <div className="absolute inset-0 z-20 rounded-xl md:rounded-2xl bg-background/80 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 p-3">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
                       <Zap className="w-3.5 h-3.5" /> First Prediction Needed
