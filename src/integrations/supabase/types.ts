@@ -5175,6 +5175,10 @@ export type Database = {
       }
       cleanup_webhook_event_ledger: { Args: never; Returns: undefined }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
+      create_market_atomic: {
+        Args: { _draft_id?: string; _market_data: Json; _options?: string[] }
+        Returns: Json
+      }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
         Returns: Json
@@ -5225,6 +5229,23 @@ export type Database = {
         }[]
       }
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
+      finalize_market_creation_atomic: {
+        Args: {
+          _auto_resolve_fee_amount?: number
+          _boost_amount?: number
+          _boost_hours?: number
+          _boost_tier?: string
+          _broadcast_amount?: number
+          _draft_id?: string
+          _escrow_id?: string
+          _fee_amount?: number
+          _liquidity_amount?: number
+          _market_creation_fee_amount?: number
+          _market_data: Json
+          _options?: string[]
+        }
+        Returns: Json
+      }
       flag_unverified_liquidity: {
         Args: never
         Returns: {
