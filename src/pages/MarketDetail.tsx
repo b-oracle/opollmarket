@@ -680,9 +680,13 @@ const MarketDetail = () => {
       ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}`
       : undefined;
 
-  const chartData = usePriceHistory(
+  const { chartData, isLoading: chartLoading, hasTransactions } = usePriceHistory(
     id, timePeriod, yesPercent, noPercent, isMulti, market?.options
   );
+  // Show skeleton only on initial load when we truly have nothing yet —
+  // once any data has arrived (even stale cached buckets), keep showing
+  // the chart so the UI never flashes empty if a follow-up fetch fails.
+  const showChartSkeleton = chartLoading && !hasTransactions;
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
