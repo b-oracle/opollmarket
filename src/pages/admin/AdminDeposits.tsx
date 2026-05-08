@@ -36,7 +36,9 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 
 const AdminDeposits = () => {
   const { canEdit } = useAdminContext();
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin, isSupport } = useAuth();
+  // Anyone with admin/support access can confirm/credit deposits to handle user issues
+  const canHandleDeposits = isSuperAdmin || isAdmin || isSupport;
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -184,7 +186,7 @@ const AdminDeposits = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          {isSuperAdmin && (
+          {canHandleDeposits && (
             <Button variant="default" size="sm" onClick={() => setShowCreditForm(!showCreditForm)}>
               {showCreditForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
               {showCreditForm ? "Cancel" : "Credit Deposit"}
@@ -310,7 +312,7 @@ const AdminDeposits = () => {
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Provider</th>
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
-                  {canEdit && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>}
+                  {canHandleDeposits && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>}
                 </tr>
               </thead>
               <tbody>
@@ -362,7 +364,7 @@ const AdminDeposits = () => {
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {format(new Date(d.created_at), "MMM d, HH:mm")}
                       </td>
-                      {canEdit && (
+                      {canHandleDeposits && (
                         <td className="px-4 py-3 text-right">
                           {canConfirm && (
                             <div className="flex items-center justify-end gap-1.5">
@@ -445,7 +447,7 @@ const AdminDeposits = () => {
                               )}
                             </div>
                           )}
-                          {d.status === "pending" && !isSuperAdmin && (
+                          {d.status === "pending" && !canHandleDeposits && (
                             <Badge variant="outline" className="text-xs text-muted-foreground">
                               No action needed
                             </Badge>
