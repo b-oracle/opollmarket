@@ -31,6 +31,9 @@ type KycSubmission = {
 
 const AdminKyc = () => {
   const { canEdit } = useAdminContext();
+  const { isSupport, isSuperAdmin, isAdmin } = useAuth();
+  // Support staff can review KYC submissions even though canEdit is false for them.
+  const canReview = canEdit || isSupport || isSuperAdmin || isAdmin;
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"pending" | "approved" | "rejected" | "all">("pending");
   const [reviewingId, setReviewingId] = useState<string | null>(null);
