@@ -72,6 +72,7 @@ export async function replayDeposit(
   fetchImpl: FetchFn,
   npApiKey: string | undefined,
   input: ReplayInput,
+  deps: { payazaSecretKey?: string; payazaTenantId?: string } = {},
 ): Promise<ReplayResult> {
   const { actorId, transactionId, paymentId } = input;
   if (!transactionId && !paymentId) {
@@ -90,9 +91,15 @@ export async function replayDeposit(
   if (tx.status === "confirmed") {
     return { status: 200, body: { success: true, already_confirmed: true, message: "Already credited", transaction_id: tx.id } };
   }
-  if (tx.payment_provider && tx.payment_provider !== "nowpayments") {
-    return { status: 400, body: { error: `Replay only supported for nowpayments deposits (got ${tx.payment_provider}). Use admin-credit-deposit for manual credits.` } };
+
+  const provider = tx.payment_provider || "nowpayments";
+  if (provider === "payaza") {
+    return await replayPayaza(admin, fetchImpl, deps, actorId, tx);
   }
+  if (provider !== "nowpayments") {
+    return { status: 400, body: { error: `Replay not supported for ${provider} deposits. Use admin-credit-deposit for manual credits.` } };
+  }
+
   const npId = tx.nowpayments_payment_id || paymentId;
   if (!npId) return { status: 400, body: { error: "Transaction has no NOWPayments payment_id to verify" } };
 
