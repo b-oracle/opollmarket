@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
       ...(genericRes.data || []),
       ...(sportsRes.data || []),
       ...(twitterRes.data || []),
+      ...(cryptoRes.data || []),
     ].filter((m) => {
       if (seen.has(m.id)) return false;
       seen.add(m.id);
