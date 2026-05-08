@@ -15,6 +15,40 @@ interface Point { t: number; p: number }
 
 const MAX_POINTS = 600;
 
+// ── In-memory per-round point cache ──
+// Keyed by `${SYMBOL}|${endsAtISO}` so distinct rounds (even same asset) get
+// independent buffers and a fresh round naturally starts empty. We also evict
+// rounds whose endsAt is more than 10 minutes in the past on every read/write
+// to bound memory across long sessions.
+const ROUND_CACHE = new Map<string, Point[]>();
+const ROUND_CACHE_TTL_MS = 10 * 60 * 1000;
+
+const cacheKeyFor = (sym: string, endsAt: string) => `${sym}|${endsAt}`;
+
+const purgeExpiredRounds = () => {
+  const cutoff = Date.now() - ROUND_CACHE_TTL_MS;
+  for (const key of ROUND_CACHE.keys()) {
+    const idx = key.indexOf("|");
+    if (idx < 0) continue;
+    const endMs = new Date(key.slice(idx + 1)).getTime();
+    if (Number.isFinite(endMs) && endMs < cutoff) ROUND_CACHE.delete(key);
+  }
+};
+
+const readRoundCache = (key: string): Point[] => {
+  purgeExpiredRounds();
+  const entry = ROUND_CACHE.get(key);
+  return entry ? entry.slice() : [];
+};
+
+const writeRoundCache = (key: string, points: Point[]) => {
+  // Trim before storing so we never blow past MAX_POINTS in the cache either.
+  ROUND_CACHE.set(
+    key,
+    points.length > MAX_POINTS ? points.slice(points.length - MAX_POINTS) : points.slice(),
+  );
+};
+
 const fmtUsd = (p: number) => {
   if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (p >= 1) return `$${p.toFixed(2)}`;
@@ -44,11 +78,28 @@ const CryptoRoundLiveChart = ({
   height = 220,
 }: Props) => {
   const sym = asset?.toUpperCase();
-  const [points, setPoints] = useState<Point[]>([]);
-  const [last, setLast] = useState<number | null>(null);
+  const cacheKey = sym ? cacheKeyFor(sym, endsAt) : "";
+
+  // Hydrate synchronously from the in-memory cache so the chart paints with
+  // history on the very first render — no waiting for the first WS tick.
+  const [points, setPoints] = useState<Point[]>(() =>
+    cacheKey ? readRoundCache(cacheKey) : [],
+  );
+  const [last, setLast] = useState<number | null>(() => {
+    const cached = cacheKey ? readRoundCache(cacheKey) : [];
+    return cached.length ? cached[cached.length - 1].p : null;
+  });
   const [now, setNow] = useState(() => Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
+
+  // Re-hydrate when the round (or asset) changes mid-mount.
+  useEffect(() => {
+    if (!cacheKey) return;
+    const cached = readRoundCache(cacheKey);
+    setPoints(cached);
+    setLast(cached.length ? cached[cached.length - 1].p : null);
+  }, [cacheKey]);
 
   // Tick clock
   useEffect(() => {
@@ -80,11 +131,16 @@ const CryptoRoundLiveChart = ({
     let cancelled = false;
     fetchCryptoPrice(sym).then((p) => {
       if (cancelled || p == null) return;
-      setPoints((prev) => (prev.length ? prev : [{ t: Date.now(), p }]));
+      setPoints((prev) => {
+        if (prev.length) return prev;
+        const seeded = [{ t: Date.now(), p }];
+        if (cacheKey) writeRoundCache(cacheKey, seeded);
+        return seeded;
+      });
       setLast((prev) => prev ?? p);
     });
     return () => { cancelled = true; };
-  }, [sym]);
+  }, [sym, cacheKey]);
 
   // Subscribe to live stream — buffer ticks in a ref and flush on a throttled
   // interval to avoid one React re-render per WS message (Binance can stream
@@ -110,7 +166,8 @@ const CryptoRoundLiveChart = ({
     return unsub;
   }, [sym]);
 
-  // Throttled flush: copy buffered ticks into React state every FLUSH_MS.
+  // Throttled flush: copy buffered ticks into React state every FLUSH_MS,
+  // and persist the result to the per-round cache for instant rehydration.
   useEffect(() => {
     const id = setInterval(() => {
       const buf = bufferRef.current;
@@ -125,11 +182,14 @@ const CryptoRoundLiveChart = ({
 
       setPoints((prev) => {
         const merged = prev.concat(drained);
-        return merged.length > MAX_POINTS ? merged.slice(merged.length - MAX_POINTS) : merged;
+        const trimmed =
+          merged.length > MAX_POINTS ? merged.slice(merged.length - MAX_POINTS) : merged;
+        if (cacheKey) writeRoundCache(cacheKey, trimmed);
+        return trimmed;
       });
     }, FLUSH_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [cacheKey]);
 
   const endMs = useMemo(() => new Date(endsAt).getTime(), [endsAt]);
   const startMs = useMemo(() => {
