@@ -441,7 +441,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 </div>
               )}
               <span className="text-[11px] font-mono shrink-0 ml-3 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEnd)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
@@ -609,7 +609,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <CryptoRoundCountdown endsAt={market.autoResolveDeadline} />
             ) : (
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
+                <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEnd)}
               </span>
             )}
           </div>
