@@ -233,20 +233,27 @@ function QuickTradeChart(props: QuickTradeChartProps) {
 
     const ChartComponent = chartType === "poly" ? PolylineChart : SimpleAreaChart;
 
-    // Round-anchored x-axis (Polymarket-style left → right): only when SimpleAreaChart and an active round exists
+    // Round-anchored x-axis (Polymarket-style left → right) — applied only to SimpleAreaChart
     const roundStartMs = activeRound ? new Date(activeRound.created_at).getTime() : null;
     const roundEndMs = roundStartMs && activeRound ? roundStartMs + activeRound.duration_seconds * 1000 : null;
 
-    chartContent = (
-      <ChartComponent
+    chartContent = chartType === "poly" ? (
+      <PolylineChart
         priceHistory={areaHistory}
         entryPrice={entryPrice}
         assetClass={assetClass}
         userBet={userBet}
         activeRound={activeRound}
-        {...(ChartComponent === SimpleAreaChart
-          ? { windowStartMs: roundStartMs, windowEndMs: roundEndMs }
-          : {})}
+      />
+    ) : (
+      <SimpleAreaChart
+        priceHistory={areaHistory}
+        entryPrice={entryPrice}
+        assetClass={assetClass}
+        userBet={userBet}
+        activeRound={activeRound}
+        windowStartMs={roundStartMs}
+        windowEndMs={roundEndMs}
       />
     );
   }
