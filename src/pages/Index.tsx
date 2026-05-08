@@ -538,8 +538,8 @@ const Index = () => {
                         ? 'bg-primary/10 border-primary/30 text-primary'
                         : 'bg-muted border-border text-muted-foreground'
                     }`}>
-                      {market.status === 'resolved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                      {market.status === 'resolved' ? 'Resolution Completed' : 'Awaiting Resolution'}
+                      {market.status === 'resolved' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className={`w-3.5 h-3.5 ${market.isCryptoRound ? 'animate-spin' : ''}`} />}
+                      {market.status === 'resolved' ? 'Resolution Completed' : (market.isCryptoRound ? 'Resolving…' : 'Awaiting Resolution')}
                     </span>
                   </div>
                 )}
