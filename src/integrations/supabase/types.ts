@@ -1031,6 +1031,7 @@ export type Database = {
           end_time: string
           market_id: string
           open_price: number
+          predecessor_end_time: string
           start_time: string
         }
         Insert: {
@@ -1041,6 +1042,7 @@ export type Database = {
           end_time: string
           market_id: string
           open_price: number
+          predecessor_end_time?: string
           start_time: string
         }
         Update: {
@@ -1051,6 +1053,7 @@ export type Database = {
           end_time?: string
           market_id?: string
           open_price?: number
+          predecessor_end_time?: string
           start_time?: string
         }
         Relationships: [
