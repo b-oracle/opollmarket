@@ -13,7 +13,7 @@ interface Props {
   priceHistory: { time: string; price: number; ts: number }[];
   entryPrice: number | null;
   assetClass?: string;
-  userBet: { side: string } | null;
+  userBet: { side: string; amount?: number } | null;
   activeRound: { open_price: number | null } | null;
   fullscreen?: boolean;
 }
