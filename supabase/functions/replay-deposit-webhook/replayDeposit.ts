@@ -240,3 +240,147 @@ export async function replayDeposit(
     previous_status: tx.status,
   } };
 }
+
+// ============================================================================
+// Payaza (NGN fiat) replay
+// ============================================================================
+//
+// Verifies the deposit against Payaza's merchant transaction lookup endpoint.
+// Only credits when the provider confirms a successful NGN payment for the
+// matching reference. Otherwise the transaction is flagged for admin review
+// with no balance change.
+
+const PAYAZA_SUCCESS_KEYWORDS = [
+  "approved", "successful", "completed", "funds received", "success",
+  "escrow_success", "nip_success",
+];
+
+function payazaIsSuccess(np: Record<string, unknown>): boolean {
+  const candidates = [
+    np.transaction_status, np.transactionStatus,
+    np.status, np.response_status, np.responseStatus,
+    np.response_message, np.responseMessage,
+    (np as any)?.data?.transactionStatus, (np as any)?.data?.transaction_status,
+    (np as any)?.data?.status,
+  ].filter((v) => typeof v === "string").map((v) => String(v).toLowerCase());
+  return candidates.some((s) => PAYAZA_SUCCESS_KEYWORDS.some((kw) => s.includes(kw)));
+}
+
+function payazaCurrency(np: Record<string, unknown>): string {
+  const cands = [
+    np.currency, (np as any)?.currency?.code,
+    (np as any)?.data?.currency, (np as any)?.data?.currency?.code,
+  ].filter((v) => typeof v === "string");
+  return cands.length ? String(cands[0]).toUpperCase() : "";
+}
+
+async function replayPayaza(
+  admin: SupabaseAdmin,
+  fetchImpl: FetchFn,
+  deps: { payazaSecretKey?: string; payazaTenantId?: string },
+  actorId: string,
+  tx: { id: string; user_id: string; amount: number; status: string; nowpayments_payment_id: string | null },
+): Promise<ReplayResult> {
+  const reference = tx.nowpayments_payment_id;
+  if (!reference) {
+    return { status: 400, body: { error: "Transaction has no Payaza reference to verify" } };
+  }
+  if (!deps.payazaSecretKey) {
+    return { status: 500, body: { error: "PAYAZA_SECRET_KEY not configured" } };
+  }
+
+  const auth = `Payaza ${btoa(deps.payazaSecretKey)}`;
+  const url = `https://api.payaza.africa/payaza-account/api/v1/mainaccounts/merchant/transaction/${encodeURIComponent(reference)}`;
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    "Authorization": auth,
+  };
+  if (deps.payazaTenantId) headers["X-TenantID"] = deps.payazaTenantId;
+
+  const res = await fetchImpl(url, { headers });
+  const text = await res.text();
+  if (!res.ok) {
+    return { status: 502, body: { error: `Payaza lookup failed (${res.status}): ${text.substring(0, 300)}` } };
+  }
+  let np: Record<string, unknown>;
+  try { np = JSON.parse(text); } catch {
+    return { status: 502, body: { error: "Payaza returned non-JSON response" } };
+  }
+
+  if (!payazaIsSuccess(np)) {
+    return { status: 409, body: {
+      error: "Deposit not eligible — Payaza reports payment is not successful",
+      provider_response: np,
+    } };
+  }
+
+  const currency = payazaCurrency(np);
+  if (currency && currency !== "NGN") {
+    await admin.from("transactions").update({
+      status: "wrong_asset",
+    }).eq("id", tx.id).neq("status", "confirmed");
+    await admin.from("audit_logs").insert({
+      actor_id: actorId, action: "manual_deposit_replay_blocked",
+      target_type: "transaction", target_id: tx.id,
+      details: { reason: "wrong_currency", expected: "NGN", got: currency, reference, provider: "payaza" },
+    });
+    return { status: 200, body: {
+      success: false, blocked: true, reason: "wrong_currency",
+      message: `Expected NGN, Payaza reports ${currency}. Flagged for manual review.`,
+    } };
+  }
+
+  // Payaza uses has_amount_validation: true at create time, so a "success"
+  // event implies the full requested NGN amount was paid. Credit the original
+  // USD amount stored on the transaction.
+  const creditAmount = Number(tx.amount);
+  if (!(creditAmount > 0)) {
+    return { status: 400, body: { error: "Transaction has no positive amount to credit" } };
+  }
+
+  // Atomic claim
+  const { data: claimed, error: claimErr } = await admin.from("transactions")
+    .update({
+      status: "confirmed",
+      payment_provider: "payaza",
+      nowpayments_payment_id: reference,
+    })
+    .eq("id", tx.id).neq("status", "confirmed")
+    .select("id, user_id").maybeSingle();
+
+  if (claimErr) return { status: 500, body: { error: "Failed to claim transaction" } };
+  if (!claimed) {
+    return { status: 200, body: { success: true, already_confirmed: true, message: "Concurrent confirmation detected — no double credit", transaction_id: tx.id } };
+  }
+
+  const { error: balErr } = await admin.rpc("adjust_balance", {
+    _user_id: tx.user_id, _delta: creditAmount, _bonus_delta: 0, _insurance_delta: 0,
+  });
+  if (balErr) {
+    return { status: 500, body: { error: "Balance credit failed AFTER tx flipped — manual intervention required", transaction_id: tx.id } };
+  }
+
+  await admin.from("notifications").insert({
+    user_id: tx.user_id,
+    title: "Deposit Confirmed ✅",
+    message: `Your deposit of $${creditAmount.toFixed(2)} has been confirmed.`,
+    type: "deposit",
+  });
+
+  await admin.from("audit_logs").insert({
+    actor_id: actorId, action: "manual_deposit_replay",
+    target_type: "transaction", target_id: tx.id,
+    details: {
+      provider: "payaza", previous_status: tx.status,
+      credited_main: creditAmount, reference,
+    },
+  });
+
+  try { await admin.rpc("settle_user_debts", { _user_id: tx.user_id }); } catch { /* best-effort */ }
+
+  return { status: 200, body: {
+    success: true, transaction_id: tx.id, provider: "payaza",
+    credited_main: creditAmount, credited_bonus: 0,
+    previous_status: tx.status,
+  } };
+}
