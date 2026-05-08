@@ -259,6 +259,8 @@ const AdminQuickTrade = () => {
         </div>
       </TooltipProvider>
 
+      <CryptoRoundConfigPanel />
+
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
         {([{ key: "overview", label: "Overview" }, { key: "rounds", label: "Rounds" }, { key: "trades", label: "Trades" }] as const).map(t => (
