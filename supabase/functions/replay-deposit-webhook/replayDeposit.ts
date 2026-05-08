@@ -296,6 +296,13 @@ function payazaAuthCandidates(secretKey: string): string[] {
   return candidates;
 }
 
+const PAYAZA_LOOKUP_MAX_ATTEMPTS = 3;
+const PAYAZA_LOOKUP_RETRY_BASE_MS = 600;
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function replayPayaza(
   admin: SupabaseAdmin,
   fetchImpl: FetchFn,
@@ -332,31 +339,40 @@ async function replayPayaza(
 
   for (const authorization of payazaAuthCandidates(deps.payazaSecretKey)) {
     for (const transport of transports) {
-      let httpClient: { close?: () => void } | null = null;
-      try {
-        const init: RequestInit & { client?: unknown } = {
-          headers: { ...baseHeaders, Authorization: authorization },
-        };
-        if (transport.proxy) {
-          // @ts-ignore - Deno-only API
-          httpClient = (globalThis as any).Deno?.createHttpClient?.({ proxy: { url: proxyUrl } });
-          init.client = httpClient;
-        }
+      for (let attempt = 1; attempt <= PAYAZA_LOOKUP_MAX_ATTEMPTS; attempt++) {
+        let httpClient: { close?: () => void } | null = null;
+        try {
+          const init: RequestInit & { client?: unknown } = {
+            headers: { ...baseHeaders, Authorization: authorization },
+          };
+          if (transport.proxy) {
+            // @ts-ignore - Deno-only API
+            httpClient = (globalThis as any).Deno?.createHttpClient?.({ proxy: { url: proxyUrl } });
+            init.client = httpClient;
+          }
 
-        const res = await fetchImpl(url, init);
-        text = await res.text();
-        if (res.ok) {
-          lastErr = "";
-          break;
-        }
+          const res = await fetchImpl(url, init);
+          text = await res.text();
+          if (res.ok) {
+            lastErr = "";
+            break;
+          }
 
-        lastErr = `Payaza lookup failed via ${transport.label} (${res.status}): ${text.substring(0, 300)}`;
-      } catch (err) {
-        lastErr = `Payaza ${transport.label} lookup unreachable: ${String(err).substring(0, 300)}`;
-        console.error(lastErr);
-      } finally {
-        try { httpClient?.close?.(); } catch { /* noop */ }
+          lastErr = `Payaza lookup failed via ${transport.label} (${res.status}): ${text.substring(0, 300)}`;
+          if (res.status < 500 || attempt === PAYAZA_LOOKUP_MAX_ATTEMPTS) break;
+
+          console.warn(`Payaza ${transport.label} lookup attempt ${attempt} failed with ${res.status}; retrying`);
+          await wait(PAYAZA_LOOKUP_RETRY_BASE_MS * attempt);
+        } catch (err) {
+          lastErr = `Payaza ${transport.label} lookup unreachable: ${String(err).substring(0, 300)}`;
+          console.error(`${lastErr} (attempt ${attempt}/${PAYAZA_LOOKUP_MAX_ATTEMPTS})`);
+          if (attempt === PAYAZA_LOOKUP_MAX_ATTEMPTS) break;
+          await wait(PAYAZA_LOOKUP_RETRY_BASE_MS * attempt);
+        } finally {
+          try { httpClient?.close?.(); } catch { /* noop */ }
+        }
       }
+      if (!lastErr) break;
     }
     if (!lastErr) break;
   }
