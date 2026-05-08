@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Radio, Loader2, CheckCircle2, Sparkles, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Radio, Loader2, CheckCircle2, Sparkles, Clock, Home } from "lucide-react";
 
 interface Props {
   /** Round end / deadline timestamp (ISO). */
