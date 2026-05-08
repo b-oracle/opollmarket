@@ -28,11 +28,14 @@ interface QuickTradeBetControlsProps {
   asset?: string;
   currentPrice?: number | null;
   timeframeLabel?: string;
+  poolUp?: number;
+  poolDown?: number;
 }
 
 export default function QuickTradeBetControls({
   userBet, betAmount, setBetAmount, placing, isLocked, timeLeft,
   qtMinBet, qtMaxBet, onPlaceBet, amountPresets, asset, currentPrice, timeframeLabel,
+  poolUp, poolDown,
 }: QuickTradeBetControlsProps) {
   const assetClass = asset ? getAssetClass(asset) : "crypto";
   const marketOpen = isMarketOpen(assetClass);
@@ -99,24 +102,38 @@ export default function QuickTradeBetControls({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        <Button
-          onClick={() => setConfirmSide("up")}
-          disabled={placing || isLocked || timeLeft === 0 || !marketOpen}
-          className="h-14 sm:h-16 text-lg font-bold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-[0_0_20px_hsl(142_71%_45%/0.3)]"
-        >
-          <ArrowUp className="w-5 h-5 mr-2" />
-          UP
-        </Button>
-        <Button
-          onClick={() => setConfirmSide("down")}
-          disabled={placing || isLocked || timeLeft === 0 || !marketOpen}
-          className="h-14 sm:h-16 text-lg font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-[0_0_20px_hsl(0_84%_60%/0.3)]"
-        >
-          <ArrowDown className="w-5 h-5 mr-2" />
-          DOWN
-        </Button>
-      </div>
+      {(() => {
+        // Parimutuel implied prob → cents on a $1 payout
+        const total = (poolUp ?? 0) + (poolDown ?? 0);
+        const upCents = total > 0 ? Math.max(1, Math.min(99, Math.round(((poolDown ?? 0) / total) * 100))) : 50;
+        const downCents = 100 - upCents;
+        return (
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+            <Button
+              onClick={() => setConfirmSide("up")}
+              disabled={placing || isLocked || timeLeft === 0 || !marketOpen}
+              className="h-16 sm:h-[68px] flex-col gap-0 text-base font-extrabold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-[0_0_20px_hsl(142_71%_45%/0.3)]"
+            >
+              <span className="flex items-center gap-1.5 leading-none">
+                <ArrowUp className="w-5 h-5" />
+                Up {upCents}¢
+              </span>
+              <span className="text-[10px] font-semibold opacity-80 leading-none">Win ${(1 / (upCents / 100)).toFixed(2)}/$1</span>
+            </Button>
+            <Button
+              onClick={() => setConfirmSide("down")}
+              disabled={placing || isLocked || timeLeft === 0 || !marketOpen}
+              className="h-16 sm:h-[68px] flex-col gap-0 text-base font-extrabold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-[0_0_20px_hsl(0_84%_60%/0.3)]"
+            >
+              <span className="flex items-center gap-1.5 leading-none">
+                <ArrowDown className="w-5 h-5" />
+                Down {downCents}¢
+              </span>
+              <span className="text-[10px] font-semibold opacity-80 leading-none">Win ${(1 / (downCents / 100)).toFixed(2)}/$1</span>
+            </Button>
+          </div>
+        );
+      })()}
 
       {placing && (
         <div className="flex items-center justify-center gap-2 mt-3">

@@ -1492,26 +1492,37 @@ export default function QuickTrade() {
                       {getNextOpenTime(selectedAsset.assetClass)}
                     </span>
                   </>
-                ) : (
-                  <>
-                    <div className={`text-3xl font-mono font-bold tabular-nums transition-colors duration-300 ${
-                      resolving ? "text-muted-foreground" : timeLeft <= 10 ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]" : timeLeft <= 30 ? "text-amber-500" : "text-foreground"
-                    }`}>
-                      {resolving ? (
-                        <span className="flex items-center gap-2 text-lg">
-                          <span className="w-5 h-5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
-                          Resolving
+                ) : resolving ? (
+                  <div className="flex items-center gap-2 text-lg text-muted-foreground">
+                    <span className="w-5 h-5 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
+                    Resolving
+                  </div>
+                ) : (() => {
+                  const tl = Math.max(0, timeLeft);
+                  const mins = Math.floor(tl / 60);
+                  const secs = tl % 60;
+                  const colorCls = tl <= 10
+                    ? "text-destructive animate-[scale-pulse_0.6s_ease-in-out_infinite]"
+                    : tl <= 30
+                      ? "text-amber-500"
+                      : "text-destructive";
+                  return (
+                    <div className="flex items-end gap-2 sm:gap-3">
+                      <div className="flex flex-col items-center">
+                        <span className={`text-3xl sm:text-4xl font-mono font-extrabold tabular-nums leading-none transition-colors duration-300 ${colorCls}`}>
+                          {String(mins).padStart(2, "0")}
                         </span>
-                      ) : formatTime(timeLeft)}
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Mins</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className={`text-3xl sm:text-4xl font-mono font-extrabold tabular-nums leading-none transition-colors duration-300 ${colorCls}`}>
+                          {String(secs).padStart(2, "0")}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground uppercase tracking-wider mt-0.5">Secs</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 justify-center mt-1">
-                      <Timer className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-[10px] text-muted-foreground uppercase">
-                        {resolving ? "Finalizing..." : isLocked ? "Locked" : timeLeft === 0 ? "Starting..." : "Remaining"}
-                      </span>
-                    </div>
-                  </>
-                )}
+                  );
+                })()}
               </div>
             </div>
 
@@ -1714,6 +1725,8 @@ export default function QuickTrade() {
             asset={selectedAsset.symbol}
             currentPrice={currentPrice}
             timeframeLabel={selectedTimeframe.label}
+            poolUp={poolUp}
+            poolDown={poolDown}
           />
 
           <Suspense fallback={<div className="h-40" />}>

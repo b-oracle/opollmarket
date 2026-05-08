@@ -1,49 +1,63 @@
+
 ## Goal
 
-Crypto Up/Down rounds are spawned automatically by the cron and currently get attributed to the super_admin user (BORACLE) via `creator_wallet` / `creator_name`. They show up in BORACLE's profile, creator dashboard, and any "created markets" view as if BORACLE created them. They should be treated as a system preset feature instead.
+Make our Crypto Up/Down market detail look and feel like the Polymarket reference video: louder header, bolder price block, P&L brackets on the chart, and a round-anchored timeline that grows left → right instead of a sliding window.
 
-## Approach
+## What changes (UI only)
 
-Keep the DB columns populated (they're NOT NULL and used by RLS / payouts) but exclude `is_crypto_round = true` from every "this user created…" query in the UI, and relabel new spawns as "System" so any leakage no longer reads as BORACLE.
+All work stays in `src/pages/MarketDetail.tsx` and the existing quick-trade components — no business logic, no payouts, no engine math.
 
-## Changes
+### 1. Header strip (above the chart)
 
-### 1. Frontend — exclude crypto rounds from creator history
+File: `src/pages/MarketDetail.tsx` (crypto-round branch) + small tweaks to the asset/timer row.
 
-Add `.eq("is_crypto_round", false)` (or `.or("is_crypto_round.is.null,is_crypto_round.eq.false")`) to these queries that list a user's created markets:
+- Asset row: bigger title (`BTC Up or Down 5m`), date/window subtitle (`May 8, 2:30–2:35 PM`).
+- Countdown: render minutes and seconds as two huge red blocks (`03  37` with `MINS` / `SECS` labels under each), like the reference. Reuse existing `CryptoRoundCountdown` data, just restyle.
 
-- `src/pages/Profile.tsx` (line ~820) — own profile "Created" tab
-- `src/pages/UserProfile.tsx` (line ~137) — public profile "Created" tab
-- `src/pages/CreatorDashboard.tsx` (line ~149) — creator stats / list
-- `src/pages/Portfolio.tsx` (line ~184) — created-markets section
-- `src/components/admin/UserActivityDrawer.tsx` (lines ~160, ~279) — admin view of a user's created markets
-- `src/pages/Create.tsx` draft / active counts (lines ~324, ~422, ~769) — only if they currently include the BORACLE account; verify and add the filter if so
+### 2. Price block — `PriceToBeatHeader.tsx`
 
-Admin pages that intentionally show all markets (`AdminMarkets.tsx`) are left untouched.
+- Drop the bordered card; switch to a flat two-column block.
+- Left column: small gray "Price To Beat" label + **bold $80,225.81** in a large size (≈ `text-2xl font-extrabold`).
+- Right column: small "Current Price" label (orange when active) + **bold orange $80,242.93** in the same large size.
+- Replace the small `+0.021%` chip with a Polymarket-style **dollar delta** chip: green `▲ $17` / red `▼ $17`, where the dollar value = `currentPrice − openPrice` rounded.
+- On resolve, keep the slot-machine animation but swap the right column to "Final Price" with the win/lose color we already compute.
 
-### 2. Backend — relabel new crypto-round spawns
+### 3. Chart — left → right, round-anchored
 
-`supabase/functions/crypto-round-spawner/index.ts` (line ~197): change `creatorName` to a fixed `"System"` (instead of reading BORACLE's display_name) so future rows render as system-owned everywhere they do surface (e.g. market detail "Created by"). `creator_wallet` stays as the super_admin id for RLS/payout integrity.
+File: `src/components/quick-trade/SimpleAreaChart.tsx` (and the `PolylineChart` twin).
 
-### 3. Optional one-time backfill
+Today `toX(i) = (i / (pts-1)) * chartW`, so points are evenly spaced and a sliding window pushes old data left as new ticks arrive. Polymarket maps x to **wall-clock time inside the round window**, so the line literally draws from the left edge at round start to the right edge at round end.
 
-Migration to update existing rows:
-```sql
-UPDATE public.markets
-SET creator_name = 'System'
-WHERE is_crypto_round = true;
-```
-This cleans up the "Created by BORACLE" label on already-spawned rounds without touching ownership.
+- Accept two new optional props: `windowStartMs` and `windowEndMs`.
+- When both are provided, change the x mapping to `toX(ts) = ((ts − start) / (end − start)) * chartW`, clamped to `[0, chartW]`.
+- The line then begins flush against the left edge at round-open and progresses rightward as time elapses, leaving empty space ahead of the live cursor — matching the reference exactly.
+- For non-round usage (regular markets), fall back to today's index-based mapping so nothing else regresses.
+- Pass `windowStartMs = new Date(activeRound.created_at).getTime()` and `windowEndMs = start + duration_seconds * 1000` from `MarketDetail.tsx`.
+- Bottom timestamps: render 2–3 ticks from `windowStart` to `windowEnd` (e.g. `7:31:08 PM`, `7:31:17 PM`, `7:31:25 PM`) under the chart, replacing the generic "Last 5m" caption when in a crypto round.
+
+### 4. P&L brackets on the left axis
+
+New tiny overlay inside `SimpleAreaChart.tsx`, only when `entryPrice != null` and a user wager amount is known.
+
+- Compute a few price levels above and below `entryPrice` corresponding to round dollar P&L on the user's stake at the current odds (e.g. `+$1, +$3, +$5, +$7` above; `-$2, -$3` below).
+- Plot them as small colored labels on the **left** edge at the corresponding y position (green above entry for "up" bet, red below — mirrored for "down" bet).
+- Stake source: the existing `userBet.amount` (or wager) already loaded for the active round; if not present, skip the brackets gracefully.
+- Pure render layer — no recalculation of payouts, just `level = entry ± Δ` for visualization.
+
+### 5. Up / Down buttons
+
+File: `src/components/quick-trade/QuickTradeBetControls.tsx` (or wherever the two buy buttons render in the crypto-round path).
+
+- Make them taller, full-width, bolder text (`text-lg font-bold`), with the cents price displayed prominently (`Up 62¢`, `Down 39¢`).
+- Keep the existing onClick / disable / pending logic untouched.
 
 ## Out of scope
 
-- No change to RLS, payouts, or the spawner's super_admin lookup.
-- No change to admin dashboards that intentionally surface every market.
-- No removal/deletion of crypto-round markets.
+- No changes to round spawning, resolution, payouts, RLS, or pricing math.
+- No changes to non-crypto markets except the optional, opt-in chart props (default behavior unchanged).
+- No new tables, no edge functions.
 
 ## Acceptance
 
-- BORACLE's profile and creator dashboard show zero crypto Up/Down rounds.
-- No other user's profile shows them either.
-- Crypto round detail pages display "System" (not BORACLE) as the creator.
-- Predictions, payouts, and the home feed for crypto rounds keep working unchanged.
+- Opening a live BTC/ETH/SOL Up-or-Down round shows: huge red MM:SS countdown, bold "Price To Beat" + bold orange "Current Price" with a `▲/▼ $X` dollar chip, an orange line that starts at the left edge at round-open and advances rightward over the 5-minute window, P&L bracket labels on the left axis when the user has a wager, and tall bold green/red Up/Down buttons.
+- Regular (non-crypto) markets render unchanged.

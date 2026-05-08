@@ -21,7 +21,7 @@ interface QuickTradeChartProps {
   streamingPriceRef?: MutableRefObject<number | null>;
   historyLoading: boolean;
   activeRound: { open_price: number | null; created_at: string; duration_seconds: number } | null;
-  userBet: { side: string } | null;
+  userBet: { side: string; amount?: number } | null;
   resolveFlash: "win" | "lose" | null;
   timeframeLabel: string;
   assetClass?: "crypto" | "commodity" | "forex";
@@ -231,15 +231,27 @@ function QuickTradeChart(props: QuickTradeChartProps) {
       return <ChartSkeleton text="Building chart..." />;
     }
 
-    const ChartComponent = chartType === "poly" ? PolylineChart : SimpleAreaChart;
+    // Round-anchored x-axis (Polymarket-style left → right) — applied only to SimpleAreaChart
+    const roundStartMs = activeRound ? new Date(activeRound.created_at).getTime() : null;
+    const roundEndMs = roundStartMs && activeRound ? roundStartMs + activeRound.duration_seconds * 1000 : null;
 
-    chartContent = (
-      <ChartComponent
+    chartContent = chartType === "poly" ? (
+      <PolylineChart
         priceHistory={areaHistory}
         entryPrice={entryPrice}
         assetClass={assetClass}
         userBet={userBet}
         activeRound={activeRound}
+      />
+    ) : (
+      <SimpleAreaChart
+        priceHistory={areaHistory}
+        entryPrice={entryPrice}
+        assetClass={assetClass}
+        userBet={userBet}
+        activeRound={activeRound}
+        windowStartMs={roundStartMs}
+        windowEndMs={roundEndMs}
       />
     );
   }
@@ -260,8 +272,29 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     } else {
       const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
       if (areaHistory && areaHistory.length >= 2) {
-        const FSChart = chartType === "poly" ? PolylineChart : SimpleAreaChart;
-        return <FSChart priceHistory={areaHistory} entryPrice={entryPrice} assetClass={assetClass} userBet={userBet} activeRound={activeRound} fullscreen />;
+        const roundStartMs = activeRound ? new Date(activeRound.created_at).getTime() : null;
+        const roundEndMs = roundStartMs && activeRound ? roundStartMs + activeRound.duration_seconds * 1000 : null;
+        return chartType === "poly" ? (
+          <PolylineChart
+            priceHistory={areaHistory}
+            entryPrice={entryPrice}
+            assetClass={assetClass}
+            userBet={userBet}
+            activeRound={activeRound}
+            fullscreen
+          />
+        ) : (
+          <SimpleAreaChart
+            priceHistory={areaHistory}
+            entryPrice={entryPrice}
+            assetClass={assetClass}
+            userBet={userBet}
+            activeRound={activeRound}
+            fullscreen
+            windowStartMs={roundStartMs}
+            windowEndMs={roundEndMs}
+          />
+        );
       }
     }
     return chartContent;

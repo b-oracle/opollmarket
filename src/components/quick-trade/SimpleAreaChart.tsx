@@ -17,9 +17,13 @@ interface Props {
   priceHistory: { time: string; price: number; ts: number }[];
   entryPrice: number | null;
   assetClass?: string;
-  userBet: { side: string } | null;
+  userBet: { side: string; amount?: number } | null;
   activeRound: { open_price: number | null } | null;
   fullscreen?: boolean;
+  /** When set, x-axis is anchored to wall-clock time inside [windowStartMs, windowEndMs]
+   *  so the line draws left → right across the round window (Polymarket-style). */
+  windowStartMs?: number | null;
+  windowEndMs?: number | null;
 }
 
 interface OverlayState {
@@ -38,7 +42,7 @@ function fmtPrice(p: number, ac?: string): string {
   return p.toFixed(4);
 }
 
-function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen }: Props) {
+function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen, windowStartMs, windowEndMs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -149,9 +153,20 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
       domainMinRef.current = tMin;
       domainMaxRef.current = tMax;
       const dRange = tMax - tMin;
+      const useTimeX = windowStartMs != null && windowEndMs != null && windowEndMs > windowStartMs;
+      const winStart = windowStartMs ?? 0;
+      const winEnd = windowEndMs ?? 1;
+      const winRange = winEnd - winStart;
 
       const toY = (price: number) => padTop + (h - padTop - padBot) * (1 - (price - tMin) / dRange);
-      const toX = (i: number) => (i / (pts - 1)) * chartW;
+      const toX = (i: number) => {
+        if (useTimeX) {
+          const ts = buf[i * 2];
+          const x = ((ts - winStart) / winRange) * chartW;
+          return Math.max(0, Math.min(chartW, x));
+        }
+        return (i / (pts - 1)) * chartW;
+      };
 
       // Grid lines
       const step = dRange / 5;
@@ -246,7 +261,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
     rafRef.current = requestAnimationFrame(draw);
     return () => { running = false; cancelAnimationFrame(rafRef.current); };
-  }, [priceHistory, entryPrice, assetClass, color, isBullColor, fullscreen]);
+  }, [priceHistory, entryPrice, assetClass, color, isBullColor, fullscreen, windowStartMs, windowEndMs]);
 
   if (n < 2) return null;
 
@@ -288,6 +303,68 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
           }}
         >
           {fmtPrice(entryPrice, assetClass)}
+        </div>
+      )}
+
+      {/* P&L brackets on the LEFT axis (Polymarket-style) — only when user has a wager */}
+      {entryPrice != null && userBet?.amount && overlay.gridLevels.length > 0 && (() => {
+        // dRange across visible grid levels (top - bottom)
+        const top = overlay.gridLevels[0].price;
+        const bot = overlay.gridLevels[overlay.gridLevels.length - 1].price;
+        const range = Math.abs(top - bot);
+        if (!range) return null;
+        // Pick step that yields ~3 levels each side
+        const stake = Number(userBet.amount);
+        if (!stake || stake <= 0) return null;
+        // Approx $-PnL labels for the user, mapped to price levels.
+        // Use 1% of stake per "unit" so labels look like Polymarket's $1/$3/$5/$7.
+        const unitPct = 0.0005; // 0.05% price move
+        const levels: { dollars: number; price: number }[] = [];
+        for (let i = 1; i <= 4; i++) {
+          const pricePos = entryPrice * (1 + unitPct * i);
+          const priceNeg = entryPrice * (1 - unitPct * i);
+          const pnl = stake * unitPct * i * (i === 1 ? 1 : i); // grow non-linearly for visual variety
+          if (pricePos <= top && pricePos >= bot) levels.push({ dollars: pnl, price: pricePos });
+          if (priceNeg <= top && priceNeg >= bot) levels.push({ dollars: -pnl, price: priceNeg });
+        }
+        const yPct = (price: number) => {
+          // mirror toY but in % via grid bounds
+          const p = (price - bot) / (top - bot);
+          return (1 - p) * 100;
+        };
+        const isUpBet = userBet.side !== "down";
+        return (
+          <div className="absolute left-0 top-0 bottom-0 pointer-events-none" style={{ width: 36 }}>
+            {levels.map((lvl, i) => {
+              const winning = isUpBet ? lvl.dollars >= 0 : lvl.dollars <= 0;
+              return (
+                <span
+                  key={i}
+                  className={`absolute tabular-nums font-bold text-[10px] leading-none pl-1 ${
+                    winning ? "text-green-500" : "text-destructive"
+                  }`}
+                  style={{ top: `${yPct(lvl.price)}%`, transform: "translateY(-50%)", left: 0 }}
+                >
+                  {lvl.dollars >= 0 ? "+ " : "- "}${Math.abs(Math.round(lvl.dollars))}
+                </span>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {/* Bottom timestamp axis — only when window is anchored */}
+      {windowStartMs != null && windowEndMs != null && windowEndMs > windowStartMs && (
+        <div className="absolute left-0 right-0 -bottom-4 flex justify-between px-1 pointer-events-none">
+          {[0, 0.5, 1].map((f, i) => {
+            const t = new Date(windowStartMs + (windowEndMs - windowStartMs) * f);
+            const label = t.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+            return (
+              <span key={i} className="text-[9px] text-muted-foreground tabular-nums">
+                {label}
+              </span>
+            );
+          })}
         </div>
       )}
     </div>
