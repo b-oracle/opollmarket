@@ -3999,6 +3999,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         )}
       </AnimatePresence>
     </AnimatePresence>
+    <SpaceShareSheet
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      spaceId={spaceId}
+      spaceTitle={displayTitle}
+      hostName={hostDisplayName}
+      isLive={true}
+    />
+    </>
   );
 };
 
