@@ -353,11 +353,29 @@ const CryptoRoundLiveChart = ({
             </span>
           )}
         </div>
-        {!ended && !notStarted && (
-          <span className="text-[11px] font-mono tabular-nums text-muted-foreground" title="Time remaining in round">
-            {fmtClock(remaining)}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {!ended && !notStarted && (
+            <span className="text-[11px] font-mono tabular-nums text-muted-foreground" title="Time remaining in round">
+              {fmtClock(remaining)}
+            </span>
+          )}
+          <div className="inline-flex items-center gap-0.5 rounded-md border border-border/60 bg-background/60 p-0.5">
+            {(["1m", "5m", "15m", "all"] as RangeKey[]).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setRange(k)}
+                className={`px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-sm transition-colors ${
+                  range === k
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {k === "all" ? "All" : k}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block">
