@@ -165,13 +165,23 @@ const AdminDeposits = () => {
     },
     onSuccess: (data: any) => {
       if (data?.code === "PAYAZA_AUTH") {
+        const expectedRef = pendingReplayRef.current?.expectedRef || "";
+        if (!expectedRef) {
+          toast.error("Session expired. Please click Replay again.");
+          return;
+        }
         const ref = window.prompt(
-          "Payaza couldn't be reached (IP not whitelisted).\n\n" +
-          "Paste the Payaza transaction REFERENCE you've verified in the Payaza dashboard to credit this deposit manually.\n\n" +
-          "⚠️ Each reference can only be used once — duplicates will be rejected."
+          "Payaza API is unreachable (IP not whitelisted).\n\n" +
+          "Enter the EXACT Payaza payment reference for this deposit.\n" +
+          "You must verify this independently in the Payaza dashboard — it is not shown here.\n\n" +
+          "⚠️ Wrong reference = rejection. Each reference can only be used once."
         );
         if (!ref || !ref.trim()) {
           toast.error("Manual credit cancelled — no reference provided");
+          return;
+        }
+        if (ref.trim() !== expectedRef) {
+          toast.error("The reference you entered does not match this transaction's payment ID.");
           return;
         }
         const note = window.prompt("Optional note (why this needed manual credit):") || "";
@@ -198,9 +208,11 @@ const AdminDeposits = () => {
       } else {
         toast.success(`Replayed: credited $${Number(data.credited_main ?? data.credited ?? 0).toFixed(2)}`);
       }
+      pendingReplayRef.current = null;
       queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
     },
     onError: (err: any) => {
+      pendingReplayRef.current = null;
       toast.error(err.message || "Failed to replay webhook");
     },
   });
