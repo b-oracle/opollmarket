@@ -25,6 +25,7 @@ import LiveScoreBadge from "@/components/LiveScoreBadge";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/lib/haptics";
+import CryptoRoundCountdown from "@/components/CryptoRoundCountdown";
 
 interface MarketCardProps {
   market: Market;
