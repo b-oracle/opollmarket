@@ -1078,20 +1078,32 @@ export default function QuickTrade() {
     load();
   }, [user, activeRound?.id]);
 
-  // ── Pool sizes ──
+  // ── Pool sizes (realtime: refresh on every new bet for this round) ──
   useEffect(() => {
     if (!activeRound) return;
+    const roundId = activeRound.id;
     const loadPool = async () => {
       const { data } = await supabase
         .from("quick_bets")
         .select("side, amount")
-        .eq("round_id", activeRound.id);
+        .eq("round_id", roundId);
       if (data) {
         setPoolUp(data.filter((b) => b.side === "up").reduce((s, b) => s + Number(b.amount), 0));
         setPoolDown(data.filter((b) => b.side === "down").reduce((s, b) => s + Number(b.amount), 0));
       }
     };
     loadPool();
+
+    // Live-refresh implied % chance whenever any user places a bet on this round
+    const channel = supabase
+      .channel(`quick-bets-${roundId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "quick_bets", filter: `round_id=eq.${roundId}` },
+        () => { loadPool(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [activeRound?.id, userBet]);
 
   // ── Recent resolved rounds ──
