@@ -510,68 +510,24 @@ Deno.serve(async (req) => {
           });
         }
       } else if (losers.length === 0) {
-        // Cap one-sided bonus: max $50 bonus per user per day
-        const dailyCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
+        // One-sided round (everyone won) → pure refund of stake.
+        // No platform fee, no one-sided bonus, no streak multiplier
+        // (there's no profit to multiply).
         for (const bet of winners) {
-          const streak = await getOrCreateStreak(supabase, bet.user_id);
-          const newStreak = (streak.current_streak || 0) + 1;
-          const multiplier = getStreakMultiplier(newStreak, s2, s3, s4, s5);
-
-          // Check daily bonus cap before applying one-sided bonus
-          let applyBonus = qtOneSidedBonus;
-          if (qtOneSidedBonus) {
-            const { data: dailyBonusTxns } = await supabase
-              .from("transactions")
-              .select("amount")
-              .eq("user_id", bet.user_id)
-              .eq("type", "qt_one_sided_bonus")
-              .eq("status", "confirmed")
-              .gte("created_at", dailyCutoff);
-            const dailyBonusTotal = (dailyBonusTxns || []).reduce((s: number, t: any) => s + Number(t.amount), 0);
-            if (dailyBonusTotal >= 50) applyBonus = false;
-          }
-
-          const basePayout = applyBonus
-            ? Number(bet.amount) * 1.005
-            : Number(bet.amount) * (1 - platformFee);
-          const payout = basePayout * multiplier;
-          const bonusAmount = applyBonus ? Number(bet.amount) * 0.005 * multiplier : 0;
+          const payout = Number(bet.amount);
 
           await supabase
             .from("quick_bets")
-            .update({ payout, status: "won", streak: newStreak })
+            .update({ payout, status: "won" })
             .eq("id", bet.id);
           await creditBalance(supabase, bet.user_id, payout);
 
-          // Record bonus as a transaction for accounting
-          if (applyBonus && bonusAmount > 0) {
-            await supabase.from("transactions").insert({
-              user_id: bet.user_id,
-              type: "qt_one_sided_bonus",
-              amount: bonusAmount,
-              status: "confirmed",
-              side: "credit",
-            });
-          }
-
-          await supabase
-            .from("quick_trade_streaks")
-            .upsert({
-              user_id: bet.user_id,
-              current_streak: newStreak,
-              best_streak: Math.max(newStreak, streak.best_streak || 0),
-              updated_at: new Date().toISOString(),
-            }, { onConflict: "user_id", ignoreDuplicates: false });
-
-          if (multiplier > 1) {
-            await supabase.from("notifications").insert({
-              user_id: bet.user_id,
-              title: `🔥 ${newStreak} Win Streak!`,
-              message: `${multiplier}x bonus applied! You won $${payout.toFixed(2)} on ${round.asset}.`,
-              type: "payout",
-            });
-          }
+          await supabase.from("notifications").insert({
+            user_id: bet.user_id,
+            title: "Quick Trade Refunded",
+            message: `No opposing bets on ${round.asset} — your $${payout.toFixed(2)} stake has been refunded.`,
+            type: "payout",
+          });
         }
       } else {
         const distributable = totalLosePool * (1 - platformFee);
