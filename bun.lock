@@ -59,7 +59,6 @@
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "date-fns": "^3.6.0",
-        "despia-native": "^1.0.20",
         "embla-carousel-react": "^8.6.0",
         "emoji-picker-react": "^4.18.0",
         "framer-motion": "^12.38.0",
@@ -1257,8 +1256,6 @@
     "delayed-stream": ["delayed-stream@1.0.0", "", {}, "sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ=="],
 
     "dequal": ["dequal@2.0.3", "", {}, "sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA=="],
-
-    "despia-native": ["despia-native@1.0.27", "", {}, "sha512-JESKtZZhDQjXMKvmHzwOY482oVTApBvL+rw9q0TOD8hDBCTc1oxh+TW04CSissTrbxI1kYteHGTddsC0Kstp4g=="],
 
     "destr": ["destr@2.0.5", "", {}, "sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA=="],
 

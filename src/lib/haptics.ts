@@ -2,20 +2,11 @@
  * Unified haptic & vibration helper.
  * Works across:
  *   1. Capacitor native (Android/iOS) — uses @capacitor/haptics
- *   2. Despia native wrapper — uses despia:// URLs
- *   3. Web / PWA — uses navigator.vibrate fallback
+ *   2. Web / PWA — uses navigator.vibrate fallback
  *
  * Safe no-op when none are available.
  */
 import { Capacitor } from "@capacitor/core";
-import {
-  hapticLight as despiaLight,
-  hapticSuccess as despiaSuccess,
-  hapticWarning as despiaWarning,
-  hapticError as despiaError,
-  hapticHeavy as despiaHeavy,
-  isDespiaNative,
-} from "./despia";
 
 const isCapacitorNative = (): boolean => {
   try {
@@ -47,10 +38,6 @@ export const hapticLight = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaLight();
-    return;
-  }
   webVibrate(10);
 };
 
@@ -64,10 +51,6 @@ export const hapticMedium = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaLight();
-    return;
-  }
   webVibrate(25);
 };
 
@@ -80,10 +63,6 @@ export const hapticHeavy = async (): Promise<void> => {
     } catch {
       // fall through
     }
-  }
-  if (isDespiaNative()) {
-    despiaHeavy();
-    return;
   }
   webVibrate(50);
 };
@@ -100,10 +79,6 @@ export const hapticSuccess = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaSuccess();
-    return;
-  }
   webVibrate([15, 50, 15]);
 };
 
@@ -117,10 +92,6 @@ export const hapticWarning = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaWarning();
-    return;
-  }
   webVibrate([20, 40, 20]);
 };
 
@@ -133,10 +104,6 @@ export const hapticError = async (): Promise<void> => {
     } catch {
       // fall through
     }
-  }
-  if (isDespiaNative()) {
-    despiaError();
-    return;
   }
   webVibrate([30, 60, 30, 60, 30]);
 };
