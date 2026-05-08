@@ -94,7 +94,11 @@ const AdminKyc = () => {
   };
 
   const handleAction = async (submission: KycSubmission, action: "approved" | "rejected") => {
-    if (!canEdit) return;
+    if (!canReview) return;
+    if (action === "rejected" && !adminNote.trim()) {
+      toast.error("Please provide a rejection reason");
+      return;
+    }
     setProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke("review-kyc", {
