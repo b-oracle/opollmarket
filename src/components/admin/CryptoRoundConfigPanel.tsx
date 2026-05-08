@@ -376,6 +376,35 @@ const CryptoRoundConfigPanel = () => {
           </div>
         )}
       </div>
+      <AlertDialog open={!!confirmTarget} onOpenChange={(open) => !open && setConfirmTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              Force new {confirmTarget?.asset} {confirmTarget ? (DURATION_LABEL[confirmTarget.duration_minutes] ?? confirmTarget.duration_minutes + "m") : ""} round?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This bypasses the safety check that waits for the previous round to finish. If a round is still active for this pair, it will be ignored and a fresh round will start immediately at the current price.
+              <br /><br />
+              Use this only to recover from a stuck cycle or to seed the very first round on a new pair. The action is recorded in the audit log with your admin ID.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmTarget) {
+                  triggerSpawnOne(confirmTarget.asset, confirmTarget.duration_minutes);
+                }
+                setConfirmTarget(null);
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Force new round
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
