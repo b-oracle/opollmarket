@@ -93,6 +93,15 @@ const CryptoRoundLiveChart = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
 
+  type RangeKey = "1m" | "5m" | "15m" | "all";
+  const [range, setRange] = useState<RangeKey>("all");
+  const RANGE_MS: Record<RangeKey, number | null> = {
+    "1m": 60_000,
+    "5m": 5 * 60_000,
+    "15m": 15 * 60_000,
+    all: null,
+  };
+
   // Re-hydrate when the round (or asset) changes mid-mount.
   useEffect(() => {
     if (!cacheKey) return;
