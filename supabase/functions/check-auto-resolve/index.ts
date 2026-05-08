@@ -337,7 +337,7 @@ Deno.serve(async (req) => {
       const operator = market.auto_resolve_operator as string;
       const deadline = new Date(market.auto_resolve_deadline as string);
       const currentPrice = prices[asset];
-      const now = new Date();
+      // `now` is hoisted above the loop and pinned to the DB clock.
 
       // GUARDRAIL: skip if already flagged for manual review
       if ((market as any).resolution_blocked) {
