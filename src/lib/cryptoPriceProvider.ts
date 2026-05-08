@@ -917,24 +917,70 @@ interface WSSubscription {
   listeners: Set<(price: number) => void>;
   lastPrice: number | null;
   reconnectTimer?: ReturnType<typeof setTimeout>;
+  reconnectAttempts: number;
+  onlineHandler?: () => void;
 }
 
 const wsSubscriptions = new Map<string, WSSubscription>();
 
+// Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (cap), with ±20% jitter.
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 30_000;
+function computeBackoff(attempt: number): number {
+  const exp = Math.min(RECONNECT_MAX_MS, RECONNECT_BASE_MS * Math.pow(2, attempt));
+  const jitter = exp * (0.8 + Math.random() * 0.4); // 0.8x – 1.2x
+  return Math.round(jitter);
+}
+
 function createBinanceWS(symbol: string): WSSubscription {
   const binanceSymbol = BINANCE_WS_SYMBOLS[symbol];
   if (!binanceSymbol) throw new Error(`No Binance symbol for ${symbol}`);
-  
+
   const sub: WSSubscription = {
     ws: null as any,
     listeners: new Set(),
     lastPrice: null,
+    reconnectAttempts: 0,
+  };
+
+  const scheduleReconnect = (reason: string) => {
+    if (sub.listeners.size === 0) return;
+    if (sub.reconnectTimer) clearTimeout(sub.reconnectTimer);
+
+    // If the browser is offline, wait for it to come back online instead of burning attempts.
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      if (!sub.onlineHandler) {
+        sub.onlineHandler = () => {
+          window.removeEventListener("online", sub.onlineHandler!);
+          sub.onlineHandler = undefined;
+          sub.reconnectAttempts = 0;
+          connect();
+        };
+        window.addEventListener("online", sub.onlineHandler);
+      }
+      return;
+    }
+
+    const delay = computeBackoff(sub.reconnectAttempts);
+    sub.reconnectAttempts = Math.min(sub.reconnectAttempts + 1, 10);
+    sub.reconnectTimer = setTimeout(() => {
+      sub.reconnectTimer = undefined;
+      connect();
+    }, delay);
+    if (typeof console !== "undefined") {
+      console.debug(`[binance-ws] reconnect ${symbol} in ${delay}ms (attempt ${sub.reconnectAttempts}, ${reason})`);
+    }
   };
 
   function connect() {
     try {
       const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${binanceSymbol}@trade`);
       sub.ws = ws;
+
+      ws.onopen = () => {
+        // Successful connection — reset backoff so the next disruption starts fresh.
+        sub.reconnectAttempts = 0;
+      };
 
       ws.onmessage = (event) => {
         try {
@@ -950,22 +996,21 @@ function createBinanceWS(symbol: string): WSSubscription {
       };
 
       ws.onerror = () => {
-        ws.close();
+        try { ws.close(); } catch {}
       };
 
       ws.onclose = () => {
-        if (sub.listeners.size > 0) {
-          sub.reconnectTimer = setTimeout(connect, 2000);
-        }
+        scheduleReconnect("close");
       };
     } catch {
-      sub.reconnectTimer = setTimeout(connect, 5000);
+      scheduleReconnect("throw");
     }
   }
 
   connect();
   return sub;
 }
+
 
 /**
  * Subscribe to real-time price updates via Binance WebSocket.
@@ -1000,6 +1045,10 @@ export function subscribeToPriceStream(
     sub!.listeners.delete(callback);
     if (sub!.listeners.size === 0) {
       clearTimeout(sub!.reconnectTimer);
+      if (sub!.onlineHandler) {
+        try { window.removeEventListener("online", sub!.onlineHandler); } catch {}
+        sub!.onlineHandler = undefined;
+      }
       try { sub!.ws?.close(); } catch {}
       wsSubscriptions.delete(sym);
     }
