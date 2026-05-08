@@ -97,6 +97,7 @@ const mapDbToMarket = (db: DbMarket): Market => ({
   winningOptionId: db.winning_option_id || undefined,
   streamUrl: db.stream_url || undefined,
   isStreaming: db.is_streaming ?? false,
+  isCryptoRound: (db as any).is_crypto_round ?? false,
   options: db.market_options?.length
     ? db.market_options
         .sort((a, b) => a.sort_order - b.sort_order)

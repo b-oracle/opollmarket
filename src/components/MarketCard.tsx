@@ -25,6 +25,7 @@ import LiveScoreBadge from "@/components/LiveScoreBadge";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/lib/haptics";
+import CryptoRoundCountdown from "@/components/CryptoRoundCountdown";
 
 interface MarketCardProps {
   market: Market;
@@ -593,9 +594,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             <span className="flex items-center gap-1">
               <Users className="w-3 h-3" /> {market.participants.toLocaleString()}
             </span>
-            <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
-            </span>
+            {market.isCryptoRound && market.autoResolveDeadline ? (
+              <CryptoRoundCountdown endsAt={market.autoResolveDeadline} />
+            ) : (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
+              </span>
+            )}
           </div>
 
           {/* Prediction buttons with action column */}

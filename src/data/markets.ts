@@ -44,6 +44,7 @@ export interface Market {
   winningOptionId?: string;
   streamUrl?: string;
   isStreaming?: boolean;
+  isCryptoRound?: boolean;
 }
 
 export const mockMarkets: Market[] = [

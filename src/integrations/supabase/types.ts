@@ -989,6 +989,80 @@ export type Database = {
         }
         Relationships: []
       }
+      crypto_round_config: {
+        Row: {
+          asset: string
+          category: string
+          created_at: string
+          duration_minutes: number
+          enabled: boolean
+          id: string
+          initial_liquidity_usd: number
+          updated_at: string
+        }
+        Insert: {
+          asset: string
+          category?: string
+          created_at?: string
+          duration_minutes: number
+          enabled?: boolean
+          id?: string
+          initial_liquidity_usd?: number
+          updated_at?: string
+        }
+        Update: {
+          asset?: string
+          category?: string
+          created_at?: string
+          duration_minutes?: number
+          enabled?: boolean
+          id?: string
+          initial_liquidity_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crypto_round_meta: {
+        Row: {
+          asset: string
+          close_price: number | null
+          created_at: string
+          duration_minutes: number
+          end_time: string
+          market_id: string
+          open_price: number
+          start_time: string
+        }
+        Insert: {
+          asset: string
+          close_price?: number | null
+          created_at?: string
+          duration_minutes: number
+          end_time: string
+          market_id: string
+          open_price: number
+          start_time: string
+        }
+        Update: {
+          asset?: string
+          close_price?: number | null
+          created_at?: string
+          duration_minutes?: number
+          end_time?: string
+          market_id?: string
+          open_price?: number
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crypto_round_meta_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: true
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dm_call_events: {
         Row: {
           actor_id: string | null
@@ -1702,6 +1776,7 @@ export type Database = {
           id: string
           image_url: string | null
           initial_liquidity: number
+          is_crypto_round: boolean
           is_hidden: boolean
           is_streaming: boolean
           last_draft_reminder_at: string | null
@@ -1760,6 +1835,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           initial_liquidity?: number
+          is_crypto_round?: boolean
           is_hidden?: boolean
           is_streaming?: boolean
           last_draft_reminder_at?: string | null
@@ -1818,6 +1894,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           initial_liquidity?: number
+          is_crypto_round?: boolean
           is_hidden?: boolean
           is_streaming?: boolean
           last_draft_reminder_at?: string | null
