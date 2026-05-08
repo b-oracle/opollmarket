@@ -221,7 +221,7 @@ const AdminQuickTrade = () => {
         </div>
       </div>
 
-      <CryptoRoundConfigPanel />
+      {/* Crypto round engine moved below analytics cards */}
 
       {/* Stats - Row 1: Counts */}
       <TooltipProvider>
