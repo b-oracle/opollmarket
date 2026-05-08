@@ -29,7 +29,7 @@ interface SpaceReplayState {
 }
 
 interface SpaceReplayContextValue extends SpaceReplayState {
-  openReplay: (space: ReplaySpace, hostProfile?: ReplayHostProfile | null) => void;
+  openReplay: (space: ReplaySpace, hostProfile?: ReplayHostProfile | null) => Promise<void>;
   closeReplay: () => void;
   minimize: () => void;
   expand: () => void;
