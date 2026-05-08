@@ -221,7 +221,7 @@ const AdminQuickTrade = () => {
         </div>
       </div>
 
-      <CryptoRoundConfigPanel />
+      {/* Crypto round engine moved below analytics cards */}
 
       {/* Stats - Row 1: Counts */}
       <TooltipProvider>
@@ -258,6 +258,8 @@ const AdminQuickTrade = () => {
           ))}
         </div>
       </TooltipProvider>
+
+      <CryptoRoundConfigPanel />
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-muted/50 w-fit">
