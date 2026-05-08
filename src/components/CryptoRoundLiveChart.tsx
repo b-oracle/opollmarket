@@ -238,7 +238,24 @@ const CryptoRoundLiveChart = ({
   const tMin = startMs;
   const tMax = endMs;
 
-  const prices = points.map((p) => p.p);
+  const tMin = useMemo(() => {
+    const span = RANGE_MS[range];
+    if (!span) return startMs;
+    const right = ended ? endMs : Math.min(endMs, now);
+    return Math.max(startMs, right - span);
+  }, [range, startMs, endMs, ended, now]);
+  const tMax = useMemo(() => {
+    const span = RANGE_MS[range];
+    if (!span) return endMs;
+    return Math.min(endMs, tMin + span);
+  }, [range, endMs, tMin]);
+
+  const visiblePoints = useMemo(
+    () => (range === "all" ? points : points.filter((pt) => pt.t >= tMin)),
+    [points, range, tMin],
+  );
+
+  const prices = visiblePoints.map((p) => p.p);
   if (targetPrice != null && Number.isFinite(targetPrice)) prices.push(targetPrice);
   if (last != null) prices.push(last);
   let lo = prices.length ? Math.min(...prices) : 0;
