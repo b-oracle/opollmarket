@@ -404,7 +404,7 @@ const CryptoRoundLiveChart = ({
         )}
 
         {/* Area + line */}
-        {points.length > 1 && (
+        {visiblePoints.length > 1 && (
           <>
             <path d={areaPath} fill={fill} />
             <path d={linePath} fill="none" stroke={stroke} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
@@ -412,30 +412,30 @@ const CryptoRoundLiveChart = ({
         )}
 
         {/* Current price marker + dotted to right edge */}
-        {last != null && points.length > 0 && (
+        {showMarker && (
           <>
             <line x1={lastX} x2={chartW} y1={lastY} y2={lastY} stroke={stroke} strokeOpacity={0.5} strokeDasharray="2 2" strokeWidth={0.8} />
             <circle cx={lastX} cy={lastY} r={3} fill={stroke} />
             <rect x={W - padRight + 2} y={lastY - 8} width={padRight - 4} height={16} rx={3} fill={stroke} />
             <text x={W - 4} y={lastY + 3} textAnchor="end" fill="white" style={{ fontSize: 10, fontWeight: 700 }}>
-              {fmtUsd(last)}
+              {fmtUsd(last!)}
             </text>
           </>
         )}
       </svg>
 
-      {/* X-axis labels: exact start / end timestamps */}
+      {/* X-axis labels: visible window start / end */}
       <div
         className="absolute left-0 right-[56px] bottom-0 flex justify-between gap-2 text-[10px] tabular-nums text-muted-foreground px-0.5"
-        title={`Start: ${new Date(startMs).toISOString()}\nEnd: ${new Date(endMs).toISOString()}`}
+        title={`Round start: ${new Date(startMs).toISOString()}\nRound end: ${new Date(endMs).toISOString()}\nVisible: ${new Date(tMin).toISOString()} → ${new Date(tMax).toISOString()}`}
       >
         <span className="truncate">
-          <span className="opacity-60 mr-1">Start</span>
-          {fmtFull(startMs)}{tzShort ? ` ${tzShort}` : ""}
+          <span className="opacity-60 mr-1">{range === "all" ? "Start" : "From"}</span>
+          {fmtFull(tMin)}{tzShort ? ` ${tzShort}` : ""}
         </span>
         <span className="truncate text-right">
-          <span className="opacity-60 mr-1">End</span>
-          {fmtFull(endMs)}{tzShort ? ` ${tzShort}` : ""}
+          <span className="opacity-60 mr-1">{range === "all" ? "End" : "To"}</span>
+          {fmtFull(tMax)}{tzShort ? ` ${tzShort}` : ""}
         </span>
       </div>
     </div>
