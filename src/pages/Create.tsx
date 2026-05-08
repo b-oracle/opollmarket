@@ -3573,12 +3573,17 @@ const Create = () => {
                     <AlertTriangle className="w-7 h-7 text-destructive" />
                   </div>
                   <h3 className="text-base font-bold mb-1">Creation Failed</h3>
-                  <p className="text-xs text-muted-foreground text-center mb-4">
-                    Something went wrong. No funds were deducted.
+                  <p className="text-xs text-muted-foreground text-center mb-2">
+                    {submitErrorMsg || "Something went wrong."} No funds were deducted.
                   </p>
+                  {submitErrorMsg && (
+                    <p className="text-[10px] text-muted-foreground/70 text-center mb-3 break-all max-h-24 overflow-y-auto px-2">
+                      Share this with support if it persists.
+                    </p>
+                  )}
                   <div className="flex gap-3 w-full">
                     <button
-                      onClick={() => setSubmitStep("idle")}
+                      onClick={() => { setSubmitErrorMsg(""); setSubmitStep("idle"); }}
                       className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
                     >
                       Try Again
