@@ -306,8 +306,8 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
         </div>
       )}
 
-      {/* P&L brackets on the LEFT axis (Polymarket-style) — only when user has a wager */}
-      {entryPrice != null && userBet?.amount && overlay.gridLevels.length > 0 && (() => {
+      {/* P&L brackets on the LEFT axis (Polymarket-style) — only when user has a wager > 0 */}
+      {entryPrice != null && userBet?.amount && Number(userBet.amount) > 0 && overlay.gridLevels.length > 0 && (() => {
         // dRange across visible grid levels (top - bottom)
         const top = overlay.gridLevels[0].price;
         const bot = overlay.gridLevels[overlay.gridLevels.length - 1].price;
