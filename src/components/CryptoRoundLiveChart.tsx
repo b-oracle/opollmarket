@@ -49,6 +49,20 @@ const writeRoundCache = (key: string, points: Point[]) => {
   );
 };
 
+/**
+ * Seed the per-round point cache with an initial price tick BEFORE the chart
+ * mounts. Used by MarketDetail when prefetching the next crypto Up/Down round
+ * so the new chart paints with a real first point instead of starting empty.
+ */
+export const primeCryptoRoundCache = (asset: string, endsAt: string, price: number) => {
+  if (!asset || !endsAt || !Number.isFinite(price)) return;
+  const sym = asset.toUpperCase();
+  const key = cacheKeyFor(sym, endsAt);
+  if (!ROUND_CACHE.has(key)) {
+    writeRoundCache(key, [{ t: Date.now(), p: price }]);
+  }
+};
+
 const fmtUsd = (p: number) => {
   if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (p >= 1) return `$${p.toFixed(2)}`;

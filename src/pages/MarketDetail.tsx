@@ -36,7 +36,8 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import ResolutionSummary from "@/components/ResolutionSummary";
 import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
-import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
+import CryptoRoundLiveChart, { primeCryptoRoundCache } from "@/components/CryptoRoundLiveChart";
+import { subscribeToPriceStream } from "@/lib/cryptoPriceProvider";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -468,7 +469,7 @@ const MarketDetail = () => {
     const poll = async () => {
       const { data } = await supabase
         .from("markets")
-        .select("id")
+        .select("id, auto_resolve_deadline, auto_resolve_asset, yes_price, no_price")
         .eq("is_crypto_round", true)
         .eq("auto_resolve_asset", market.autoResolveAsset)
         .eq("status", "active")
@@ -479,12 +480,15 @@ const MarketDetail = () => {
       if (cancelled || !data?.id) return;
 
       const nextId = data.id as string;
+      const nextAsset = (data.auto_resolve_asset as string | null) ?? market.autoResolveAsset!;
+      const nextDeadline = data.auto_resolve_deadline as string | null;
 
-      // Preload the next round's full market detail + warm the live price feed
-      // BEFORE navigating, so the countdown, chart and resolution UI render
-      // instantly instead of flashing a loading state.
+      // Preload the next round's full market detail + warm both the REST price
+      // (for fetchAssetPrice consumers) and the Binance WebSocket stream (so
+      // the chart's first tick lands before the user sees it). Also seed the
+      // chart's per-round point cache so it never paints empty.
       try {
-        await Promise.all([
+        const [, livePrice] = await Promise.all([
           queryClient.prefetchQuery({
             queryKey: ["market", nextId],
             queryFn: async () => {
@@ -493,10 +497,33 @@ const MarketDetail = () => {
               return mapDbToMarket(detail as any);
             },
           }),
-          market.autoResolveAsset
-            ? fetchCryptoPrice(market.autoResolveAsset).catch(() => null)
-            : Promise.resolve(null),
+          new Promise<number | null>((resolve) => {
+            let resolved = false;
+            const finish = (p: number | null) => {
+              if (resolved) return;
+              resolved = true;
+              resolve(p);
+            };
+            // Subscribe — fires immediately with cached lastPrice if WS already
+            // open from the previous round (almost always the case).
+            const unsub = subscribeToPriceStream(nextAsset, (p) => {
+              finish(p);
+              // Keep WS alive briefly so the new chart inherits an open socket.
+              setTimeout(() => { try { unsub(); } catch {} }, 500);
+            });
+            // Hard timeout fallback → REST.
+            setTimeout(async () => {
+              if (resolved) return;
+              try { unsub(); } catch {}
+              const p = await fetchCryptoPrice(nextAsset).catch(() => null);
+              finish(p);
+            }, 1200);
+          }),
         ]);
+
+        if (livePrice != null && nextDeadline) {
+          primeCryptoRoundCache(nextAsset, nextDeadline, livePrice);
+        }
       } catch (e) {
         console.warn("[crypto-round] prefetch next round failed:", e);
       }
