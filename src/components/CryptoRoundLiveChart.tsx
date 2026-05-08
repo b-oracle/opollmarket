@@ -15,6 +15,40 @@ interface Point { t: number; p: number }
 
 const MAX_POINTS = 600;
 
+// ── In-memory per-round point cache ──
+// Keyed by `${SYMBOL}|${endsAtISO}` so distinct rounds (even same asset) get
+// independent buffers and a fresh round naturally starts empty. We also evict
+// rounds whose endsAt is more than 10 minutes in the past on every read/write
+// to bound memory across long sessions.
+const ROUND_CACHE = new Map<string, Point[]>();
+const ROUND_CACHE_TTL_MS = 10 * 60 * 1000;
+
+const cacheKeyFor = (sym: string, endsAt: string) => `${sym}|${endsAt}`;
+
+const purgeExpiredRounds = () => {
+  const cutoff = Date.now() - ROUND_CACHE_TTL_MS;
+  for (const key of ROUND_CACHE.keys()) {
+    const idx = key.indexOf("|");
+    if (idx < 0) continue;
+    const endMs = new Date(key.slice(idx + 1)).getTime();
+    if (Number.isFinite(endMs) && endMs < cutoff) ROUND_CACHE.delete(key);
+  }
+};
+
+const readRoundCache = (key: string): Point[] => {
+  purgeExpiredRounds();
+  const entry = ROUND_CACHE.get(key);
+  return entry ? entry.slice() : [];
+};
+
+const writeRoundCache = (key: string, points: Point[]) => {
+  // Trim before storing so we never blow past MAX_POINTS in the cache either.
+  ROUND_CACHE.set(
+    key,
+    points.length > MAX_POINTS ? points.slice(points.length - MAX_POINTS) : points.slice(),
+  );
+};
+
 const fmtUsd = (p: number) => {
   if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (p >= 1) return `$${p.toFixed(2)}`;
