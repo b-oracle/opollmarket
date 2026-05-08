@@ -1030,6 +1030,8 @@ export type Database = {
           duration_minutes: number
           end_time: string
           market_id: string
+          notified_resolving_at: string | null
+          notified_spawned_at: string | null
           open_price: number
           predecessor_end_time: string
           start_time: string
@@ -1041,6 +1043,8 @@ export type Database = {
           duration_minutes: number
           end_time: string
           market_id: string
+          notified_resolving_at?: string | null
+          notified_spawned_at?: string | null
           open_price: number
           predecessor_end_time?: string
           start_time: string
@@ -1052,6 +1056,8 @@ export type Database = {
           duration_minutes?: number
           end_time?: string
           market_id?: string
+          notified_resolving_at?: string | null
+          notified_spawned_at?: string | null
           open_price?: number
           predecessor_end_time?: string
           start_time?: string
