@@ -110,6 +110,9 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
   });
 
   const isCryptoRound = !!(marketMeta as any)?.is_crypto_round;
+  const cryptoSideLabel = (side: string | null) =>
+    side === "yes" ? "UP" : side === "no" ? "DOWN" : (side ?? "").toUpperCase();
+  const displayWinningLabel = isCryptoRound ? cryptoSideLabel(resolvedSide) : winningLabel;
 
   const totalPayout = payoutTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) ?? 0;
   const hasPositions = userPositions && userPositions.length > 0;
