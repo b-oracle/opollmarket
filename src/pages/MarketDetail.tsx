@@ -488,19 +488,51 @@ const MarketDetail = () => {
       // (for fetchAssetPrice consumers) and the Binance WebSocket stream (so
       // the chart's first tick lands before the user sees it). Also seed the
       // chart's per-round point cache so it never paints empty.
+      // Defensive helper — never let an individual prefetch reject and short-circuit
+      // the others. Each one is best-effort; navigation must always proceed.
+      const safe = <T,>(p: Promise<T>, label: string): Promise<T | null> =>
+        p.catch((err) => {
+          console.warn(`[crypto-round] prefetch:${label} failed (non-fatal):`, err);
+          return null;
+        });
+
+      const uid = user?.id;
+      let livePrice: number | null = null;
       try {
-        const uid = user?.id;
-        const results = await Promise.all([
-          queryClient.prefetchQuery({
+        const pricePromise = new Promise<number | null>((resolve) => {
+          let resolved = false;
+          const finish = (p: number | null) => {
+            if (resolved) return;
+            resolved = true;
+            resolve(p);
+          };
+          try {
+            const unsub = subscribeToPriceStream(nextAsset, (p) => {
+              finish(p);
+              setTimeout(() => { try { unsub(); } catch {} }, 500);
+            });
+            setTimeout(async () => {
+              if (resolved) return;
+              try { unsub(); } catch {}
+              const p = await fetchCryptoPrice(nextAsset).catch(() => null);
+              finish(p);
+            }, 1200);
+          } catch {
+            // Subscribe itself threw — fall back to REST immediately.
+            fetchCryptoPrice(nextAsset).then(finish).catch(() => finish(null));
+          }
+        });
+
+        const settled = await Promise.allSettled([
+          safe(queryClient.prefetchQuery({
             queryKey: ["market", nextId],
             queryFn: async () => {
               const { data: detail, error } = await fetchMarketDetail(supabase, nextId);
               if (error || !detail) return null;
               return mapDbToMarket(detail as any);
             },
-          }),
-          // Recent trades (BetHistory / OrderBook)
-          queryClient.prefetchQuery({
+          }), "market-detail"),
+          safe(queryClient.prefetchQuery({
             queryKey: ["orderbook-trades", nextId],
             queryFn: async () => {
               const { data } = await supabase
@@ -512,9 +544,8 @@ const MarketDetail = () => {
                 .limit(100);
               return data || [];
             },
-          }),
-          // Resolution market meta
-          queryClient.prefetchQuery({
+          }), "orderbook-trades"),
+          safe(queryClient.prefetchQuery({
             queryKey: ["resolution-meta", nextId],
             queryFn: async () => {
               const { data } = await supabase
@@ -524,10 +555,9 @@ const MarketDetail = () => {
                 .maybeSingle();
               return data;
             },
-          }),
-          // Per-user resolution data (positions + payouts) — only if signed in
+          }), "resolution-meta"),
           uid
-            ? queryClient.prefetchQuery({
+            ? safe(queryClient.prefetchQuery({
                 queryKey: ["resolution-positions", nextId, uid],
                 queryFn: async () => {
                   const { data } = await supabase
@@ -538,10 +568,10 @@ const MarketDetail = () => {
                     .gt("shares", 0);
                   return data || [];
                 },
-              })
-            : Promise.resolve(),
+              }), "resolution-positions")
+            : Promise.resolve(null),
           uid
-            ? queryClient.prefetchQuery({
+            ? safe(queryClient.prefetchQuery({
                 queryKey: ["resolution-payouts", nextId, uid],
                 queryFn: async () => {
                   const { data } = await supabase
@@ -552,45 +582,27 @@ const MarketDetail = () => {
                     .in("type", ["payout", "refund", "one_sided_refund"]);
                   return data || [];
                 },
-              })
-            : Promise.resolve(),
-          // Discussion thread + top comments — primes module cache so the
-          // CommentsDrawer renders instantly when opened on the new round.
-          primeMarketCommentsCache(nextId, uid || ""),
-          new Promise<number | null>((resolve) => {
-            let resolved = false;
-            const finish = (p: number | null) => {
-              if (resolved) return;
-              resolved = true;
-              resolve(p);
-            };
-            // Subscribe — fires immediately with cached lastPrice if WS already
-            // open from the previous round (almost always the case).
-            const unsub = subscribeToPriceStream(nextAsset, (p) => {
-              finish(p);
-              // Keep WS alive briefly so the new chart inherits an open socket.
-              setTimeout(() => { try { unsub(); } catch {} }, 500);
-            });
-            // Hard timeout fallback → REST.
-            setTimeout(async () => {
-              if (resolved) return;
-              try { unsub(); } catch {}
-              const p = await fetchCryptoPrice(nextAsset).catch(() => null);
-              finish(p);
-            }, 1200);
-          }),
+              }), "resolution-payouts")
+            : Promise.resolve(null),
+          safe(primeMarketCommentsCache(nextId, uid || ""), "comments"),
+          safe(pricePromise, "live-price"),
         ]);
-        const livePrice = results[results.length - 1] as number | null;
 
+        const priceResult = settled[settled.length - 1];
+        if (priceResult.status === "fulfilled" && typeof priceResult.value === "number") {
+          livePrice = priceResult.value;
+        }
         if (livePrice != null && nextDeadline) {
-          primeCryptoRoundCache(nextAsset, nextDeadline, livePrice);
+          try { primeCryptoRoundCache(nextAsset, nextDeadline, livePrice); } catch {}
         }
       } catch (e) {
-        console.warn("[crypto-round] prefetch next round failed:", e);
+        // Belt-and-braces — should be unreachable since each prefetch is wrapped.
+        console.warn("[crypto-round] prefetch next round failed (non-fatal):", e);
       }
 
       if (cancelled) return;
-      queryClient.invalidateQueries({ queryKey: ["markets"] });
+      // Always proceed with navigation, even if every prefetch failed.
+      try { queryClient.invalidateQueries({ queryKey: ["markets"] }); } catch {}
       navigate(`/market/${nextId}`, { replace: true });
     };
     poll();
@@ -676,7 +688,12 @@ const MarketDetail = () => {
     return () => observer.disconnect();
   }, [market]);
 
-  if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (isLoading) return (
+    <div className="h-dvh flex flex-col items-center justify-center gap-3 text-muted-foreground">
+      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <p className="text-xs">Loading round…</p>
+    </div>
+  );
   if (isError) return (
     <div className="h-dvh flex flex-col items-center justify-center gap-4 text-muted-foreground">
       <p>Failed to load market. Please try again.</p>
