@@ -997,7 +997,6 @@ export type Database = {
           duration_minutes: number
           enabled: boolean
           id: string
-          initial_liquidity_usd: number
           updated_at: string
         }
         Insert: {
@@ -1007,7 +1006,6 @@ export type Database = {
           duration_minutes: number
           enabled?: boolean
           id?: string
-          initial_liquidity_usd?: number
           updated_at?: string
         }
         Update: {
@@ -1017,7 +1015,6 @@ export type Database = {
           duration_minutes?: number
           enabled?: boolean
           id?: string
-          initial_liquidity_usd?: number
           updated_at?: string
         }
         Relationships: []
