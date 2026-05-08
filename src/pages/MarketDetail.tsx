@@ -486,7 +486,12 @@ const MarketDetail = () => {
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
   const needsFirstPrediction = isCreator && market && market.participants === 0 && !market.isCryptoRound;
-  const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(market.endDate).getTime() < Date.now()));
+  // Crypto Up/Down rounds store a date-only end_date for broad market filtering,
+  // but their real lifecycle deadline is the exact auto_resolve_deadline.
+  const effectiveEndDate = market?.isCryptoRound && market.autoResolveDeadline
+    ? market.autoResolveDeadline
+    : market?.endDate;
+  const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || (effectiveEndDate && new Date(effectiveEndDate).getTime() < Date.now())));
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
@@ -653,7 +658,7 @@ const MarketDetail = () => {
               </div>
             )}
             <span className="text-[11px] font-mono shrink-0 ml-3 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEndDate || market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         </div>
@@ -701,7 +706,7 @@ const MarketDetail = () => {
             <h1 className="text-lg md:text-2xl font-bold text-white leading-snug" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.5)' }}>{market.title}</h1>
             <p className="text-xs md:text-sm text-white/90 mt-1.5 line-clamp-2" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8), 0 0 12px rgba(0,0,0,0.5)' }}>{market.description}</p>
             <span className="text-[10px] text-white/70 font-mono mt-2 flex items-center gap-1" style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
-              <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              <Clock className="w-2.5 h-2.5" /> {getTimeRemaining(effectiveEndDate || market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         </div>
@@ -1006,7 +1011,7 @@ const MarketDetail = () => {
               {showPageViews ? (pageViewCount ?? 0).toLocaleString() : market.participants.toLocaleString()}
             </span>
           </div>
-          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(market.endDate)}</span></div>
+          <div className="glass rounded-xl p-2.5 sm:p-3"><div className="flex items-center gap-2 text-muted-foreground mb-1"><Clock className="w-3.5 h-3.5" /><span className="text-[11px] sm:text-xs">Ends</span></div><span className="text-base sm:text-lg font-bold">{getTimeRemaining(effectiveEndDate || market.endDate)}</span></div>
         </div>
 
         {!isEnded && (
