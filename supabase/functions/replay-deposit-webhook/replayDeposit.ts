@@ -19,6 +19,13 @@ export type ReplayInput = {
   paymentId?: string;
 };
 
+export type ReplayDeps = {
+  fetchImpl: typeof fetch;
+  npApiKey: string | undefined;
+  payazaSecretKey?: string | undefined;
+  payazaTenantId?: string | undefined;
+};
+
 export type ReplayResult =
   | { status: number; body: Record<string, unknown> };
 
