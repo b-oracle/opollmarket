@@ -426,8 +426,9 @@ const AdminDeposits = () => {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {d.nowpayments_payment_id || "—"}
+                        <span className="font-mono text-xs text-muted-foreground inline-flex items-center gap-1" title="Hidden to prevent copy-paste. Verify in Payaza dashboard.">
+                          <EyeOff className="w-3 h-3" />
+                          {maskPaymentId(d.nowpayments_payment_id)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
