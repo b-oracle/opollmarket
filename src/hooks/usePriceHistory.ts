@@ -50,7 +50,7 @@ export function usePriceHistory(
       supabase.removeChannel(channel);
     };
   }, [marketId, queryClient]);
-  const { data: transactions = [] } = useQuery({
+  const { data: transactions = [], isLoading, isFetching, isError } = useQuery({
     queryKey: ["price-history", marketId],
     queryFn: async () => {
       if (!marketId) return [];
