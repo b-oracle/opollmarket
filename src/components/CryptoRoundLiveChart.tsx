@@ -175,6 +175,29 @@ const CryptoRoundLiveChart = ({
     return unsub;
   }, [sym]);
 
+  // REST polling fallback: some networks/iframes block the Binance WebSocket.
+  // Poll every 3s as a backup so the chart still streams in those environments.
+  // The provider's internal cache dedupes if WS is also delivering ticks.
+  useEffect(() => {
+    if (!sym) return;
+    let cancelled = false;
+    const tick = async () => {
+      const price = await fetchCryptoPrice(sym);
+      if (cancelled || price == null) return;
+      const t = Date.now();
+      const buf = bufferRef.current;
+      const tail = buf[buf.length - 1];
+      if (tail && t - tail.t < FLUSH_MS) {
+        tail.t = t;
+        tail.p = price;
+      } else {
+        buf.push({ t, p: price });
+      }
+    };
+    const id = setInterval(tick, 3000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [sym]);
+
   // Throttled flush: copy buffered ticks into React state every FLUSH_MS,
   // and persist the result to the per-round cache for instant rehydration.
   useEffect(() => {
