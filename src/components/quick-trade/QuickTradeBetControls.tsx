@@ -122,9 +122,9 @@ export default function QuickTradeBetControls({
             >
               <span className="flex items-center gap-1.5 leading-none">
                 <ArrowUp className="w-5 h-5" />
-                Up {upCents}¢
+                Up <AnimatedNumber value={upCents} className="tabular-nums" />¢
               </span>
-              <span className="text-[10px] font-semibold opacity-80 leading-none">{fmtPayout(upCents)}</span>
+              <span className="text-[10px] font-semibold opacity-80 leading-none transition-opacity duration-300">{fmtPayout(upCents)}</span>
             </Button>
             <Button
               onClick={() => tap("down")}
@@ -133,9 +133,9 @@ export default function QuickTradeBetControls({
             >
               <span className="flex items-center gap-1.5 leading-none">
                 <ArrowDown className="w-5 h-5" />
-                Down {downCents}¢
+                Down <AnimatedNumber value={downCents} className="tabular-nums" />¢
               </span>
-              <span className="text-[10px] font-semibold opacity-80 leading-none">{fmtPayout(downCents)}</span>
+              <span className="text-[10px] font-semibold opacity-80 leading-none transition-opacity duration-300">{fmtPayout(downCents)}</span>
             </Button>
           </div>
         );
