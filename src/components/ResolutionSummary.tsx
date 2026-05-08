@@ -232,11 +232,13 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
               const optIdx = optionMatch && options ? options.findIndex(o => o.id === pos.option_id) : -1;
               const posLabel = isMulti && optionMatch
                 ? optionMatch.label
-                : sportLabel && pos.side === "yes"
-                  ? sportLabel
-                  : sportLabel && pos.side === "no"
-                    ? `Not ${sportLabel}`
-                    : pos.side.toUpperCase();
+                : isCryptoRound
+                  ? cryptoSideLabel(pos.side)
+                  : sportLabel && pos.side === "yes"
+                    ? sportLabel
+                    : sportLabel && pos.side === "no"
+                      ? `Not ${sportLabel}`
+                      : pos.side.toUpperCase();
               const posColor = isMulti && optIdx >= 0
                 ? optionColors[optIdx % optionColors.length]
                 : pos.side === "yes" ? "#22c55e" : "#ef4444";
