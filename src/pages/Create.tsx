@@ -1404,6 +1404,10 @@ const Create = () => {
       setSubmitStep("first_prediction");
       toast.success("Market created! Now place your first prediction to make it official.");
     }
+    } catch (err: any) {
+      console.error("[Create] Unexpected error during market creation:", err);
+      failSubmit(err?.message || String(err) || "Unexpected error during market creation");
+    }
   };
 
   // Token-gate verification using wallet NFTs
