@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ArrowUp, ArrowDown, Loader2, Moon, AlertTriangle, DollarSign, TrendingUp, TrendingDown, Clock } from "lucide-react";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
 import { getAssetClass } from "@/data/assetClasses";
+import { hapticLight } from "@/lib/haptics";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -103,14 +104,18 @@ export default function QuickTradeBetControls({
       </div>
 
       {(() => {
-        // Parimutuel implied prob → cents on a $1 payout
+        // Parimutuel implied prob → cents on a $1 payout.
+        // Empty pools (round just spawned) → fall back to 50/50 with payout placeholder.
         const total = (poolUp ?? 0) + (poolDown ?? 0);
-        const upCents = total > 0 ? Math.max(1, Math.min(99, Math.round(((poolDown ?? 0) / total) * 100))) : 50;
+        const hasPools = total > 0;
+        const upCents = hasPools ? Math.max(1, Math.min(99, Math.round(((poolDown ?? 0) / total) * 100))) : 50;
         const downCents = 100 - upCents;
+        const fmtPayout = (cents: number) => hasPools ? `Win $${(1 / (cents / 100)).toFixed(2)}/$1` : "Win —/$1";
+        const tap = (s: "up" | "down") => { void hapticLight(); setConfirmSide(s); };
         return (
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <Button
-              onClick={() => setConfirmSide("up")}
+              onClick={() => tap("up")}
               disabled={placing || isLocked || timeLeft === 0 || !marketOpen}
               className="h-16 sm:h-[68px] flex-col gap-0 text-base font-extrabold bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-[0_0_20px_hsl(142_71%_45%/0.3)]"
             >
@@ -118,10 +123,10 @@ export default function QuickTradeBetControls({
                 <ArrowUp className="w-5 h-5" />
                 Up {upCents}¢
               </span>
-              <span className="text-[10px] font-semibold opacity-80 leading-none">Win ${(1 / (upCents / 100)).toFixed(2)}/$1</span>
+              <span className="text-[10px] font-semibold opacity-80 leading-none">{fmtPayout(upCents)}</span>
             </Button>
             <Button
-              onClick={() => setConfirmSide("down")}
+              onClick={() => tap("down")}
               disabled={placing || isLocked || timeLeft === 0 || !marketOpen}
               className="h-16 sm:h-[68px] flex-col gap-0 text-base font-extrabold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-[0_0_20px_hsl(0_84%_60%/0.3)]"
             >
@@ -129,7 +134,7 @@ export default function QuickTradeBetControls({
                 <ArrowDown className="w-5 h-5" />
                 Down {downCents}¢
               </span>
-              <span className="text-[10px] font-semibold opacity-80 leading-none">Win ${(1 / (downCents / 100)).toFixed(2)}/$1</span>
+              <span className="text-[10px] font-semibold opacity-80 leading-none">{fmtPayout(downCents)}</span>
             </Button>
           </div>
         );

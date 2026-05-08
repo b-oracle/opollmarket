@@ -1,63 +1,72 @@
+# Crypto Up/Down — Go-Live Plan
 
-## Goal
+Five batches, ordered by risk. Each batch is independently shippable so we can stop at any point and the feature is still in a better state than before.
 
-Make our Crypto Up/Down market detail look and feel like the Polymarket reference video: louder header, bolder price block, P&L brackets on the chart, and a round-anchored timeline that grows left → right instead of a sliding window.
+---
 
-## What changes (UI only)
+## Batch 1 — Visual QA on a live round (no code changes first)
 
-All work stays in `src/pages/MarketDetail.tsx` and the existing quick-trade components — no business logic, no payouts, no engine math.
+Goal: confirm the new bold header, left-to-right chart, and P&L brackets actually look right mid-round on the 402px viewport.
 
-### 1. Header strip (above the chart)
+1. Open an active BTC 5m round in the preview.
+2. Verify:
+   - Chart line starts flush at the left edge at round-open and advances rightward.
+   - 3 timestamp ticks render under the chart without clipping.
+   - P&L bracket labels on the left axis don't overlap the y-axis price ticks.
+   - Dollar-delta chip (▲ / ▼ $X) updates live.
+   - "Condition met!" copy in `LivePriceBadge` reads consistently with the new bold header language.
+3. Capture any layout bugs and fix in `SimpleAreaChart.tsx` / `PriceToBeatHeader.tsx`.
 
-File: `src/pages/MarketDetail.tsx` (crypto-round branch) + small tweaks to the asset/timer row.
+## Batch 2 — Edge-case correctness
 
-- Asset row: bigger title (`BTC Up or Down 5m`), date/window subtitle (`May 8, 2:30–2:35 PM`).
-- Countdown: render minutes and seconds as two huge red blocks (`03  37` with `MINS` / `SECS` labels under each), like the reference. Reuse existing `CryptoRoundCountdown` data, just restyle.
+Files: `QuickTradeBetControls.tsx`, `PriceToBeatHeader.tsx`, `SimpleAreaChart.tsx`.
 
-### 2. Price block — `PriceToBeatHeader.tsx`
+1. **Empty pools**: when `poolUp + poolDown === 0`, force cents pricing to 50¢/50¢ and payout to "—" instead of dividing by zero.
+2. **Resolution swap**: trigger an ended round and verify "Final Price" + WIN/LOSE badge swap renders, with correct green/red color.
+3. **Window math guard**: clamp `toX(ts)` so a stale tick after `windowEndMs` can't draw past the right edge.
+4. **Bracket overflow**: if user stake is 0, hide P&L brackets entirely (don't render `+ $0` labels).
 
-- Drop the bordered card; switch to a flat two-column block.
-- Left column: small gray "Price To Beat" label + **bold $80,225.81** in a large size (≈ `text-2xl font-extrabold`).
-- Right column: small "Current Price" label (orange when active) + **bold orange $80,242.93** in the same large size.
-- Replace the small `+0.021%` chip with a Polymarket-style **dollar delta** chip: green `▲ $17` / red `▼ $17`, where the dollar value = `currentPrice − openPrice` rounded.
-- On resolve, keep the slot-machine animation but swap the right column to "Final Price" with the win/lose color we already compute.
+## Batch 3 — Functional polish
 
-### 3. Chart — left → right, round-anchored
+1. **Haptics on Up/Down tap** — wire `@/lib/haptics` `selection()` into `QuickTradeBetControls.tsx` button onClick.
+2. **Receipt page** (`src/pages/UpDownReceipt.tsx`) — audit against the new bold visual language; align typography, dollar-delta chip, and win/lose color treatment.
+3. **Analytics events** — emit `crypto_round_entered`, `crypto_round_bet_placed`, `crypto_round_resolved_view` via the existing analytics helper (per platform-analytics memory).
+4. **BORACLE residue sweep** — `rg -n "BORACLE" src/` and confirm no creator strings leak on Profile / UserProfile / CreatorDashboard / TransactionHistory for crypto rounds.
 
-File: `src/components/quick-trade/SimpleAreaChart.tsx` (and the `PolylineChart` twin).
+## Batch 4 — Ops & realtime verification
 
-Today `toX(i) = (i / (pts-1)) * chartW`, so points are evenly spaced and a sliding window pushes old data left as new ticks arrive. Polymarket maps x to **wall-clock time inside the round window**, so the line literally draws from the left edge at round start to the right edge at round end.
+1. **Spawner cron** — verify `crypto-round-spawner` edge function is on a pg_cron schedule (not just manual). Inspect with `supabase--read_query` against `cron.job`.
+2. **Auto-refresh** — confirm Home feed swaps in the next round within ~1s of resolution (the recent `useMarkets` realtime change). Watch network tab for the invalidate.
+3. **Resolution push notification** — check `notification_automation` triggers fire for crypto round wins/losses; if not, add to the existing trigger or skip and log as known-gap.
+4. **Feature toggle** — confirm `feature_toggles.crypto_up_down` still gates correctly so we can stage the rollout.
 
-- Accept two new optional props: `windowStartMs` and `windowEndMs`.
-- When both are provided, change the x mapping to `toX(ts) = ((ts − start) / (end − start)) * chartW`, clamped to `[0, chartW]`.
-- The line then begins flush against the left edge at round-open and progresses rightward as time elapses, leaving empty space ahead of the live cursor — matching the reference exactly.
-- For non-round usage (regular markets), fall back to today's index-based mapping so nothing else regresses.
-- Pass `windowStartMs = new Date(activeRound.created_at).getTime()` and `windowEndMs = start + duration_seconds * 1000` from `MarketDetail.tsx`.
-- Bottom timestamps: render 2–3 ticks from `windowStart` to `windowEnd` (e.g. `7:31:08 PM`, `7:31:17 PM`, `7:31:25 PM`) under the chart, replacing the generic "Last 5m" caption when in a crypto round.
+## Batch 5 — Pre-publish checks
 
-### 4. P&L brackets on the left axis
+1. Run `supabase--linter` — fix any new RLS warnings.
+2. Run security scan — confirm no new findings tied to crypto round tables.
+3. Smoke-test on real mobile (Despia wrapper if available) — bold MM:SS countdown, tap Up/Down, see receipt, confirm push.
+4. Ship behind the existing toggle, flip on for a small cohort first.
 
-New tiny overlay inside `SimpleAreaChart.tsx`, only when `entryPrice != null` and a user wager amount is known.
+---
 
-- Compute a few price levels above and below `entryPrice` corresponding to round dollar P&L on the user's stake at the current odds (e.g. `+$1, +$3, +$5, +$7` above; `-$2, -$3` below).
-- Plot them as small colored labels on the **left** edge at the corresponding y position (green above entry for "up" bet, red below — mirrored for "down" bet).
-- Stake source: the existing `userBet.amount` (or wager) already loaded for the active round; if not present, skip the brackets gracefully.
-- Pure render layer — no recalculation of payouts, just `level = entry ± Δ` for visualization.
+## Technical notes
 
-### 5. Up / Down buttons
-
-File: `src/components/quick-trade/QuickTradeBetControls.tsx` (or wherever the two buy buttons render in the crypto-round path).
-
-- Make them taller, full-width, bolder text (`text-lg font-bold`), with the cents price displayed prominently (`Up 62¢`, `Down 39¢`).
-- Keep the existing onClick / disable / pending logic untouched.
+- `SimpleAreaChart`: clamp formula → `Math.max(0, Math.min(chartW, ((ts - start) / (end - start)) * chartW))`.
+- Cents fallback in `QuickTradeBetControls`:
+  ```ts
+  const total = poolUp + poolDown;
+  const upCents = total > 0 ? Math.round((poolDown / total) * 100) : 50;
+  ```
+  (parimutuel: your share of the *opposite* pool is your implied price).
+- Haptics: `import { selection } from "@/lib/haptics"; ... onClick={() => { selection(); originalOnClick(); }}`.
+- BORACLE sweep: search must also cover edge functions and any cached `creator_name` columns.
 
 ## Out of scope
 
-- No changes to round spawning, resolution, payouts, RLS, or pricing math.
-- No changes to non-crypto markets except the optional, opt-in chart props (default behavior unchanged).
-- No new tables, no edge functions.
+- Native CallKit/full-screen-call work in `*-native-ref/` — unrelated, stays parked.
+- Any change to round spawning cadence, payout math, or fee structure.
+- New crypto assets beyond BTC/ETH/SOL.
 
 ## Acceptance
 
-- Opening a live BTC/ETH/SOL Up-or-Down round shows: huge red MM:SS countdown, bold "Price To Beat" + bold orange "Current Price" with a `▲/▼ $X` dollar chip, an orange line that starts at the left edge at round-open and advances rightward over the 5-minute window, P&L bracket labels on the left axis when the user has a wager, and tall bold green/red Up/Down buttons.
-- Regular (non-crypto) markets render unchanged.
+Feature is "go-live" when: a real round on mobile renders the bold Polymarket-style UI without layout bugs, edge cases (empty pool, stake=0, post-deadline tick) don't crash the chart, haptics fire on Up/Down, receipt matches the new look, the next round appears automatically on Home, and `crypto-round-spawner` is on cron. Ship behind the existing toggle.
