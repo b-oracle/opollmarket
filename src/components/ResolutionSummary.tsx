@@ -101,10 +101,10 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
     queryFn: async () => {
       const { data } = await supabase
         .from("markets")
-        .select("status, resolved_at, end_date")
+        .select("status, end_date, moderator_reviewed_at")
         .eq("id", marketId)
         .maybeSingle();
-      return data as { status: string | null; resolved_at: string | null; end_date: string | null } | null;
+      return data;
     },
     refetchInterval: 5000,
   });
