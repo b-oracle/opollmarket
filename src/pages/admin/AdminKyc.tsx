@@ -260,13 +260,26 @@ const AdminKyc = () => {
                   <p className="text-xs text-muted-foreground italic">Note: {sub.admin_note}</p>
                 )}
 
+                {/* Review metadata for non-pending submissions */}
+                {sub.status !== "pending" && (sub.reviewed_at || sub.reviewed_by) && (
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground border-t border-border pt-2">
+                    <ShieldCheck className="w-3 h-3" />
+                    {sub.reviewed_at && (
+                      <span>Reviewed {new Date(sub.reviewed_at).toLocaleString()}</span>
+                    )}
+                    {sub.reviewed_by && (
+                      <span>· by {sub.reviewed_by.slice(0, 8)}…</span>
+                    )}
+                  </div>
+                )}
+
                 {/* Review actions */}
-                {sub.status === "pending" && canEdit && (
+                {sub.status === "pending" && canReview && (
                   <div className="space-y-2 pt-2 border-t border-border">
                     {reviewingId === sub.id ? (
                       <>
                         <Input
-                          placeholder="Admin note (optional, shown to user on rejection)"
+                          placeholder="Reason (required for rejection, shown to user)"
                           value={adminNote}
                           onChange={(e) => setAdminNote(e.target.value)}
                           className="text-xs"
