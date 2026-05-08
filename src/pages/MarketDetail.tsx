@@ -1010,7 +1010,7 @@ const MarketDetail = () => {
                     market?.status === "resolved" ? "bg-primary/10 text-primary" : market?.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
                   }`}>
                     {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}
+                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : (market?.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}
                   </div>
                 ) : (
                   <>
@@ -1032,7 +1032,7 @@ const MarketDetail = () => {
                     market?.status === "resolved" ? "bg-primary/10 text-primary" : market?.status === "cancelled" ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground"
                   }`}>
                     {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}
+                    {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : (market?.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}
                   </div>
             ) : (
               <>

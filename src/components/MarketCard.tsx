@@ -624,7 +624,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 {market.status === "resolved" ? <CheckCircle2 className="w-4 h-4 text-primary" /> : market.status === "cancelled" ? <XCircle className="w-4 h-4 text-destructive" /> : <Clock className="w-4 h-4 text-muted-foreground" />}
                 <span className={`text-sm font-semibold ${
                   market.status === "resolved" ? "text-primary" : market.status === "cancelled" ? "text-destructive" : "text-muted-foreground"
-                }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : "Market Ended — Awaiting Resolution"}</span>
+                }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : (market.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}</span>
               </div>
             ) : (
               <motion.div
