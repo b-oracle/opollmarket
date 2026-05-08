@@ -112,6 +112,22 @@ const CryptoRoundLiveChart = ({
 
   const remaining = endMs - now;
   const ended = remaining <= 0;
+  const untilStart = startMs - now;
+  const notStarted = untilStart > 0;
+
+  const tzShort = (() => {
+    try {
+      return new Intl.DateTimeFormat([], { timeZoneName: "short" })
+        .formatToParts(new Date())
+        .find((p) => p.type === "timeZoneName")?.value ?? "";
+    } catch { return ""; }
+  })();
+
+  const fmtFull = (ms: number) =>
+    new Date(ms).toLocaleString([], {
+      month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
+    });
 
   // Build domain/scales
   const H = height;
