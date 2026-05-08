@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import type { Market } from "@/data/markets";
 
 interface DbMarket {
@@ -159,6 +160,8 @@ const fetchCreatorMarkets = async (client: typeof supabase, userId: string) => {
 
 export const useMarkets = () => {
   const queryClient = useQueryClient();
+  const { isFeatureEnabled } = useFeatureToggles();
+  const cryptoUpDownEnabled = isFeatureEnabled("crypto_up_down");
 
   const shouldRetry = (failureCount: number, error: unknown) => {
     if (isTimeoutError(error)) return false;
@@ -227,6 +230,8 @@ export const useMarkets = () => {
     staleTime: 30_000,
     retry: shouldRetry,
     retryDelay: 1000,
+    select: (markets: Market[]) =>
+      cryptoUpDownEnabled ? markets : markets.filter((m) => !m.isCryptoRound),
   });
 };
 
