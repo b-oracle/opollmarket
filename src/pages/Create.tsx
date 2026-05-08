@@ -918,6 +918,12 @@ const Create = () => {
   // Submission state
   type SubmitStep = "idle" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
+  const [submitErrorMsg, setSubmitErrorMsg] = useState<string>("");
+  const failSubmit = (msg: string, ctx?: any) => {
+    console.error("[Create] submission failed:", msg, ctx);
+    setSubmitErrorMsg(msg || "Unknown error");
+    setSubmitStep("error");
+  };
   // Reset submitting guard when submission ends (error or idle) so auto-save can resume
   useEffect(() => {
     if (submitStep === "error" || submitStep === "idle") {
@@ -980,6 +986,8 @@ const Create = () => {
 
   const handleCreateMarket = async () => {
     if (!user || !address) return;
+    setSubmitErrorMsg("");
+    try {
 
     // Block auto-save and stop timer to prevent duplicate option inserts during submission
     isSubmittingRef.current = true;
@@ -1069,13 +1077,13 @@ const Create = () => {
       }
       if (imageFile && !earlyImageUrl) {
         toast.error("Image upload failed. No charge was taken.");
-        setSubmitStep("error");
+        failSubmit("Image upload failed. Please try a different image.");
         isSubmittingRef.current = false;
         return;
       }
       if (!earlyImageUrl) {
         toast.error("A cover image is required.");
-        setSubmitStep("error");
+        failSubmit("A cover image is required.");
         isSubmittingRef.current = false;
         return;
       }
@@ -1092,7 +1100,7 @@ const Create = () => {
       .single();
 
     if (balError || !bal) {
-      setSubmitStep("error");
+      failSubmit(balError?.message || "Could not fetch your balance", balError);
       toast.error("Could not fetch your balance");
       return;
     }
@@ -1115,14 +1123,14 @@ const Create = () => {
     );
 
     if (deductError) {
-      setSubmitStep("error");
-      toast.error("Failed to deduct liquidity from your balance");
+      failSubmit(deductError.message || "Failed to deduct liquidity from your balance", deductError);
+      toast.error(deductError.message || "Failed to deduct liquidity from your balance");
       return;
     }
 
     const result = typeof deductResult === "string" ? JSON.parse(deductResult) : deductResult;
     if (!result?.success) {
-      setSubmitStep("error");
+      failSubmit(result?.error || "Insufficient balance for market creation", result);
       toast.error(result?.error || "Insufficient balance for market creation", {
         action: {
           label: "Deposit Now",
@@ -1246,8 +1254,8 @@ const Create = () => {
         });
         setEscrowId(null);
       }
-      setSubmitStep("error");
       const errorMsg = error?.message || "Unknown error";
+      failSubmit(`Failed to save market: ${errorMsg}`, error);
       toast.error(`Failed to save market: ${errorMsg}. Your balance has been refunded.`);
       return;
     }
@@ -1395,6 +1403,10 @@ const Create = () => {
       // Active markets require first prediction
       setSubmitStep("first_prediction");
       toast.success("Market created! Now place your first prediction to make it official.");
+    }
+    } catch (err: any) {
+      console.error("[Create] Unexpected error during market creation:", err);
+      failSubmit(err?.message || String(err) || "Unexpected error during market creation");
     }
   };
 
@@ -3561,12 +3573,17 @@ const Create = () => {
                     <AlertTriangle className="w-7 h-7 text-destructive" />
                   </div>
                   <h3 className="text-base font-bold mb-1">Creation Failed</h3>
-                  <p className="text-xs text-muted-foreground text-center mb-4">
-                    Something went wrong. No funds were deducted.
+                  <p className="text-xs text-muted-foreground text-center mb-2">
+                    {submitErrorMsg || "Something went wrong."} No funds were deducted.
                   </p>
+                  {submitErrorMsg && (
+                    <p className="text-[10px] text-muted-foreground/70 text-center mb-3 break-all max-h-24 overflow-y-auto px-2">
+                      Share this with support if it persists.
+                    </p>
+                  )}
                   <div className="flex gap-3 w-full">
                     <button
-                      onClick={() => setSubmitStep("idle")}
+                      onClick={() => { setSubmitErrorMsg(""); setSubmitStep("idle"); }}
                       className="flex-1 glass py-3 rounded-xl font-semibold text-sm transition-all active:scale-95"
                     >
                       Try Again
