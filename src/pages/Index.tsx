@@ -580,6 +580,7 @@ const Index = () => {
                         asset={market.autoResolveAsset}
                         targetPrice={market.autoResolveTargetPrice}
                         operator={market.autoResolveOperator}
+                        marketId={market.id}
                       />
                     </div>
                   )}
