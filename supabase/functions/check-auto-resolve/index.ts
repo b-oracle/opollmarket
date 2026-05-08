@@ -451,19 +451,11 @@ Deno.serve(async (req) => {
           });
         }
       } else if (isOneSided && winners.length === 0 && losers.length > 0) {
-        // Everyone loses → check the qt_one_sided_bonus toggle
-        const { data: bonusSettings } = await adminClient
-          .from("commission_settings")
-          .select("qt_one_sided_bonus")
-          .limit(1)
-          .single();
-        const applyBonus = bonusSettings?.qt_one_sided_bonus !== false;
-
+        // Everyone "loses" (no opposing side) → pure refund of stake.
+        // No platform fee, no one-sided bonus.
         for (const pos of losers) {
-          const capital = Number(pos.shares) * Number(pos.avg_price);
-          if (capital <= 0) continue;
-          const bonus = applyBonus ? capital * ONE_SIDED_BONUS_RATE : 0;
-          const refund = capital + bonus;
+          const refund = Number(pos.shares) * Number(pos.avg_price);
+          if (refund <= 0) continue;
 
           await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: refund, _bonus_delta: 0, _insurance_delta: 0 });
 
@@ -478,17 +470,6 @@ Deno.serve(async (req) => {
             price: pos.avg_price,
             status: "confirmed",
           });
-
-          if (bonus > 0) {
-            await adminClient.from("transactions").insert({
-              user_id: pos.user_id,
-              market_id: market.id,
-              type: "qt_one_sided_bonus",
-              amount: bonus,
-              side: "credit",
-              status: "confirmed",
-            });
-          }
         }
       } else if ((market as any).is_crypto_round) {
         // Crypto rounds: parimutuel — losers' staked capital funds winners.
