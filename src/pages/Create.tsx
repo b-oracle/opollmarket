@@ -918,6 +918,12 @@ const Create = () => {
   // Submission state
   type SubmitStep = "idle" | "moderating" | "deploying" | "saving" | "success" | "first_prediction" | "placing_prediction" | "error";
   const [submitStep, setSubmitStep] = useState<SubmitStep>("idle");
+  const [submitErrorMsg, setSubmitErrorMsg] = useState<string>("");
+  const failSubmit = (msg: string, ctx?: any) => {
+    console.error("[Create] submission failed:", msg, ctx);
+    setSubmitErrorMsg(msg || "Unknown error");
+    setSubmitStep("error");
+  };
   // Reset submitting guard when submission ends (error or idle) so auto-save can resume
   useEffect(() => {
     if (submitStep === "error" || submitStep === "idle") {
