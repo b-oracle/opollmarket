@@ -52,6 +52,7 @@ type Stage = "live" | "resolving" | "payout" | "respawning" | "done";
  *   4. NEXT ROUND    — spawner cron will start the next round on the next minute
  */
 const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Props) => {
+  const navigate = useNavigate();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
