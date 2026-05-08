@@ -1759,6 +1759,8 @@ export default function QuickTrade() {
             );
           })()}
 
+           <LiveBetsTicker roundId={activeRound?.id} className="mb-2" />
+
            <QuickTradeBetControls
             userBet={userBet}
             betAmount={betAmount}
