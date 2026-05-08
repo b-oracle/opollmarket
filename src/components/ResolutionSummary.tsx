@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { optionColors } from "@/lib/optionColors";
 import ShareModal from "@/components/ShareModal";
 import ProfitShareCard from "@/components/ProfitShareCard";
+import TransactionStatusTracker, { buildResolveStages } from "@/components/TransactionStatusTracker";
 
 interface ResolutionSummaryProps {
   marketId: string;
