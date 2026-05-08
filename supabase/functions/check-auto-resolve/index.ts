@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
       const assetType = getAssetType(asset);
       const priceLabel = assetType === "forex" ? asset : `${asset}/USD`;
       const priceInfo = currentPrice !== null ? `${priceLabel}: $${currentPrice.toLocaleString()}` : "";
-      
+
       const { data: allParticipants } = await adminClient
         .from("positions")
         .select("user_id, side")
@@ -452,12 +452,63 @@ Deno.serve(async (req) => {
         if (!uniqueUsers.has(p.user_id)) uniqueUsers.set(p.user_id, p.side);
       }
 
+      // Sum payouts per user for this market (for richer messaging)
+      const payoutByUser = new Map<string, number>();
+      try {
+        const { data: payoutTxs } = await adminClient
+          .from("transactions")
+          .select("user_id, amount")
+          .eq("market_id", market.id)
+          .eq("type", "payout")
+          .eq("status", "confirmed");
+        for (const t of payoutTxs || []) {
+          payoutByUser.set(t.user_id, (payoutByUser.get(t.user_id) ?? 0) + Number(t.amount ?? 0));
+        }
+      } catch (_) { /* best-effort */ }
+
+      // Crypto Up/Down round meta for tailored messaging
+      let cryptoMeta: { asset: string; duration_minutes: number; open_price: number; close_price: number | null } | null = null;
+      if ((market as any).is_crypto_round) {
+        const { data: meta } = await adminClient
+          .from("crypto_round_meta")
+          .select("asset, duration_minutes, open_price, close_price")
+          .eq("market_id", market.id)
+          .maybeSingle();
+        if (meta) cryptoMeta = meta as any;
+      }
+
+      const fmtMoney = (v: number) => `$${v.toFixed(2)}`;
+      const durLabel = (m: number) => m >= 1440 ? `${Math.round(m / 1440)}d` : m >= 60 ? `${Math.round(m / 60)}h` : `${m}m`;
+
       const notifications = Array.from(uniqueUsers.entries()).map(([userId, side]) => {
         const won = side === winningSide;
-        const title = won ? "You Won! 🎉 Market Auto-Resolved" : "Market Auto-Resolved";
-        const message = winningSide === "yes"
-          ? `"${market.title}" resolved YES — ${priceInfo ? `price condition met (${priceInfo})` : "condition met"}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`
-          : `"${market.title}" resolved NO — deadline passed without condition being met${priceInfo ? ` (${priceInfo})` : ""}. ${won ? "Your payout has been credited!" : "Better luck next time!"}`;
+        const payout = payoutByUser.get(userId) ?? 0;
+        let title: string;
+        let message: string;
+
+        if (cryptoMeta) {
+          const direction = winningSide === "yes" ? "UP" : "DOWN";
+          const userPick = side === "yes" ? "UP" : "DOWN";
+          const open = cryptoMeta.open_price;
+          const close = cryptoMeta.close_price ?? currentPrice;
+          const moveStr = open != null && close != null
+            ? ` (${open.toFixed(2)} → ${close.toFixed(2)})`
+            : "";
+          const label = `${cryptoMeta.asset} ${durLabel(cryptoMeta.duration_minutes)}`;
+          if (won) {
+            title = `🎉 You won the ${label} round!`;
+            message = `${label} closed ${direction}${moveStr}. Your ${userPick} bet won — ${fmtMoney(payout)} credited to your balance.`;
+          } else {
+            title = `${label} round resolved ${direction}`;
+            message = `Your ${userPick} bet didn't win this round${moveStr}. Next round is already open — try again!`;
+          }
+        } else {
+          title = won ? "You Won! 🎉 Market Auto-Resolved" : "Market Auto-Resolved";
+          message = winningSide === "yes"
+            ? `"${market.title}" resolved YES — ${priceInfo ? `price condition met (${priceInfo})` : "condition met"}. ${won ? `Your payout of ${fmtMoney(payout)} has been credited!` : "Better luck next time!"}`
+            : `"${market.title}" resolved NO — deadline passed without condition being met${priceInfo ? ` (${priceInfo})` : ""}. ${won ? `Your payout of ${fmtMoney(payout)} has been credited!` : "Better luck next time!"}`;
+        }
+
         return {
           user_id: userId,
           title,
@@ -471,7 +522,7 @@ Deno.serve(async (req) => {
         await adminClient.from("notifications").insert(notifications);
       }
 
-      console.log(`Market ${market.id}: Auto-resolved ${winningSide.toUpperCase()} — notified ${notifications.length} participants`);
+      console.log(`Market ${market.id}: Auto-resolved ${winningSide.toUpperCase()} — notified ${notifications.length} participants${cryptoMeta ? " (crypto Up/Down)" : ""}`);
 
       // Return creator liquidity
       await returnCreatorLiquidity(adminClient, market);
