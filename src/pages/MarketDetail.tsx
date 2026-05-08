@@ -40,6 +40,7 @@ import CryptoRoundLiveChart, { primeCryptoRoundCache } from "@/components/Crypto
 import { primeMarketCommentsCache } from "@/components/CommentsDrawer";
 import { subscribeToPriceStream } from "@/lib/cryptoPriceProvider";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
+import ChartSkeleton from "@/components/ChartSkeleton";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -680,9 +681,13 @@ const MarketDetail = () => {
       ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/og-image?id=${id}`
       : undefined;
 
-  const chartData = usePriceHistory(
+  const { chartData, isLoading: chartLoading, hasTransactions } = usePriceHistory(
     id, timePeriod, yesPercent, noPercent, isMulti, market?.options
   );
+  // Show skeleton only on initial load when we truly have nothing yet —
+  // once any data has arrived (even stale cached buckets), keep showing
+  // the chart so the UI never flashes empty if a follow-up fetch fails.
+  const showChartSkeleton = chartLoading && !hasTransactions;
 
   const [betSide, setBetSide] = useState<"yes" | "no">("yes");
   const [betOpen, setBetOpen] = useState(false);
@@ -1055,6 +1060,9 @@ const MarketDetail = () => {
                 ))}
               </div>
               <div className="h-40 relative">
+                {showChartSkeleton && (
+                  <ChartSkeleton height={160} className="absolute inset-0" />
+                )}
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
                     <defs>

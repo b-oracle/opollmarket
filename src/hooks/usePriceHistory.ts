@@ -50,7 +50,7 @@ export function usePriceHistory(
       supabase.removeChannel(channel);
     };
   }, [marketId, queryClient]);
-  const { data: transactions = [] } = useQuery({
+  const { data: transactions = [], isLoading, isFetching, isError } = useQuery({
     queryKey: ["price-history", marketId],
     queryFn: async () => {
       if (!marketId) return [];
@@ -182,7 +182,13 @@ export function usePriceHistory(
     return buckets;
   }, [transactions, timePeriod, currentYesPrice, currentNoPrice, isMulti, options]);
 
-  return chartData;
+  return {
+    chartData,
+    isLoading,
+    isFetching,
+    isError,
+    hasTransactions: transactions.length > 0,
+  };
 }
 
 function formatBucketLabel(timestamp: number, period: TimePeriod): string {
