@@ -701,10 +701,10 @@ const MarketDetail = () => {
       )}
 
       {/* Live Stream Section */}
-      {streamingEnabled && (
+      {streamingEnabled && !market.isCryptoRound && (
         <>
           {/* Creator controls */}
-          {isCreator && !isEnded && (
+          {isCreator && !isEnded && !market.isCryptoRound && (
             <div className="mt-4">
               <MarketStreamControls
                 marketId={market.id}
