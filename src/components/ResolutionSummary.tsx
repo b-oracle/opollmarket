@@ -96,6 +96,19 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
     enabled: !!user?.id,
   });
 
+  const { data: marketMeta } = useQuery({
+    queryKey: ["resolution-meta", marketId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("markets")
+        .select("status, resolved_at, end_date")
+        .eq("id", marketId)
+        .maybeSingle();
+      return data as { status: string | null; resolved_at: string | null; end_date: string | null } | null;
+    },
+    refetchInterval: 5000,
+  });
+
   const totalPayout = payoutTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) ?? 0;
   const hasPositions = userPositions && userPositions.length > 0;
   const didWin = totalPayout > 0;
