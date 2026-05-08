@@ -62,22 +62,21 @@ const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Prop
   const remaining = endMs - now;
   const sinceEnd = now - endMs;
 
-  // Stage logic
+  // Stage logic — tightened for the 15s cron cadence.
   let stage: Stage;
   if (status === "resolved") {
-    // After resolution, the next-minute cron tick fires the spawner.
-    stage = sinceEnd > 90_000 ? "done" : "respawning";
+    // After resolution the next 15s spawner tick fires almost immediately.
+    stage = sinceEnd > 45_000 ? "done" : "respawning";
   } else if (remaining > 0) {
     stage = "live";
   } else if (sinceEnd < 5_000) {
     stage = "resolving";
   } else {
-    // Still not resolved server-side — show payout-pending after a short delay
-    // (resolve cron runs every minute; payouts happen inside the same call).
-    stage = sinceEnd < 90_000 ? "resolving" : "payout";
+    // Resolve cron runs every 15s; payouts happen inside the same call.
+    stage = sinceEnd < 30_000 ? "resolving" : "payout";
   }
 
-  const nextMinuteEta = secondsToNextMinute(now);
+  const nextTickEta = secondsToNextTick(now);
 
   // Round duration progress (for the LIVE bar)
   const totalDur = Math.max(1, endMs - startMs);
@@ -105,13 +104,17 @@ const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Prop
     sub = "Trading open until deadline";
   } else if (stage === "resolving") {
     headline = `Resolving · ${fmtElapsed(sinceEnd)} since deadline`;
-    sub = `Reading final price · ETA ${nextMinuteEta}s`;
+    sub = `Reading final price · ETA ${nextTickEta}s`;
   } else if (stage === "payout") {
     headline = `Settling payouts · ${fmtElapsed(sinceEnd)}`;
-    sub = `Wallets crediting · ETA ${nextMinuteEta}s`;
+    sub = `Wallets crediting · ETA ${nextTickEta}s`;
   } else if (stage === "respawning") {
     headline = "Resolved · paid out";
-    sub = `Next round spawns in ~${nextMinuteEta}s`;
+    // Don't loop a stale countdown — once we've waited longer than a single
+    // spawner cycle, switch to a definite "spawning now" message.
+    sub = sinceEnd > 20_000
+      ? "Spawning new round…"
+      : `Next round spawns in ~${nextTickEta}s`;
   } else {
     headline = "Round complete";
     sub = "Refresh to see the next one";
