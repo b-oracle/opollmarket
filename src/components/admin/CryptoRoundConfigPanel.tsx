@@ -18,7 +18,6 @@ interface ConfigRow {
   asset: string;
   duration_minutes: number;
   enabled: boolean;
-  initial_liquidity_usd: number;
 }
 
 interface SpawnLogRow {
