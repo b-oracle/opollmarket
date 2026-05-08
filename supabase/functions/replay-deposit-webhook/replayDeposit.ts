@@ -274,6 +274,28 @@ function payazaCurrency(np: Record<string, unknown>): string {
   return cands.length ? String(cands[0]).toUpperCase() : "";
 }
 
+function payazaAuthCandidates(secretKey: string): string[] {
+  const key = secretKey.trim();
+  const candidates: string[] = [];
+  const add = (value: string) => {
+    if (value && !candidates.includes(value)) candidates.push(value);
+  };
+
+  // Some Payaza accounts store the already-issued token, while others store
+  // the raw secret that must be base64-encoded. Try both without logging either.
+  if (/^Payaza\s+/i.test(key)) {
+    add(key);
+  } else {
+    add(`Payaza ${key}`);
+    try {
+      const encoded = btoa(key);
+      if (encoded !== key) add(`Payaza ${encoded}`);
+    } catch { /* btoa unavailable only in non-edge unit runs */ }
+  }
+
+  return candidates;
+}
+
 async function replayPayaza(
   admin: SupabaseAdmin,
   fetchImpl: FetchFn,
@@ -289,43 +311,58 @@ async function replayPayaza(
     return { status: 500, body: { error: "PAYAZA_SECRET_KEY not configured" } };
   }
 
-  const auth = `Payaza ${btoa(deps.payazaSecretKey)}`;
   const url = `https://api.payaza.africa/payaza-account/api/v1/mainaccounts/merchant/transaction/${encodeURIComponent(reference)}`;
-  const headers: Record<string, string> = {
+  const baseHeaders: Record<string, string> = {
     "Accept": "application/json",
-    "Authorization": auth,
-    "X-TenantID": deps.payazaTenantId || "live",
+    "Content-Type": "application/json",
+    "X-TenantID": (deps.payazaTenantId || "live").trim(),
   };
 
   // Payaza requires whitelisted IPs — try the QuotaGuard proxy first, then
-  // fall back to a direct connection (for tests and local runs).
+  // fall back to a direct connection (for tests and local runs). Also try both
+  // accepted Authorization token formats because Payaza tenants differ on
+  // whether the configured secret is already encoded.
   const proxyUrl = (globalThis as any).Deno?.env?.get?.("QUOTAGUARD_URL");
-  let res: Response | null = null;
   let lastErr = "";
-  if (proxyUrl) {
-    try {
-      // @ts-ignore - Deno-only API
-      const httpClient = (globalThis as any).Deno?.createHttpClient?.({ proxy: { url: proxyUrl } });
-      // @ts-ignore - Deno-specific `client` option
-      res = await fetchImpl(url, { headers, client: httpClient });
-      try { httpClient?.close?.(); } catch { /* noop */ }
-    } catch (err) {
-      lastErr = String(err);
-      console.error("Payaza proxy lookup failed:", lastErr);
-      res = null;
+  let text = "";
+
+  const transports = proxyUrl
+    ? [{ label: "proxy", proxy: true }, { label: "direct", proxy: false }]
+    : [{ label: "direct", proxy: false }];
+
+  for (const authorization of payazaAuthCandidates(deps.payazaSecretKey)) {
+    for (const transport of transports) {
+      let httpClient: { close?: () => void } | null = null;
+      try {
+        const init: RequestInit & { client?: unknown } = {
+          headers: { ...baseHeaders, Authorization: authorization },
+        };
+        if (transport.proxy) {
+          // @ts-ignore - Deno-only API
+          httpClient = (globalThis as any).Deno?.createHttpClient?.({ proxy: { url: proxyUrl } });
+          init.client = httpClient;
+        }
+
+        const res = await fetchImpl(url, init);
+        text = await res.text();
+        if (res.ok) {
+          lastErr = "";
+          break;
+        }
+
+        lastErr = `Payaza lookup failed via ${transport.label} (${res.status}): ${text.substring(0, 300)}`;
+      } catch (err) {
+        lastErr = `Payaza ${transport.label} lookup unreachable: ${String(err).substring(0, 300)}`;
+        console.error(lastErr);
+      } finally {
+        try { httpClient?.close?.(); } catch { /* noop */ }
+      }
     }
+    if (!lastErr) break;
   }
-  if (!res) {
-    try {
-      res = await fetchImpl(url, { headers });
-    } catch (err) {
-      lastErr = String(err);
-      return { status: 502, body: { error: `Payaza lookup unreachable: ${lastErr.substring(0, 300)}` } };
-    }
-  }
-  const text = await res.text();
-  if (!res.ok) {
-    return { status: 502, body: { error: `Payaza lookup failed (${res.status}): ${text.substring(0, 300)}` } };
+
+  if (lastErr) {
+    return { status: 502, body: { error: lastErr } };
   }
   let np: Record<string, unknown>;
   try { np = JSON.parse(text); } catch {
