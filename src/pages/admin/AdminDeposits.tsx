@@ -36,7 +36,9 @@ const statusConfig: Record<string, { label: string; variant: "default" | "second
 
 const AdminDeposits = () => {
   const { canEdit } = useAdminContext();
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin, isSupport } = useAuth();
+  // Anyone with admin/support access can confirm/credit deposits to handle user issues
+  const canHandleDeposits = isSuperAdmin || isAdmin || isSupport;
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
