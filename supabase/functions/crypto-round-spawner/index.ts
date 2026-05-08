@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
       // Latest round for this pair
       const { data: latest } = await admin
         .from("crypto_round_meta")
-        .select("end_time")
+        .select("end_time, market_id")
         .eq("asset", asset)
         .eq("duration_minutes", dur)
         .order("end_time", { ascending: false })
@@ -227,6 +227,12 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       const latestEnd = latest ? new Date(latest.end_time as string) : null;
+      // Predecessor key — the deadline of the round we are following.
+      // Combined with the unique index on (asset, duration, predecessor_end_time)
+      // this guarantees at most one new round per deadline boundary, even if
+      // two cron invocations race.
+      const predecessorEnd = latestEnd ? latestEnd.toISOString() : "1970-01-01T00:00:00.000Z";
+
       // Only spawn if the latest round has already ended (or doesn't exist), unless force
       if (!force && latestEnd && latestEnd > now) {
         await writeLog({
@@ -234,6 +240,23 @@ Deno.serve(async (req) => {
           message: `Active round still running until ${latestEnd.toISOString()}`,
         });
         continue;
+      }
+
+      // Wait for the previous round to finish resolving before spawning the next.
+      // This prevents stacking new rounds while resolution/payout is still in flight.
+      if (!force && latest?.market_id) {
+        const { data: prevMarket } = await admin
+          .from("markets")
+          .select("status")
+          .eq("id", latest.market_id as string)
+          .maybeSingle();
+        if (prevMarket && prevMarket.status !== "resolved") {
+          await writeLog({
+            asset, duration_minutes: dur, status: "skipped",
+            message: `Previous round still resolving (status=${prevMarket.status})`,
+          });
+          continue;
+        }
       }
 
       // Fetch open price
@@ -293,10 +316,24 @@ Deno.serve(async (req) => {
           open_price: openPrice,
           start_time: start.toISOString(),
           end_time: end.toISOString(),
+          predecessor_end_time: predecessorEnd,
         });
 
       if (metaErr) {
+        // Roll back the market we just inserted
         await admin.from("markets").delete().eq("id", market.id);
+        // 23505 = unique_violation → another concurrent invocation already spawned
+        // the round for this predecessor. Treat as a benign skip, not an error.
+        const isDuplicate = (metaErr as any).code === "23505" ||
+          /duplicate key|unique constraint/i.test(metaErr.message);
+        if (isDuplicate) {
+          await writeLog({
+            asset, duration_minutes: dur, status: "skipped",
+            message: `Duplicate spawn prevented for predecessor ${predecessorEnd}`,
+            open_price: openPrice,
+          });
+          continue;
+        }
         errors.push(`Insert meta ${asset}/${dur}m failed: ${metaErr.message}`);
         await writeLog({ asset, duration_minutes: dur, status: "error", message: `Meta insert failed: ${metaErr.message}`, open_price: openPrice });
         continue;
