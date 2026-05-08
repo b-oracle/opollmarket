@@ -1,0 +1,1 @@
+ALTER TABLE public.crypto_round_config DROP COLUMN IF EXISTS initial_liquidity_usd;
