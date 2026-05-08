@@ -449,6 +449,22 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   }, [spaceId, user]);
 
   // Recording state (client-side)
+  // Pick a MediaRecorder MIME that actually works on the current platform.
+  // Android Chrome sometimes reports audio/mp4 as supported but produces broken/empty
+  // containers. Only prefer mp4 on iOS/Safari (where webm/opus is unsupported).
+  const pickRecordingMime = (): string => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && "ontouchend" in document);
+    const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+    const preferMp4 = isIOS || isSafari;
+    const candidates = preferMp4
+      ? ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"]
+      : ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+    for (const t of candidates) {
+      if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return "";
+  };
   const [recording, setRecording] = useState(false);
   const [recordingLoading, setRecordingLoading] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -647,12 +663,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
             }
             const dest = recordingDestRef.current;
             if (dest) {
-              const recMime = MediaRecorder.isTypeSupported("audio/mp4")
-                ? "audio/mp4"
-                : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-                  ? "audio/webm;codecs=opus"
-                  : "audio/webm";
-              const recorder = new MediaRecorder(dest.stream, { mimeType: recMime });
+              const recMime = pickRecordingMime();
+              const recorder = new MediaRecorder(dest.stream, recMime ? { mimeType: recMime } : undefined);
               recorder.ondataavailable = (e) => {
                 if (e.data.size > 0) recordedChunksRef.current.push(e.data);
               };
@@ -1251,12 +1263,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
               });
             });
 
-            const recMime = MediaRecorder.isTypeSupported("audio/mp4")
-              ? "audio/mp4"
-              : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-                ? "audio/webm;codecs=opus"
-                : "audio/webm";
-            const recorder = new MediaRecorder(destination.stream, { mimeType: recMime });
+            const recMime = pickRecordingMime();
+            const recorder = new MediaRecorder(destination.stream, recMime ? { mimeType: recMime } : undefined);
             recorder.ondataavailable = (e) => {
               if (e.data.size > 0) recordedChunksRef.current.push(e.data);
             };
@@ -2160,13 +2168,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       });
 
       recordedChunksRef.current = [];
-      const mimeType = MediaRecorder.isTypeSupported("audio/mp4")
-        ? "audio/mp4"
-        : MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-          ? "audio/webm;codecs=opus"
-          : MediaRecorder.isTypeSupported("audio/webm")
-            ? "audio/webm"
-            : "";
+      const mimeType = pickRecordingMime();
       const recorderOptions: MediaRecorderOptions = mimeType ? { mimeType } : {};
       const recorder = new MediaRecorder(destination.stream, recorderOptions);
       recorder.ondataavailable = (e) => {
