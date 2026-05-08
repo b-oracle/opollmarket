@@ -1089,62 +1089,17 @@ const Create = () => {
       }
     }
 
-    // Step 1: Check and deduct balance
+    // Step 1: Prepare one atomic backend finalization (deduct + save + options + add-ons)
     setSubmitStep("deploying");
     setCompletedSteps(prev => new Set([...prev, 1]));
-
-    const { data: bal, error: balError } = await supabase
-      .from("balances")
-      .select("amount, bonus_balance")
-      .eq("user_id", user.id)
-      .single();
-
-    if (balError || !bal) {
-      failSubmit(balError?.message || "Could not fetch your balance", balError);
-      toast.error("Could not fetch your balance");
-      return;
-    }
 
     // Referral bonus can only cover the creation fee portion, not liquidity
     // If escrow is held, the creation fee is already deducted — skip it from fee calculation
     const creationFeeForDeduction = (feeBypass && !escrowId && !unlimitedMarkets) ? marketCreationFee : 0;
     const feeAmount = creationFeeForDeduction + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
-    const bonusForFee = Math.min(Number(bal.bonus_balance || 0), feeAmount);
-
-    // Use secure server-side function to deduct balance (RLS blocks client-side updates)
-    const { data: deductResult, error: deductError } = await supabase.rpc(
-      "deduct_market_liquidity" as any,
-      {
-        _user_id: user.id,
-        _liquidity_amount: liquidityAmount,
-        _fee_amount: feeAmount,
-        _bonus_for_fee: bonusForFee,
-        _market_id: null,
-        _log_transactions: false,
-      }
-    );
-
-    if (deductError) {
-      failSubmit(deductError.message || "Failed to deduct liquidity from your balance", deductError);
-      toast.error(deductError.message || "Failed to deduct liquidity from your balance");
-      return;
-    }
-
-    const result = typeof deductResult === "string" ? JSON.parse(deductResult) : deductResult;
-    if (!result?.success) {
-      failSubmit(result?.error || "Insufficient balance for market creation", result);
-      toast.error(result?.error || "Insufficient balance for market creation", {
-        action: {
-          label: "Deposit Now",
-          onClick: () => setDepositModalOpen(true),
-        },
-      });
-      return;
-    }
 
     setCompletedSteps(prev => new Set([...prev, 2]));
 
-    // Simulate on-chain contract deployment (reduced from 1200ms)
     await new Promise((r) => setTimeout(r, 400));
     const mockTxHash = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
     const mockContractAddr = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`;
@@ -1153,21 +1108,13 @@ const Create = () => {
     setCompletedSteps(prev => new Set([...prev, 3]));
     setSubmitStep("saving");
 
-    // If similar, flagged, or fee bypass — needs admin review
     const needsReview = isSimilar || isFlagged || (feeBypass && !unlimitedMarkets);
     const marketStatus = needsReview ? "pending" : "active";
 
-    // Image was already validated before balance deduction — extract result
     let imageUrl: string | null = null;
-    if (imageUploadResult.status === "fulfilled") {
-      imageUrl = imageUploadResult.value as string | null;
-    }
-    if (!imageUrl && imagePreview && !imagePreview.startsWith("blob:")) {
-      imageUrl = imagePreview;
-    }
+    if (imageUploadResult.status === "fulfilled") imageUrl = imageUploadResult.value as string | null;
+    if (!imageUrl && imagePreview && !imagePreview.startsWith("blob:")) imageUrl = imagePreview;
 
-    // Save to database
-    // For sports markets, use exact kickoff timestamp as the betting cutoff. Otherwise build from endDate + autoResolveTime.
     const autoResolveDeadline = autoResolve
       ? (category === "Sports" && sportKickoffISO
           ? sportKickoffISO
@@ -1175,204 +1122,66 @@ const Create = () => {
       : null;
 
     const marketData = {
-        creator_wallet: user.id,
-        creator_name: displayName,
-        title: title.trim(),
-        description: description.trim(),
-        details: details.trim() || null,
-        video_url: videoUrl.trim() || null,
-        image_url: imageUrl,
-        category,
-        end_date: endDate,
-        resolution_source: resolutionSource.trim(),
-        initial_liquidity: liquidityAmount,
-        liquidity: liquidityAmount,
-        tx_hash: mockTxHash,
-        contract_address: mockContractAddr,
-        market_type: marketType,
-        status: marketStatus,
-        auto_resolve: autoResolve,
-        auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
-        auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) ? parseFloat(autoResolveTargetPrice) : null,
-        auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
-        auto_resolve_deadline: autoResolveDeadline,
-        sport_type: autoResolve && category === "Sports" ? sportType : null,
-        sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
-        sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
-        sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
-        twitter_resource_id: autoResolve && category === "Twitter/X" ? twitterResourceId || null : null,
-        twitter_metric_type: autoResolve && category === "Twitter/X" ? twitterMetricType : null,
-      };
+      creator_wallet: user.id,
+      creator_name: displayName,
+      title: title.trim(),
+      description: description.trim(),
+      details: details.trim() || null,
+      video_url: videoUrl.trim() || null,
+      image_url: imageUrl,
+      category,
+      end_date: endDate,
+      resolution_source: resolutionSource.trim(),
+      initial_liquidity: liquidityAmount,
+      liquidity: liquidityAmount,
+      tx_hash: mockTxHash,
+      contract_address: mockContractAddr,
+      market_type: marketType,
+      status: marketStatus,
+      auto_resolve: autoResolve,
+      auto_resolve_asset: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveAsset : null,
+      auto_resolve_target_price: autoResolve && isPriceAutoResolveCategory(category) ? parseFloat(autoResolveTargetPrice) : null,
+      auto_resolve_operator: autoResolve && isPriceAutoResolveCategory(category) ? autoResolveOperator : null,
+      auto_resolve_deadline: autoResolveDeadline,
+      sport_type: autoResolve && category === "Sports" ? sportType : null,
+      sport_match_id: autoResolve && category === "Sports" ? sportMatchId : null,
+      sport_predicted_outcome: autoResolve && category === "Sports" ? sportPredictedOutcome : null,
+      sport_league: autoResolve && category === "Sports" ? sportLeague || null : null,
+      twitter_resource_id: autoResolve && category === "Twitter/X" ? twitterResourceId || null : null,
+      twitter_metric_type: autoResolve && category === "Twitter/X" ? twitterMetricType : null,
+    };
 
-    let data: { id: string } | null = null;
-    let error: any = null;
+    const { data: finalizeData, error: finalizeError } = await supabase.rpc("finalize_market_creation_atomic" as any, {
+      _market_data: marketData,
+      _options: marketType !== "binary" ? options.filter(o => o.trim()) : [],
+      _draft_id: draftId,
+      _liquidity_amount: liquidityAmount,
+      _fee_amount: feeAmount,
+      _market_creation_fee_amount: creationFeeForDeduction,
+      _auto_resolve_fee_amount: autoResolve && autoResolveFee > 0 ? autoResolveFee : 0,
+      _boost_amount: boostCost,
+      _boost_tier: creationBoost ? creationBoostTier : null,
+      _boost_hours: creationBoost ? BOOST_TIER_HOURS[creationBoostTier] : 0,
+      _broadcast_amount: broadcastCost,
+      _escrow_id: escrowId,
+    });
 
-    if (draftId) {
-      // Use secure RPC to publish draft (RLS blocks status changes via direct update)
-      const { data: publishResult, error: publishError } = await supabase.rpc(
-        "publish_draft_market" as any,
-        {
-          _market_id: draftId,
-          _market_data: marketData,
-        }
-      );
-      if (publishError) {
-        error = publishError;
-      } else {
-        const parsed = typeof publishResult === "string" ? JSON.parse(publishResult) : publishResult;
-        if (!parsed?.success) {
-          error = { message: parsed?.error || "Failed to publish draft" };
-        } else {
-          data = { id: draftId };
-        }
-      }
-    } else {
-      const result = await supabase
-        .from("markets")
-        .insert(marketData as any)
-        .select("id")
-        .maybeSingle();
-      data = result.data;
-      error = result.error;
-    }
-
-    if (error) {
-      console.error("Failed to save market:", error);
-      // Refund via secure RPC (rollback the deduction)
-      // When escrowId exists, the creation fee was already held in escrow — don't include it in rollback
-      const rollbackFeeAmount = ((feeBypass && !escrowId && !unlimitedMarkets) ? marketCreationFee : 0) + (autoResolve && autoResolveFee > 0 ? autoResolveFee : 0) + boostCost + broadcastCost;
-      const bonusForFeeRollback = Math.min(Number(bal.bonus_balance || 0), rollbackFeeAmount);
-      await supabase.rpc("deduct_market_liquidity" as any, {
-        _user_id: user.id,
-        _liquidity_amount: -liquidityAmount,
-        _fee_amount: -rollbackFeeAmount,
-        _bonus_for_fee: -bonusForFeeRollback,
-        _market_id: null,
-        _log_transactions: false,
-      });
-      // Release escrow as refunded on technical failure
-      if (escrowId) {
-        await supabase.rpc("release_creation_fee_escrow" as any, {
-          _escrow_id: escrowId,
-          _action: "refunded",
-        });
-        setEscrowId(null);
-      }
-      const errorMsg = error?.message || "Unknown error";
-      failSubmit(`Failed to save market: ${errorMsg}`, error);
-      toast.error(`Failed to save market: ${errorMsg}. Your balance has been refunded.`);
+    const finalizeResult = typeof finalizeData === "string" ? JSON.parse(finalizeData) : finalizeData;
+    if (finalizeError || !finalizeResult?.success) {
+      const errorMsg = finalizeResult?.error || finalizeError?.message || "Failed to save market";
+      failSubmit(errorMsg, finalizeError || finalizeResult);
+      toast.error(errorMsg, errorMsg.toLowerCase().includes("insufficient") ? {
+        action: { label: "Deposit Now", onClick: () => setDepositModalOpen(true) },
+      } : undefined);
       return;
     }
 
-    // Record the liquidity transaction
-    await supabase.from("transactions").insert({
-      user_id: user.id,
-      type: "buy",
-      amount: liquidityAmount,
-      market_id: data?.id,
-      status: "confirmed",
-      side: "initial_liquidity",
-    });
-
-    // Record the creation fee transaction if fee bypass.
-    // NOTE: When an escrow exists, `release_creation_fee_escrow` writes the
-    // `market_creation_fee` row atomically inside the database, so we only
-    // need to write it here for the non-escrow bypass path.
-    if (feeBypass && !unlimitedMarkets && !escrowId) {
-      await supabase.from("transactions").insert({
-        user_id: user.id,
-        type: "buy",
-        amount: marketCreationFee,
-        market_id: data?.id,
-        status: "confirmed",
-        side: "market_creation_fee",
-      });
-      // No escrow used (exceeded free limit path) — credit platform pool now
-      await supabase.rpc("adjust_platform_pool" as any, { _delta: marketCreationFee });
-    }
-
-    // Record auto-resolve fee transaction
-    if (autoResolve && autoResolveFee > 0) {
-      await supabase.from("transactions").insert({
-        user_id: user.id,
-        type: "buy",
-        amount: autoResolveFee,
-        market_id: data?.id,
-        status: "confirmed",
-        side: "auto_resolve_fee",
-      });
-    }
-
-    // Save options for multi/range markets
-    if (marketType !== "binary" && data?.id) {
-      const validOptions = options.filter(o => o.trim());
-      const equalPrice = Math.round((1 / validOptions.length) * 100) / 100;
-      const { data: savedOpts, error: optError } = await supabase
-        .from("market_options")
-        .insert(
-          validOptions.map((label, i) => ({
-            market_id: data.id,
-            label: label.trim(),
-            price: equalPrice,
-            sort_order: i,
-          }))
-        )
-        .select("id, label, sort_order");
-      if (optError) {
-        console.error("Failed to save options:", optError);
-      }
-      if (savedOpts) {
-        setNewMarketOptions(savedOpts);
-      }
-    }
-
-    // Create boost record if selected (paid from balance, activate immediately)
-    if (creationBoost && data?.id) {
-      const boostEnds = new Date();
-      boostEnds.setHours(boostEnds.getHours() + BOOST_TIER_HOURS[creationBoostTier]);
-      await supabase.from("market_boosts").insert({
-        market_id: data.id,
-        tier: creationBoostTier,
-        amount: boostTierPrices[creationBoostTier],
-        payer_wallet: user.id,
-        ends_at: boostEnds.toISOString(),
-        status: "active",
-      });
-      await supabase.from("transactions").insert({
-        user_id: user.id,
-        type: "buy",
-        amount: boostTierPrices[creationBoostTier],
-        market_id: data.id,
-        status: "confirmed",
-        side: "boost_fee",
-      });
-    }
-
-    // Create broadcast record if selected (paid from balance, send immediately)
-    if (creationBroadcast && data?.id) {
-      const { data: broadcastRec } = await supabase.from("market_broadcasts").insert({
-        market_id: data.id,
-        user_id: user.id,
-        tier: "alert",
-        amount: broadcastPriceVal,
-        status: "pending",
-      }).select("id").single();
-
-      await supabase.from("transactions").insert({
-        user_id: user.id,
-        type: "buy",
-        amount: broadcastPriceVal,
-        market_id: data.id,
-        status: "confirmed",
-        side: "broadcast_fee",
-      });
-
-      // Trigger broadcast notification
-      if (broadcastRec?.id) {
-        supabase.functions.invoke("send-market-broadcast", {
-          body: { broadcast_id: broadcastRec.id, market_id: data.id },
-        }).catch((err) => console.error("Failed to trigger broadcast:", err));
-      }
+    const data: { id: string } = { id: finalizeResult.id };
+    if (Array.isArray(finalizeResult.options)) setNewMarketOptions(finalizeResult.options);
+    if (finalizeResult.broadcast_id) {
+      supabase.functions.invoke("send-market-broadcast", {
+        body: { broadcast_id: finalizeResult.broadcast_id, market_id: data.id },
+      }).catch((err) => console.error("Failed to trigger broadcast:", err));
     }
 
     setCompletedSteps(prev => new Set([...prev, 4]));
