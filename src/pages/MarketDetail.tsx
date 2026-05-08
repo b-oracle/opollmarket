@@ -481,10 +481,20 @@ const MarketDetail = () => {
     if (REDIRECTED_FROM.has(market.id)) return;
 
     let cancelled = false;
+    let iv: ReturnType<typeof setInterval> | null = null;
+    const stopPolling = () => {
+      if (iv !== null) {
+        clearInterval(iv);
+        iv = null;
+      }
+    };
     const poll = async () => {
       // Reentrancy guard — if a previous poll already kicked off the
       // prefetch+navigate sequence, do nothing on subsequent ticks.
-      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) return;
+      if (cancelled || redirectingRef.current || REDIRECTED_FROM.has(market.id)) {
+        stopPolling();
+        return;
+      }
       const { data } = await supabase
         .from("markets")
         .select("id, auto_resolve_deadline, auto_resolve_asset, yes_price, no_price")
@@ -497,9 +507,15 @@ const MarketDetail = () => {
         .maybeSingle();
       if (cancelled || !data?.id) return;
       // Re-check after the await — another tick may have won the race.
-      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) return;
+      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) {
+        stopPolling();
+        return;
+      }
       redirectingRef.current = true;
       REDIRECTED_FROM.add(market.id);
+      // Stop the interval immediately so no further DB polls fire while
+      // we run the (potentially long) prefetch + navigation sequence.
+      stopPolling();
 
       const nextId = data.id as string;
       const nextAsset = (data.auto_resolve_asset as string | null) ?? market.autoResolveAsset!;
@@ -627,10 +643,13 @@ const MarketDetail = () => {
       navigate(`/market/${nextId}`, { replace: true });
     };
     poll();
-    const iv = setInterval(poll, 4000);
+    iv = setInterval(poll, 4000);
+    // Cleanup: stop polling on unmount, on dep changes, or when redirecting
+    // begins (poll() also calls stopPolling() for the redirect case, but this
+    // is the authoritative teardown for component lifecycle).
     return () => {
       cancelled = true;
-      clearInterval(iv);
+      stopPolling();
     };
   }, [market?.id, market?.isCryptoRound, market?.status, market?.autoResolveAsset, navigate, queryClient]);
 
