@@ -5,6 +5,9 @@ const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const OP_LABELS: Record<string, string> = {
   above: ">", below: "<", at_or_above: "≥", at_or_below: "≤",
@@ -14,9 +17,12 @@ interface LivePriceBadgeProps {
   asset: string;
   targetPrice?: number;
   operator?: string;
+  /** When provided, target-progress toasts only fire for users who currently
+   *  hold an open position (shares > 0) in this market. */
+  marketId?: string;
 }
 
-const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ asset, targetPrice, operator }, ref) => {
+const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ asset, targetPrice, operator, marketId }, ref) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
