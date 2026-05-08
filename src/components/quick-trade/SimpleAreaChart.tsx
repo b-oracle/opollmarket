@@ -261,7 +261,7 @@ function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, active
 
     rafRef.current = requestAnimationFrame(draw);
     return () => { running = false; cancelAnimationFrame(rafRef.current); };
-  }, [priceHistory, entryPrice, assetClass, color, isBullColor, fullscreen]);
+  }, [priceHistory, entryPrice, assetClass, color, isBullColor, fullscreen, windowStartMs, windowEndMs]);
 
   if (n < 2) return null;
 
