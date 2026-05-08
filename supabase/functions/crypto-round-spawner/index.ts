@@ -189,12 +189,10 @@ Deno.serve(async (req) => {
     }
     const creatorId = saRole.user_id as string;
 
-    const { data: creatorProfile } = await admin
-      .from("profiles")
-      .select("display_name")
-      .eq("id", creatorId)
-      .maybeSingle();
-    const creatorName = creatorProfile?.display_name ?? "OPOLL";
+    // Crypto Up/Down rounds are a system preset feature, not a user-created market.
+    // We attribute the row to the super_admin user for RLS/payout integrity, but
+    // surface "System" as the creator name everywhere it renders.
+    const creatorName = "System";
 
     // 2. Load pairs (filter to the targeted one if specified)
     let cfgQuery = admin
