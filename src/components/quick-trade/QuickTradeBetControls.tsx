@@ -28,11 +28,14 @@ interface QuickTradeBetControlsProps {
   asset?: string;
   currentPrice?: number | null;
   timeframeLabel?: string;
+  poolUp?: number;
+  poolDown?: number;
 }
 
 export default function QuickTradeBetControls({
   userBet, betAmount, setBetAmount, placing, isLocked, timeLeft,
   qtMinBet, qtMaxBet, onPlaceBet, amountPresets, asset, currentPrice, timeframeLabel,
+  poolUp, poolDown,
 }: QuickTradeBetControlsProps) {
   const assetClass = asset ? getAssetClass(asset) : "crypto";
   const marketOpen = isMarketOpen(assetClass);
