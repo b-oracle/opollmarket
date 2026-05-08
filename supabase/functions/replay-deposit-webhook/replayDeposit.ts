@@ -381,6 +381,22 @@ async function replayPayaza(
   }
 
   if (lastErr) {
+    // Auth/permission errors mean the Payaza secret is missing, expired, or
+    // the caller IP isn't whitelisted. Surface this as a soft failure (200)
+    // so the admin UI can show a clear message instead of blank-screening
+    // on a 502.
+    if (/\((401|403)\)/.test(lastErr)) {
+      console.error("Payaza auth failure during replay:", lastErr);
+      return {
+        status: 200,
+        body: {
+          success: false,
+          code: "PAYAZA_AUTH",
+          error: "Payaza rejected the lookup (401/403). Verify PAYAZA_SECRET_KEY and that the function IP is whitelisted in your Payaza dashboard.",
+          details: lastErr,
+        },
+      };
+    }
     return { status: 502, body: { error: lastErr } };
   }
   let np: Record<string, unknown>;
