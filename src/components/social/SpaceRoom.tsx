@@ -120,6 +120,24 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [streamInputValue, setStreamInputValue] = useState("");
   const [streamCollapsed, setStreamCollapsed] = useState(false);
 
+  // Share sheet state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [hostDisplayName, setHostDisplayName] = useState<string>("Host");
+  useEffect(() => {
+    if (!hostId) return;
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", hostId)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (cancelled || !data) return;
+        setHostDisplayName(data.display_name || data.username || "Host");
+      });
+    return () => { cancelled = true; };
+  }, [hostId]);
+
   const handleSaveTitle = async () => {
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === displayTitle) { setEditingTitle(false); return; }
