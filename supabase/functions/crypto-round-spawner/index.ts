@@ -103,6 +103,23 @@ Deno.serve(async (req) => {
     const targetDur = body.duration_minutes;
     const force = body.force === true;
 
+    // ── Global kill-switch (feature_toggles.crypto_auto_spawn) ──
+    // When OFF, cron-driven spawns are blocked but admins can still force a
+    // round via the Spawn Now buttons (force=true).
+    if (source === "cron" && !force) {
+      const { data: toggle } = await admin
+        .from("feature_toggles")
+        .select("enabled")
+        .eq("feature_key", "crypto_auto_spawn")
+        .maybeSingle();
+      if (toggle && toggle.enabled === false) {
+        return new Response(
+          JSON.stringify({ message: "crypto_auto_spawn disabled", spawned: 0 }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     // Resolve actor (admin who triggered) when JWT supplied
     let actorId: string | null = body.actor_id ?? null;
     if (!actorId) {
