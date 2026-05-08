@@ -34,6 +34,7 @@ import PriceToBeatHeader from "@/components/quick-trade/PriceToBeatHeader";
 
 import { useChartEngine } from "@/hooks/useChartEngine";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
+import useAnalytics from "@/hooks/useAnalytics";
 
 // Lazy load heavy / non-critical components
 const QuickTradeHistory = lazy(() => import("@/components/quick-trade/QuickTradeHistory"));
