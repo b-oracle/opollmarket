@@ -214,7 +214,9 @@ Deno.serve(async (req) => {
     for (const cfg of configs) {
       const asset = cfg.asset as string;
       const dur = cfg.duration_minutes as number;
-      const liquidity = Number(cfg.initial_liquidity_usd ?? 500);
+      // Crypto rounds run as parimutuel: no seeded liquidity, losers fund winners.
+      // initial_liquidity_usd in config is retained for backwards compat but ignored.
+      const liquidity = 0;
 
       // Latest round for this pair
       const { data: latest } = await admin
