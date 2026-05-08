@@ -40,13 +40,26 @@ Deno.serve(async (req) => {
     if (!isSuper) return json({ error: "Forbidden: super_admin required" }, 403);
 
     const body = await req.json().catch(() => ({}));
-    const { transaction_id, payment_id } = body as { transaction_id?: string; payment_id?: string };
+    const {
+      transaction_id, payment_id,
+      manual_override, manual_reference, manual_note,
+    } = body as {
+      transaction_id?: string; payment_id?: string;
+      manual_override?: boolean; manual_reference?: string; manual_note?: string;
+    };
 
     const result = await replayDeposit(
       admin,
       fetch,
       Deno.env.get("NOWPAYMENTS_API_KEY"),
-      { actorId: user.id, transactionId: transaction_id, paymentId: payment_id },
+      {
+        actorId: user.id,
+        transactionId: transaction_id,
+        paymentId: payment_id,
+        manualOverride: manual_override === true,
+        manualReference: manual_reference,
+        manualNote: manual_note,
+      },
       {
         payazaSecretKey: Deno.env.get("PAYAZA_SECRET_KEY"),
         payazaTenantId: Deno.env.get("PAYAZA_TENANT_ID"),

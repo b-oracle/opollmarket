@@ -2171,6 +2171,39 @@ export type Database = {
           },
         ]
       }
+      payaza_manual_credit_refs: {
+        Row: {
+          amount: number
+          created_at: string
+          credited_by: string
+          id: string
+          note: string | null
+          reference: string
+          transaction_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          credited_by: string
+          id?: string
+          note?: string | null
+          reference: string
+          transaction_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          credited_by?: string
+          id?: string
+          note?: string | null
+          reference?: string
+          transaction_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pending_commissions: {
         Row: {
           amount: number
