@@ -426,11 +426,11 @@ Deno.serve(async (req) => {
       const losers = losingPositions || [];
       const isOneSided = losers.length === 0 || winners.length === 0;
 
-      // ── Payout policy (mirrors quick_trade one-sided semantics) ──
-      // 1) Everyone WINS (no losers) → full capital refund, no fee
-      // 2) Everyone LOSES (no winners) → refund capital + small bonus (qt_one_sided_bonus)
-      // 3) Mixed → losers pay winners ($1/share)
-      const ONE_SIDED_BONUS_RATE = 0.005; // 0.5%, parity with quick trade
+      // ── Payout policy ──
+      // 1) Everyone WINS (no losers)  → full capital refund, no fee, no bonus
+      // 2) Everyone LOSES (no winners) → full capital refund, no fee, no bonus
+      // 3) Mixed crypto round → parimutuel (losers fund winners, 5% platform fee)
+      // 4) Mixed (other auto-resolve markets) → losers pay winners ($1/share)
 
       if (isOneSided && losers.length === 0 && winners.length > 0) {
         // Everyone wins → full refund
