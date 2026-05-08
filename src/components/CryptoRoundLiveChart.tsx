@@ -93,6 +93,15 @@ const CryptoRoundLiveChart = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
 
+  type RangeKey = "1m" | "5m" | "15m" | "all";
+  const [range, setRange] = useState<RangeKey>("all");
+  const RANGE_MS: Record<RangeKey, number | null> = {
+    "1m": 60_000,
+    "5m": 5 * 60_000,
+    "15m": 15 * 60_000,
+    all: null,
+  };
+
   // Re-hydrate when the round (or asset) changes mid-mount.
   useEffect(() => {
     if (!cacheKey) return;
@@ -226,10 +235,24 @@ const CryptoRoundLiveChart = ({
   const padRight = 56;
   const chartW = W - padRight;
 
-  const tMin = startMs;
-  const tMax = endMs;
+  const tMin = useMemo(() => {
+    const span = RANGE_MS[range];
+    if (!span) return startMs;
+    const right = ended ? endMs : Math.min(endMs, now);
+    return Math.max(startMs, right - span);
+  }, [range, startMs, endMs, ended, now]);
+  const tMax = useMemo(() => {
+    const span = RANGE_MS[range];
+    if (!span) return endMs;
+    return Math.min(endMs, tMin + span);
+  }, [range, endMs, tMin]);
 
-  const prices = points.map((p) => p.p);
+  const visiblePoints = useMemo(
+    () => (range === "all" ? points : points.filter((pt) => pt.t >= tMin)),
+    [points, range, tMin],
+  );
+
+  const prices = visiblePoints.map((p) => p.p);
   if (targetPrice != null && Number.isFinite(targetPrice)) prices.push(targetPrice);
   if (last != null) prices.push(last);
   let lo = prices.length ? Math.min(...prices) : 0;
@@ -263,8 +286,8 @@ const CryptoRoundLiveChart = ({
   // visually smoother than straight-line segments — especially on mobile where
   // jagged sub-pixel polylines look noisy.
   const linePath = useMemo(() => {
-    if (points.length === 0) return "";
-    const pts = points.map((p) => ({ x: toX(p.t), y: toY(p.p) }));
+    if (visiblePoints.length === 0) return "";
+    const pts = visiblePoints.map((p) => ({ x: toX(p.t), y: toY(p.p) }));
     if (pts.length === 1) return `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
     let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
     for (let i = 1; i < pts.length - 1; i++) {
@@ -278,10 +301,10 @@ const CryptoRoundLiveChart = ({
     d += ` T${lastPt.x.toFixed(2)},${lastPt.y.toFixed(2)}`;
     return d;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [points, width, lo, hi, tMin, tMax, H]);
+  }, [visiblePoints, width, lo, hi, tMin, tMax, H]);
 
-  const areaPath = points.length
-    ? `${linePath} L${toX(points[points.length - 1].t).toFixed(2)},${H - padBot} L${toX(points[0].t).toFixed(2)},${H - padBot} Z`
+  const areaPath = visiblePoints.length
+    ? `${linePath} L${toX(visiblePoints[visiblePoints.length - 1].t).toFixed(2)},${H - padBot} L${toX(visiblePoints[0].t).toFixed(2)},${H - padBot} Z`
     : "";
 
   // Y-axis ticks (4)
@@ -289,6 +312,8 @@ const CryptoRoundLiveChart = ({
 
   const lastY = last != null ? toY(last) : H / 2;
   const lastX = points.length ? toX(points[points.length - 1].t) : chartW;
+  const showMarker = last != null && points.length > 0 &&
+    (range === "all" || (points[points.length - 1].t >= tMin && points[points.length - 1].t <= tMax));
 
   const targetY = targetPrice != null && Number.isFinite(targetPrice) ? toY(targetPrice) : null;
 
@@ -328,11 +353,29 @@ const CryptoRoundLiveChart = ({
             </span>
           )}
         </div>
-        {!ended && !notStarted && (
-          <span className="text-[11px] font-mono tabular-nums text-muted-foreground" title="Time remaining in round">
-            {fmtClock(remaining)}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {!ended && !notStarted && (
+            <span className="text-[11px] font-mono tabular-nums text-muted-foreground" title="Time remaining in round">
+              {fmtClock(remaining)}
+            </span>
+          )}
+          <div className="inline-flex items-center gap-0.5 rounded-md border border-border/60 bg-background/60 p-0.5">
+            {(["1m", "5m", "15m", "all"] as RangeKey[]).map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setRange(k)}
+                className={`px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-sm transition-colors ${
+                  range === k
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {k === "all" ? "All" : k}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block">
@@ -361,7 +404,7 @@ const CryptoRoundLiveChart = ({
         )}
 
         {/* Area + line */}
-        {points.length > 1 && (
+        {visiblePoints.length > 1 && (
           <>
             <path d={areaPath} fill={fill} />
             <path d={linePath} fill="none" stroke={stroke} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
@@ -369,30 +412,30 @@ const CryptoRoundLiveChart = ({
         )}
 
         {/* Current price marker + dotted to right edge */}
-        {last != null && points.length > 0 && (
+        {showMarker && (
           <>
             <line x1={lastX} x2={chartW} y1={lastY} y2={lastY} stroke={stroke} strokeOpacity={0.5} strokeDasharray="2 2" strokeWidth={0.8} />
             <circle cx={lastX} cy={lastY} r={3} fill={stroke} />
             <rect x={W - padRight + 2} y={lastY - 8} width={padRight - 4} height={16} rx={3} fill={stroke} />
             <text x={W - 4} y={lastY + 3} textAnchor="end" fill="white" style={{ fontSize: 10, fontWeight: 700 }}>
-              {fmtUsd(last)}
+              {fmtUsd(last!)}
             </text>
           </>
         )}
       </svg>
 
-      {/* X-axis labels: exact start / end timestamps */}
+      {/* X-axis labels: visible window start / end */}
       <div
         className="absolute left-0 right-[56px] bottom-0 flex justify-between gap-2 text-[10px] tabular-nums text-muted-foreground px-0.5"
-        title={`Start: ${new Date(startMs).toISOString()}\nEnd: ${new Date(endMs).toISOString()}`}
+        title={`Round start: ${new Date(startMs).toISOString()}\nRound end: ${new Date(endMs).toISOString()}\nVisible: ${new Date(tMin).toISOString()} → ${new Date(tMax).toISOString()}`}
       >
         <span className="truncate">
-          <span className="opacity-60 mr-1">Start</span>
-          {fmtFull(startMs)}{tzShort ? ` ${tzShort}` : ""}
+          <span className="opacity-60 mr-1">{range === "all" ? "Start" : "From"}</span>
+          {fmtFull(tMin)}{tzShort ? ` ${tzShort}` : ""}
         </span>
         <span className="truncate text-right">
-          <span className="opacity-60 mr-1">End</span>
-          {fmtFull(endMs)}{tzShort ? ` ${tzShort}` : ""}
+          <span className="opacity-60 mr-1">{range === "all" ? "End" : "To"}</span>
+          {fmtFull(tMax)}{tzShort ? ` ${tzShort}` : ""}
         </span>
       </div>
     </div>
