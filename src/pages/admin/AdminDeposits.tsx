@@ -532,9 +532,13 @@ const AdminDeposits = () => {
                                 onClick={() => {
                                   if (
                                     confirm(
-                                      `Replay webhook for ${d.display_name}?\n\nAmount: $${Number(d.amount).toFixed(2)}\nStatus: ${d.status}\nPayment ID: ${d.nowpayments_payment_id || "—"}\n\nIf already credited, this is a no-op (no double credit).`,
+                                      `Replay webhook for ${d.display_name}?\n\nAmount: $${Number(d.amount).toFixed(2)}\nStatus: ${d.status}\n\nIf already credited, this is a no-op (no double credit).`,
                                     )
                                   ) {
+                                    pendingReplayRef.current = {
+                                      txId: d.id,
+                                      expectedRef: d.nowpayments_payment_id || "",
+                                    };
                                     replayMutation.mutate({ txId: d.id });
                                   }
                                 }}
