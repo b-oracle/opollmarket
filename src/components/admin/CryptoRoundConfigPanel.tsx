@@ -312,7 +312,7 @@ const CryptoRoundConfigPanel = () => {
             <History className="w-4 h-4 text-primary" /> Spawn Audit Log
           </h3>
           <button
-            onClick={loadLogs}
+            onClick={() => loadLogs(logsPage)}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Refresh
