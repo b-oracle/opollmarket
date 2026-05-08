@@ -312,7 +312,7 @@ const AdminDeposits = () => {
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Provider</th>
                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Payment ID</th>
                   <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
-                  {canEdit && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>}
+                  {canHandleDeposits && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Action</th>}
                 </tr>
               </thead>
               <tbody>
