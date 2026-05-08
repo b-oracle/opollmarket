@@ -135,7 +135,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     };
   }, []);
 
-  const handlePlayPause = (e: React.MouseEvent) => {
+  const handlePlayPause = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!space.recording_url) {
       toast.error("Recording URL not available");
@@ -143,10 +143,16 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     }
 
     if (!audioRef.current) {
+      const { getPlayableRecordingUrl } = await import("@/lib/spaceRecordingUrl");
+      const playable = await getPlayableRecordingUrl(space.recording_url);
+      if (!playable) {
+        toast.error("Recording is unavailable");
+        return;
+      }
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
       audio.preload = "metadata";
-      audio.src = space.recording_url;
+      audio.src = playable;
       audioRef.current = audio;
       audio.addEventListener("timeupdate", () => {
         if (audio.duration && isFinite(audio.duration)) {
