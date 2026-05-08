@@ -364,7 +364,7 @@ const AdminDeposits = () => {
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {format(new Date(d.created_at), "MMM d, HH:mm")}
                       </td>
-                      {canEdit && (
+                      {canHandleDeposits && (
                         <td className="px-4 py-3 text-right">
                           {canConfirm && (
                             <div className="flex items-center justify-end gap-1.5">
