@@ -490,6 +490,46 @@ Deno.serve(async (req) => {
             });
           }
         }
+      } else if ((market as any).is_crypto_round) {
+        // Crypto rounds: parimutuel — losers' staked capital funds winners.
+        // Platform takes 5% of the losers' pool; remaining 95% is split among
+        // winners pro-rata to their staked capital. Winners also get their own
+        // capital back. Losers get nothing.
+        const CRYPTO_PLATFORM_FEE_RATE = 0.05;
+        const losersPool = losers.reduce(
+          (sum: number, p: any) => sum + Number(p.shares) * Number(p.avg_price),
+          0,
+        );
+        const winnersStake = winners.reduce(
+          (sum: number, p: any) => sum + Number(p.shares) * Number(p.avg_price),
+          0,
+        );
+        const distributable = losersPool * (1 - CRYPTO_PLATFORM_FEE_RATE);
+
+        for (const pos of winners) {
+          const stake = Number(pos.shares) * Number(pos.avg_price);
+          if (stake <= 0) continue;
+          const proRataWinnings = winnersStake > 0
+            ? distributable * (stake / winnersStake)
+            : 0;
+          const payout = stake + proRataWinnings;
+          if (payout <= 0) continue;
+          await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: payout, _bonus_delta: 0, _insurance_delta: 0 });
+          await adminClient.from("transactions").insert({
+            user_id: pos.user_id,
+            market_id: market.id,
+            option_id: pos.option_id,
+            type: "payout",
+            amount: payout,
+            side: pos.side,
+            shares: pos.shares,
+            price: stake > 0 ? payout / Number(pos.shares) : 0,
+            status: "confirmed",
+          });
+        }
+        console.log(
+          `Crypto round ${market.id}: parimutuel payout — losersPool=$${losersPool.toFixed(2)}, fee=$${(losersPool * CRYPTO_PLATFORM_FEE_RATE).toFixed(2)}, distributed=$${distributable.toFixed(2)} to ${winners.length} winners`,
+        );
       } else {
         // Mixed → losers pay winners (full $1/share to winners)
         for (const pos of winners) {
