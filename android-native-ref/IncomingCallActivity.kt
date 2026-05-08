@@ -72,15 +72,28 @@ class IncomingCallActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_accept).setOnClickListener {
             stopRinging()
             cancelCallNotification()
-            // Delegate to the receiver — same path as the notification's
-            // Accept button. The receiver launches MainActivity with the
-            // accept deep link from a broadcast context, which the system
-            // permits even when this Activity is on the lockscreen.
-            sendBroadcast(Intent(this, CallActionReceiver::class.java).apply {
-                action = CallActionReceiver.ACTION_ACCEPT
+            // Launch MainActivity DIRECTLY from this foreground Activity.
+            // This Activity is on-screen (the user just tapped a button on it),
+            // so it has a foreground activation token and can launch another
+            // Activity without hitting Android 12+ Background-Activity-Launch
+            // restrictions. Going through the BroadcastReceiver loses that
+            // token and the launch is silently dropped on many OEMs — which
+            // is why "nothing happens" until the user opens the app manually.
+            // WhatsApp uses the same direct path.
+            val deepLink = Uri.parse(
+                "opoll://call/accept?call_id=$callId&conversation_id=$conversationId"
+            )
+            val launch = Intent(this, MainActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = deepLink
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
                 putExtra("call_id", callId)
                 putExtra("conversation_id", conversationId)
-            })
+                putExtra("auto_accept", true)
+            }
+            startActivity(launch)
             finish()
         }
 
