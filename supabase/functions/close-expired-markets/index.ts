@@ -130,20 +130,24 @@ Deno.serve(async (req) => {
       );
       const participantCount = new Set((posStats ?? []).map((p: any) => p.user_id)).size;
 
-      await sendNotificationEmail({
-        admin: supabase,
-        userId: market.creator_wallet,
-        templateName: "market-expired-creator",
-        prefKey: "email_market_expired_creator",
-        idempotencyKey: `market-expired-${market.id}`,
-        templateData: {
-          marketTitle: market.title,
-          marketId: market.id,
-          endedAt: new Date().toISOString(),
-          totalVolume: Math.round(totalVolume * 100) / 100,
-          participantCount,
-        },
-      });
+      // Only email creator for MANUAL resolve markets — auto-resolve & crypto rounds resolve themselves
+      const isAutoResolved = (market as any).auto_resolve === true || (market as any).is_crypto_round === true;
+      if (!isAutoResolved) {
+        await sendNotificationEmail({
+          admin: supabase,
+          userId: market.creator_wallet,
+          templateName: "market-expired-creator",
+          prefKey: "email_market_expired_creator",
+          idempotencyKey: `market-expired-${market.id}`,
+          templateData: {
+            marketTitle: market.title,
+            marketId: market.id,
+            endedAt: new Date().toISOString(),
+            totalVolume: Math.round(totalVolume * 100) / 100,
+            participantCount,
+          },
+        });
+      }
 
       // Notify all participants
       const { data: participants } = await supabase
