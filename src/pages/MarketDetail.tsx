@@ -486,7 +486,12 @@ const MarketDetail = () => {
 
   const isCreator = !!(user && market && market.creatorAddress === user.id);
   const needsFirstPrediction = isCreator && market && market.participants === 0 && !market.isCryptoRound;
-  const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(market.endDate).getTime() < Date.now()));
+  // Crypto Up/Down rounds store a date-only end_date for broad market filtering,
+  // but their real lifecycle deadline is the exact auto_resolve_deadline.
+  const effectiveEndDate = market?.isCryptoRound && market.autoResolveDeadline
+    ? market.autoResolveDeadline
+    : market?.endDate;
+  const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || (effectiveEndDate && new Date(effectiveEndDate).getTime() < Date.now())));
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
