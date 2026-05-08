@@ -89,6 +89,7 @@ const AdminApiKeys = () => {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [owners, setOwners] = useState<Map<string, OwnerProfile>>(new Map());
   const [requestStats, setRequestStats] = useState<Map<string, RequestStats>>(new Map());
+  const [keyLogs, setKeyLogs] = useState<Map<string, { endpoint: string; created_at: string }[]>>(new Map());
   const [webhookStats, setWebhookStats] = useState<Map<string, WebhookStats>>(new Map());
   const [recentWebhooks, setRecentWebhooks] = useState<WebhookEvent[]>([]);
   const [loading, setLoading] = useState(true);
