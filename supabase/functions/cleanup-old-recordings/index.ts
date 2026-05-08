@@ -36,16 +36,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Extract storage paths from URLs
+    // Extract storage paths — `recording_url` may be a bare path (new format)
+    // or a public/signed URL (legacy format).
     const storagePaths = expired
       .map((s: any) => {
-        try {
-          const url = new URL(s.recording_url);
-          const match = url.pathname.match(/\/space-recordings\/(.+)$/);
-          return match ? match[1] : null;
-        } catch {
-          return null;
-        }
+        const v: string = s.recording_url || "";
+        if (!v) return null;
+        const marker = "/space-recordings/";
+        const idx = v.indexOf(marker);
+        if (idx >= 0) return v.slice(idx + marker.length).split("?")[0];
+        return v.replace(/^\/+/, "").split("?")[0];
       })
       .filter(Boolean) as string[];
 

@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect, type ReactNode } from "react";
+import { getPlayableRecordingUrl } from "@/lib/spaceRecordingUrl";
+import { toast } from "sonner";
 
 export interface ReplaySpace {
   id: string;
@@ -27,7 +29,7 @@ interface SpaceReplayState {
 }
 
 interface SpaceReplayContextValue extends SpaceReplayState {
-  openReplay: (space: ReplaySpace, hostProfile?: ReplayHostProfile | null) => void;
+  openReplay: (space: ReplaySpace, hostProfile?: ReplayHostProfile | null) => Promise<void>;
   closeReplay: () => void;
   minimize: () => void;
   expand: () => void;
@@ -69,7 +71,7 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const openReplay = useCallback((space: ReplaySpace, hostProfile?: ReplayHostProfile | null) => {
+  const openReplay = useCallback(async (space: ReplaySpace, hostProfile?: ReplayHostProfile | null) => {
     // If same space, just expand
     if (audioRef.current && state.space?.id === space.id) {
       setState(prev => ({ ...prev, isExpanded: true }));
@@ -84,10 +86,17 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
 
     if (!space.recording_url) return;
 
+    // Bucket is private — resolve to a fresh signed URL
+    const playable = await getPlayableRecordingUrl(space.recording_url);
+    if (!playable) {
+      toast.error("Recording is unavailable. It may have expired or been removed.");
+      return;
+    }
+
     const audio = new Audio();
     audio.crossOrigin = "anonymous";
     audio.preload = "metadata";
-    audio.src = space.recording_url;
+    audio.src = playable;
     audioRef.current = audio;
 
     const onTime = () => {
@@ -107,10 +116,16 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
     const onEnd = () => {
       setState(prev => ({ ...prev, isPlaying: false, progress: 100 }));
     };
+    const onErr = () => {
+      const code = audio.error?.code;
+      console.error("[useSpaceReplay] playback error", code, audio.error?.message);
+      toast.error(code === 4 ? "Recording format not supported on this browser" : "Failed to load recording");
+    };
 
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
     audio.addEventListener("ended", onEnd);
+    audio.addEventListener("error", onErr);
 
     setState({
       space,
