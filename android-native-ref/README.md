@@ -8,8 +8,8 @@ This folder is a reference — copy files into your Android Studio project at th
 - Data-only FCM push arrives → `CallMessagingService.onMessageReceived` fires even when the app is killed.
 - A high-priority notification with a **full-screen intent** is posted on the `incoming_calls` channel (IMPORTANCE_HIGH, bypass DND, category = CATEGORY_CALL).
 - On locked device, Android shows the `IncomingCallActivity` **over the lockscreen** with ringtone + vibration.
-- User taps **Accept** → activity opens your Capacitor `MainActivity` with a deep link to `/messages/<conversation_id>?call_id=...&auto_accept=1`.
-- User taps **Decline** → a backend call marks the call rejected (optional — you can wire to your cancel endpoint).
+- User taps **Accept** → `IncomingCallActivity` (or the notification's Accept `PendingIntent.getActivity`) launches `MainActivity` **directly** with `opoll://call/accept?call_id=…&conversation_id=…`. The webview foregrounds instantly and `useCallDeepLink` navigates to `/messages/<conversation_id>?call_id=...&auto_accept=1`, where `ChatView`'s auto-accept effect joins the call. ⚠️ Accept must NEVER hop through a `BroadcastReceiver` to launch `MainActivity` — Android 10+ Background-Activity-Launch rules silently drop activity starts from background broadcasts on most OEMs (Samsung/Xiaomi/etc.), which makes the call appear to "do nothing" until the user opens the app manually. Direct `PendingIntent.getActivity` / `startActivity` from the foreground `IncomingCallActivity` carries the foreground activation token and bypasses BAL — same path WhatsApp uses.
+- User taps **Decline** → `CallActionReceiver` is fine (and preferred) because it uses `goAsync()` to keep the decline-HTTP POST alive after the notification dismisses, and it does not need to bring the app to the foreground.
 
 ## Files
 
