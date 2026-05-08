@@ -345,6 +345,44 @@ Deno.serve(async (req) => {
         status: "success", open_price: openPrice,
         message: `Spawned ${asset} ${dur}m round @ $${openPrice}`,
       });
+
+      // ── "Next round started" push (idempotent on previous meta row) ──
+      // Notify users who held a position in the previous round of this pair.
+      if (latest?.market_id) {
+        try {
+          const { data: prevMeta } = await admin
+            .from("crypto_round_meta")
+            .select("notified_spawned_at")
+            .eq("market_id", latest.market_id as string)
+            .maybeSingle();
+          if (prevMeta && !prevMeta.notified_spawned_at) {
+            const { data: positions } = await admin
+              .from("positions")
+              .select("user_id")
+              .eq("market_id", latest.market_id as string)
+              .gt("shares", 0);
+            const uniqueIds = Array.from(new Set((positions ?? []).map((p: any) => p.user_id as string)));
+            const label = `${asset} ${dur >= 1440 ? Math.round(dur/1440)+"d" : dur >= 60 ? Math.round(dur/60)+"h" : dur+"m"}`;
+            await Promise.all(uniqueIds.map((uid) =>
+              admin.functions.invoke("send-push", {
+                body: {
+                  user_id: uid,
+                  title: `🚀 New ${label} round live`,
+                  body: `Open @ $${openPrice.toFixed(2)} — tap to predict UP or DOWN.`,
+                  url: `/market/${market.id}`,
+                },
+              }).catch((e) => console.error("send-push (spawned) failed:", e))
+            ));
+            await admin
+              .from("crypto_round_meta")
+              .update({ notified_spawned_at: new Date().toISOString() })
+              .eq("market_id", latest.market_id as string);
+            console.log(`Spawn ${asset} ${dur}m: sent push to ${uniqueIds.length} prior participants`);
+          }
+        } catch (e) {
+          console.error("Spawned push block failed:", e);
+        }
+      }
     }
 
     return new Response(

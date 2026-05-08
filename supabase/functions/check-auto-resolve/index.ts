@@ -330,6 +330,46 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      // ── "Resolving" push notification (crypto rounds only) ─────────────
+      // Fired once when the deadline passes, before the round is resolved.
+      // Idempotent via crypto_round_meta.notified_resolving_at.
+      if ((market as any).is_crypto_round && now >= deadline) {
+        try {
+          const { data: meta } = await adminClient
+            .from("crypto_round_meta")
+            .select("asset, duration_minutes, notified_resolving_at")
+            .eq("market_id", market.id)
+            .maybeSingle();
+          if (meta && !meta.notified_resolving_at) {
+            const { data: positions } = await adminClient
+              .from("positions")
+              .select("user_id")
+              .eq("market_id", market.id)
+              .gt("shares", 0);
+            const uniqueIds = Array.from(new Set((positions ?? []).map((p: any) => p.user_id as string)));
+            const durLabel = (m: number) => m >= 1440 ? `${Math.round(m / 1440)}d` : m >= 60 ? `${Math.round(m / 60)}h` : `${m}m`;
+            const label = `${meta.asset} ${durLabel(meta.duration_minutes as number)}`;
+            await Promise.all(uniqueIds.map((uid) =>
+              adminClient.functions.invoke("send-push", {
+                body: {
+                  user_id: uid,
+                  title: `⏳ ${label} round resolving`,
+                  body: `Closing price is being verified. Payouts land in a few seconds.`,
+                  url: `/market/${market.id}`,
+                },
+              }).catch((e) => console.error("send-push (resolving) failed:", e))
+            ));
+            await adminClient
+              .from("crypto_round_meta")
+              .update({ notified_resolving_at: new Date().toISOString() })
+              .eq("market_id", market.id);
+            console.log(`Market ${market.id}: sent resolving push to ${uniqueIds.length} users`);
+          }
+        } catch (e) {
+          console.error("Resolving push block failed:", e);
+        }
+      }
+
       let winningSide: string | null = null;
 
       if (currentPrice !== null && conditionMet(currentPrice, targetPrice, operator)) {
