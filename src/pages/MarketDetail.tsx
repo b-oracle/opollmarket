@@ -43,6 +43,11 @@ import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
+// Module-level set of resolved-market ids we have already navigated away from.
+// Survives component re-mounts (e.g. StrictMode) within the same session so we
+// never trigger the spawn-redirect twice for the same round.
+const REDIRECTED_FROM = new Set<string>();
+
 const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; creatorUserId: string }) => {
   const navigate = useNavigate();
   const { data: profile } = useQuery({
@@ -461,13 +466,24 @@ const MarketDetail = () => {
 
   // Auto-redirect to the next round once a crypto Up/Down round is resolved
   // and the spawner cron creates the new market. Polls every 4s.
+  // `redirectingRef` ensures we only fire the prefetch+navigate sequence ONCE
+  // per resolved market, even if React re-renders, StrictMode double-mounts,
+  // or the 4s interval ticks while a previous poll is still in-flight.
+  const redirectingRef = useRef(false);
+  useEffect(() => {
+    redirectingRef.current = false;
+  }, [market?.id]);
   useEffect(() => {
     if (!market?.isCryptoRound) return;
     if (market.status !== "resolved") return;
     if (!market.autoResolveAsset) return;
+    if (REDIRECTED_FROM.has(market.id)) return;
 
     let cancelled = false;
     const poll = async () => {
+      // Reentrancy guard — if a previous poll already kicked off the
+      // prefetch+navigate sequence, do nothing on subsequent ticks.
+      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) return;
       const { data } = await supabase
         .from("markets")
         .select("id, auto_resolve_deadline, auto_resolve_asset, yes_price, no_price")
@@ -479,6 +495,10 @@ const MarketDetail = () => {
         .limit(1)
         .maybeSingle();
       if (cancelled || !data?.id) return;
+      // Re-check after the await — another tick may have won the race.
+      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) return;
+      redirectingRef.current = true;
+      REDIRECTED_FROM.add(market.id);
 
       const nextId = data.id as string;
       const nextAsset = (data.auto_resolve_asset as string | null) ?? market.autoResolveAsset!;
