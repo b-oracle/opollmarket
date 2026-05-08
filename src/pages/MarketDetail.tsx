@@ -489,7 +489,7 @@ const MarketDetail = () => {
       // chart's per-round point cache so it never paints empty.
       try {
         const uid = user?.id;
-        const [, livePrice] = await Promise.all([
+        const results = await Promise.all([
           queryClient.prefetchQuery({
             queryKey: ["market", nextId],
             queryFn: async () => {
@@ -576,6 +576,7 @@ const MarketDetail = () => {
             }, 1200);
           }),
         ]);
+        const livePrice = results[results.length - 1] as number | null;
 
         if (livePrice != null && nextDeadline) {
           primeCryptoRoundCache(nextAsset, nextDeadline, livePrice);
