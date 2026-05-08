@@ -75,7 +75,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   const noPercent = Math.round(market.noPrice * 100);
   const isMulti = market.marketType === "multi" || market.marketType === "range";
   const showBoosted = isBoosted || market.trending;
-  const isEnded = market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(market.endDate).getTime() < Date.now();
+  // For crypto Up/Down rounds prefer the precise deadline (e.g. 15-min mark)
+  // over the date-only end_date column, which would otherwise read end-of-day.
+  const effectiveEnd = market.isCryptoRound && market.autoResolveDeadline
+    ? market.autoResolveDeadline
+    : market.endDate;
+  const isEnded = market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(effectiveEnd).getTime() < Date.now();
 
   // Real hooks for like, bookmark, comments
   const { user } = useAuth();
@@ -436,7 +441,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 </div>
               )}
               <span className="text-[11px] font-mono shrink-0 ml-3 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
-                <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEnd)} · {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
           </div>
@@ -604,7 +609,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
               <CryptoRoundCountdown endsAt={market.autoResolveDeadline} />
             ) : (
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {getTimeRemaining(market.endDate)}
+                <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEnd)}
               </span>
             )}
           </div>
