@@ -1,0 +1,256 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { subscribeToPriceStream, fetchCryptoPrice } from "@/lib/cryptoPriceProvider";
+
+interface Props {
+  asset: string;                 // e.g. "BTC", "ETH", "SOL", "XRP", "BNB"
+  targetPrice?: number | null;   // round open / "price to beat"
+  operator?: string | null;      // "at_or_above" | "below" — determines up/down direction
+  endsAt: string;                // ISO end timestamp (round end)
+  startsAt?: string | null;      // ISO round start (defaults to endsAt - inferred 5m if not given)
+  className?: string;
+  height?: number;
+}
+
+interface Point { t: number; p: number }
+
+const MAX_POINTS = 600;
+
+const fmtUsd = (p: number) => {
+  if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (p >= 1) return `$${p.toFixed(2)}`;
+  return `$${p.toFixed(4)}`;
+};
+
+const fmtClock = (ms: number) => {
+  if (ms <= 0) return "00:00";
+  const total = Math.floor(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+};
+
+/**
+ * Live, real-time line chart for crypto Up/Down rounds (BTC, ETH, SOL, XRP, BNB...).
+ * Streams prices from Binance WebSocket and renders an SVG sparkline with the
+ * round's target ("price to beat") shown as a dashed reference line.
+ */
+const CryptoRoundLiveChart = ({
+  asset,
+  targetPrice,
+  operator,
+  endsAt,
+  startsAt,
+  className,
+  height = 220,
+}: Props) => {
+  const sym = asset?.toUpperCase();
+  const [points, setPoints] = useState<Point[]>([]);
+  const [last, setLast] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(600);
+
+  // Tick clock
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Resize observer for responsive width
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setWidth(Math.max(200, e.contentRect.width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Seed with a one-off REST fetch for an instant first point (in case WS is slow)
+  useEffect(() => {
+    if (!sym) return;
+    let cancelled = false;
+    fetchCryptoPrice(sym).then((p) => {
+      if (cancelled || p == null) return;
+      setPoints((prev) => (prev.length ? prev : [{ t: Date.now(), p }]));
+      setLast((prev) => prev ?? p);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sym]);
+
+  // Subscribe to live stream
+  useEffect(() => {
+    if (!sym) return;
+    const unsub = subscribeToPriceStream(sym, (price) => {
+      const t = Date.now();
+      setLast(price);
+      setPoints((prev) => {
+        const next = prev.length >= MAX_POINTS ? prev.slice(prev.length - MAX_POINTS + 1) : prev.slice();
+        // Avoid duplicates within 250ms
+        const tail = next[next.length - 1];
+        if (tail && t - tail.t < 250) {
+          next[next.length - 1] = { t, p: price };
+          return next;
+        }
+        next.push({ t, p: price });
+        return next;
+      });
+    });
+    return unsub;
+  }, [sym]);
+
+  const endMs = useMemo(() => new Date(endsAt).getTime(), [endsAt]);
+  const startMs = useMemo(() => {
+    if (startsAt) return new Date(startsAt).getTime();
+    // Infer round start as endMs - elapsed-since-first-point or fallback 5m
+    if (points.length > 0) return Math.min(points[0].t, endMs - 5 * 60_000);
+    return endMs - 5 * 60_000;
+  }, [startsAt, endMs, points]);
+
+  const remaining = endMs - now;
+  const ended = remaining <= 0;
+
+  // Build domain/scales
+  const H = height;
+  const W = width;
+  const padTop = 12;
+  const padBot = 26;
+  const padRight = 56;
+  const chartW = W - padRight;
+
+  const tMin = startMs;
+  const tMax = endMs;
+
+  const prices = points.map((p) => p.p);
+  if (targetPrice != null && Number.isFinite(targetPrice)) prices.push(targetPrice);
+  if (last != null) prices.push(last);
+  let lo = prices.length ? Math.min(...prices) : 0;
+  let hi = prices.length ? Math.max(...prices) : 1;
+  if (lo === hi) {
+    const pad = lo * 0.0005 || 0.5;
+    lo -= pad;
+    hi += pad;
+  } else {
+    const pad = (hi - lo) * 0.15;
+    lo -= pad;
+    hi += pad;
+  }
+
+  const toX = (t: number) => {
+    const clamped = Math.max(tMin, Math.min(tMax, t));
+    return ((clamped - tMin) / (tMax - tMin)) * chartW;
+  };
+  const toY = (p: number) => padTop + (H - padTop - padBot) * (1 - (p - lo) / (hi - lo));
+
+  // Direction color: green when current beats target in user's "up" sense
+  const isUp = last != null && targetPrice != null
+    ? (operator === "below" ? last < targetPrice : last >= targetPrice)
+    : (points.length > 1 ? points[points.length - 1].p >= points[0].p : true);
+
+  const stroke = isUp ? "hsl(var(--neon-yes))" : "hsl(var(--neon-no))";
+  const fill = isUp ? "hsl(var(--neon-yes) / 0.18)" : "hsl(var(--neon-no) / 0.18)";
+
+  const linePath = points
+    .map((pt, i) => `${i === 0 ? "M" : "L"}${toX(pt.t).toFixed(2)},${toY(pt.p).toFixed(2)}`)
+    .join(" ");
+  const areaPath = points.length
+    ? `${linePath} L${toX(points[points.length - 1].t).toFixed(2)},${H - padBot} L${toX(points[0].t).toFixed(2)},${H - padBot} Z`
+    : "";
+
+  // Y-axis ticks (4)
+  const yTicks = [0, 1, 2, 3, 4].map((i) => lo + ((hi - lo) * i) / 4);
+
+  const lastY = last != null ? toY(last) : H / 2;
+  const lastX = points.length ? toX(points[points.length - 1].t) : chartW;
+
+  const targetY = targetPrice != null && Number.isFinite(targetPrice) ? toY(targetPrice) : null;
+
+  const delta = last != null && targetPrice != null ? last - targetPrice : null;
+
+  return (
+    <div ref={containerRef} className={`relative w-full ${className ?? ""}`} style={{ height: H }}>
+      {/* Header strip */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between gap-2 px-1 pb-1">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
+            <span className="relative flex items-center">
+              <span className="absolute inline-flex h-2 w-2 rounded-full bg-destructive opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
+            </span>
+            {ended ? "Resolving" : "Live"}
+          </span>
+          {last != null && (
+            <span className="text-sm font-bold tabular-nums text-foreground">{fmtUsd(last)}</span>
+          )}
+          {delta != null && (
+            <span className={`text-[11px] font-semibold tabular-nums ${delta >= 0 ? "text-[hsl(var(--neon-yes))]" : "text-[hsl(var(--neon-no))]"}`}>
+              {delta >= 0 ? "▲" : "▼"} {fmtUsd(Math.abs(delta))}
+            </span>
+          )}
+        </div>
+        {!ended && (
+          <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
+            {fmtClock(remaining)}
+          </span>
+        )}
+      </div>
+
+      <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="block">
+        {/* Y grid */}
+        {yTicks.map((p, i) => {
+          const y = toY(p);
+          return (
+            <g key={i}>
+              <line x1={0} x2={chartW} y1={y} y2={y} stroke="hsl(var(--border))" strokeOpacity={0.35} strokeDasharray="2 3" strokeWidth={0.5} />
+              <text x={W - 4} y={y + 3} textAnchor="end" className="fill-muted-foreground" style={{ fontSize: 10 }}>
+                {fmtUsd(p)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Target (price to beat) line */}
+        {targetY != null && (
+          <g>
+            <line x1={0} x2={chartW} y1={targetY} y2={targetY} stroke="hsl(var(--primary))" strokeDasharray="4 3" strokeWidth={1} opacity={0.9} />
+            <rect x={W - padRight + 2} y={targetY - 8} width={padRight - 4} height={16} rx={3} fill="hsl(var(--primary))" opacity={0.9} />
+            <text x={W - 4} y={targetY + 3} textAnchor="end" className="fill-primary-foreground" style={{ fontSize: 10, fontWeight: 700 }}>
+              {targetPrice != null ? fmtUsd(targetPrice) : ""}
+            </text>
+          </g>
+        )}
+
+        {/* Area + line */}
+        {points.length > 1 && (
+          <>
+            <path d={areaPath} fill={fill} />
+            <path d={linePath} fill="none" stroke={stroke} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+          </>
+        )}
+
+        {/* Current price marker + dotted to right edge */}
+        {last != null && points.length > 0 && (
+          <>
+            <line x1={lastX} x2={chartW} y1={lastY} y2={lastY} stroke={stroke} strokeOpacity={0.5} strokeDasharray="2 2" strokeWidth={0.8} />
+            <circle cx={lastX} cy={lastY} r={3} fill={stroke} />
+            <rect x={W - padRight + 2} y={lastY - 8} width={padRight - 4} height={16} rx={3} fill={stroke} />
+            <text x={W - 4} y={lastY + 3} textAnchor="end" fill="white" style={{ fontSize: 10, fontWeight: 700 }}>
+              {fmtUsd(last)}
+            </text>
+          </>
+        )}
+      </svg>
+
+      {/* X-axis labels: start / now / end */}
+      <div className="absolute left-0 right-[56px] bottom-0 flex justify-between text-[10px] tabular-nums text-muted-foreground px-0.5">
+        <span>{new Date(startMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+        <span>{new Date(endMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      </div>
+    </div>
+  );
+};
+
+export default CryptoRoundLiveChart;
