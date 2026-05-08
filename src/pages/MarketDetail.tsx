@@ -701,7 +701,7 @@ const MarketDetail = () => {
       )}
 
       {/* Live Stream Section */}
-      {streamingEnabled && (
+      {streamingEnabled && !market.isCryptoRound && (
         <>
           {/* Creator controls */}
           {isCreator && !isEnded && !market.isCryptoRound && (
