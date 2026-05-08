@@ -1,0 +1,1 @@
+UPDATE markets SET status = 'active' WHERE is_crypto_round = true AND status = 'ended' AND auto_resolve_deadline > now();
