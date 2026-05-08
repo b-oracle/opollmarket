@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Activity, Zap, History, CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
+import { Loader2, Activity, Zap, History, CheckCircle2, AlertCircle, MinusCircle, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ConfigRow {
   id: string;
@@ -56,6 +66,7 @@ const CryptoRoundConfigPanel = () => {
   const [logsLoading, setLogsLoading] = useState(true);
   const [autoSpawnOn, setAutoSpawnOn] = useState<boolean>(true);
   const [savingAutoSpawn, setSavingAutoSpawn] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<{ asset: string; duration_minutes: number } | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -182,7 +193,7 @@ const CryptoRoundConfigPanel = () => {
               <Activity className="w-5 h-5 text-primary" /> Crypto Up/Down Engine
             </h2>
             <p className="text-xs text-muted-foreground mt-1">
-              Auto-spawned binary AMM markets per asset and duration. Use "Spawn now" on any row to force-create a fresh round immediately (audit-logged).
+              Auto-spawned binary AMM markets per asset and duration. The cron handles spawning automatically once the previous round is fully resolved — use "Force new round" only to override the active-round guard (audit-logged).
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
@@ -275,12 +286,13 @@ const CryptoRoundConfigPanel = () => {
                           {savingId === row.id && <Loader2 className="w-3 h-3 animate-spin" />}
                         </label>
                         <button
-                          onClick={() => triggerSpawnOne(row.asset, row.duration_minutes)}
+                          onClick={() => setConfirmTarget({ asset: row.asset, duration_minutes: row.duration_minutes })}
                           disabled={isSpawning}
-                          className="px-2 py-1 rounded-md text-[11px] font-semibold bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-50 inline-flex items-center gap-1 justify-center"
+                          title="Force-create a new round even if the previous one is still active. Audit-logged."
+                          className="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 disabled:opacity-50 inline-flex items-center gap-1 justify-center"
                         >
-                          {isSpawning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                          Spawn now
+                          {isSpawning ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
+                          Force new round
                         </button>
                         <button
                           onClick={() => updateRow(row, { enabled: !row.enabled })}
@@ -364,6 +376,35 @@ const CryptoRoundConfigPanel = () => {
           </div>
         )}
       </div>
+      <AlertDialog open={!!confirmTarget} onOpenChange={(open) => !open && setConfirmTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              Force new {confirmTarget?.asset} {confirmTarget ? (DURATION_LABEL[confirmTarget.duration_minutes] ?? confirmTarget.duration_minutes + "m") : ""} round?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This bypasses the safety check that waits for the previous round to finish. If a round is still active for this pair, it will be ignored and a fresh round will start immediately at the current price.
+              <br /><br />
+              Use this only to recover from a stuck cycle or to seed the very first round on a new pair. The action is recorded in the audit log with your admin ID.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmTarget) {
+                  triggerSpawnOne(confirmTarget.asset, confirmTarget.duration_minutes);
+                }
+                setConfirmTarget(null);
+              }}
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              Force new round
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
