@@ -493,7 +493,9 @@ async function handleResolve(
 
   // Auto-post to official X account
   try {
-    const outcomeLabel = winning_side === "yes" ? "Yes ✅" : winning_side === "no" ? "No ❌" : (winning_option_id ? winning_side : winning_side);
+    const outcomeLabel = isCryptoRound
+      ? (winning_side === "yes" ? "Up 📈" : winning_side === "no" ? "Down 📉" : winning_side)
+      : (winning_side === "yes" ? "Yes ✅" : winning_side === "no" ? "No ❌" : (winning_option_id ? winning_side : winning_side));
     await fetch(`${supabaseUrl}/functions/v1/twitter-auto-post`, {
       method: "POST",
       headers: {
