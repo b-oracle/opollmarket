@@ -173,7 +173,7 @@ export const useMarkets = () => {
       .channel("markets-list-realtime")
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "markets" },
+        { event: "*", schema: "public", table: "markets" },
         () => {
           queryClient.invalidateQueries({ queryKey: ["markets"] });
         }
