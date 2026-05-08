@@ -2,12 +2,13 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminContext } from "./AdminLayout";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Camera, Monitor } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Loader2, Eye, User, FileText, Camera, Monitor, ShieldCheck } from "lucide-react";
 
 type KycSubmission = {
   id: string;
