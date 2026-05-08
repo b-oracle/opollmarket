@@ -126,7 +126,7 @@ const fetchMarkets = async (client: typeof supabase) => {
   );
 };
 
-const fetchMarketDetail = async (client: typeof supabase, id: string) => {
+export const fetchMarketDetail = async (client: typeof supabase, id: string) => {
   return withTimeout(
     async () =>
       await client
