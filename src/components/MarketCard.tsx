@@ -26,6 +26,7 @@ import LivePriceBadge from "@/components/LivePriceBadge";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 import { hapticLight, hapticMedium, hapticSuccess } from "@/lib/haptics";
 import CryptoRoundCountdown from "@/components/CryptoRoundCountdown";
+import DeadlineCountdown from "@/components/DeadlineCountdown";
 import OddsSparkline from "@/components/OddsSparkline";
 
 interface MarketCardProps {
@@ -608,10 +609,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </span>
             {market.isCryptoRound && market.autoResolveDeadline ? (
               <CryptoRoundCountdown endsAt={market.autoResolveDeadline} />
-            ) : (
+            ) : isEnded ? (
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEnd)}
+                <Clock className="w-3 h-3" /> Ended
               </span>
+            ) : (
+              <DeadlineCountdown endsAt={effectiveEnd} />
             )}
           </div>
 
