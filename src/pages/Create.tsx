@@ -1193,14 +1193,7 @@ const Create = () => {
     setDraftId(null);
     setDraftBannerDraft(null);
 
-    // Release escrow as 'used' if we had one
-    if (escrowId) {
-      await supabase.rpc("release_creation_fee_escrow" as any, {
-        _escrow_id: escrowId,
-        _action: "used",
-      });
-      setEscrowId(null);
-    }
+    if (escrowId) setEscrowId(null);
 
     if (needsReview) {
       // Pending markets go straight to success (no first prediction needed)
