@@ -35,6 +35,7 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import ResolutionSummary from "@/components/ResolutionSummary";
 import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
+import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -835,63 +836,82 @@ const MarketDetail = () => {
         {/* Chart */}
         <div className="glass rounded-2xl p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-muted-foreground">Price Chart</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {market.isCryptoRound && market.autoResolveAsset ? `${market.autoResolveAsset} · Live Price` : "Price Chart"}
+            </span>
             <span className="text-xl font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% Chance · ${leading.label}`; })() : `${yesPercent}% Chance`}</span>
           </div>
-          <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
-            {(["1D", "1W", "1M", "All"] as const).map((p) => (
-              <button key={p} onClick={() => setTimePeriod(p)}
-                className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${timePeriod === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                {p}
-              </button>
-            ))}
-          </div>
-          <div className="h-40 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  {isMulti && market.options ? (
-                    market.options.map((opt, i) => (
-                      <linearGradient key={opt.id} id={`grad-${opt.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={optionColors[i % optionColors.length]} stopOpacity={0.3} />
-                        <stop offset="100%" stopColor={optionColors[i % optionColors.length]} stopOpacity={0.02} />
-                      </linearGradient>
-                    ))
-                  ) : (
-                    <>
-                      <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--neon-yes))" stopOpacity={0.4} />
-                        <stop offset="100%" stopColor="hsl(var(--neon-yes))" stopOpacity={0.05} />
-                      </linearGradient>
-                      <linearGradient id="noGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--neon-no))" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="hsl(var(--neon-no))" stopOpacity={0.05} />
-                      </linearGradient>
-                    </>
-                  )}
-                </defs>
-                <XAxis dataKey="day" hide />
-                <YAxis domain={[0, 100]} hide />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", fontSize: "12px" }}
-                  formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(_: any, payload: any[]) => payload?.[0]?.payload?.label || ""} />
-                {isMulti && market.options ? (
-                  market.options.map((opt, i) => (
-                    <Area key={opt.id} type="monotone" dataKey={opt.label} stroke={optionColors[i % optionColors.length]}
-                      strokeWidth={selectedOptionId === opt.id || !selectedOptionId ? 2 : 0.5}
-                      fill={`url(#grad-${opt.id})`} fillOpacity={selectedOptionId === opt.id || !selectedOptionId ? 1 : 0.1}
-                      animationDuration={1500 + i * 200} animationEasing="ease-in-out" />
-                  ))
-                ) : (
-                  <>
-                    <Area type="monotone" dataKey="yes" stroke="hsl(var(--neon-yes))" strokeWidth={2} fill="url(#yesGrad)" animationDuration={1500} />
-                    <Area type="monotone" dataKey="no" stroke="hsl(var(--neon-no))" strokeWidth={1.5} fill="url(#noGrad)" animationDuration={1800} />
-                  </>
-                )}
-              </AreaChart>
-            </ResponsiveContainer>
-            <img src={watermarkLogo} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4] hidden dark:block" />
-            <img src={blueLogo} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4] dark:hidden" />
-          </div>
+          {market.isCryptoRound && market.autoResolveAsset ? (
+            <div className="relative">
+              <CryptoRoundLiveChart
+                asset={market.autoResolveAsset}
+                targetPrice={market.autoResolveTargetPrice ?? null}
+                operator={market.autoResolveOperator ?? null}
+                endsAt={market.autoResolveDeadline || market.endDate}
+                startsAt={market.createdAt}
+                height={220}
+              />
+              <img src={watermarkLogo} alt="" className="absolute inset-0 m-auto opacity-20 pointer-events-none scale-[0.4] hidden dark:block" />
+              <img src={blueLogo} alt="" className="absolute inset-0 m-auto opacity-20 pointer-events-none scale-[0.4] dark:hidden" />
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-1 p-0.5 rounded-lg bg-muted/50 mb-3 w-fit">
+                {(["1D", "1W", "1M", "All"] as const).map((p) => (
+                  <button key={p} onClick={() => setTimePeriod(p)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${timePeriod === p ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+              <div className="h-40 relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                    <defs>
+                      {isMulti && market.options ? (
+                        market.options.map((opt, i) => (
+                          <linearGradient key={opt.id} id={`grad-${opt.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={optionColors[i % optionColors.length]} stopOpacity={0.3} />
+                            <stop offset="100%" stopColor={optionColors[i % optionColors.length]} stopOpacity={0.02} />
+                          </linearGradient>
+                        ))
+                      ) : (
+                        <>
+                          <linearGradient id="yesGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--neon-yes))" stopOpacity={0.4} />
+                            <stop offset="100%" stopColor="hsl(var(--neon-yes))" stopOpacity={0.05} />
+                          </linearGradient>
+                          <linearGradient id="noGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="hsl(var(--neon-no))" stopOpacity={0.3} />
+                            <stop offset="100%" stopColor="hsl(var(--neon-no))" stopOpacity={0.05} />
+                          </linearGradient>
+                        </>
+                      )}
+                    </defs>
+                    <XAxis dataKey="day" hide />
+                    <YAxis domain={[0, 100]} hide />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem", fontSize: "12px" }}
+                      formatter={(value: number, name: string) => [`${value}¢`, name]} labelFormatter={(_: any, payload: any[]) => payload?.[0]?.payload?.label || ""} />
+                    {isMulti && market.options ? (
+                      market.options.map((opt, i) => (
+                        <Area key={opt.id} type="monotone" dataKey={opt.label} stroke={optionColors[i % optionColors.length]}
+                          strokeWidth={selectedOptionId === opt.id || !selectedOptionId ? 2 : 0.5}
+                          fill={`url(#grad-${opt.id})`} fillOpacity={selectedOptionId === opt.id || !selectedOptionId ? 1 : 0.1}
+                          animationDuration={1500 + i * 200} animationEasing="ease-in-out" />
+                      ))
+                    ) : (
+                      <>
+                        <Area type="monotone" dataKey="yes" stroke="hsl(var(--neon-yes))" strokeWidth={2} fill="url(#yesGrad)" animationDuration={1500} />
+                        <Area type="monotone" dataKey="no" stroke="hsl(var(--neon-no))" strokeWidth={1.5} fill="url(#noGrad)" animationDuration={1800} />
+                      </>
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
+                <img src={watermarkLogo} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4] hidden dark:block" />
+                <img src={blueLogo} alt="" className="absolute inset-0 m-auto opacity-30 pointer-events-none scale-[0.4] dark:hidden" />
+              </div>
+            </>
+          )}
           {isMulti && market.options && (
             <div className="flex flex-wrap gap-2 mt-3">
               {market.options.map((opt, i) => (
