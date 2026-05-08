@@ -286,6 +286,15 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Authoritative "now" — pulled from Postgres so deadline comparisons
+    // can't drift due to edge-runtime clock skew. Falls back to runtime
+    // clock if the RPC fails for any reason.
+    const { data: dbNowRow, error: dbNowErr } = await adminClient.rpc("db_now");
+    if (dbNowErr) {
+      console.warn("db_now() failed, using runtime clock:", dbNowErr);
+    }
+    const now = dbNowRow ? new Date(dbNowRow as string) : new Date();
+
     // Fetch all active auto-resolve markets
     const { data: markets, error: fetchErr } = await adminClient
       .from("markets")
