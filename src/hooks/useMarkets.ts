@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
+import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import type { Market } from "@/data/markets";
 
 interface DbMarket {
