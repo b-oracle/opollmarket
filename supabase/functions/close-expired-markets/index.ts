@@ -29,16 +29,14 @@ Deno.serve(async (req) => {
     const [genericRes, sportsRes, twitterRes] = await Promise.all([
       supabase
         .from("markets")
-        .select("id, title, creator_wallet")
+        .select("id, title, creator_wallet, auto_resolve, is_crypto_round")
         .eq("status", "active")
         .lte("end_date", today)
-        // Exclude sports auto-resolve markets (handled by auto_resolve_deadline branch below)
         .or("sport_match_id.is.null,auto_resolve.eq.false")
-        // Exclude Twitter auto-resolve markets — they close at auto_resolve_deadline, not end_date
         .or("twitter_metric_type.is.null,auto_resolve.eq.false"),
       supabase
         .from("markets")
-        .select("id, title, creator_wallet")
+        .select("id, title, creator_wallet, auto_resolve, is_crypto_round")
         .eq("status", "active")
         .eq("auto_resolve", true)
         .not("sport_match_id", "is", null)
@@ -46,7 +44,7 @@ Deno.serve(async (req) => {
         .lte("auto_resolve_deadline", nowIso),
       supabase
         .from("markets")
-        .select("id, title, creator_wallet")
+        .select("id, title, creator_wallet, auto_resolve, is_crypto_round")
         .eq("status", "active")
         .eq("auto_resolve", true)
         .not("twitter_metric_type", "is", null)
@@ -132,20 +130,24 @@ Deno.serve(async (req) => {
       );
       const participantCount = new Set((posStats ?? []).map((p: any) => p.user_id)).size;
 
-      await sendNotificationEmail({
-        admin: supabase,
-        userId: market.creator_wallet,
-        templateName: "market-expired-creator",
-        prefKey: "email_market_expired_creator",
-        idempotencyKey: `market-expired-${market.id}`,
-        templateData: {
-          marketTitle: market.title,
-          marketId: market.id,
-          endedAt: new Date().toISOString(),
-          totalVolume: Math.round(totalVolume * 100) / 100,
-          participantCount,
-        },
-      });
+      // Only email creator for MANUAL resolve markets — auto-resolve & crypto rounds resolve themselves
+      const isAutoResolved = (market as any).auto_resolve === true || (market as any).is_crypto_round === true;
+      if (!isAutoResolved) {
+        await sendNotificationEmail({
+          admin: supabase,
+          userId: market.creator_wallet,
+          templateName: "market-expired-creator",
+          prefKey: "email_market_expired_creator",
+          idempotencyKey: `market-expired-${market.id}`,
+          templateData: {
+            marketTitle: market.title,
+            marketId: market.id,
+            endedAt: new Date().toISOString(),
+            totalVolume: Math.round(totalVolume * 100) / 100,
+            participantCount,
+          },
+        });
+      }
 
       // Notify all participants
       const { data: participants } = await supabase
