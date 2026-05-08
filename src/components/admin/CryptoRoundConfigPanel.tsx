@@ -82,14 +82,19 @@ const CryptoRoundConfigPanel = () => {
     setLoading(false);
   };
 
-  const loadLogs = async () => {
+  const loadLogs = async (page = logsPage) => {
     setLogsLoading(true);
-    const { data, error } = await supabase
+    const from = page * LOGS_PAGE_SIZE;
+    const to = from + LOGS_PAGE_SIZE - 1;
+    const { data, error, count } = await supabase
       .from("crypto_round_spawn_log")
-      .select("id, asset, duration_minutes, market_id, source, status, message, open_price, created_at")
+      .select("id, asset, duration_minutes, market_id, source, status, message, open_price, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(50);
-    if (!error) setLogs((data ?? []) as SpawnLogRow[]);
+      .range(from, to);
+    if (!error) {
+      setLogs((data ?? []) as SpawnLogRow[]);
+      if (typeof count === "number") setLogsTotal(count);
+    }
     setLogsLoading(false);
   };
 
