@@ -56,15 +56,22 @@ const CryptoRoundLiveChart = ({
     return () => clearInterval(id);
   }, []);
 
-  // Resize observer for responsive width
+  // Resize observer for responsive width (debounced via rAF)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    let raf = 0;
     const ro = new ResizeObserver((entries) => {
-      for (const e of entries) setWidth(Math.max(200, e.contentRect.width));
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        for (const e of entries) setWidth(Math.max(200, e.contentRect.width));
+      });
     });
     ro.observe(el);
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, []);
 
   // Seed with a one-off REST fetch for an instant first point (in case WS is slow)
@@ -76,31 +83,53 @@ const CryptoRoundLiveChart = ({
       setPoints((prev) => (prev.length ? prev : [{ t: Date.now(), p }]));
       setLast((prev) => prev ?? p);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [sym]);
 
-  // Subscribe to live stream
+  // Subscribe to live stream — buffer ticks in a ref and flush on a throttled
+  // interval to avoid one React re-render per WS message (Binance can stream
+  // many trades/sec). Mobile devices benefit most from this batching.
+  const bufferRef = useRef<Point[]>([]);
+  const lastFlushedPriceRef = useRef<number | null>(null);
+  const FLUSH_MS = 200; // ~5 state updates/sec is plenty for a smoothed chart
+
   useEffect(() => {
     if (!sym) return;
     const unsub = subscribeToPriceStream(sym, (price) => {
       const t = Date.now();
-      setLast(price);
-      setPoints((prev) => {
-        const next = prev.length >= MAX_POINTS ? prev.slice(prev.length - MAX_POINTS + 1) : prev.slice();
-        // Avoid duplicates within 250ms
-        const tail = next[next.length - 1];
-        if (tail && t - tail.t < 250) {
-          next[next.length - 1] = { t, p: price };
-          return next;
-        }
-        next.push({ t, p: price });
-        return next;
-      });
+      const buf = bufferRef.current;
+      const tail = buf[buf.length - 1];
+      // Coalesce sub-FLUSH_MS ticks into the latest sample
+      if (tail && t - tail.t < FLUSH_MS) {
+        tail.t = t;
+        tail.p = price;
+      } else {
+        buf.push({ t, p: price });
+      }
     });
     return unsub;
   }, [sym]);
+
+  // Throttled flush: copy buffered ticks into React state every FLUSH_MS.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const buf = bufferRef.current;
+      if (buf.length === 0) return;
+      const drained = buf.splice(0, buf.length);
+      const newest = drained[drained.length - 1];
+
+      if (newest.p !== lastFlushedPriceRef.current) {
+        lastFlushedPriceRef.current = newest.p;
+        setLast(newest.p);
+      }
+
+      setPoints((prev) => {
+        const merged = prev.concat(drained);
+        return merged.length > MAX_POINTS ? merged.slice(merged.length - MAX_POINTS) : merged;
+      });
+    }, FLUSH_MS);
+    return () => clearInterval(id);
+  }, []);
 
   const endMs = useMemo(() => new Date(endsAt).getTime(), [endsAt]);
   const startMs = useMemo(() => {
