@@ -29,10 +29,15 @@ const fmtElapsed = (ms: number) => {
   return `${m}m ${String(s).padStart(2, "0")}s`;
 };
 
-/** Seconds until the next clock-minute boundary — that's when our pg_cron jobs fire. */
-const secondsToNextMinute = (now: number) => {
-  const d = new Date(now);
-  return 60 - d.getSeconds();
+/**
+ * Seconds until the next 15-second tick — that's how often our resolve +
+ * spawner pg_cron jobs fire. Used to give users an accurate ETA instead of
+ * looping a stale "60s" countdown.
+ */
+const secondsToNextTick = (now: number) => {
+  const s = new Date(now).getSeconds();
+  const next = Math.ceil((s + 0.001) / 15) * 15;
+  return Math.max(1, next - s);
 };
 
 type Stage = "live" | "resolving" | "payout" | "respawning" | "done";
