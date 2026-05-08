@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Radio, Loader2, CheckCircle2, Sparkles, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Radio, Loader2, CheckCircle2, Sparkles, Clock, Home } from "lucide-react";
 
 interface Props {
   /** Round end / deadline timestamp (ISO). */
@@ -51,6 +52,7 @@ type Stage = "live" | "resolving" | "payout" | "respawning" | "done";
  *   4. NEXT ROUND    — spawner cron will start the next round on the next minute
  */
 const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Props) => {
+  const navigate = useNavigate();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -110,15 +112,13 @@ const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Prop
     sub = `Wallets crediting · ETA ${nextTickEta}s`;
   } else if (stage === "respawning") {
     headline = "Resolved · paid out";
-    // Don't loop a stale countdown — once we've waited longer than a single
-    // spawner cycle, switch to a definite "spawning now" message.
-    sub = sinceEnd > 20_000
-      ? "Spawning new round…"
-      : `Next round spawns in ~${nextTickEta}s`;
+    sub = "Head to Home for the next round";
   } else {
     headline = "Round complete";
-    sub = "Refresh to see the next one";
+    sub = "Head to Home for the next round";
   }
+
+  const isFinished = stage === "respawning" || stage === "done";
 
   return (
     <div
@@ -197,6 +197,18 @@ const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Prop
           );
         })}
       </ol>
+
+      {/* Post-round CTA — send users Home to find the freshly spawned round */}
+      {isFinished && (
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="mt-2.5 w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary text-primary-foreground text-[12px] font-semibold py-2 hover:opacity-90 active:scale-[0.98] transition"
+        >
+          <Home className="w-3.5 h-3.5" />
+          View active rounds
+        </button>
+      )}
     </div>
   );
 };
