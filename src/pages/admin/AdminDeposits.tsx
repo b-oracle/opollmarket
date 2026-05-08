@@ -127,19 +127,65 @@ const AdminDeposits = () => {
   });
 
   // Super-admin webhook replay — idempotent: if already confirmed, returns no-op.
+  // If Payaza API is unreachable (IP not whitelisted) the function returns
+  // { code: "PAYAZA_AUTH" }. We then prompt the admin for the Payaza reference
+  // they verified manually and retry with manual_override: true.
   const replayMutation = useMutation({
-    mutationFn: async ({ txId }: { txId: string }) => {
+    mutationFn: async ({
+      txId, manualOverride, manualReference, manualNote,
+    }: {
+      txId: string;
+      manualOverride?: boolean;
+      manualReference?: string;
+      manualNote?: string;
+    }) => {
       const { data, error } = await supabase.functions.invoke("replay-deposit-webhook", {
-        body: { transaction_id: txId },
+        body: {
+          transaction_id: txId,
+          ...(manualOverride ? {
+            manual_override: true,
+            manual_reference: manualReference,
+            manual_note: manualNote,
+          } : {}),
+        },
       });
-      if (error || data?.error) throw new Error(data?.error || error?.message || "Failed");
-      return data as { success: boolean; already_confirmed?: boolean; credited?: number };
+      if (error) throw new Error(error.message || "Failed");
+      return { ...data, _txId: txId } as any;
     },
-    onSuccess: (data) => {
-      if (data.already_confirmed) {
+    onSuccess: (data: any) => {
+      if (data?.code === "PAYAZA_AUTH") {
+        const ref = window.prompt(
+          "Payaza couldn't be reached (IP not whitelisted).\n\n" +
+          "Paste the Payaza transaction REFERENCE you've verified in the Payaza dashboard to credit this deposit manually.\n\n" +
+          "⚠️ Each reference can only be used once — duplicates will be rejected."
+        );
+        if (!ref || !ref.trim()) {
+          toast.error("Manual credit cancelled — no reference provided");
+          return;
+        }
+        const note = window.prompt("Optional note (why this needed manual credit):") || "";
+        replayMutation.mutate({
+          txId: data._txId,
+          manualOverride: true,
+          manualReference: ref.trim(),
+          manualNote: note.trim() || undefined,
+        });
+        return;
+      }
+      if (data?.code === "DUPLICATE_REFERENCE") {
+        toast.error(data.error || "This Payaza reference has already been used.");
+        return;
+      }
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+      if (data?.already_confirmed) {
         toast.info("Already credited — no action taken");
+      } else if (data?.manual_override) {
+        toast.success(`Manually credited $${Number(data.credited_main ?? 0).toFixed(2)} (ref: ${data.reference})`);
       } else {
-        toast.success(`Replayed: credited $${Number(data.credited ?? 0).toFixed(2)}`);
+        toast.success(`Replayed: credited $${Number(data.credited_main ?? data.credited ?? 0).toFixed(2)}`);
       }
       queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
     },
