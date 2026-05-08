@@ -178,6 +178,14 @@ const AdminApiKeys = () => {
     }
     setRequestStats(statsMap);
 
+    // Per-key raw log buckets for charting
+    const perKey = new Map<string, { endpoint: string; created_at: string }[]>();
+    for (const log of logArr) {
+      if (!perKey.has(log.api_key_id)) perKey.set(log.api_key_id, []);
+      perKey.get(log.api_key_id)!.push({ endpoint: log.endpoint, created_at: log.created_at });
+    }
+    setKeyLogs(perKey);
+
     // Fetch webhook events
     const { data: whEvents } = await supabase
       .from("webhook_events" as any)
