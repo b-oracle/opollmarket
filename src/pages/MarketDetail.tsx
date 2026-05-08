@@ -37,6 +37,7 @@ import ResolutionSummary from "@/components/ResolutionSummary";
 import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 import CryptoRoundLiveChart, { primeCryptoRoundCache } from "@/components/CryptoRoundLiveChart";
+import { primeMarketCommentsCache } from "@/components/CommentsDrawer";
 import { subscribeToPriceStream } from "@/lib/cryptoPriceProvider";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 
@@ -553,6 +554,9 @@ const MarketDetail = () => {
                 },
               })
             : Promise.resolve(),
+          // Discussion thread + top comments — primes module cache so the
+          // CommentsDrawer renders instantly when opened on the new round.
+          primeMarketCommentsCache(nextId, uid || ""),
           new Promise<number | null>((resolve) => {
             let resolved = false;
             const finish = (p: number | null) => {
