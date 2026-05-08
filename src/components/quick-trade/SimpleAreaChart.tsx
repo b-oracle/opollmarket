@@ -42,7 +42,7 @@ function fmtPrice(p: number, ac?: string): string {
   return p.toFixed(4);
 }
 
-function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen }: Props) {
+function SimpleAreaChart({ priceHistory, entryPrice, assetClass, userBet, activeRound, fullscreen, windowStartMs, windowEndMs }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
