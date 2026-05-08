@@ -23,34 +23,45 @@ function makeFakeAdmin(initial: { txs: Tx[] }) {
   };
 
   function fromTransactions() {
-    let filters: Array<(t: Tx) => boolean> = [];
+    const filters: Array<(t: Tx) => boolean> = [];
     let updatePatch: Record<string, unknown> | null = null;
     let returningSelect = false;
 
+    const flushUpdate = () => {
+      const matched = state.txs.filter((t) => filters.every((f) => f(t)));
+      if (updatePatch) {
+        for (const m of matched) Object.assign(m, updatePatch);
+        state.updates.push({ table: "transactions", patch: updatePatch, matched: structuredClone(matched) });
+        updatePatch = null;
+      }
+      return matched;
+    };
+
     const builder: any = {
-      select(_cols: string) { return builder; },
+      select(_cols: string) { if (updatePatch) returningSelect = true; return builder; },
       eq(col: keyof Tx, val: unknown) { filters.push((t) => (t as any)[col] === val); return builder; },
       neq(col: keyof Tx, val: unknown) { filters.push((t) => (t as any)[col] !== val); return builder; },
       limit(_n: number) { return builder; },
       async maybeSingle() {
-        const matched = state.txs.filter((t) => filters.every((f) => f(t)));
-        if (updatePatch) {
-          for (const m of matched) Object.assign(m, updatePatch);
-          state.updates.push({ table: "transactions", patch: updatePatch, matched: structuredClone(matched) });
-          updatePatch = null;
-          if (returningSelect) {
-            return { data: matched[0] ? { id: matched[0].id, user_id: matched[0].user_id } : null, error: null };
-          }
-          return { data: null, error: null };
+        const matched = flushUpdate();
+        if (returningSelect) {
+          return { data: matched[0] ? { id: matched[0].id, user_id: matched[0].user_id } : null, error: null };
+        }
+        if (updatePatch === null && state.updates.at(-1)?.patch === undefined) {
+          // pure select
         }
         return { data: matched[0] ?? null, error: null };
       },
       update(patch: Record<string, unknown>) { updatePatch = patch; return builder; },
       insert(row: Record<string, unknown>) { state.inserts.push({ table: "transactions", row }); return { data: null, error: null }; },
+      // Thenable: awaiting the builder (without .maybeSingle()) executes pending update
+      then(onFulfilled: (v: any) => void, onRejected?: (e: any) => void) {
+        try {
+          flushUpdate();
+          onFulfilled({ data: null, error: null });
+        } catch (e) { onRejected?.(e); }
+      },
     };
-    // .select() AFTER an .update() returns the changed rows
-    const origSelect = builder.select;
-    builder.select = (cols: string) => { if (updatePatch) returningSelect = true; return origSelect(cols); };
     return builder;
   }
 
