@@ -5,6 +5,7 @@ import { ArrowUp, ArrowDown, Loader2, Moon, AlertTriangle, DollarSign, TrendingU
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
 import { getAssetClass } from "@/data/assetClasses";
 import { hapticLight } from "@/lib/haptics";
+import AnimatedNumber from "@/components/AnimatedNumber";
 import {
   AlertDialog,
   AlertDialogContent,
