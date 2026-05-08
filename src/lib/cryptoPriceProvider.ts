@@ -1045,6 +1045,10 @@ export function subscribeToPriceStream(
     sub!.listeners.delete(callback);
     if (sub!.listeners.size === 0) {
       clearTimeout(sub!.reconnectTimer);
+      if (sub!.onlineHandler) {
+        try { window.removeEventListener("online", sub!.onlineHandler); } catch {}
+        sub!.onlineHandler = undefined;
+      }
       try { sub!.ws?.close(); } catch {}
       wsSubscriptions.delete(sym);
     }
