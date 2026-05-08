@@ -182,7 +182,7 @@ Deno.serve(async (req) => {
     // 2. Load pairs (filter to the targeted one if specified)
     let cfgQuery = admin
       .from("crypto_round_config")
-      .select("asset, duration_minutes, initial_liquidity_usd, category, enabled");
+      .select("asset, duration_minutes, category, enabled");
 
     if (targetAsset && targetDur) {
       cfgQuery = cfgQuery.eq("asset", targetAsset).eq("duration_minutes", targetDur);
@@ -214,9 +214,7 @@ Deno.serve(async (req) => {
     for (const cfg of configs) {
       const asset = cfg.asset as string;
       const dur = cfg.duration_minutes as number;
-      // Crypto rounds run as parimutuel: no seeded liquidity, losers fund winners.
-      // initial_liquidity_usd in config is retained for backwards compat but ignored.
-      const liquidity = 0;
+      // Crypto rounds always start at $0 liquidity — losers fund winners.
 
       // Latest round for this pair
       const { data: latest } = await admin
