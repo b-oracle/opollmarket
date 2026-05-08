@@ -112,15 +112,13 @@ const CryptoRoundStatusTimeline = ({ endsAt, startsAt, status, className }: Prop
     sub = `Wallets crediting · ETA ${nextTickEta}s`;
   } else if (stage === "respawning") {
     headline = "Resolved · paid out";
-    // Don't loop a stale countdown — once we've waited longer than a single
-    // spawner cycle, switch to a definite "spawning now" message.
-    sub = sinceEnd > 20_000
-      ? "Spawning new round…"
-      : `Next round spawns in ~${nextTickEta}s`;
+    sub = "Head to Home for the next round";
   } else {
     headline = "Round complete";
-    sub = "Refresh to see the next one";
+    sub = "Head to Home for the next round";
   }
+
+  const isFinished = stage === "respawning" || stage === "done";
 
   return (
     <div
