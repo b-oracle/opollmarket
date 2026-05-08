@@ -186,7 +186,7 @@ const AdminDeposits = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          {isSuperAdmin && (
+          {canHandleDeposits && (
             <Button variant="default" size="sm" onClick={() => setShowCreditForm(!showCreditForm)}>
               {showCreditForm ? <X className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
               {showCreditForm ? "Cancel" : "Credit Deposit"}
