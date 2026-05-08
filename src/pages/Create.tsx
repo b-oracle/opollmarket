@@ -986,6 +986,8 @@ const Create = () => {
 
   const handleCreateMarket = async () => {
     if (!user || !address) return;
+    setSubmitErrorMsg("");
+    try {
 
     // Block auto-save and stop timer to prevent duplicate option inserts during submission
     isSubmittingRef.current = true;
