@@ -106,13 +106,17 @@ async function fetchCryptoFromKraken(asset: string): Promise<number | null> {
 }
 
 async function fetchCryptoPrice(asset: string): Promise<number | null> {
-  let price = await fetchCryptoFromCoinGecko(asset);
-  if (price !== null) return price;
-  console.log(`CoinGecko failed for ${asset}, trying Binance`);
-  price = await fetchCryptoFromBinance(asset);
+  // Binance is fast & reliable for the assets we care about (BTC/ETH/BNB/SOL/XRP).
+  // CoinGecko has been rate-limiting our IP — it nearly always fails first
+  // and just adds latency to the resolution path. Try Binance first, then fall
+  // back to Kraken, and only try CoinGecko as a last resort.
+  let price = await fetchCryptoFromBinance(asset);
   if (price !== null) return price;
   console.log(`Binance failed for ${asset}, trying Kraken`);
-  return fetchCryptoFromKraken(asset);
+  price = await fetchCryptoFromKraken(asset);
+  if (price !== null) return price;
+  console.log(`Kraken failed for ${asset}, trying CoinGecko`);
+  return fetchCryptoFromCoinGecko(asset);
 }
 
 // ── Forex: ExchangeRate-API (primary) → Frankfurter (fallback) ──
@@ -307,12 +311,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Group by asset to minimize API calls
-    const assetSet = new Set(markets.map((m) => m.auto_resolve_asset as string));
+    // Group by asset to minimize API calls — fetch ALL prices in parallel
+    // instead of awaiting them one-by-one (was the dominant latency source).
+    const assetList = [...new Set(markets.map((m) => m.auto_resolve_asset as string))];
     const prices: Record<string, number | null> = {};
-    for (const asset of assetSet) {
-      prices[asset] = await fetchPrice(asset);
-    }
+    const priceResults = await Promise.all(
+      assetList.map((asset) => fetchPrice(asset).catch(() => null))
+    );
+    assetList.forEach((asset, i) => { prices[asset] = priceResults[i]; });
 
     let resolvedCount = 0;
 
