@@ -147,6 +147,7 @@ const CreatorDashboard = () => {
           "id, title, status, image_url, volume, liquidity, initial_liquidity, participants, created_at, end_date, updated_at, resolved_side, winning_option_id, market_type",
         )
         .eq("creator_wallet", user.id)
+        .or("is_crypto_round.is.null,is_crypto_round.eq.false")
         .order("created_at", { ascending: false });
 
       const mList: MarketRow[] = (marketsData as any[]) || [];

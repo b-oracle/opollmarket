@@ -818,6 +818,7 @@ const Profile = () => {
         .from("markets")
         .select("id", { count: "exact", head: true })
         .eq("creator_wallet", user.id)
+        .or("is_crypto_round.is.null,is_crypto_round.eq.false")
         .in("status", ["active", "pending"]);
       return count || 0;
     },
