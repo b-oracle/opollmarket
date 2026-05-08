@@ -221,6 +221,8 @@ const AdminQuickTrade = () => {
         </div>
       </div>
 
+      <CryptoRoundConfigPanel />
+
       {/* Stats - Row 1: Counts */}
       <TooltipProvider>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
