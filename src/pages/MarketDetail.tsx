@@ -36,7 +36,8 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import ResolutionSummary from "@/components/ResolutionSummary";
 import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
-import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
+import CryptoRoundLiveChart, { primeCryptoRoundCache } from "@/components/CryptoRoundLiveChart";
+import { subscribeToPriceStream } from "@/lib/cryptoPriceProvider";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 
 const truncateAddr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
