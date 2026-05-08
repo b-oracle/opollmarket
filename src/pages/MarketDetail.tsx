@@ -35,9 +35,7 @@ import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import ResolutionSummary from "@/components/ResolutionSummary";
 import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
-import CryptoRoundLiveChart, { primeCryptoRoundCache } from "@/components/CryptoRoundLiveChart";
-import { primeMarketCommentsCache } from "@/components/CommentsDrawer";
-import { subscribeToPriceStream } from "@/lib/cryptoPriceProvider";
+import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
 import ChartSkeleton from "@/components/ChartSkeleton";
 
