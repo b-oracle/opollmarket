@@ -481,6 +481,9 @@ const MarketDetail = () => {
 
     let cancelled = false;
     const poll = async () => {
+      // Reentrancy guard — if a previous poll already kicked off the
+      // prefetch+navigate sequence, do nothing on subsequent ticks.
+      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) return;
       const { data } = await supabase
         .from("markets")
         .select("id, auto_resolve_deadline, auto_resolve_asset, yes_price, no_price")
@@ -492,6 +495,10 @@ const MarketDetail = () => {
         .limit(1)
         .maybeSingle();
       if (cancelled || !data?.id) return;
+      // Re-check after the await — another tick may have won the race.
+      if (redirectingRef.current || REDIRECTED_FROM.has(market.id)) return;
+      redirectingRef.current = true;
+      REDIRECTED_FROM.add(market.id);
 
       const nextId = data.id as string;
       const nextAsset = (data.auto_resolve_asset as string | null) ?? market.autoResolveAsset!;
