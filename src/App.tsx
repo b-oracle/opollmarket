@@ -34,6 +34,7 @@ import { useNativePush } from "./hooks/useNativePush";
 import { useCallDeepLink } from "./hooks/useCallDeepLink";
 import { useFirstRun } from "./hooks/useFirstRun";
 import AppSplash from "./components/AppSplash";
+import CallJoinSplash from "./components/chat/CallJoinSplash";
 import { bootNativeUI } from "./lib/nativeUI";
 import { initNativeAuthCache } from "./lib/nativeAuthCache";
 
