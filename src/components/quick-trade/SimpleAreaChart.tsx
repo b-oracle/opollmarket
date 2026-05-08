@@ -17,9 +17,13 @@ interface Props {
   priceHistory: { time: string; price: number; ts: number }[];
   entryPrice: number | null;
   assetClass?: string;
-  userBet: { side: string } | null;
+  userBet: { side: string; amount?: number } | null;
   activeRound: { open_price: number | null } | null;
   fullscreen?: boolean;
+  /** When set, x-axis is anchored to wall-clock time inside [windowStartMs, windowEndMs]
+   *  so the line draws left → right across the round window (Polymarket-style). */
+  windowStartMs?: number | null;
+  windowEndMs?: number | null;
 }
 
 interface OverlayState {
