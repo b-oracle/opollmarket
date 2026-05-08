@@ -131,9 +131,13 @@ const CryptoRoundConfigPanel = () => {
 
   useEffect(() => {
     load();
-    loadLogs();
     loadAutoSpawn();
   }, []);
+
+  useEffect(() => {
+    loadLogs(logsPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logsPage]);
 
   const updateRow = async (row: ConfigRow, patch: Partial<ConfigRow>) => {
     setSavingId(row.id);
