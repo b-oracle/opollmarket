@@ -693,13 +693,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                         onClick={() => setBetModal({ open: true, side: "yes" })}
                         className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
                       >
-                        Buy Yes {yesPercent}¢
+                        {market.isCryptoRound ? `Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}
                       </button>
                       <button
                         onClick={() => setBetModal({ open: true, side: "no" })}
                         className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
                       >
-                        Buy No {noPercent}¢
+                        {market.isCryptoRound ? `Down ${noPercent}¢` : `Buy No ${noPercent}¢`}
                       </button>
                     </div>
                     {isActive && (
