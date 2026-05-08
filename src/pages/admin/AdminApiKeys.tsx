@@ -463,6 +463,7 @@ const AdminApiKeys = () => {
                     ) : (
                       <p className="text-xs text-muted-foreground">No requests yet</p>
                     )}
+                    </div>
                   </div>
                 )}
 
