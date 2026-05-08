@@ -265,8 +265,8 @@ Deno.test("idempotency — concurrent replay (tx confirmed mid-flight) does not 
   assertEquals(state.rpcCalls.find((c) => c.fn === "adjust_balance"), undefined);
 });
 
-Deno.test("rejects non-nowpayments providers", async () => {
-  const { admin } = makeFakeAdmin({ txs: [baseTx({ payment_provider: "payaza" })] });
+Deno.test("rejects unknown (non-nowpayments, non-payaza) providers", async () => {
+  const { admin } = makeFakeAdmin({ txs: [baseTx({ payment_provider: "flutterwave" })] });
   const { fn: fetchImpl, calls } = makeFetch({});
   const r = await replayDeposit(admin, fetchImpl, "k", { actorId: "admin-1", transactionId: "tx-1" });
   assertEquals(r.status, 400);
@@ -278,4 +278,45 @@ Deno.test("missing transaction returns 404", async () => {
   const { fn: fetchImpl } = makeFetch({});
   const r = await replayDeposit(admin, fetchImpl, "k", { actorId: "admin-1", transactionId: "missing" });
   assertEquals(r.status, 404);
+});
+
+const payazaTx = (overrides: Partial<Tx> = {}): Tx => baseTx({
+  payment_provider: "payaza", nowpayments_payment_id: "payaza_user-1_123", amount: 50, ...overrides,
+});
+
+Deno.test("payaza success — credits tx amount in USD", async () => {
+  const { admin, state } = makeFakeAdmin({ txs: [payazaTx()] });
+  const { fn: fetchImpl } = makeFetch({ data: { transactionStatus: "ESCROW_SUCCESS", currency: { code: "NGN" } } });
+  const r = await replayDeposit(admin, fetchImpl, "np", { actorId: "admin-1", transactionId: "tx-1" }, { payazaSecretKey: "ps" });
+  assertEquals(r.body.success, true);
+  assertEquals(r.body.credited_main, 50);
+  const adj = state.rpcCalls.find((c) => c.fn === "adjust_balance");
+  assertEquals(adj!.args._delta, 50);
+});
+
+Deno.test("payaza pending — refuses to credit", async () => {
+  const { admin, state } = makeFakeAdmin({ txs: [payazaTx()] });
+  const { fn: fetchImpl } = makeFetch({ data: { transactionStatus: "NIP_PENDING", currency: { code: "NGN" } } });
+  const r = await replayDeposit(admin, fetchImpl, "np", { actorId: "admin-1", transactionId: "tx-1" }, { payazaSecretKey: "ps" });
+  assertEquals(r.status, 409);
+  assertEquals(state.rpcCalls.find((c) => c.fn === "adjust_balance"), undefined);
+});
+
+Deno.test("payaza wrong currency — blocked", async () => {
+  const { admin, state } = makeFakeAdmin({ txs: [payazaTx()] });
+  const { fn: fetchImpl } = makeFetch({ data: { transactionStatus: "SUCCESSFUL", currency: { code: "USD" } } });
+  const r = await replayDeposit(admin, fetchImpl, "np", { actorId: "admin-1", transactionId: "tx-1" }, { payazaSecretKey: "ps" });
+  assertEquals(r.body.blocked, true);
+  assertEquals(r.body.reason, "wrong_currency");
+  assertEquals(state.rpcCalls.find((c) => c.fn === "adjust_balance"), undefined);
+  assertEquals(state.txs[0].status, "wrong_asset");
+});
+
+Deno.test("payaza idempotency — already-confirmed returns no-op", async () => {
+  const { admin, state } = makeFakeAdmin({ txs: [payazaTx({ status: "confirmed" })] });
+  const { fn: fetchImpl, calls } = makeFetch({});
+  const r = await replayDeposit(admin, fetchImpl, "np", { actorId: "admin-1", transactionId: "tx-1" }, { payazaSecretKey: "ps" });
+  assertEquals(r.body.already_confirmed, true);
+  assertEquals(calls.length, 0);
+  assertEquals(state.rpcCalls.find((c) => c.fn === "adjust_balance"), undefined);
 });
