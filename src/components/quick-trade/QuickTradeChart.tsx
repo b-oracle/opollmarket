@@ -21,7 +21,7 @@ interface QuickTradeChartProps {
   streamingPriceRef?: MutableRefObject<number | null>;
   historyLoading: boolean;
   activeRound: { open_price: number | null; created_at: string; duration_seconds: number } | null;
-  userBet: { side: string } | null;
+  userBet: { side: string; amount?: number } | null;
   resolveFlash: "win" | "lose" | null;
   timeframeLabel: string;
   assetClass?: "crypto" | "commodity" | "forex";
