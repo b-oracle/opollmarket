@@ -182,7 +182,13 @@ export function usePriceHistory(
     return buckets;
   }, [transactions, timePeriod, currentYesPrice, currentNoPrice, isMulti, options]);
 
-  return chartData;
+  return {
+    chartData,
+    isLoading,
+    isFetching,
+    isError,
+    hasTransactions: transactions.length > 0,
+  };
 }
 
 function formatBucketLabel(timestamp: number, period: TimePeriod): string {
