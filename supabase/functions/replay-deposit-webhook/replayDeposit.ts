@@ -80,7 +80,7 @@ export async function replayDeposit(
   input: ReplayInput,
   deps: { payazaSecretKey?: string; payazaTenantId?: string } = {},
 ): Promise<ReplayResult> {
-  const { actorId, transactionId, paymentId } = input;
+  const { actorId, transactionId, paymentId, manualOverride, manualReference, manualNote } = input;
   if (!transactionId && !paymentId) {
     return { status: 400, body: { error: "transaction_id or payment_id required" } };
   }
@@ -99,6 +99,15 @@ export async function replayDeposit(
   }
 
   const provider = tx.payment_provider || "nowpayments";
+
+  // Super-admin manual credit path: only for Payaza, only when admin pastes a reference.
+  if (manualOverride) {
+    if (provider !== "payaza") {
+      return { status: 400, body: { error: "Manual override is only supported for Payaza deposits." } };
+    }
+    return await creditPayazaManual(admin, actorId, tx, manualReference, manualNote);
+  }
+
   if (provider === "payaza") {
     return await replayPayaza(admin, fetchImpl, deps, actorId, tx);
   }
