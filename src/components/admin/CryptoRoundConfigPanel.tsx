@@ -63,6 +63,9 @@ const CryptoRoundConfigPanel = () => {
   const [spawningKey, setSpawningKey] = useState<string | null>(null);
   const [logs, setLogs] = useState<SpawnLogRow[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const LOGS_PAGE_SIZE = 25;
   const [autoSpawnOn, setAutoSpawnOn] = useState<boolean>(true);
   const [savingAutoSpawn, setSavingAutoSpawn] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<{ asset: string; duration_minutes: number } | null>(null);
