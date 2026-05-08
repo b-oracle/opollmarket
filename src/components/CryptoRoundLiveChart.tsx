@@ -312,6 +312,8 @@ const CryptoRoundLiveChart = ({
 
   const lastY = last != null ? toY(last) : H / 2;
   const lastX = points.length ? toX(points[points.length - 1].t) : chartW;
+  const showMarker = last != null && points.length > 0 &&
+    (range === "all" || (points[points.length - 1].t >= tMin && points[points.length - 1].t <= tMax));
 
   const targetY = targetPrice != null && Number.isFinite(targetPrice) ? toY(targetPrice) : null;
 
