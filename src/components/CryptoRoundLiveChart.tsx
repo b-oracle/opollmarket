@@ -273,10 +273,19 @@ const CryptoRoundLiveChart = ({
         )}
       </svg>
 
-      {/* X-axis labels: start / now / end */}
-      <div className="absolute left-0 right-[56px] bottom-0 flex justify-between text-[10px] tabular-nums text-muted-foreground px-0.5">
-        <span>{new Date(startMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
-        <span>{new Date(endMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      {/* X-axis labels: exact start / end timestamps */}
+      <div
+        className="absolute left-0 right-[56px] bottom-0 flex justify-between gap-2 text-[10px] tabular-nums text-muted-foreground px-0.5"
+        title={`Start: ${new Date(startMs).toISOString()}\nEnd: ${new Date(endMs).toISOString()}`}
+      >
+        <span className="truncate">
+          <span className="opacity-60 mr-1">Start</span>
+          {fmtFull(startMs)}{tzShort ? ` ${tzShort}` : ""}
+        </span>
+        <span className="truncate text-right">
+          <span className="opacity-60 mr-1">End</span>
+          {fmtFull(endMs)}{tzShort ? ` ${tzShort}` : ""}
+        </span>
       </div>
     </div>
   );
