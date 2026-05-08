@@ -59,7 +59,7 @@ const isTimeoutError = (error: unknown) =>
 
 const publicReadClient = createStatelessReadClient();
 
-const mapDbToMarket = (db: DbMarket): Market => ({
+export const mapDbToMarket = (db: DbMarket): Market => ({
   id: db.id,
   title: db.title,
   description: db.description,
@@ -126,7 +126,7 @@ const fetchMarkets = async (client: typeof supabase) => {
   );
 };
 
-const fetchMarketDetail = async (client: typeof supabase, id: string) => {
+export const fetchMarketDetail = async (client: typeof supabase, id: string) => {
   return withTimeout(
     async () =>
       await client
