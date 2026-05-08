@@ -289,7 +289,7 @@ async function handleResolve(
         templateData: {
           marketTitle: market.title,
           marketId: market_id,
-          outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+          outcomeLabel: sideToLabel(winning_side),
           payoutAmount: payout,
           stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
           profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
@@ -347,7 +347,7 @@ async function handleResolve(
         templateData: {
           marketTitle: market.title,
           marketId: market_id,
-          outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+          outcomeLabel: sideToLabel(winning_side),
           payoutAmount: payout,
           stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
           profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
@@ -370,7 +370,7 @@ async function handleResolve(
   }
   for (const [uid, agg] of losingByUser) {
     const yourOutcomeLabel = agg.sides.size === 1
-      ? Array.from(agg.sides)[0].toUpperCase()
+      ? sideToLabel(Array.from(agg.sides)[0])
       : undefined;
     await sendNotificationEmail({
       admin: adminClient,
@@ -381,7 +381,7 @@ async function handleResolve(
       templateData: {
         marketTitle: market.title,
         marketId: market_id,
-        outcomeLabel: winning_side ? winning_side.toUpperCase() : undefined,
+        outcomeLabel: sideToLabel(winning_side),
         yourOutcomeLabel,
         stake: Math.round(agg.stake * 100) / 100,
         shares: Math.round(agg.shares * 100) / 100,
