@@ -110,6 +110,9 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
   });
 
   const isCryptoRound = !!(marketMeta as any)?.is_crypto_round;
+  const cryptoSideLabel = (side: string | null) =>
+    side === "yes" ? "UP" : side === "no" ? "DOWN" : (side ?? "").toUpperCase();
+  const displayWinningLabel = isCryptoRound ? cryptoSideLabel(resolvedSide) : winningLabel;
 
   const totalPayout = payoutTxs?.reduce((sum, tx) => sum + Number(tx.amount), 0) ?? 0;
   const hasPositions = userPositions && userPositions.length > 0;
@@ -149,7 +152,7 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
           <div>
             <p className="text-xs text-muted-foreground font-medium">Winning Outcome</p>
             <p className="text-lg font-bold" style={{ color: winColor }}>
-              {isCryptoRound && resolvedSide === "yes" ? "UP" : isCryptoRound && resolvedSide === "no" ? "DOWN" : winningLabel}
+              {displayWinningLabel}
             </p>
           </div>
         </div>
@@ -229,11 +232,13 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
               const optIdx = optionMatch && options ? options.findIndex(o => o.id === pos.option_id) : -1;
               const posLabel = isMulti && optionMatch
                 ? optionMatch.label
-                : sportLabel && pos.side === "yes"
-                  ? sportLabel
-                  : sportLabel && pos.side === "no"
-                    ? `Not ${sportLabel}`
-                    : pos.side.toUpperCase();
+                : isCryptoRound
+                  ? cryptoSideLabel(pos.side)
+                  : sportLabel && pos.side === "yes"
+                    ? sportLabel
+                    : sportLabel && pos.side === "no"
+                      ? `Not ${sportLabel}`
+                      : pos.side.toUpperCase();
               const posColor = isMulti && optIdx >= 0
                 ? optionColors[optIdx % optionColors.length]
                 : pos.side === "yes" ? "#22c55e" : "#ef4444";
@@ -296,7 +301,7 @@ export default function ResolutionSummary({ marketId, marketTitle, resolvedSide,
         <ProfitShareCard
           ref={profitCardRef}
           market={marketTitle || "Prediction Market"}
-          side={winningLabel}
+          side={displayWinningLabel}
           profit={netPnl}
           payout={totalPayout}
           displayName={displayName}
