@@ -191,24 +191,37 @@ const CryptoRoundLiveChart = ({
       {/* Header strip */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between gap-2 px-1 pb-1">
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
-            <span className="relative flex items-center">
-              <span className="absolute inline-flex h-2 w-2 rounded-full bg-destructive opacity-75 animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
+          {notStarted ? (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+              <span className="relative flex items-center">
+                <span className="absolute inline-flex h-2 w-2 rounded-full bg-primary opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              Starts in
+              <span className="font-mono tabular-nums text-foreground normal-case tracking-normal">
+                {fmtClock(untilStart)}
+              </span>
             </span>
-            {ended ? "Resolving" : "Live"}
-          </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-destructive">
+              <span className="relative flex items-center">
+                <span className="absolute inline-flex h-2 w-2 rounded-full bg-destructive opacity-75 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-destructive" />
+              </span>
+              {ended ? "Resolved" : "Live"}
+            </span>
+          )}
           {last != null && (
             <span className="text-sm font-bold tabular-nums text-foreground">{fmtUsd(last)}</span>
           )}
-          {delta != null && (
+          {delta != null && !notStarted && (
             <span className={`text-[11px] font-semibold tabular-nums ${delta >= 0 ? "text-[hsl(var(--neon-yes))]" : "text-[hsl(var(--neon-no))]"}`}>
               {delta >= 0 ? "▲" : "▼"} {fmtUsd(Math.abs(delta))}
             </span>
           )}
         </div>
-        {!ended && (
-          <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
+        {!ended && !notStarted && (
+          <span className="text-[11px] font-mono tabular-nums text-muted-foreground" title="Time remaining in round">
             {fmtClock(remaining)}
           </span>
         )}
