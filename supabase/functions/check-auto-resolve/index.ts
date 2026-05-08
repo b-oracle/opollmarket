@@ -674,7 +674,7 @@ Deno.serve(async (req) => {
           }
 
           const deadline = tm.auto_resolve_deadline ? new Date(tm.auto_resolve_deadline) : new Date(tm.end_date);
-          if (new Date() <= deadline) continue; // Not past deadline yet
+          if (now <= deadline) continue; // Not past deadline yet (DB-clock authoritative)
 
           // Force-refresh the count for this single market so we resolve on the
           // true value at the deadline rather than a stale cached number.
