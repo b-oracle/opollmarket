@@ -608,10 +608,12 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
             </span>
             {market.isCryptoRound && market.autoResolveDeadline ? (
               <CryptoRoundCountdown endsAt={market.autoResolveDeadline} />
-            ) : (
+            ) : isEnded ? (
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {getTimeRemaining(effectiveEnd)}
+                <Clock className="w-3 h-3" /> Ended
               </span>
+            ) : (
+              <DeadlineCountdown endsAt={effectiveEnd} />
             )}
           </div>
 
