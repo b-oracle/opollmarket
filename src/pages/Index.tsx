@@ -589,15 +589,15 @@ const Index = () => {
                     <div className="flex-1 h-2 rounded-full overflow-hidden flex bg-muted">
                       {isMulti && market.options ? (
                         market.options.map((opt, oi) => (
-                          <div key={opt.id} className="h-full transition-all" style={{
+                          <div key={opt.id} className="h-full transition-[width] duration-500 ease-out" style={{
                             width: `${opt.price * 100}%`,
                             backgroundColor: ["hsl(var(--neon-yes))","hsl(var(--neon-no))","hsl(var(--primary))","hsl(45, 93%, 58%)","hsl(280, 70%, 60%)","hsl(var(--muted-foreground))"][oi % 6],
                           }} />
                         ))
                       ) : (
                         <>
-                          <div className="h-full rounded-l-full transition-all" style={{ width: `${yesPercent}%`, backgroundColor: "hsl(var(--neon-yes))" }} />
-                          <div className="h-full rounded-r-full transition-all" style={{ width: `${noPercent}%`, backgroundColor: "hsl(var(--neon-no))" }} />
+                          <div className="h-full rounded-l-full transition-[width] duration-500 ease-out" style={{ width: `${yesPercent}%`, backgroundColor: "hsl(var(--neon-yes))" }} />
+                          <div className="h-full rounded-r-full transition-[width] duration-500 ease-out" style={{ width: `${noPercent}%`, backgroundColor: "hsl(var(--neon-no))" }} />
                         </>
                       )}
                     </div>
