@@ -23,8 +23,17 @@ Deno.serve(async (req) => {
     //   (a) Non-sports / non-auto-resolve markets — close when end_date <= today (date-only column)
     //   (b) Sports auto-resolve markets — close at exact kickoff (auto_resolve_deadline <= now())
     //       so betting is locked the moment the match starts.
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const nowIso = new Date().toISOString();
+    // Pin "now" to the database clock so deadline comparisons are immune to
+    // edge-runtime clock skew (Deno workers can drift several seconds vs. PG).
+    // `today` is the UTC calendar day at the DB's now() — matches how
+    // end_date (date-only) is stored.
+    const { data: dbNowRow, error: dbNowErr } = await supabase.rpc("db_now");
+    if (dbNowErr) {
+      console.warn("db_now() failed, falling back to runtime clock:", dbNowErr);
+    }
+    const nowDate = dbNowRow ? new Date(dbNowRow as string) : new Date();
+    const nowIso = nowDate.toISOString();
+    const today = nowIso.split("T")[0]; // YYYY-MM-DD (UTC)
 
     const [genericRes, sportsRes, twitterRes, cryptoRes] = await Promise.all([
       // Generic markets: close when end_date <= today.
