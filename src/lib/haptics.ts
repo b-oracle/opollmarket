@@ -38,10 +38,6 @@ export const hapticLight = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaLight();
-    return;
-  }
   webVibrate(10);
 };
 
@@ -55,10 +51,6 @@ export const hapticMedium = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaLight();
-    return;
-  }
   webVibrate(25);
 };
 
@@ -71,10 +63,6 @@ export const hapticHeavy = async (): Promise<void> => {
     } catch {
       // fall through
     }
-  }
-  if (isDespiaNative()) {
-    despiaHeavy();
-    return;
   }
   webVibrate(50);
 };
@@ -91,10 +79,6 @@ export const hapticSuccess = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaSuccess();
-    return;
-  }
   webVibrate([15, 50, 15]);
 };
 
@@ -108,10 +92,6 @@ export const hapticWarning = async (): Promise<void> => {
       // fall through
     }
   }
-  if (isDespiaNative()) {
-    despiaWarning();
-    return;
-  }
   webVibrate([20, 40, 20]);
 };
 
@@ -124,10 +104,6 @@ export const hapticError = async (): Promise<void> => {
     } catch {
       // fall through
     }
-  }
-  if (isDespiaNative()) {
-    despiaError();
-    return;
   }
   webVibrate([30, 60, 30, 60, 30]);
 };
