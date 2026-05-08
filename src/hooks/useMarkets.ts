@@ -118,7 +118,7 @@ const fetchMarkets = async (client: typeof supabase) => {
         .select(SELECT_COLS)
         .in("status", ["active", "ended"])
         .eq("is_hidden", false)
-        .gt("participants", 0)
+        .or("participants.gt.0,is_crypto_round.eq.true")
         .order("created_at", { ascending: false })
         .limit(100),
     8_000,
