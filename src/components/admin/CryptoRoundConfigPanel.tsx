@@ -54,6 +54,8 @@ const CryptoRoundConfigPanel = () => {
   const [spawningKey, setSpawningKey] = useState<string | null>(null);
   const [logs, setLogs] = useState<SpawnLogRow[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+  const [autoSpawnOn, setAutoSpawnOn] = useState<boolean>(true);
+  const [savingAutoSpawn, setSavingAutoSpawn] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -78,9 +80,41 @@ const CryptoRoundConfigPanel = () => {
     setLogsLoading(false);
   };
 
+  const loadAutoSpawn = async () => {
+    const { data } = await supabase
+      .from("feature_toggles")
+      .select("enabled")
+      .eq("feature_key", "crypto_auto_spawn")
+      .maybeSingle();
+    if (data) setAutoSpawnOn(!!data.enabled);
+  };
+
+  const toggleAutoSpawn = async () => {
+    const next = !autoSpawnOn;
+    setSavingAutoSpawn(true);
+    setAutoSpawnOn(next);
+    const { error } = await supabase
+      .from("feature_toggles")
+      .update({ enabled: next })
+      .eq("feature_key", "crypto_auto_spawn");
+    setSavingAutoSpawn(false);
+    if (error) {
+      setAutoSpawnOn(!next);
+      toast({ title: "Save failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: next ? "Auto-spawn enabled" : "Auto-spawn paused",
+        description: next
+          ? "New rounds will spawn automatically after each resolution."
+          : "Existing rounds will resolve, but no new ones will start until re-enabled.",
+      });
+    }
+  };
+
   useEffect(() => {
     load();
     loadLogs();
+    loadAutoSpawn();
   }, []);
 
   const updateRow = async (row: ConfigRow, patch: Partial<ConfigRow>) => {
