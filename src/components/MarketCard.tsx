@@ -296,7 +296,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary flex items-center justify-center backdrop-blur-sm">
                   <ThumbsUp className="w-10 h-10 text-primary" />
                 </div>
-                <span className="text-lg font-bold neon-yes">Buy Yes {yesPercent}¢</span>
+                <span className="text-lg font-bold neon-yes">{market.isCryptoRound ? `Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}</span>
               </motion.div>
             </motion.div>
 
@@ -312,7 +312,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 <div className="w-20 h-20 rounded-full bg-destructive/20 border-2 border-destructive flex items-center justify-center backdrop-blur-sm">
                   <ThumbsDown className="w-10 h-10 text-destructive" />
                 </div>
-                <span className="text-lg font-bold neon-no">Buy No {noPercent}¢</span>
+                <span className="text-lg font-bold neon-no">{market.isCryptoRound ? `Down ${noPercent}¢` : `Buy No ${noPercent}¢`}</span>
               </motion.div>
             </motion.div>
           </>
@@ -693,13 +693,13 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                         onClick={() => setBetModal({ open: true, side: "yes" })}
                         className="flex-1 btn-yes py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
                       >
-                        Buy Yes {yesPercent}¢
+                        {market.isCryptoRound ? `Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}
                       </button>
                       <button
                         onClick={() => setBetModal({ open: true, side: "no" })}
                         className="flex-1 btn-no py-3.5 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-95"
                       >
-                        Buy No {noPercent}¢
+                        {market.isCryptoRound ? `Down ${noPercent}¢` : `Buy No ${noPercent}¢`}
                       </button>
                     </div>
                     {isActive && (
