@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAdminContext } from "./AdminLayout";
 import { format, formatDistanceToNow } from "date-fns";
+import { KeyUsageChart } from "@/components/admin/KeyUsageChart";
 
 interface ApiKey {
   id: string;
