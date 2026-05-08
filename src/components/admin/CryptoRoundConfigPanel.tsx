@@ -63,6 +63,9 @@ const CryptoRoundConfigPanel = () => {
   const [spawningKey, setSpawningKey] = useState<string | null>(null);
   const [logs, setLogs] = useState<SpawnLogRow[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+  const [logsPage, setLogsPage] = useState(0);
+  const [logsTotal, setLogsTotal] = useState(0);
+  const LOGS_PAGE_SIZE = 25;
   const [autoSpawnOn, setAutoSpawnOn] = useState<boolean>(true);
   const [savingAutoSpawn, setSavingAutoSpawn] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<{ asset: string; duration_minutes: number } | null>(null);
@@ -79,14 +82,19 @@ const CryptoRoundConfigPanel = () => {
     setLoading(false);
   };
 
-  const loadLogs = async () => {
+  const loadLogs = async (page = logsPage) => {
     setLogsLoading(true);
-    const { data, error } = await supabase
+    const from = page * LOGS_PAGE_SIZE;
+    const to = from + LOGS_PAGE_SIZE - 1;
+    const { data, error, count } = await supabase
       .from("crypto_round_spawn_log")
-      .select("id, asset, duration_minutes, market_id, source, status, message, open_price, created_at")
+      .select("id, asset, duration_minutes, market_id, source, status, message, open_price, created_at", { count: "exact" })
       .order("created_at", { ascending: false })
-      .limit(50);
-    if (!error) setLogs((data ?? []) as SpawnLogRow[]);
+      .range(from, to);
+    if (!error) {
+      setLogs((data ?? []) as SpawnLogRow[]);
+      if (typeof count === "number") setLogsTotal(count);
+    }
     setLogsLoading(false);
   };
 
@@ -123,9 +131,13 @@ const CryptoRoundConfigPanel = () => {
 
   useEffect(() => {
     load();
-    loadLogs();
     loadAutoSpawn();
   }, []);
+
+  useEffect(() => {
+    loadLogs(logsPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logsPage]);
 
   const updateRow = async (row: ConfigRow, patch: Partial<ConfigRow>) => {
     setSavingId(row.id);
@@ -300,7 +312,7 @@ const CryptoRoundConfigPanel = () => {
             <History className="w-4 h-4 text-primary" /> Spawn Audit Log
           </h3>
           <button
-            onClick={loadLogs}
+            onClick={() => loadLogs(logsPage)}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             Refresh
@@ -348,6 +360,32 @@ const CryptoRoundConfigPanel = () => {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {logsTotal > LOGS_PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-border text-xs">
+            <span className="text-muted-foreground">
+              Showing {logsPage * LOGS_PAGE_SIZE + 1}–{Math.min((logsPage + 1) * LOGS_PAGE_SIZE, logsTotal)} of {logsTotal}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setLogsPage((p) => Math.max(0, p - 1))}
+                disabled={logsPage === 0 || logsLoading}
+                className="px-2.5 py-1 rounded-md border border-border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Prev
+              </button>
+              <span className="text-muted-foreground tabular-nums">
+                Page {logsPage + 1} / {Math.max(1, Math.ceil(logsTotal / LOGS_PAGE_SIZE))}
+              </span>
+              <button
+                onClick={() => setLogsPage((p) => ((p + 1) * LOGS_PAGE_SIZE < logsTotal ? p + 1 : p))}
+                disabled={(logsPage + 1) * LOGS_PAGE_SIZE >= logsTotal || logsLoading}
+                className="px-2.5 py-1 rounded-md border border-border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
             </div>
           </div>
         )}
