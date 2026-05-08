@@ -198,9 +198,28 @@ const CryptoRoundLiveChart = ({
   const stroke = isUp ? "hsl(var(--neon-yes))" : "hsl(var(--neon-no))";
   const fill = isUp ? "hsl(var(--neon-yes) / 0.18)" : "hsl(var(--neon-no) / 0.18)";
 
-  const linePath = points
-    .map((pt, i) => `${i === 0 ? "M" : "L"}${toX(pt.t).toFixed(2)},${toY(pt.p).toFixed(2)}`)
-    .join(" ");
+  // Smoothed line path: quadratic Bézier through the midpoint of each pair of
+  // consecutive points. Cheap (no spline math, ~1 mul/add per point) and
+  // visually smoother than straight-line segments — especially on mobile where
+  // jagged sub-pixel polylines look noisy.
+  const linePath = useMemo(() => {
+    if (points.length === 0) return "";
+    const pts = points.map((p) => ({ x: toX(p.t), y: toY(p.p) }));
+    if (pts.length === 1) return `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+    let d = `M${pts[0].x.toFixed(2)},${pts[0].y.toFixed(2)}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+      const cur = pts[i];
+      const next = pts[i + 1];
+      const mx = ((cur.x + next.x) / 2).toFixed(2);
+      const my = ((cur.y + next.y) / 2).toFixed(2);
+      d += ` Q${cur.x.toFixed(2)},${cur.y.toFixed(2)} ${mx},${my}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` T${last.x.toFixed(2)},${last.y.toFixed(2)}`;
+    return d;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points, width, lo, hi, tMin, tMax, H]);
+
   const areaPath = points.length
     ? `${linePath} L${toX(points[points.length - 1].t).toFixed(2)},${H - padBot} L${toX(points[0].t).toFixed(2)},${H - padBot} Z`
     : "";
