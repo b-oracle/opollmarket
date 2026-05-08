@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminContext } from "./AdminLayout";
@@ -22,6 +22,7 @@ import {
   X,
   Sparkles,
   Repeat,
+  EyeOff,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -45,6 +46,16 @@ const AdminDeposits = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
+  const pendingReplayRef = useRef<{ txId: string; expectedRef: string } | null>(null);
+
+  // Mask a payment ID so it can't be copy-pasted; admin must verify externally.
+  function maskPaymentId(id: string | null): string {
+    if (!id) return "—";
+    if (id.length <= 12) return "•".repeat(id.length);
+    const visibleStart = id.slice(0, 4);
+    const visibleEnd = id.slice(-4);
+    return `${visibleStart}…${visibleEnd}`;
+  }
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-deposits", page, statusFilter, search],
@@ -154,13 +165,23 @@ const AdminDeposits = () => {
     },
     onSuccess: (data: any) => {
       if (data?.code === "PAYAZA_AUTH") {
+        const expectedRef = pendingReplayRef.current?.expectedRef || "";
+        if (!expectedRef) {
+          toast.error("Session expired. Please click Replay again.");
+          return;
+        }
         const ref = window.prompt(
-          "Payaza couldn't be reached (IP not whitelisted).\n\n" +
-          "Paste the Payaza transaction REFERENCE you've verified in the Payaza dashboard to credit this deposit manually.\n\n" +
-          "⚠️ Each reference can only be used once — duplicates will be rejected."
+          "Payaza API is unreachable (IP not whitelisted).\n\n" +
+          "Enter the EXACT Payaza payment reference for this deposit.\n" +
+          "You must verify this independently in the Payaza dashboard — it is not shown here.\n\n" +
+          "⚠️ Wrong reference = rejection. Each reference can only be used once."
         );
         if (!ref || !ref.trim()) {
           toast.error("Manual credit cancelled — no reference provided");
+          return;
+        }
+        if (ref.trim() !== expectedRef) {
+          toast.error("The reference you entered does not match this transaction's payment ID.");
           return;
         }
         const note = window.prompt("Optional note (why this needed manual credit):") || "";
@@ -187,9 +208,11 @@ const AdminDeposits = () => {
       } else {
         toast.success(`Replayed: credited $${Number(data.credited_main ?? data.credited ?? 0).toFixed(2)}`);
       }
+      pendingReplayRef.current = null;
       queryClient.invalidateQueries({ queryKey: ["admin-deposits"] });
     },
     onError: (err: any) => {
+      pendingReplayRef.current = null;
       toast.error(err.message || "Failed to replay webhook");
     },
   });
@@ -403,8 +426,9 @@ const AdminDeposits = () => {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {d.nowpayments_payment_id || "—"}
+                        <span className="font-mono text-xs text-muted-foreground inline-flex items-center gap-1" title="Hidden to prevent copy-paste. Verify in Payaza dashboard.">
+                          <EyeOff className="w-3 h-3" />
+                          {maskPaymentId(d.nowpayments_payment_id)}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
@@ -508,9 +532,13 @@ const AdminDeposits = () => {
                                 onClick={() => {
                                   if (
                                     confirm(
-                                      `Replay webhook for ${d.display_name}?\n\nAmount: $${Number(d.amount).toFixed(2)}\nStatus: ${d.status}\nPayment ID: ${d.nowpayments_payment_id || "—"}\n\nIf already credited, this is a no-op (no double credit).`,
+                                      `Replay webhook for ${d.display_name}?\n\nAmount: $${Number(d.amount).toFixed(2)}\nStatus: ${d.status}\n\nIf already credited, this is a no-op (no double credit).`,
                                     )
                                   ) {
+                                    pendingReplayRef.current = {
+                                      txId: d.id,
+                                      expectedRef: d.nowpayments_payment_id || "",
+                                    };
                                     replayMutation.mutate({ txId: d.id });
                                   }
                                 }}
