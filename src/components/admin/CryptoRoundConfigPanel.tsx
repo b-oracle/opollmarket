@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Activity, Zap, History, CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
+import { Loader2, Activity, Zap, History, CheckCircle2, AlertCircle, MinusCircle, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ConfigRow {
   id: string;
