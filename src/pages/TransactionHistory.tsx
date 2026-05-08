@@ -9,6 +9,10 @@ import TopBar from "@/components/TopBar";
 import BottomNav from "@/components/BottomNav";
 import DepositWithdrawModal from "@/components/DepositWithdrawModal";
 import OutstandingDebtBanner from "@/components/OutstandingDebtBanner";
+import TransactionStatusTracker, {
+  buildWithdrawalStages,
+  buildPayoutStages,
+} from "@/components/TransactionStatusTracker";
 import {
   ArrowLeft, ArrowUpRight, ArrowDownLeft, ArrowUpFromLine, ArrowDownToLine,
   Gift, Repeat, BarChart3, Sparkles, Zap, ArrowUp, ArrowDown, ChevronDown,
