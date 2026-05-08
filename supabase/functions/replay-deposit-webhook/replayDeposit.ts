@@ -294,10 +294,35 @@ async function replayPayaza(
   const headers: Record<string, string> = {
     "Accept": "application/json",
     "Authorization": auth,
+    "X-TenantID": deps.payazaTenantId || "live",
   };
-  if (deps.payazaTenantId) headers["X-TenantID"] = deps.payazaTenantId;
 
-  const res = await fetchImpl(url, { headers });
+  // Payaza requires whitelisted IPs — try the QuotaGuard proxy first, then
+  // fall back to a direct connection (for tests and local runs).
+  const proxyUrl = (globalThis as any).Deno?.env?.get?.("QUOTAGUARD_URL");
+  let res: Response | null = null;
+  let lastErr = "";
+  if (proxyUrl) {
+    try {
+      // @ts-ignore - Deno-only API
+      const httpClient = (globalThis as any).Deno?.createHttpClient?.({ proxy: { url: proxyUrl } });
+      // @ts-ignore - Deno-specific `client` option
+      res = await fetchImpl(url, { headers, client: httpClient });
+      try { httpClient?.close?.(); } catch { /* noop */ }
+    } catch (err) {
+      lastErr = String(err);
+      console.error("Payaza proxy lookup failed:", lastErr);
+      res = null;
+    }
+  }
+  if (!res) {
+    try {
+      res = await fetchImpl(url, { headers });
+    } catch (err) {
+      lastErr = String(err);
+      return { status: 502, body: { error: `Payaza lookup unreachable: ${lastErr.substring(0, 300)}` } };
+    }
+  }
   const text = await res.text();
   if (!res.ok) {
     return { status: 502, body: { error: `Payaza lookup failed (${res.status}): ${text.substring(0, 300)}` } };
