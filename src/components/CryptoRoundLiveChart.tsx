@@ -161,7 +161,8 @@ const CryptoRoundLiveChart = ({
     return unsub;
   }, [sym]);
 
-  // Throttled flush: copy buffered ticks into React state every FLUSH_MS.
+  // Throttled flush: copy buffered ticks into React state every FLUSH_MS,
+  // and persist the result to the per-round cache for instant rehydration.
   useEffect(() => {
     const id = setInterval(() => {
       const buf = bufferRef.current;
@@ -176,11 +177,14 @@ const CryptoRoundLiveChart = ({
 
       setPoints((prev) => {
         const merged = prev.concat(drained);
-        return merged.length > MAX_POINTS ? merged.slice(merged.length - MAX_POINTS) : merged;
+        const trimmed =
+          merged.length > MAX_POINTS ? merged.slice(merged.length - MAX_POINTS) : merged;
+        if (cacheKey) writeRoundCache(cacheKey, trimmed);
+        return trimmed;
       });
     }, FLUSH_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [cacheKey]);
 
   const endMs = useMemo(() => new Date(endsAt).getTime(), [endsAt]);
   const startMs = useMemo(() => {
