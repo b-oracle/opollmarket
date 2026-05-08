@@ -51,7 +51,8 @@ import SpaceMiniPlayer from "./SpaceMiniPlayer";
 import SpaceVideoGrid from "./SpaceVideoGrid";
 import TaggedMarketsCarousel from "./TaggedMarketsCarousel";
 import { SOUND_REACTIONS, playSoundById, AMBIENT_TRACKS, startAmbient, stopAmbient, isAmbientPlaying, warmAudioContext } from "@/lib/spaceSounds";
-import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv, Library } from "lucide-react";
+import { Music, ChevronDown, Upload, Square, Play, Pause, Search, Tv, Library, Share2 } from "lucide-react";
+import SpaceShareSheet from "./SpaceShareSheet";
 import { optimizedImageUrl as optimizedImg } from "@/lib/optimizedImage";
 import YouTubeEmbed, { isStreamUrl } from "@/components/YouTubeEmbed";
 import JamendoMusicBrowser from "./JamendoMusicBrowser";
@@ -118,6 +119,24 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
   const [showStreamInput, setShowStreamInput] = useState(false);
   const [streamInputValue, setStreamInputValue] = useState("");
   const [streamCollapsed, setStreamCollapsed] = useState(false);
+
+  // Share sheet state
+  const [shareOpen, setShareOpen] = useState(false);
+  const [hostDisplayName, setHostDisplayName] = useState<string>("Host");
+  useEffect(() => {
+    if (!hostId) return;
+    let cancelled = false;
+    supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", hostId)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        if (cancelled || !data) return;
+        setHostDisplayName(data.display_name || data.username || "Host");
+      });
+    return () => { cancelled = true; };
+  }, [hostId]);
 
   const handleSaveTitle = async () => {
     const trimmed = editTitleValue.trim();
@@ -2444,6 +2463,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
 
   // ============ FULL MODE ============
   return (
+    <>
     <AnimatePresence>
       <motion.div key="space-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="fixed inset-0 bg-background/80 backdrop-blur-md z-[80]" />
@@ -2543,6 +2563,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
+            </button>
+            {/* Share button — share live space without minimizing */}
+            <button
+              onClick={() => setShareOpen(true)}
+              className="w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              title="Share space"
+              aria-label="Share space"
+            >
+              <Share2 className="w-4 h-4" />
             </button>
             {/* Minimize button */}
             <button onClick={toggleMinimize}
@@ -3971,6 +4000,15 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         )}
       </AnimatePresence>
     </AnimatePresence>
+    <SpaceShareSheet
+      open={shareOpen}
+      onClose={() => setShareOpen(false)}
+      spaceId={spaceId}
+      spaceTitle={displayTitle}
+      hostName={hostDisplayName}
+      isLive={true}
+    />
+    </>
   );
 };
 
