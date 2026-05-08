@@ -5179,6 +5179,7 @@ export type Database = {
         Args: { _draft_id?: string; _market_data: Json; _options?: string[] }
         Returns: Json
       }
+      db_now: { Args: never; Returns: string }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
         Returns: Json
