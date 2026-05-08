@@ -236,6 +236,7 @@ export default function QuickTrade() {
   const { user } = useAuth();
   const { balance } = useUserBalance();
   const { toast } = useToast();
+  const { track } = useAnalytics();
   const navigate = useNavigate();
   const { toggles } = useFeatureToggles();
   const tvChartEnabled = toggles.find((t) => t.feature_key === "tradingview_chart")?.enabled ?? false;
@@ -1198,9 +1199,11 @@ export default function QuickTrade() {
                 const estimatedProfit = estimatedPayout - betAmt;
                 setWinShareData({ profit: estimatedProfit, payout: estimatedPayout, side: myBets[0].side, asset: selectedAsset.symbol });
                 toast({ title: "You won! 🎉", description: `The round resolved ${resolvedResult?.toUpperCase()}`, action: <button onClick={() => setShowWinShare(true)} className="text-xs font-bold text-primary underline">Share Win</button> });
+                track("quick_trade_won", { asset: selectedAsset.symbol, side: myBets[0].side, amount: betAmt, profit: estimatedProfit });
               } else {
                 if (!soundMuted) playLoseSound();
                 haptic("error");
+                track("quick_trade_lost", { asset: selectedAsset.symbol, side: myBets[0].side });
               }
             } else {
               setResolveFlash(resolvedResult === "up" ? "win" : "lose");
@@ -1306,6 +1309,7 @@ export default function QuickTrade() {
         .eq("user_id", user.id)
         .limit(1);
       if (newBet && newBet.length > 0) setUserBet(newBet[0] as unknown as Bet);
+      track("bet_placed", { category: "quick_trade", asset: selectedAsset.symbol, side, amount: amt, timeframe: selectedTimeframe.label });
     } catch (err: any) {
       haptic("error");
       toast({ title: "Failed to place trade", description: err.message, variant: "destructive" });
