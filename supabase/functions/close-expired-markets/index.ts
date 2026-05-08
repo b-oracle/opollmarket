@@ -26,12 +26,18 @@ Deno.serve(async (req) => {
     const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
     const nowIso = new Date().toISOString();
 
-    const [genericRes, sportsRes, twitterRes] = await Promise.all([
+    const [genericRes, sportsRes, twitterRes, cryptoRes] = await Promise.all([
+      // Generic markets: close when end_date <= today.
+      // EXCLUDE crypto rounds — they live on intra-day deadlines (5m/15m/1h)
+      // and must stay active until their precise `auto_resolve_deadline`.
+      // Closing them by date-only `end_date` was flipping them to "ended"
+      // the instant they spawned (since end_date == today).
       supabase
         .from("markets")
         .select("id, title, creator_wallet, auto_resolve, is_crypto_round")
         .eq("status", "active")
         .lte("end_date", today)
+        .or("is_crypto_round.is.null,is_crypto_round.eq.false")
         .or("sport_match_id.is.null,auto_resolve.eq.false")
         .or("twitter_metric_type.is.null,auto_resolve.eq.false"),
       supabase
@@ -48,6 +54,14 @@ Deno.serve(async (req) => {
         .eq("status", "active")
         .eq("auto_resolve", true)
         .not("twitter_metric_type", "is", null)
+        .not("auto_resolve_deadline", "is", null)
+        .lte("auto_resolve_deadline", nowIso),
+      // Crypto Up/Down rounds: close at the exact intra-day deadline.
+      supabase
+        .from("markets")
+        .select("id, title, creator_wallet, auto_resolve, is_crypto_round")
+        .eq("status", "active")
+        .eq("is_crypto_round", true)
         .not("auto_resolve_deadline", "is", null)
         .lte("auto_resolve_deadline", nowIso),
     ]);
