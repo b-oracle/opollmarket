@@ -286,12 +286,13 @@ const CryptoRoundConfigPanel = () => {
                           {savingId === row.id && <Loader2 className="w-3 h-3 animate-spin" />}
                         </label>
                         <button
-                          onClick={() => triggerSpawnOne(row.asset, row.duration_minutes)}
+                          onClick={() => setConfirmTarget({ asset: row.asset, duration_minutes: row.duration_minutes })}
                           disabled={isSpawning}
-                          className="px-2 py-1 rounded-md text-[11px] font-semibold bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-50 inline-flex items-center gap-1 justify-center"
+                          title="Force-create a new round even if the previous one is still active. Audit-logged."
+                          className="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 disabled:opacity-50 inline-flex items-center gap-1 justify-center"
                         >
-                          {isSpawning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-                          Spawn now
+                          {isSpawning ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertTriangle className="w-3 h-3" />}
+                          Force new round
                         </button>
                         <button
                           onClick={() => updateRow(row, { enabled: !row.enabled })}
