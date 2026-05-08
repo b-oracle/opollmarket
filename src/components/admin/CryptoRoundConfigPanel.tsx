@@ -185,14 +185,42 @@ const CryptoRoundConfigPanel = () => {
               Auto-spawned binary AMM markets per asset and duration. Use "Spawn now" on any row to force-create a fresh round immediately (audit-logged).
             </p>
           </div>
-          <button
-            onClick={triggerSpawnAll}
-            disabled={spawning}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground disabled:opacity-50 inline-flex items-center gap-1.5"
-          >
-            {spawning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
-            Spawn all enabled
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${
+                autoSpawnOn
+                  ? "border-primary/30 bg-primary/10"
+                  : "border-border bg-muted/40"
+              }`}
+              title="Master switch — when off, no new rounds spawn automatically after resolution. Per-row toggles below still apply when this is on."
+            >
+              <span className="text-xs font-bold uppercase tracking-wider">
+                {autoSpawnOn ? "Auto-Spawn ON" : "Auto-Spawn PAUSED"}
+              </span>
+              <button
+                onClick={toggleAutoSpawn}
+                disabled={savingAutoSpawn}
+                className={`w-12 h-6 rounded-full relative transition-colors disabled:opacity-50 ${
+                  autoSpawnOn ? "bg-primary" : "bg-muted-foreground/40"
+                }`}
+                aria-label="Toggle global auto-spawn"
+              >
+                <span
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-background transition-transform ${
+                    autoSpawnOn ? "translate-x-6" : "translate-x-0.5"
+                  }`}
+                />
+              </button>
+            </div>
+            <button
+              onClick={triggerSpawnAll}
+              disabled={spawning}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground disabled:opacity-50 inline-flex items-center gap-1.5"
+            >
+              {spawning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+              Spawn all enabled
+            </button>
+          </div>
         </div>
 
         {loading ? (
