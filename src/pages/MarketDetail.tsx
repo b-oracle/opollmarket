@@ -6,7 +6,8 @@ import blueLogo from "@/assets/blue-opoll-logo.png";
 import { ArrowLeft, Share2, Heart, Bookmark, TrendingUp, Users, Clock, Droplets, BarChart3, Zap, Send, CornerDownRight, ChevronDown, Loader2, Wallet, FileText, ExternalLink, CheckCircle2, XCircle, Pencil, Trash2, Check, X, Info } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 // LogoLoader removed for faster load
-import { useMarket } from "@/hooks/useMarkets";
+import { useMarket, fetchMarketDetail, mapDbToMarket } from "@/hooks/useMarkets";
+import { fetchCryptoPrice } from "@/lib/cryptoPriceProvider";
 import { useActiveBoosts } from "@/hooks/useActiveBoosts";
 import BoostCountdown from "@/components/BoostCountdown";
 import CategoryIcon from "@/components/CategoryIcon";
