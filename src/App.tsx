@@ -133,6 +133,7 @@ const EmbedTicker = lazy(() => import("./pages/EmbedTicker"));
 const Developers = lazy(() => import("./pages/Developers"));
 const MyPromotions = lazy(() => import("./pages/MyPromotions"));
 const TransactionHistory = lazy(() => import("./pages/TransactionHistory"));
+const UpDownHistory = lazy(() => import("./pages/UpDownHistory"));
 const Messages = lazy(() => import("./pages/Messages"));
 const MessageThread = lazy(() => import("./pages/MessageThread"));
 const Welcome = lazy(() => import("./pages/Welcome"));
