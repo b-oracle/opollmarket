@@ -75,30 +75,41 @@ class CallMessagingService : FirebaseMessagingService() {
 
         // Tapping the body of the heads-up notification (NOT a button) should
         // also open the in-app accept flow — same target as the Accept button.
-        val tapAcceptIntent = Intent(this, CallActionReceiver::class.java).apply {
-            action = CallActionReceiver.ACTION_ACCEPT
+        // IMPORTANT: We launch MainActivity DIRECTLY via PendingIntent.getActivity
+        // (not via a BroadcastReceiver) so the system's foreground-activation
+        // token attached to the notification tap exempts the launch from
+        // Android 10+ Background-Activity-Launch (BAL) restrictions. A broadcast
+        // hop loses that token and the activity launch is silently dropped on
+        // many OEMs (Samsung/Xiaomi/etc.) — which is why "nothing happens" until
+        // the user opens the app manually. WhatsApp uses the same direct path.
+        val acceptDeepLink = Uri.parse(
+            "opoll://call/accept?call_id=$callId&conversation_id=$conversationId"
+        )
+        val acceptActivityIntent = Intent(this, MainActivity::class.java).apply {
+            action = Intent.ACTION_VIEW
+            data = acceptDeepLink
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("call_id", callId)
             putExtra("conversation_id", conversationId)
+            putExtra("auto_accept", true)
         }
-        val tapAcceptPending = PendingIntent.getBroadcast(
-            this, (callId + "tap").hashCode(), tapAcceptIntent,
+        val acceptPending = PendingIntent.getActivity(
+            this, (callId + "a").hashCode(), acceptActivityIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        // Body tap reuses the same direct-to-activity intent.
+        val tapAcceptPending = acceptPending
 
-        val acceptIntent = Intent(this, CallActionReceiver::class.java).apply {
-            action = CallActionReceiver.ACTION_ACCEPT
-            putExtra("call_id", callId)
-            putExtra("conversation_id", conversationId)
-        }
+        // Decline still goes through the broadcast receiver because it uses
+        // goAsync() to keep the decline-HTTP POST alive after the notification
+        // is cancelled, and it does NOT need to bring the app to the foreground.
         val declineIntent = Intent(this, CallActionReceiver::class.java).apply {
             action = CallActionReceiver.ACTION_DECLINE
             putExtra("call_id", callId)
             putExtra("conversation_id", conversationId)
         }
-        val acceptPending = PendingIntent.getBroadcast(
-            this, (callId + "a").hashCode(), acceptIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
         val declinePending = PendingIntent.getBroadcast(
             this, (callId + "d").hashCode(), declineIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
