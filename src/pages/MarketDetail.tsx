@@ -688,7 +688,12 @@ const MarketDetail = () => {
     return () => observer.disconnect();
   }, [market]);
 
-  if (isLoading) return <div className="h-dvh flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (isLoading) return (
+    <div className="h-dvh flex flex-col items-center justify-center gap-3 text-muted-foreground">
+      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      <p className="text-xs">Loading round…</p>
+    </div>
+  );
   if (isError) return (
     <div className="h-dvh flex flex-col items-center justify-center gap-4 text-muted-foreground">
       <p>Failed to load market. Please try again.</p>
