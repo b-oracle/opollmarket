@@ -17,6 +17,7 @@ import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import LivePriceBadge from "@/components/LivePriceBadge";
+import LiveCryptoRoundPercent from "@/components/LiveCryptoRoundPercent";
 import { Gem, ArrowLeftRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
