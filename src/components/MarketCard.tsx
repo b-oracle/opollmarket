@@ -673,6 +673,21 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   </div>
                 ) : (
                   <div className="space-y-1">
+                    {market.isCryptoRound && (
+                      <div className="mb-2 rounded-lg bg-muted/30 px-2 py-1.5 flex items-center gap-2">
+                        <span className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase shrink-0">
+                          Yes {yesPercent}%
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <OddsSparkline
+                            marketId={market.id}
+                            currentYesPrice={(market.yesPrice ?? yesPercent / 100)}
+                            windowMinutes={60}
+                            height={32}
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-3">
                       <button
                         onClick={() => setBetModal({ open: true, side: "yes" })}
