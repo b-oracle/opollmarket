@@ -230,6 +230,8 @@ export const useMarkets = () => {
     staleTime: 30_000,
     retry: shouldRetry,
     retryDelay: 1000,
+    select: (markets: Market[]) =>
+      cryptoUpDownEnabled ? markets : markets.filter((m) => !m.isCryptoRound),
   });
 };
 
