@@ -863,7 +863,11 @@ const MarketDetail = () => {
             <span className="text-sm font-medium text-muted-foreground">
               {market.isCryptoRound && market.autoResolveAsset ? `${market.autoResolveAsset} · Live Price` : "Price Chart"}
             </span>
-            <span className="text-xl font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% Chance · ${leading.label}`; })() : `${yesPercent}% Chance`}</span>
+            {market.isCryptoRound && (market.autoResolveDeadline || market.endDate) ? (
+              <CryptoRoundLiveCountdown endsAt={market.autoResolveDeadline || market.endDate} />
+            ) : (
+              <span className="text-xl font-bold text-green-500">{isMulti && market.options?.length ? (() => { const leading = market.options!.reduce((a, b) => b.price > a.price ? b : a); return `${Math.round(leading.price * 100)}% Chance · ${leading.label}`; })() : `${yesPercent}% Chance`}</span>
+            )}
           </div>
           {market.isCryptoRound && market.autoResolveAsset ? (
             <div className="relative">
