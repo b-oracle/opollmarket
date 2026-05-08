@@ -78,11 +78,28 @@ const CryptoRoundLiveChart = ({
   height = 220,
 }: Props) => {
   const sym = asset?.toUpperCase();
-  const [points, setPoints] = useState<Point[]>([]);
-  const [last, setLast] = useState<number | null>(null);
+  const cacheKey = sym ? cacheKeyFor(sym, endsAt) : "";
+
+  // Hydrate synchronously from the in-memory cache so the chart paints with
+  // history on the very first render — no waiting for the first WS tick.
+  const [points, setPoints] = useState<Point[]>(() =>
+    cacheKey ? readRoundCache(cacheKey) : [],
+  );
+  const [last, setLast] = useState<number | null>(() => {
+    const cached = cacheKey ? readRoundCache(cacheKey) : [];
+    return cached.length ? cached[cached.length - 1].p : null;
+  });
   const [now, setNow] = useState(() => Date.now());
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
+
+  // Re-hydrate when the round (or asset) changes mid-mount.
+  useEffect(() => {
+    if (!cacheKey) return;
+    const cached = readRoundCache(cacheKey);
+    setPoints(cached);
+    setLast(cached.length ? cached[cached.length - 1].p : null);
+  }, [cacheKey]);
 
   // Tick clock
   useEffect(() => {
