@@ -1119,6 +1119,8 @@ const Create = () => {
         _liquidity_amount: liquidityAmount,
         _fee_amount: feeAmount,
         _bonus_for_fee: bonusForFee,
+        _market_id: null,
+        _log_transactions: false,
       }
     );
 
@@ -1245,6 +1247,8 @@ const Create = () => {
         _liquidity_amount: -liquidityAmount,
         _fee_amount: -rollbackFeeAmount,
         _bonus_for_fee: -bonusForFeeRollback,
+        _market_id: null,
+        _log_transactions: false,
       });
       // Release escrow as refunded on technical failure
       if (escrowId) {
