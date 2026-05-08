@@ -225,7 +225,7 @@ const UpDownHistory = () => {
               return (
                 <button
                   key={p.id}
-                  onClick={() => navigate(`/market/${m.id}`)}
+                  onClick={() => navigate(p.realized ? `/up-down/receipt/${m.id}` : `/market/${m.id}`)}
                   className="w-full text-left rounded-xl border border-border/50 bg-card/40 p-3 active:scale-[0.98] transition-transform"
                 >
                   <div className="flex items-center justify-between gap-3 mb-2">
