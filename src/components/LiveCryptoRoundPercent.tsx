@@ -1,4 +1,5 @@
 import { useCryptoRoundChance } from "@/hooks/useCryptoRoundChance";
+import AnimatedNumber from "@/components/AnimatedNumber";
 
 interface Props {
   asset?: string;
@@ -10,7 +11,7 @@ interface Props {
 /**
  * Shows live "% chance Up" for crypto Up/Down round markets, derived from the
  * live spot price vs the round's open price. Falls back to yes_price-derived
- * percent when no live price is available yet.
+ * percent when no live price is available yet. Tweens between values.
  */
 export default function LiveCryptoRoundPercent({
   asset,
@@ -19,6 +20,6 @@ export default function LiveCryptoRoundPercent({
   className,
 }: Props) {
   const live = useCryptoRoundChance(asset, openPrice);
-  const pct = live != null ? Math.round(live * 100) : fallbackPercent;
-  return <span className={className}>{pct}%</span>;
+  const pct = live != null ? live * 100 : fallbackPercent;
+  return <AnimatedNumber value={pct} suffix="%" className={`${className ?? ""} tabular-nums`} />;
 }
