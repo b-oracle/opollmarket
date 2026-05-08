@@ -47,6 +47,10 @@ Deno.serve(async (req) => {
       fetch,
       Deno.env.get("NOWPAYMENTS_API_KEY"),
       { actorId: user.id, transactionId: transaction_id, paymentId: payment_id },
+      {
+        payazaSecretKey: Deno.env.get("PAYAZA_SECRET_KEY"),
+        payazaTenantId: Deno.env.get("PAYAZA_TENANT_ID"),
+      },
     );
     return json(result.body, result.status);
   } catch (err) {
