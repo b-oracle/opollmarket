@@ -363,6 +363,32 @@ const CryptoRoundConfigPanel = () => {
             </div>
           </div>
         )}
+        {logsTotal > LOGS_PAGE_SIZE && (
+          <div className="flex items-center justify-between gap-2 pt-3 mt-3 border-t border-border text-xs">
+            <span className="text-muted-foreground">
+              Showing {logsPage * LOGS_PAGE_SIZE + 1}–{Math.min((logsPage + 1) * LOGS_PAGE_SIZE, logsTotal)} of {logsTotal}
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setLogsPage((p) => Math.max(0, p - 1))}
+                disabled={logsPage === 0 || logsLoading}
+                className="px-2.5 py-1 rounded-md border border-border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Prev
+              </button>
+              <span className="text-muted-foreground tabular-nums">
+                Page {logsPage + 1} / {Math.max(1, Math.ceil(logsTotal / LOGS_PAGE_SIZE))}
+              </span>
+              <button
+                onClick={() => setLogsPage((p) => ((p + 1) * LOGS_PAGE_SIZE < logsTotal ? p + 1 : p))}
+                disabled={(logsPage + 1) * LOGS_PAGE_SIZE >= logsTotal || logsLoading}
+                className="px-2.5 py-1 rounded-md border border-border hover:bg-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <AlertDialog open={!!confirmTarget} onOpenChange={(open) => !open && setConfirmTarget(null)}>
         <AlertDialogContent>
