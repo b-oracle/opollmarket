@@ -565,6 +565,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                     asset={market.autoResolveAsset}
                     targetPrice={market.autoResolveTargetPrice ?? undefined}
                     operator={market.autoResolveOperator ?? undefined}
+                    marketId={market.id}
                   />
                 </div>
               )}
