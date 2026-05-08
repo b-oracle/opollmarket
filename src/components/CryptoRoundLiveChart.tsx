@@ -131,11 +131,16 @@ const CryptoRoundLiveChart = ({
     let cancelled = false;
     fetchCryptoPrice(sym).then((p) => {
       if (cancelled || p == null) return;
-      setPoints((prev) => (prev.length ? prev : [{ t: Date.now(), p }]));
+      setPoints((prev) => {
+        if (prev.length) return prev;
+        const seeded = [{ t: Date.now(), p }];
+        if (cacheKey) writeRoundCache(cacheKey, seeded);
+        return seeded;
+      });
       setLast((prev) => prev ?? p);
     });
     return () => { cancelled = true; };
-  }, [sym]);
+  }, [sym, cacheKey]);
 
   // Subscribe to live stream — buffer ticks in a ref and flush on a throttled
   // interval to avoid one React re-render per WS message (Binance can stream
