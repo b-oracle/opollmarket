@@ -5,6 +5,9 @@ const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const OP_LABELS: Record<string, string> = {
   above: ">", below: "<", at_or_above: "≥", at_or_below: "≤",
@@ -14,9 +17,12 @@ interface LivePriceBadgeProps {
   asset: string;
   targetPrice?: number;
   operator?: string;
+  /** When provided, target-progress toasts only fire for users who currently
+   *  hold an open position (shares > 0) in this market. */
+  marketId?: string;
 }
 
-const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ asset, targetPrice, operator }, ref) => {
+const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ asset, targetPrice, operator, marketId }, ref) => {
   const [price, setPrice] = useState<number | null>(null);
   const [prev, setPrev] = useState<number | null>(null);
   const [flash, setFlash] = useState<"up" | "down" | null>(null);
@@ -28,6 +34,27 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
   const marketOpen = isMarketOpen(cls);
   const nextOpen = !marketOpen ? getNextOpenTime(cls) : "";
 
+  // Gate progress toasts: only users with an open position in this market
+  // should see "X% toward target" / "hit the target" alerts.
+  const { user } = useAuth();
+  const { data: hasOpenPosition = false } = useQuery({
+    queryKey: ["live-price-badge-position", marketId, user?.id],
+    queryFn: async () => {
+      if (!marketId || !user?.id) return false;
+      const { data } = await supabase
+        .from("positions")
+        .select("id")
+        .eq("market_id", marketId)
+        .eq("user_id", user.id)
+        .gt("shares", 0)
+        .limit(1)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!marketId && !!user?.id,
+    staleTime: 30_000,
+  });
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -37,8 +64,12 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
         setPrice(p);
         priceRef.current = p;
 
+        // Only fire personal alerts when this badge is bound to a market AND
+        // the viewer holds an active position in it.
+        const canToast = !!marketId && hasOpenPosition;
+
         // Fire a one-time toast when crossing the 95% threshold
-        if (!toastFiredRef.current && targetPrice != null && targetPrice > 0 && operator) {
+        if (canToast && !toastFiredRef.current && targetPrice != null && targetPrice > 0 && operator) {
           const prog = (operator === "above" || operator === "at_or_above")
             ? Math.min(Math.round((p / targetPrice) * 100), 100)
             : (operator === "below" || operator === "at_or_below")
@@ -83,7 +114,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
     load();
     const interval = setInterval(load, 60_000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [asset]);
+  }, [asset, marketId, hasOpenPosition, targetPrice, operator]);
 
   // Trigger flash when price changes
   useEffect(() => {
