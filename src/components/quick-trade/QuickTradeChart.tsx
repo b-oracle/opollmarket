@@ -274,20 +274,27 @@ function QuickTradeChart(props: QuickTradeChartProps) {
     } else {
       const areaHistory = useEngineData ? enginePriceHistory : (liveEnginePriceHistory ?? priceHistory);
       if (areaHistory && areaHistory.length >= 2) {
-        const FSChart = chartType === "poly" ? PolylineChart : SimpleAreaChart;
         const roundStartMs = activeRound ? new Date(activeRound.created_at).getTime() : null;
         const roundEndMs = roundStartMs && activeRound ? roundStartMs + activeRound.duration_seconds * 1000 : null;
-        return (
-          <FSChart
+        return chartType === "poly" ? (
+          <PolylineChart
             priceHistory={areaHistory}
             entryPrice={entryPrice}
             assetClass={assetClass}
             userBet={userBet}
             activeRound={activeRound}
             fullscreen
-            {...(FSChart === SimpleAreaChart
-              ? { windowStartMs: roundStartMs, windowEndMs: roundEndMs }
-              : {})}
+          />
+        ) : (
+          <SimpleAreaChart
+            priceHistory={areaHistory}
+            entryPrice={entryPrice}
+            assetClass={assetClass}
+            userBet={userBet}
+            activeRound={activeRound}
+            fullscreen
+            windowStartMs={roundStartMs}
+            windowEndMs={roundEndMs}
           />
         );
       }
