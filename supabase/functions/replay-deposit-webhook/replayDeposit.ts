@@ -190,7 +190,10 @@ export async function replayDeposit(
     .eq("id", tx.id).neq("status", "confirmed")
     .select("id, user_id").maybeSingle();
 
-  if (claimErr) return { status: 500, body: { error: "Failed to claim transaction" } };
+  if (claimErr) {
+    console.error("[replay-deposit] NOWPayments claim failed", { txId: tx.id, error: claimErr });
+    return { status: 500, body: { error: "Failed to claim transaction", details: claimErr.message, code: (claimErr as any).code } };
+  }
   if (!claimed) {
     return { status: 200, body: { success: true, already_confirmed: true, message: "Concurrent confirmation detected — no double credit", transaction_id: tx.id } };
   }
@@ -426,7 +429,10 @@ async function replayPayaza(
     .eq("id", tx.id).neq("status", "confirmed")
     .select("id, user_id").maybeSingle();
 
-  if (claimErr) return { status: 500, body: { error: "Failed to claim transaction" } };
+  if (claimErr) {
+    console.error("[replay-deposit] Payaza claim failed", { txId: tx.id, error: claimErr });
+    return { status: 500, body: { error: "Failed to claim transaction", details: claimErr.message, code: (claimErr as any).code } };
+  }
   if (!claimed) {
     return { status: 200, body: { success: true, already_confirmed: true, message: "Concurrent confirmation detected — no double credit", transaction_id: tx.id } };
   }
