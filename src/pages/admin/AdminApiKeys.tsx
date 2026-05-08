@@ -126,12 +126,23 @@ const AdminApiKeys = () => {
       setOwners(map);
     }
 
-    // Fetch request logs
-    const { data: logs } = await supabase
-      .from("api_request_logs" as any)
-      .select("api_key_id, endpoint, created_at")
-      .order("created_at", { ascending: false });
-    const logArr = (logs as any[] || []);
+    // Fetch request logs — paginate to bypass the 1000-row default cap
+    const logArr: any[] = [];
+    const PAGE = 1000;
+    const MAX_PAGES = 50; // safety cap = 50k rows
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE;
+      const to = from + PAGE - 1;
+      const { data: chunk, error } = await supabase
+        .from("api_request_logs" as any)
+        .select("api_key_id, endpoint, created_at")
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (error) break;
+      const arr = (chunk as any[]) || [];
+      logArr.push(...arr);
+      if (arr.length < PAGE) break;
+    }
     
     // Aggregate per key
     const statsMap = new Map<string, RequestStats>();
