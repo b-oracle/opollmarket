@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import AnimatedNumber from "@/components/AnimatedNumber";
 
 import {
   TrendingUp,
