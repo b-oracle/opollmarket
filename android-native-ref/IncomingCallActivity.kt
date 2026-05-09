@@ -141,11 +141,13 @@ class IncomingCallActivity : AppCompatActivity() {
         var dragging = false
         var maxTravel = 0f
         var accepted = false
+        var crossedThreshold = false
 
         thumb.setOnTouchListener { v, event ->
             when (event.actionMasked) {
                 MotionEvent.ACTION_DOWN -> {
                     dragging = true
+                    crossedThreshold = false
                     startX = event.rawX - v.translationX
                     maxTravel = (rail.width - thumb.width - dpToPx(12)).toFloat()
                     true
@@ -156,6 +158,16 @@ class IncomingCallActivity : AppCompatActivity() {
                     v.translationX = dx
                     // Fade hint as the thumb advances
                     hint.alpha = max(0f, 1f - (dx / maxTravel) * 1.6f)
+                    val progress = if (maxTravel <= 0f) 0f else dx / maxTravel
+                    // Crisp tick the moment the user crosses the accept threshold,
+                    // and a softer one when they fall back below it.
+                    if (progress >= 0.6f && !crossedThreshold) {
+                        crossedThreshold = true
+                        hapticThresholdCrossed()
+                    } else if (progress < 0.6f && crossedThreshold) {
+                        crossedThreshold = false
+                        hapticTick()
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -171,7 +183,9 @@ class IncomingCallActivity : AppCompatActivity() {
                             .withEndAction { acceptCall(callId, conversationId) }
                             .start()
                     } else {
-                        // Spring back home.
+                        // Spring back home — pair the visual snap-back with a
+                        // light haptic so it feels physical.
+                        hapticSnapBack()
                         v.animate()
                             .translationX(0f)
                             .setDuration(220)
@@ -281,6 +295,34 @@ class IncomingCallActivity : AppCompatActivity() {
 
     private fun dpToPx(dp: Int): Int =
         (dp * resources.displayMetrics.density).toInt()
+
+    /**
+     * Haptics use HapticFeedbackConstants on the root view rather than the
+     * Vibrator service, so they don't clobber the looping ringtone vibration
+     * waveform that's already running on the same Vibrator.
+     */
+    private fun hapticThresholdCrossed() {
+        val root = findViewById<View>(R.id.call_root) ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+        } else {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+        }
+    }
+
+    private fun hapticSnapBack() {
+        val root = findViewById<View>(R.id.call_root) ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.REJECT)
+        } else {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+        }
+    }
+
+    private fun hapticTick() {
+        val root = findViewById<View>(R.id.call_root) ?: return
+        root.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+    }
 
     override fun onDestroy() {
         stopRinging()
