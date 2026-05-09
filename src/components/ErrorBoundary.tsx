@@ -21,18 +21,23 @@ const getChunkReloadCount = () => {
   try {
     const raw = window.localStorage?.getItem(RELOAD_KEY) ?? "";
     if (!raw) return 0;
-    const ts = parseInt(raw, 10);
-    if (!Number.isFinite(ts)) return 0;
+    const parsed = JSON.parse(raw) as { ts?: number; count?: number };
+    const ts = Number(parsed?.ts);
+    const count = Number(parsed?.count);
+    if (!Number.isFinite(ts) || !Number.isFinite(count)) return 0;
     if (Date.now() - ts > RELOAD_WINDOW_MS) return 0;
-    return 1;
+    return count;
   } catch {
     return 0;
   }
 };
 
-const setChunkReloadCount = (_count: number) => {
+const setChunkReloadCount = (count: number) => {
   try {
-    window.localStorage?.setItem(RELOAD_KEY, String(Date.now()));
+    window.localStorage?.setItem(
+      RELOAD_KEY,
+      JSON.stringify({ ts: Date.now(), count }),
+    );
   } catch {
     // ignore storage access errors
   }
