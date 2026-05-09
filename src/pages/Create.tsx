@@ -1166,9 +1166,29 @@ const Create = () => {
       _escrow_id: escrowId,
     });
 
-    const finalizeResult = typeof finalizeData === "string" ? JSON.parse(finalizeData) : finalizeData;
+    let finalizeResult: any = finalizeData;
+    try {
+      if (typeof finalizeData === "string") finalizeResult = JSON.parse(finalizeData);
+    } catch (parseErr) {
+      console.error("[Create] Could not parse finalize result:", parseErr, finalizeData);
+    }
     if (finalizeError || !finalizeResult?.success) {
-      const errorMsg = finalizeResult?.error || finalizeError?.message || "Failed to save market";
+      // Surface the most specific reason we can find, in priority order
+      const rawErr: any = finalizeError || {};
+      const errorMsg =
+        finalizeResult?.error ||
+        rawErr.message ||
+        rawErr.hint ||
+        rawErr.details ||
+        rawErr.code ||
+        (typeof finalizeData === "string" ? finalizeData : null) ||
+        (finalizeData ? `Unexpected response: ${JSON.stringify(finalizeData).slice(0, 200)}` : null) ||
+        "Failed to save market (no response from server)";
+      console.error("[Create] finalize_market_creation_atomic failed", {
+        finalizeError,
+        finalizeResult,
+        finalizeData,
+      });
       failSubmit(errorMsg, finalizeError || finalizeResult);
       toast.error(errorMsg, errorMsg.toLowerCase().includes("insufficient") ? {
         action: { label: "Deposit Now", onClick: () => setDepositModalOpen(true) },
