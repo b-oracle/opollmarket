@@ -633,6 +633,10 @@ const VoiceCallOverlay = ({
         // on iOS/web. Without this, the WebView is suspended seconds
         // after pickup and the WSS dies → "call ends right after pickup".
         void startCallForegroundService(otherUserName);
+        // Switch Android AudioManager into VoIP mode and route to the
+        // earpiece by default. Without this, WebRTC audio is played on
+        // STREAM_MUSIC → loudspeaker, and JS toggles cannot change it.
+        void AudioRouter.startCall();
         // Mic enable can fail independently (permission denied, no device).
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
