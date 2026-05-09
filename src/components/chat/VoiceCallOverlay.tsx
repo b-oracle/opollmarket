@@ -1155,8 +1155,19 @@ const VoiceCallOverlay = ({
 
   const toggleSpeaker = useCallback(() => {
     const newSpeaker = !speakerOn;
-    const room = roomRef.current;
 
+    // On Android Capacitor builds, route audio via the native AudioRouter
+    // plugin. HTMLAudioElement.volume / setSinkId() are NO-OPS for WebRTC
+    // audio inside Android WebView — the only way to switch earpiece <->
+    // loudspeaker is AudioManager.setSpeakerphoneOn() / setCommunicationDevice().
+    if (isAndroidNativeAudio()) {
+      void AudioRouter.setSpeakerphone(newSpeaker).then((actual) => {
+        setSpeakerOn(actual);
+      });
+      return;
+    }
+
+    const room = roomRef.current;
     // Approach 1: setSinkId (works on desktop Chrome, some Android Chrome)
     const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
     let sinkIdWorked = false;
