@@ -11,6 +11,7 @@ import { logCallEvent } from "@/lib/callEvents";
 import { recordCallLifecycle } from "@/lib/callLifecycleLog";
 import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
 import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
+import { AudioRouter, isAndroidNativeAudio } from "@/lib/audioRouter";
 import CallDebugOverlay from "./CallDebugOverlay";
 import CallStatusBadge, { type CallStatusVariant } from "./CallStatusBadge";
 
@@ -194,7 +195,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
-    void stopCallForegroundService();
+    void stopCallForegroundService(); void AudioRouter.endCall();
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -224,7 +225,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
     clearCallPreferences(callId);
-    void stopCallForegroundService();
+    void stopCallForegroundService(); void AudioRouter.endCall();
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -256,7 +257,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
     recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
     clearCallPreferences(callId);
-    void stopCallForegroundService();
+    void stopCallForegroundService(); void AudioRouter.endCall();
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -632,6 +633,10 @@ const VoiceCallOverlay = ({
         // on iOS/web. Without this, the WebView is suspended seconds
         // after pickup and the WSS dies → "call ends right after pickup".
         void startCallForegroundService(otherUserName);
+        // Switch Android AudioManager into VoIP mode and route to the
+        // earpiece by default. Without this, WebRTC audio is played on
+        // STREAM_MUSIC → loudspeaker, and JS toggles cannot change it.
+        void AudioRouter.startCall();
         // Mic enable can fail independently (permission denied, no device).
         // Don't tear down the whole call for that — let the user join muted
         // and surface a targeted toast instead.
@@ -755,7 +760,7 @@ const VoiceCallOverlay = ({
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      void stopCallForegroundService();
+      void stopCallForegroundService(); void AudioRouter.endCall();
       room.disconnect();
       roomRef.current = null;
     };
@@ -1150,8 +1155,19 @@ const VoiceCallOverlay = ({
 
   const toggleSpeaker = useCallback(() => {
     const newSpeaker = !speakerOn;
-    const room = roomRef.current;
 
+    // On Android Capacitor builds, route audio via the native AudioRouter
+    // plugin. HTMLAudioElement.volume / setSinkId() are NO-OPS for WebRTC
+    // audio inside Android WebView — the only way to switch earpiece <->
+    // loudspeaker is AudioManager.setSpeakerphoneOn() / setCommunicationDevice().
+    if (isAndroidNativeAudio()) {
+      void AudioRouter.setSpeakerphone(newSpeaker).then((actual) => {
+        setSpeakerOn(actual);
+      });
+      return;
+    }
+
+    const room = roomRef.current;
     // Approach 1: setSinkId (works on desktop Chrome, some Android Chrome)
     const audioEls = document.querySelectorAll<HTMLAudioElement>('[id^="remote-audio-"]');
     let sinkIdWorked = false;
