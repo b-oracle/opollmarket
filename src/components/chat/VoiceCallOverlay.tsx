@@ -299,14 +299,36 @@ const VoiceCallOverlay = ({
       });
       if (track.kind === Track.Kind.Audio) {
         remoteTrackReceivedRef.current = true;
-        const el = track.attach();
+        const el = track.attach() as HTMLAudioElement;
         el.id = `remote-audio-${track.sid}`;
-        // Default to earpiece mode (lower volume, communications sink)
-        el.volume = 0.4;
-        if (typeof (el as any).setSinkId === "function") {
+        el.autoplay = true;
+        (el as any).playsInline = true;
+        // Full volume — routing/earpiece is handled by the native
+        // foreground service + AudioManager, NOT by the HTML element.
+        // The previous 0.4 + setSinkId("communications") combo was inaudible
+        // on Android Capacitor WebView (sink id unsupported, volume too low).
+        el.volume = 1.0;
+        // Only attempt setSinkId on real desktop browsers that support it.
+        // Android WebView & iOS WKWebView don't, and on some Chromium
+        // versions the rejected promise leaves the element silent.
+        const isNative = !!(window as any).Capacitor?.isNativePlatform?.();
+        if (!isNative && typeof (el as any).setSinkId === "function") {
           (el as any).setSinkId("communications").catch(() => {});
         }
         document.body.appendChild(el);
+        // Force playback — autoplay is unreliable inside Capacitor WebView
+        // even though the accept tap counts as a user gesture.
+        el.play().catch((err) => {
+          recordCallLifecycle(callId, "remote_audio_play_failed", {
+            status: statusRef.current,
+            message: err?.message,
+            level: "warn",
+          });
+          // Fallback: ask LiveKit to resume audio playback for the room.
+          try {
+            roomRef.current?.startAudio().catch(() => {});
+          } catch {}
+        });
         try {
           // Get the underlying MediaStreamTrack and build a stream for the analyser
           const mediaTrack = track.mediaStreamTrack;
