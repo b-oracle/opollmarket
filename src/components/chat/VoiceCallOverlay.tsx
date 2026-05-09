@@ -319,7 +319,7 @@ const VoiceCallOverlay = ({
         // Force playback — autoplay is unreliable inside Capacitor WebView
         // even though the accept tap counts as a user gesture.
         el.play().catch((err) => {
-          recordCallLifecycle(callId, "warn", {
+          recordCallLifecycle(callId, "info", {
             status: statusRef.current,
             message: `Remote audio play() failed: ${err?.message ?? "unknown"}`,
             level: "warn",
