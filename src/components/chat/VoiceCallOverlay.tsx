@@ -11,6 +11,7 @@ import { logCallEvent } from "@/lib/callEvents";
 import { recordCallLifecycle } from "@/lib/callLifecycleLog";
 import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "@/lib/callPreferences";
 import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
+import { AudioRouter, isAndroidNativeAudio } from "@/lib/audioRouter";
 import CallDebugOverlay from "./CallDebugOverlay";
 import CallStatusBadge, { type CallStatusVariant } from "./CallStatusBadge";
 
