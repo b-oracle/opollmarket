@@ -133,14 +133,21 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Notify the creator
-      await supabase.from("notifications").insert({
-        user_id: market.creator_wallet,
-        title: "Market Ended ⏰",
-        message: `Your market "${market.title}" has ended and is now awaiting resolution.`,
-        type: "info",
-        market_id: market.id,
-      });
+      // Notify the creator — but skip auto-resolve markets and crypto rounds,
+      // which resolve themselves and would otherwise spam the system creator
+      // with a "Market Ended" alert every 5/15 minutes.
+      const isAutoResolvedMarket =
+        (market as any).auto_resolve === true ||
+        (market as any).is_crypto_round === true;
+      if (!isAutoResolvedMarket) {
+        await supabase.from("notifications").insert({
+          user_id: market.creator_wallet,
+          title: "Market Ended ⏰",
+          message: `Your market "${market.title}" has ended and is now awaiting resolution.`,
+          type: "info",
+          market_id: market.id,
+        });
+      }
 
       // Compute volume + participant count for the email
       const { data: posStats } = await supabase
