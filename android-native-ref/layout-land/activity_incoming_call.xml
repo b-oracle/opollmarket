@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  android/app/src/main/res/layout/activity_incoming_call.xml
+  Copy to: android/app/src/main/res/layout-land/activity_incoming_call.xml
 
-  Sleek lockscreen incoming-call screen.
-  - Dark vertical gradient backdrop (matches the in-app glass theme)
-  - Pulsing avatar bubble with two soft rings (animated from Kotlin)
-  - "Incoming voice call" sub-label + bold caller name
-  - Swipe-to-answer rail at the bottom (drag thumb past ~60% to accept).
-    A small "Decline" pill above the rail keeps end-call one-tap.
+  Landscape variant of the sleek incoming-call screen.
+  - Two-column split: avatar/name on the left, swipe-to-answer rail on the
+    right. Keeps the rail reachable with one thumb in landscape.
+  - Same root id (`call_root`) so IncomingCallActivity's window-inset
+    listener works for portrait and landscape.
+  - Same child ids (caller_sub, caller_name, avatar_initial, pulse_ring_*,
+    swipe_rail, swipe_thumb, swipe_hint, btn_decline) so no Kotlin changes.
 -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -19,51 +20,27 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fitsSystemWindows="true">
+        android:layout_height="match_parent">
 
-        <!-- ============ TOP: sub-label + name ============ -->
-        <TextView
-            android:id="@+id/caller_sub"
+        <!-- 50/50 split between identity (left) and controls (right). -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/center_guide"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Incoming voice call"
-            android:textColor="#94A3B8"
-            android:textSize="13sp"
-            android:letterSpacing="0.18"
-            android:textAllCaps="true"
-            android:fontFamily="sans-serif-medium"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="80dp"/>
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5"/>
 
-        <TextView
-            android:id="@+id/caller_name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Caller"
-            android:textColor="#FFFFFF"
-            android:textSize="36sp"
-            android:fontFamily="sans-serif-medium"
-            android:letterSpacing="-0.01"
-            app:layout_constraintTop_toBottomOf="@id/caller_sub"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginTop="14dp"/>
-
-        <!-- ============ CENTER: pulsing avatar ============ -->
+        <!-- ============ LEFT COLUMN: avatar + name ============ -->
         <FrameLayout
             android:id="@+id/avatar_wrap"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/caller_sub"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintVertical_bias="0.42">
+            app:layout_constraintEnd_toStartOf="@id/center_guide"
+            app:layout_constraintVertical_chainStyle="packed">
 
-            <!-- Outer pulse ring (animated by IncomingCallActivity) -->
             <View
                 android:id="@+id/pulse_ring_outer"
                 android:layout_width="match_parent"
@@ -71,22 +48,19 @@
                 android:background="@drawable/bg_pulse_ring"
                 android:layout_gravity="center"/>
 
-            <!-- Inner pulse ring -->
             <View
                 android:id="@+id/pulse_ring_inner"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
                 android:background="@drawable/bg_pulse_ring"
                 android:layout_gravity="center"/>
 
-            <!-- Avatar circle -->
             <View
-                android:layout_width="140dp"
-                android:layout_height="140dp"
+                android:layout_width="108dp"
+                android:layout_height="108dp"
                 android:background="@drawable/bg_avatar_circle"
                 android:layout_gravity="center"/>
 
-            <!-- Avatar initial / glyph -->
             <TextView
                 android:id="@+id/avatar_initial"
                 android:layout_width="wrap_content"
@@ -94,11 +68,42 @@
                 android:layout_gravity="center"
                 android:text="•"
                 android:textColor="#FFFFFF"
-                android:textSize="56sp"
+                android:textSize="44sp"
                 android:fontFamily="sans-serif-medium"/>
         </FrameLayout>
 
-        <!-- ============ BOTTOM: decline pill + swipe rail ============ -->
+        <TextView
+            android:id="@+id/caller_sub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Incoming voice call"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:letterSpacing="0.18"
+            android:textAllCaps="true"
+            android:fontFamily="sans-serif-medium"
+            app:layout_constraintTop_toBottomOf="@id/avatar_wrap"
+            app:layout_constraintBottom_toTopOf="@id/caller_name"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/center_guide"
+            android:layout_marginTop="14dp"/>
+
+        <TextView
+            android:id="@+id/caller_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Caller"
+            android:textColor="#FFFFFF"
+            android:textSize="26sp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.01"
+            app:layout_constraintTop_toBottomOf="@id/caller_sub"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/center_guide"
+            android:layout_marginTop="6dp"/>
+
+        <!-- ============ RIGHT COLUMN: decline + swipe rail ============ -->
         <TextView
             android:id="@+id/btn_decline"
             android:layout_width="wrap_content"
@@ -115,24 +120,24 @@
             android:clickable="true"
             android:focusable="true"
             app:layout_constraintBottom_toTopOf="@id/swipe_rail"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/center_guide"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginBottom="22dp"/>
+            android:layout_marginBottom="18dp"/>
 
-        <!-- Swipe-to-answer rail -->
         <FrameLayout
             android:id="@+id/swipe_rail"
             android:layout_width="0dp"
-            android:layout_height="76dp"
+            android:layout_height="68dp"
             android:background="@drawable/bg_swipe_rail"
+            app:layout_constraintTop_toBottomOf="@id/btn_decline"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintStart_toEndOf="@id/center_guide"
             app:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginStart="28dp"
-            android:layout_marginEnd="28dp"
-            android:layout_marginBottom="64dp">
+            app:layout_constraintVertical_bias="1.0"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="32dp">
 
-            <!-- Centered hint text (fades as the user drags) -->
             <TextView
                 android:id="@+id/swipe_hint"
                 android:layout_width="wrap_content"
@@ -140,23 +145,22 @@
                 android:layout_gravity="center"
                 android:text="Swipe to answer"
                 android:textColor="#CBD5E1"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:fontFamily="sans-serif-medium"
                 android:letterSpacing="0.10"/>
 
-            <!-- Draggable accept thumb (touch handled in Kotlin) -->
             <FrameLayout
                 android:id="@+id/swipe_thumb"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 android:layout_gravity="start|center_vertical"
                 android:layout_marginStart="6dp"
                 android:background="@drawable/bg_accept_thumb"
                 android:elevation="6dp">
 
                 <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
                     android:layout_gravity="center"
                     android:src="@android:drawable/sym_action_call"
                     android:contentDescription="Answer"

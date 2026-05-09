@@ -33,7 +33,11 @@
         </intent-filter>
     </service>
 
-    <!-- Lockscreen incoming-call UI -->
+    <!-- Lockscreen incoming-call UI.
+         configChanges keeps the same Activity instance across rotation,
+         keyboard show/hide, screen-size, ui-mode (day/night) and display-
+         cutout changes — so the ringtone, pulse animation, and swipe state
+         don't restart when the user tilts the device. -->
     <activity
         android:name=".IncomingCallActivity"
         android:exported="true"
@@ -42,6 +46,7 @@
         android:showOnLockScreen="true"
         android:showWhenLocked="true"
         android:turnScreenOn="true"
+        android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar" />
 
     <!-- Accept/Decline broadcast -->
