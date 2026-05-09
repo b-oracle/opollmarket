@@ -69,7 +69,36 @@ class IncomingCallActivity : AppCompatActivity() {
             )
         }
 
+        // Draw edge-to-edge so the gradient fills the whole screen, then
+        // pad the content for status bar / nav bar / display cutout. Keeps
+        // the layout safe on punch-hole displays, foldables, gesture-nav
+        // and 3-button-nav devices in both portrait and landscape.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+
         setContentView(R.layout.activity_incoming_call)
+
+        // Apply system-bar + cutout insets as padding on the root content.
+        // Both portrait and landscape layouts share the id `call_root`.
+        val root = findViewById<View>(R.id.call_root)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars()
+                    or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.updatePadding(
+                left = bars.left,
+                top = bars.top,
+                right = bars.right,
+                bottom = bars.bottom,
+            )
+            insets
+        }
 
         val callId = intent.getStringExtra("call_id").orEmpty()
         val callerName = intent.getStringExtra("caller_name") ?: "Someone"
