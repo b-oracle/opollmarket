@@ -3404,7 +3404,7 @@ const Create = () => {
                   </p>
                   {submitErrorMsg && (
                     <p className="text-[10px] text-muted-foreground/70 text-center mb-3 break-all max-h-24 overflow-y-auto px-2">
-                      Share this with support if it persists.
+                      Reason: <span className="text-foreground/80">{submitErrorMsg}</span> — share this with support if it persists.
                     </p>
                   )}
                   <div className="flex gap-3 w-full">
