@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copy to: android/app/src/main/res/layout-land/activity_incoming_call.xml
+
+  Landscape variant of the sleek incoming-call screen.
+  - Two-column split: avatar/name on the left, swipe-to-answer rail on the
+    right. Keeps the rail reachable with one thumb in landscape.
+  - Same root id (`call_root`) so IncomingCallActivity's window-inset
+    listener works for portrait and landscape.
+  - Same child ids (caller_sub, caller_name, avatar_initial, pulse_ring_*,
+    swipe_rail, swipe_thumb, swipe_hint, btn_decline) so no Kotlin changes.
+-->
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/call_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_call_screen">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- 50/50 split between identity (left) and controls (right). -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/center_guide"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5"/>
+
+        <!-- ============ LEFT COLUMN: avatar + name ============ -->
+        <FrameLayout
+            android:id="@+id/avatar_wrap"
+            android:layout_width="180dp"
+            android:layout_height="180dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toTopOf="@id/caller_sub"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/center_guide"
+            app:layout_constraintVertical_chainStyle="packed">
+
+            <View
+                android:id="@+id/pulse_ring_outer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_pulse_ring"
+                android:layout_gravity="center"/>
+
+            <View
+                android:id="@+id/pulse_ring_inner"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:background="@drawable/bg_pulse_ring"
+                android:layout_gravity="center"/>
+
+            <View
+                android:layout_width="108dp"
+                android:layout_height="108dp"
+                android:background="@drawable/bg_avatar_circle"
+                android:layout_gravity="center"/>
+
+            <TextView
+                android:id="@+id/avatar_initial"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="•"
+                android:textColor="#FFFFFF"
+                android:textSize="44sp"
+                android:fontFamily="sans-serif-medium"/>
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/caller_sub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Incoming voice call"
+            android:textColor="#94A3B8"
+            android:textSize="12sp"
+            android:letterSpacing="0.18"
+            android:textAllCaps="true"
+            android:fontFamily="sans-serif-medium"
+            app:layout_constraintTop_toBottomOf="@id/avatar_wrap"
+            app:layout_constraintBottom_toTopOf="@id/caller_name"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/center_guide"
+            android:layout_marginTop="14dp"/>
+
+        <TextView
+            android:id="@+id/caller_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Caller"
+            android:textColor="#FFFFFF"
+            android:textSize="26sp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="-0.01"
+            app:layout_constraintTop_toBottomOf="@id/caller_sub"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/center_guide"
+            android:layout_marginTop="6dp"/>
+
+        <!-- ============ RIGHT COLUMN: decline + swipe rail ============ -->
+        <TextView
+            android:id="@+id/btn_decline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Decline"
+            android:textColor="#FCA5A5"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.06"
+            android:paddingHorizontal="22dp"
+            android:paddingVertical="12dp"
+            android:background="@drawable/bg_decline_pill"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintBottom_toTopOf="@id/swipe_rail"
+            app:layout_constraintStart_toEndOf="@id/center_guide"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="18dp"/>
+
+        <FrameLayout
+            android:id="@+id/swipe_rail"
+            android:layout_width="0dp"
+            android:layout_height="68dp"
+            android:background="@drawable/bg_swipe_rail"
+            app:layout_constraintTop_toBottomOf="@id/btn_decline"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/center_guide"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintVertical_bias="1.0"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="32dp"
+            android:layout_marginBottom="32dp">
+
+            <TextView
+                android:id="@+id/swipe_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="Swipe to answer"
+                android:textColor="#CBD5E1"
+                android:textSize="13sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.10"/>
+
+            <FrameLayout
+                android:id="@+id/swipe_thumb"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_gravity="start|center_vertical"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_accept_thumb"
+                android:elevation="6dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/sym_action_call"
+                    android:contentDescription="Answer"
+                    android:tint="#FFFFFF"/>
+            </FrameLayout>
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</FrameLayout>
