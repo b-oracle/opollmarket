@@ -296,6 +296,34 @@ class IncomingCallActivity : AppCompatActivity() {
     private fun dpToPx(dp: Int): Int =
         (dp * resources.displayMetrics.density).toInt()
 
+    /**
+     * Haptics use HapticFeedbackConstants on the root view rather than the
+     * Vibrator service, so they don't clobber the looping ringtone vibration
+     * waveform that's already running on the same Vibrator.
+     */
+    private fun hapticThresholdCrossed() {
+        val root = findViewById<View>(R.id.call_root) ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+        } else {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+        }
+    }
+
+    private fun hapticSnapBack() {
+        val root = findViewById<View>(R.id.call_root) ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.REJECT)
+        } else {
+            root.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
+        }
+    }
+
+    private fun hapticTick() {
+        val root = findViewById<View>(R.id.call_root) ?: return
+        root.performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK)
+    }
+
     override fun onDestroy() {
         stopRinging()
         stopPulseAnimation()
