@@ -70,6 +70,14 @@ const IncomingCallBanner = () => {
     }
   }, []);
 
+  // Safety net: any time the route changes while there's no incoming or
+  // active call (e.g. user navigated away from the call screen), make sure
+  // no stale incoming-call notification is left in the tray.
+  useEffect(() => {
+    if (incomingCall || activeCall) return;
+    void dismissCallNotifications(`route-change:${location.pathname}`);
+  }, [location.pathname, incomingCall, activeCall]);
+
   useEffect(() => {
     try {
       if (!activeCall) {
