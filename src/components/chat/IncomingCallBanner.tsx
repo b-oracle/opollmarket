@@ -172,6 +172,7 @@ const IncomingCallBanner = () => {
     const dismissTimer = setTimeout(() => {
       logCallEvent(incomingCall.id, "missed", { reason: "auto_dismiss_90s" });
       setIncomingCall(null);
+      void dismissCallNotifications("auto-dismiss-90s");
     }, 90_000);
 
     const channel = supabase
@@ -188,6 +189,7 @@ const IncomingCallBanner = () => {
           const newStatus = payload.new?.status;
           if (newStatus === "missed" || newStatus === "ended" || newStatus === "declined") {
             setIncomingCall(null);
+            void dismissCallNotifications(`status-${newStatus}`);
           }
         }
       )
