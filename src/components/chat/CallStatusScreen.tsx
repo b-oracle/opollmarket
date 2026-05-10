@@ -158,12 +158,12 @@ const CallStatusScreen = ({
             />
           ) : (
             <span className="text-4xl font-bold text-primary">
-              {otherName.charAt(0).toUpperCase()}
+              {(otherName || "?").charAt(0).toUpperCase()}
             </span>
           )}
         </div>
 
-        <h2 className="text-2xl font-semibold text-foreground">{otherName}</h2>
+        <h2 className="text-2xl font-semibold text-foreground">{otherName || "Unknown"}</h2>
 
         {view === "connected" && (
           <span className="text-sm text-muted-foreground tabular-nums">
