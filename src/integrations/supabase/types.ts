@@ -5534,6 +5534,7 @@ export type Database = {
         Args: { _market_data: Json; _market_id: string }
         Returns: Json
       }
+      purge_empty_crypto_rounds: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
