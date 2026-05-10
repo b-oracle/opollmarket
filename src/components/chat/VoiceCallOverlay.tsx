@@ -332,7 +332,7 @@ const VoiceCallOverlay = ({
 
     // Hold the post-call screen long enough for the user to read why it ended
     setTimeout(onClose, 2500);
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   const handleCancel = useCallback(() => {
     if (endingRef.current) {
@@ -361,7 +361,7 @@ const VoiceCallOverlay = ({
     }).catch(() => {});
 
     setTimeout(onClose, 2000);
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   // Auto-fired when the callee never answers within the ringing timeout.
   // Logged distinctly from a manual caller-cancel so the dashboard can tell
@@ -393,7 +393,7 @@ const VoiceCallOverlay = ({
     }).catch(() => {});
 
     setTimeout(onClose, 2500);
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   // Track whether the user intentionally muted, so we can auto-restore on app switch
   const userIntentMutedRef = useRef(persistedPrefs?.muted ?? false);
