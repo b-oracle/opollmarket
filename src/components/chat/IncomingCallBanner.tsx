@@ -48,6 +48,7 @@ const IncomingCallBanner = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
+  const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [answering, setAnswering] = useState(false);
