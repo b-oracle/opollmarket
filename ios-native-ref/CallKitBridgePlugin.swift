@@ -45,8 +45,7 @@ public class CallKitBridgePlugin: CAPPlugin {
             shared?.notifyListeners(name, data: data)
         }
     }
-
-
+    @objc func setMuted(_ call: CAPPluginCall) {
         guard let callId = call.getString("callId") else {
             call.reject("callId is required")
             return
