@@ -18,23 +18,36 @@ independent.
 ## 🟢 Android (≈ 30 min)
 
 1. On your dev machine: `git pull` then `npx cap add android` (skip if already added).
-2. Copy these files into `android/app/src/main/`:
-   - `android-native-ref/CallMessagingService.kt`   → `java/app/lovable/opollmarket/`
-   - `android-native-ref/IncomingCallActivity.kt`   → `java/app/lovable/opollmarket/`
-   - `android-native-ref/CallActionReceiver.kt`     → `java/app/lovable/opollmarket/`
-   - `android-native-ref/activity_incoming_call.xml`→ `res/layout/`
-   - A short ringtone audio file                    → `res/raw/ringtone.mp3`
-3. Merge `android-native-ref/AndroidManifest.additions.xml` into `android/app/src/main/AndroidManifest.xml`. The critical pieces:
+2. From the project root, run the bundled installer that copies every reference file into the right native paths and prints the manifest patches you still need to merge by hand:
+   ```bash
+   bash scripts/install-android-call-stack.sh
+   ```
+   The script writes:
+   - `android-native-ref/CallMessagingService.kt`    → `android/app/src/main/java/com/opollmarket/app/`
+   - `android-native-ref/IncomingCallActivity.kt`    → `android/app/src/main/java/com/opollmarket/app/`
+   - `android-native-ref/CallActionReceiver.kt`      → `android/app/src/main/java/com/opollmarket/app/`
+   - `android-native-ref/AudioRouterPlugin.kt`       → `android/app/src/main/java/com/opollmarket/app/`
+   - `android-native-ref/activity_incoming_call.xml` → `android/app/src/main/res/layout/`
+   - `android-native-ref/layout-land/activity_incoming_call.xml` → `android/app/src/main/res/layout-land/`
+   - `android-native-ref/drawable/*.xml`             → `android/app/src/main/res/drawable/`
+3. Drop a short ringtone (≤ 6 s, ≤ 200 KB MP3 / OGG) at `android/app/src/main/res/raw/ringtone.mp3`.
+4. Register `AudioRouterPlugin` in `android/app/src/main/java/com/opollmarket/app/MainActivity.kt`:
+   ```kotlin
+   override fun onCreate(savedInstanceState: Bundle?) {
+       registerPlugin(AudioRouterPlugin::class.java)
+       super.onCreate(savedInstanceState)
+   }
+   ```
+5. Merge `android-native-ref/AndroidManifest.additions.xml` into `android/app/src/main/AndroidManifest.xml`. The critical pieces:
    - `<uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />`
    - `<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />`
    - `<service android:name=".CallMessagingService">` with `com.google.firebase.MESSAGING_EVENT` intent filter
    - `<activity android:name=".IncomingCallActivity" android:showWhenLocked="true" android:turnScreenOn="true" />`
    - `<receiver android:name=".CallActionReceiver" android:exported="false" />`
-4. Add Firebase to the project: drop `google-services.json` into `android/app/`,
-   apply the `com.google.gms.google-services` plugin in `android/app/build.gradle`.
-5. Build a fresh APK in Android Studio (`Build → Build APK`) and install it.
-6. **Test:** call the device while it is locked. You should see the full-screen
-   `IncomingCallActivity` over the lockscreen with Accept / Decline buttons.
+   - `<data android:scheme="opoll" />` intent-filter on `.MainActivity`
+6. Add Firebase: drop `google-services.json` into `android/app/`, apply the `com.google.gms.google-services` plugin in `android/app/build.gradle`, and add the Firebase BoM + `com.google.firebase:firebase-messaging` dependency.
+7. Build a fresh APK in Android Studio (`Build → Build APK`) and install it.
+8. **Test:** call the device while it is locked. You should see the full-screen `IncomingCallActivity` over the lockscreen with WhatsApp-style red Decline / green Accept buttons, ringtone, and pulse animation.
 
 > On Android 14+ (`USE_FULL_SCREEN_INTENT`), the user must grant the permission
 > in **Settings → Apps → opollmarket → Special access → Full-screen
