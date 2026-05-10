@@ -1007,13 +1007,27 @@ const VoiceCallOverlay = ({
     };
   }, [callId, onClose]);
 
-  const toggleMute = async () => {
+  // Apply a mute change without re-broadcasting to CallKit. Used by both the
+  // overlay UI button (which then ALSO pushes to CallKit) and by the
+  // system-side listener (which already came FROM CallKit).
+  const applyMute = useCallback(async (newMuted: boolean) => {
     if (!roomRef.current) return;
-    const newMuted = !muted;
+    if (muted === newMuted) return;
     userIntentMutedRef.current = newMuted;
-    await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
+    try {
+      await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
+    } catch (err) {
+      console.warn("[overlay] setMicrophoneEnabled failed:", err);
+    }
     setMuted(newMuted);
     saveCallPreferences(callId, { muted: newMuted });
+  }, [callId, muted]);
+
+  const toggleMute = async () => {
+    const newMuted = !muted;
+    await applyMute(newMuted);
+    // Mirror to the iOS CallKit screen so the system mute pill matches.
+    void CallKitBridge.setMuted(callId, newMuted);
   };
 
   const toggleCamera = async () => {
