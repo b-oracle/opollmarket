@@ -70,6 +70,93 @@ const clearLatestCall = () => {
   try { localStorage.removeItem(LATEST_CALL_KEY); } catch { /* ignore */ }
 };
 
+// ---- Long-lived per-caller profile cache ----------------------------------
+// LATEST_CALL_KEY only holds the *current* incoming call and expires after 2
+// minutes (a call only rings ~30–60s). For repeat callers we keep a separate,
+// long-lived map keyed by caller_id so the in-call avatar / name can hydrate
+// instantly on reload — even if the user was offline when the call landed,
+// or if the profile fetch races / RLS-blocks. Stored as a flat object so we
+// can write/read without scanning a list.
+const CALLER_PROFILE_KEY = "call_caller_profile_v1";
+const CALLER_PROFILE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const CALLER_PROFILE_MAX_ENTRIES = 50;
+
+type CachedCallerProfile = {
+  caller_id: string;
+  caller_name?: string;
+  caller_avatar?: string;
+  updated_at: number;
+};
+
+type CallerProfileMap = Record<string, CachedCallerProfile>;
+
+const readCallerProfileMap = (): CallerProfileMap => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(CALLER_PROFILE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as CallerProfileMap;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writeCallerProfileMap = (map: CallerProfileMap) => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(CALLER_PROFILE_KEY, JSON.stringify(map));
+  } catch {
+    // quota / serialization failure — non-fatal
+  }
+};
+
+/** Read the cached profile for a caller_id, ignoring expired entries. */
+export const readCallerProfile = (callerId: string | null | undefined): CachedCallerProfile | null => {
+  if (!callerId) return null;
+  const map = readCallerProfileMap();
+  const entry = map[callerId];
+  if (!entry) return null;
+  if (Date.now() - entry.updated_at > CALLER_PROFILE_TTL_MS) return null;
+  return entry;
+};
+
+/**
+ * Save / update the cached profile for a caller_id. Merges with any existing
+ * entry so partial updates (e.g. name only) don't blow away the avatar.
+ * Caps the cache at CALLER_PROFILE_MAX_ENTRIES (LRU by updated_at).
+ */
+export const saveCallerProfile = (
+  callerId: string | null | undefined,
+  fields: { caller_name?: string | null; caller_avatar?: string | null },
+): void => {
+  if (!callerId) return;
+  if (!fields.caller_name && !fields.caller_avatar) return;
+
+  const map = readCallerProfileMap();
+  const prior = map[callerId];
+  const merged: CachedCallerProfile = {
+    caller_id: callerId,
+    caller_name: fields.caller_name || prior?.caller_name,
+    caller_avatar: fields.caller_avatar || prior?.caller_avatar,
+    updated_at: Date.now(),
+  };
+  map[callerId] = merged;
+
+  // Evict oldest entries if we're over the cap.
+  const ids = Object.keys(map);
+  if (ids.length > CALLER_PROFILE_MAX_ENTRIES) {
+    const sorted = ids
+      .map((id) => ({ id, t: map[id]?.updated_at || 0 }))
+      .sort((a, b) => a.t - b.t);
+    const overflow = sorted.length - CALLER_PROFILE_MAX_ENTRIES;
+    for (let i = 0; i < overflow; i++) delete map[sorted[i].id];
+  }
+
+  writeCallerProfileMap(map);
+};
+
+
 const stopForegroundCallRing = () => {
   if (activeCallVibrationCancel) {
     activeCallVibrationCancel();
