@@ -451,6 +451,13 @@ export const useNativePush = () => {
               // (Accept / Mute / Decline) can recover ids if the OS strips
               // the notification's `extra` payload.
               saveLatestCall(data);
+              // Mirror the caller identity into the long-lived per-caller
+              // cache so a future cold start (or offline-recovery) can still
+              // hydrate the avatar even after LATEST_CALL_KEY expires.
+              saveCallerProfile(data.caller_id, {
+                caller_name: data.caller_name,
+                caller_avatar: data.caller_avatar,
+              });
 
               // A new incoming-call push supersedes any prior snooze.
               clearSnoozeTimer();
