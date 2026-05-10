@@ -286,7 +286,7 @@ const IncomingCallBanner = () => {
     })();
 
     return () => { cancelled = true; };
-  }, [incomingCall, activeCall, answering, handleAnswer, user, autoAcceptTick]);
+  }, [incomingCall, activeCall, answering, handleAnswer, user, autoAcceptTick, location.search]);
 
 
   const handleDecline = useCallback(async () => {
