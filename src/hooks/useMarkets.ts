@@ -73,7 +73,7 @@ export const mapDbToMarket = (db: DbMarket): Market => ({
   participants: db.participants + ((db as any).simulated_participants || 0),
   endDate: db.end_date,
   creatorAddress: db.creator_wallet,
-  creatorName: db.creator_name,
+  creatorName: (db.creator_name && String(db.creator_name).trim()) || "Anonymous",
   imageUrl: db.image_url || "",
   videoUrl: db.video_url || undefined,
   details: db.details || undefined,
