@@ -52,7 +52,9 @@ const IncomingCallBanner = () => {
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [answering, setAnswering] = useState(false);
   const [callMinimized, setCallMinimized] = useState(false);
+  const [autoAcceptTick, setAutoAcceptTick] = useState(0);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
+
 
   // On mount, check for a stored active call — but DON'T restore it.
   // Restored tokens are almost certainly expired, leading to silent failures.
