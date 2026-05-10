@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
@@ -48,11 +48,14 @@ const IncomingCallBanner = () => {
   const { user } = useAuth();
   const { isFeatureEnabled } = useFeatureToggles();
   const navigate = useNavigate();
+  const location = useLocation();
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
   const [activeCall, setActiveCall] = useState<ActiveCallState | null>(null);
   const [answering, setAnswering] = useState(false);
   const [callMinimized, setCallMinimized] = useState(false);
+  const [autoAcceptTick, setAutoAcceptTick] = useState(0);
   const stopRingtoneRef = useRef<(() => void) | null>(null);
+
 
   // On mount, check for a stored active call — but DON'T restore it.
   // Restored tokens are almost certainly expired, leading to silent failures.
@@ -230,19 +233,61 @@ const IncomingCallBanner = () => {
 
   // Auto-accept when arriving via the Android lockscreen deep link OR via
   // the web push notification "Accept" action (?auto_accept=1&call_id=…).
-  // Fires once the realtime subscription has populated `incomingCall`.
+  //
+  // We do NOT depend on the realtime INSERT having arrived first — when the
+  // user accepts from the lockscreen, the realtime subscription is often
+  // mounted milliseconds AFTER the deep link runs (or the row was already
+  // delivered to a different tab). Instead we hydrate `incomingCall`
+  // directly from the DB so the overlay can mount immediately.
   useEffect(() => {
-    if (!incomingCall || activeCall || answering) return;
+    if (activeCall || answering) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("auto_accept") !== "1") return;
     const targetId = params.get("call_id");
-    if (targetId && targetId !== incomingCall.id) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("auto_accept");
-    url.searchParams.delete("call_id");
-    window.history.replaceState({}, "", url.toString());
-    handleAnswer();
-  }, [incomingCall, activeCall, answering, handleAnswer]);
+    if (!targetId) return;
+    if (incomingCall && incomingCall.id !== targetId) return;
+
+    let cancelled = false;
+    (async () => {
+      // If realtime already populated incomingCall for this id, just answer.
+      if (incomingCall && incomingCall.id === targetId) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("auto_accept");
+        url.searchParams.delete("call_id");
+        window.history.replaceState({}, "", url.toString());
+        handleAnswer();
+        return;
+      }
+      // Otherwise hydrate directly from the DB.
+      const { data: call } = await supabase
+        .from("dm_calls")
+        .select("id, conversation_id, caller_id, room_name, status, callee_id")
+        .eq("id", targetId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!call || call.status !== "ringing" || (user && call.callee_id !== user.id)) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", call.caller_id)
+        .maybeSingle();
+      if (cancelled) return;
+      setIncomingCall({
+        id: call.id,
+        conversation_id: call.conversation_id,
+        caller_id: call.caller_id,
+        room_name: call.room_name,
+        callerName: profile?.display_name || "Unknown",
+        callerAvatar: profile?.avatar_url || undefined,
+      });
+      logCallEvent(call.id, "received", { source: "deep_link" });
+      // The next render of this effect (with incomingCall populated) will
+      // strip the URL params and call handleAnswer().
+    })();
+
+    return () => { cancelled = true; };
+  }, [incomingCall, activeCall, answering, handleAnswer, user, autoAcceptTick, location.search]);
+
 
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
@@ -271,9 +316,17 @@ const IncomingCallBanner = () => {
     return () => window.removeEventListener("start-voice-call" as any, handler);
   }, []);
 
-  // Cross-surface call action events (fired by useCallDeepLink when the user
-  // taps Accept/Decline on the native lockscreen notification). Lets the
-  // banner dismiss instantly without waiting on realtime.
+  // Tap-to-return: when the foreground-service notification is tapped it
+  // re-launches the WebView with ?return_to_call=1 — un-minimise the overlay.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("return_to_call") !== "1") return;
+    if (activeCall) setCallMinimized(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("return_to_call");
+    window.history.replaceState({}, "", url.toString());
+  }, [location.search, activeCall]);
+
   useEffect(() => {
     const onAction = (e: Event) => {
       const detail = (e as CustomEvent).detail as { action?: string; call_id?: string } | undefined;
@@ -312,13 +365,27 @@ const IncomingCallBanner = () => {
       if (!msg || msg.type !== "dm-call-action") return;
       const intent = msg.intent as "answer" | "decline" | undefined;
       const cid = msg.call_id as string | undefined;
-      if (!incomingCall || (cid && cid !== incomingCall.id)) return;
-      if (intent === "answer") handleAnswer();
-      else if (intent === "decline") handleDecline();
+      if (intent === "answer") {
+        // If we don't yet have the incomingCall hydrated (race with realtime),
+        // forward to the URL-driven flow which fetches + answers atomically.
+        if (!incomingCall && cid) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("auto_accept", "1");
+          url.searchParams.set("call_id", cid);
+          window.history.replaceState({}, "", url.toString());
+          // Trigger re-evaluation of the auto-accept effect.
+          setAutoAcceptTick((t) => t + 1);
+          return;
+        }
+        if (incomingCall && (!cid || cid === incomingCall.id)) handleAnswer();
+      } else if (intent === "decline") {
+        if (incomingCall && (!cid || cid === incomingCall.id)) handleDecline();
+      }
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
   }, [incomingCall, handleAnswer, handleDecline]);
+
 
   if (!isFeatureEnabled("voice_calls")) return null;
 
