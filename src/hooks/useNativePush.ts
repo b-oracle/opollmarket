@@ -548,7 +548,7 @@ export const useNativePush = () => {
             logCallEvent(callId, "declined", { source: "notification_action" });
             clearSnoozeTimer();
             clearLatestCall();
-            try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+            await dismissCallNotifications("notification-decline");
             if (callId) {
               try {
                 await supabase.functions.invoke("dm-call-token", {
