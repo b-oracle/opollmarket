@@ -309,20 +309,29 @@ const IncomingCallBanner = () => {
         .eq("id", call.caller_id)
         .maybeSingle();
       if (cancelled) return;
-      // Fall back to the FCM payload we persisted in localStorage if the
-      // profile fetch came back empty/blocked — otherwise the in-call overlay
-      // ends up with an empty name and the "?" avatar fallback even though
-      // the push notification displayed the right caller.
-      const cached = readLatestCall();
-      const cachedMatches = cached && cached.call_id === call.id;
+      // Resolution order: live profile → FCM payload (this call) →
+      // long-lived per-caller cache (any prior call) → "Unknown"/no avatar.
+      // The per-caller cache survives reloads, offline periods, and the
+      // 2-minute LATEST_CALL TTL — so a returning caller's avatar stays
+      // populated even when nothing else does.
+      const cachedLatest = readLatestCall();
+      const latestMatches = cachedLatest && cachedLatest.call_id === call.id;
+      const cachedProfile = readCallerProfile(call.caller_id);
       const callerName =
         profile?.display_name ||
-        (cachedMatches ? cached?.caller_name : undefined) ||
+        (latestMatches ? cachedLatest?.caller_name : undefined) ||
+        cachedProfile?.caller_name ||
         "Unknown";
       const callerAvatar =
         profile?.avatar_url ||
-        (cachedMatches ? cached?.caller_avatar : undefined) ||
+        (latestMatches ? cachedLatest?.caller_avatar : undefined) ||
+        cachedProfile?.caller_avatar ||
         undefined;
+      // Refresh long-lived cache for next time.
+      saveCallerProfile(call.caller_id, {
+        caller_name: callerName !== "Unknown" ? callerName : undefined,
+        caller_avatar: callerAvatar,
+      });
       setIncomingCall({
         id: call.id,
         conversation_id: call.conversation_id,
