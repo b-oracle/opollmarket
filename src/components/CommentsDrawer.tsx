@@ -156,7 +156,7 @@ const CommentItem = ({
               <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-xs font-bold text-primary">
-                {(comment.author_name || "?").charAt(0).toUpperCase()}
+                {comment.author_name.charAt(0).toUpperCase()}
               </span>
             )}
           </div>
@@ -546,7 +546,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                       <img src={currentUserAvatar} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xs font-bold text-primary">
-                        {(displayName || "?").charAt(0).toUpperCase()}
+                        {displayName.charAt(0).toUpperCase()}
                       </span>
                     )}
                   </div>

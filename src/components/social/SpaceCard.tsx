@@ -362,7 +362,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           {hostProfile?.avatar_url ? (
             <img src={hostProfile.avatar_url} alt={hostName} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-sm font-bold text-primary">{(hostName || "?").charAt(0).toUpperCase()}</span>
+            <span className="text-sm font-bold text-primary">{hostName.charAt(0).toUpperCase()}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">

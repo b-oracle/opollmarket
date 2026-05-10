@@ -30,7 +30,7 @@ const SpaceReplayMiniPlayer = () => {
           <Avatar className="w-8 h-8 shrink-0 border border-primary/30">
             {hostProfile?.avatar_url ? <AvatarImage src={hostProfile.avatar_url} /> : null}
             <AvatarFallback className="text-[9px] bg-primary/20 text-primary">
-              {(hostName || "?").charAt(0).toUpperCase()}
+              {hostName.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
 

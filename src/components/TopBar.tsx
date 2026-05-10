@@ -77,7 +77,7 @@ const TopBar = () => {
 
   const isAdminRoute = location.pathname.startsWith("/admin");
 
-  const initial = (displayName || "?").charAt(0).toUpperCase();
+  const initial = displayName.charAt(0).toUpperCase();
 
   const { data: avatarUrl } = useQuery({
     queryKey: ["user-avatar", user?.id],

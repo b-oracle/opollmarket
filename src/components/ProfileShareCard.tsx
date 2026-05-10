@@ -213,7 +213,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   height: "100%",
                 }}
               >
-                {(displayName || "?").charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>

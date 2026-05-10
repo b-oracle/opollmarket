@@ -144,7 +144,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
             {prof?.avatar_url ? (
               <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-primary">{(name || "?").charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             )}
           </div>
           

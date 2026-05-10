@@ -395,7 +395,7 @@ const UserProfile = () => {
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-bold text-primary">{(displayName || "?").charAt(0).toUpperCase()}</span>
+                  <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
                 )}
               </div>
               {isVerified && (

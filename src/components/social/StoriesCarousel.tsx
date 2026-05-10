@@ -49,7 +49,7 @@ const StoryBubble = ({ group, name, isLive, onView, onJoinSpace }: {
             <img src={optimizedImageUrl(group.profile.avatar_url, "avatar-md")} alt={name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <div className="w-full h-full bg-primary/20 flex items-center justify-center">
-              <span className="text-sm font-bold text-primary">{(name || "?").charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
             </div>
           )}
         </div>
