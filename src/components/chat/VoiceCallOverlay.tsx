@@ -275,6 +275,12 @@ const VoiceCallOverlay = ({
       AudioRouter.endCall(),
       CallKitBridge.endCall(callId),
     ]).then((results) => {
+      const keepAwakeResult = results[1];
+      recordCallLifecycle(callId, "keepawake_stopped", {
+        status: statusRef.current,
+        data: { reason, ok: keepAwakeResult.status === "fulfilled" },
+        level: keepAwakeResult.status === "fulfilled" ? "info" : "warn",
+      });
       const labels = ["foregroundService", "keepAwake", "audioRouter", "callKit"];
       const failures = results
         .map((r, i) => ({ r, i }))
