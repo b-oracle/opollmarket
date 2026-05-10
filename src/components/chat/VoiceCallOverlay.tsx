@@ -255,6 +255,44 @@ const VoiceCallOverlay = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callId]);
 
+  // Idempotent teardown of OS-level call resources (foreground service,
+  // wake-lock / iOS idle-timer, audio routing, CallKit screen). MUST run on
+  // every terminal path — user end, cancel, no-answer timeout, remote end,
+  // declined, missed — otherwise the screen stays awake and the system call
+  // UI lingers. Records a lifecycle entry per call so we can audit whether
+  // keep-awake actually got released.
+  const resourcesReleasedRef = useRef(false);
+  const releaseCallResources = useCallback((reason: string) => {
+    if (resourcesReleasedRef.current) return;
+    resourcesReleasedRef.current = true;
+    recordCallLifecycle(callId, "resources_release_start", {
+      status: statusRef.current,
+      data: { reason },
+    });
+    void Promise.allSettled([
+      stopCallForegroundService(),
+      stopCallKeepAwake(),
+      AudioRouter.endCall(),
+      CallKitBridge.endCall(callId),
+    ]).then((results) => {
+      const labels = ["foregroundService", "keepAwake", "audioRouter", "callKit"];
+      const failures = results
+        .map((r, i) => ({ r, i }))
+        .filter(({ r }) => r.status === "rejected")
+        .map(({ i, r }) => ({
+          step: labels[i],
+          error:
+            (r as PromiseRejectedResult).reason?.message ??
+            String((r as PromiseRejectedResult).reason),
+        }));
+      recordCallLifecycle(callId, "resources_released", {
+        status: statusRef.current,
+        data: { reason, failures },
+        level: failures.length ? "warn" : "info",
+      });
+    });
+  }, [callId]);
+
 
   const handleEnd = useCallback(() => {
     // Allow re-entry: if a previous end attempt started but didn't close,
