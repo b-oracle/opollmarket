@@ -92,7 +92,7 @@ export async function replayDeposit(
   if (transactionId) q = q.eq("id", transactionId);
   else if (paymentId) q = q.eq("nowpayments_payment_id", paymentId);
   const { data: tx, error: txErr } = await q.maybeSingle();
-  if (txErr || !tx) return { status: 404, body: { error: "Transaction not found" } };
+  if (txErr || !tx) return { status: 200, body: { success: false, code: "NOT_FOUND", error: "Transaction not found" } };
 
   if (tx.status === "confirmed") {
     return { status: 200, body: { success: true, already_confirmed: true, message: "Already credited", transaction_id: tx.id } };
