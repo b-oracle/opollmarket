@@ -16,7 +16,7 @@ import {
 } from "@/lib/haptics";
 import { logCallEvent } from "@/lib/callEvents";
 import { ensureMicrophonePermission } from "@/lib/mediaPermissions";
-import { readLatestCall } from "@/hooks/useNativePush";
+import { readLatestCall, readCallerProfile, saveCallerProfile } from "@/hooks/useNativePush";
 import { dismissCallNotifications } from "@/lib/callNotifications";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
