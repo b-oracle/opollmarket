@@ -13,6 +13,7 @@ import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "
 import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
 import { startCallKeepAwake, stopCallKeepAwake } from "@/lib/callKeepAwake";
 import { AudioRouter, isAndroidNativeAudio } from "@/lib/audioRouter";
+import { CallKitBridge } from "@/lib/callKitBridge";
 import CallDebugOverlay from "./CallDebugOverlay";
 import CallStatusBadge, { type CallStatusVariant } from "./CallStatusBadge";
 
