@@ -327,7 +327,7 @@ const CreateSpaceModal = ({ open, onClose }: CreateSpaceModalProps) => {
                             {u.avatar_url ? (
                               <img src={optimizedImageUrl(u.avatar_url, "avatar-sm")} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-xs font-bold">{(u.display_name || "?").charAt(0).toUpperCase()}</span>
+                              <span className="text-xs font-bold">{getAvatarInitials(u.display_name)}</span>
                             )}
                           </div>
                           <span className="text-sm truncate flex-1 text-left">{u.display_name}</span>
