@@ -449,7 +449,11 @@ export const useNativePush = () => {
           if (actionId === "accept") {
             logCallEvent(callId, "accepted", { source: "notification_action" });
             clearSnoozeTimer();
-            clearLatestCall();
+            // Dismiss the incoming-call notification so it doesn't linger on
+            // top of the in-call overlay after the user has answered.
+            try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+            // Keep latest_call_v1 around briefly so the post-reload auto-accept
+            // can hydrate caller name/avatar before we strip the URL params.
             if (convId && typeof window !== "undefined") {
               window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
             }
