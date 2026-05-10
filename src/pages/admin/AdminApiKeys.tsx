@@ -13,6 +13,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAdminContext } from "./AdminLayout";
 import { format, formatDistanceToNow } from "date-fns";
 import { KeyUsageChart } from "@/components/admin/KeyUsageChart";
+import { getAvatarInitials } from "@/lib/utils";
 
 interface ApiKey {
   id: string;
@@ -329,7 +330,7 @@ const AdminApiKeys = () => {
                         {owner && (
                           <Avatar className="w-6 h-6">
                             <AvatarImage src={owner.avatar_url || undefined} />
-                            <AvatarFallback className="text-[10px]">{(owner.display_name || "?")[0]}</AvatarFallback>
+                            <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{getAvatarInitials(owner.display_name, { maxChars: 2 })}</AvatarFallback>
                           </Avatar>
                         )}
                         <span className="font-semibold text-sm">{k.partner_name}</span>

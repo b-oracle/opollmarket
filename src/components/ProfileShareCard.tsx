@@ -214,7 +214,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   height: "100%",
                 }}
               >
-                {getAvatarInitials(displayName)}
+                {getAvatarInitials(displayName, { maxChars: 2 })}
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>

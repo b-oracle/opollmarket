@@ -1607,7 +1607,7 @@ const VoiceCallOverlay = ({
                   {otherUserAvatar ? (
                     <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
                   ) : (
-                    <span className="text-3xl lg:text-4xl font-bold text-primary">{getAvatarInitials(otherUserName)}</span>
+                    <span className="text-3xl lg:text-4xl font-bold text-primary">{getAvatarInitials(otherUserName, { maxChars: 2 })}</span>
                   )}
                 </div>
               </div>
@@ -1693,7 +1693,7 @@ const VoiceCallOverlay = ({
                 {otherUserAvatar ? (
                   <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
                 ) : (
-                  <span className="text-3xl lg:text-4xl font-bold text-primary">{getAvatarInitials(otherUserName)}</span>
+                  <span className="text-3xl lg:text-4xl font-bold text-primary">{getAvatarInitials(otherUserName, { maxChars: 2 })}</span>
                 )}
               </div>
             </div>

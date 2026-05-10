@@ -273,7 +273,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xl font-bold text-primary">{getAvatarInitials(displayName)}</span>
+                      <span className="text-xl font-bold text-primary">{getAvatarInitials(displayName, { maxChars: 2 })}</span>
                     )}
                   </div>
                   
