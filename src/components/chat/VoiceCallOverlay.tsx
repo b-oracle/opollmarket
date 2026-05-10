@@ -634,6 +634,7 @@ const VoiceCallOverlay = ({
         // on iOS/web. Without this, the WebView is suspended seconds
         // after pickup and the WSS dies → "call ends right after pickup".
         void startCallForegroundService(otherUserName);
+        void startCallKeepAwake();
         // Switch Android AudioManager into VoIP mode and route to the
         // earpiece by default. Without this, WebRTC audio is played on
         // STREAM_MUSIC → loudspeaker, and JS toggles cannot change it.
