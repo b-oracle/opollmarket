@@ -354,13 +354,27 @@ const IncomingCallBanner = () => {
       if (!msg || msg.type !== "dm-call-action") return;
       const intent = msg.intent as "answer" | "decline" | undefined;
       const cid = msg.call_id as string | undefined;
-      if (!incomingCall || (cid && cid !== incomingCall.id)) return;
-      if (intent === "answer") handleAnswer();
-      else if (intent === "decline") handleDecline();
+      if (intent === "answer") {
+        // If we don't yet have the incomingCall hydrated (race with realtime),
+        // forward to the URL-driven flow which fetches + answers atomically.
+        if (!incomingCall && cid) {
+          const url = new URL(window.location.href);
+          url.searchParams.set("auto_accept", "1");
+          url.searchParams.set("call_id", cid);
+          window.history.replaceState({}, "", url.toString());
+          // Trigger re-evaluation of the auto-accept effect.
+          window.dispatchEvent(new Event("popstate"));
+          return;
+        }
+        if (incomingCall && (!cid || cid === incomingCall.id)) handleAnswer();
+      } else if (intent === "decline") {
+        if (incomingCall && (!cid || cid === incomingCall.id)) handleDecline();
+      }
     };
     navigator.serviceWorker.addEventListener("message", onMessage);
     return () => navigator.serviceWorker.removeEventListener("message", onMessage);
   }, [incomingCall, handleAnswer, handleDecline]);
+
 
   if (!isFeatureEnabled("voice_calls")) return null;
 
