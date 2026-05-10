@@ -228,16 +228,15 @@ const IncomingCallBanner = () => {
     }
   }, [incomingCall, answering]);
 
-  // Auto-accept when arriving via the Android lockscreen deep link
-  // (?auto_accept=1&call_id=…). Fires once the realtime subscription has
-  // populated `incomingCall` and the caller matches.
+  // Auto-accept when arriving via the Android lockscreen deep link OR via
+  // the web push notification "Accept" action (?auto_accept=1&call_id=…).
+  // Fires once the realtime subscription has populated `incomingCall`.
   useEffect(() => {
     if (!incomingCall || activeCall || answering) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("auto_accept") !== "1") return;
     const targetId = params.get("call_id");
     if (targetId && targetId !== incomingCall.id) return;
-    // Clean the query so a back/forward doesn't re-trigger.
     const url = new URL(window.location.href);
     url.searchParams.delete("auto_accept");
     url.searchParams.delete("call_id");
