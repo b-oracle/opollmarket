@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -200,7 +201,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             {prof?.avatar_url ? (
               <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
             )}
           </div>
           
@@ -272,7 +273,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                      <span className="text-xl font-bold text-primary">{getAvatarInitials(displayName)}</span>
                     )}
                   </div>
                   

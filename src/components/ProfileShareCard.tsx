@@ -1,4 +1,5 @@
 import { forwardRef, useMemo, useState, useEffect } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import type { VerificationLevel } from "@/components/NftBadge";
 import watermarkLogo from "@/assets/watermark-logo.png";
 import blueLogo from "@/assets/blue-opoll-logo.png";
@@ -213,7 +214,7 @@ const ProfileShareCard = forwardRef<HTMLDivElement, ProfileShareCardProps>(
                   height: "100%",
                 }}
               >
-                {displayName.charAt(0).toUpperCase()}
+                {getAvatarInitials(displayName)}
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
