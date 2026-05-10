@@ -125,14 +125,16 @@ export async function replayDeposit(
   });
   if (!npRes.ok) {
     const txt = await npRes.text();
-    return { status: 502, body: { error: `NOWPayments lookup failed (${npRes.status}): ${txt}` } };
+    return { status: 200, body: { success: false, code: "PROVIDER_LOOKUP_FAILED", error: `NOWPayments lookup failed (${npRes.status}): ${txt.substring(0, 300)}` } };
   }
   const np = await npRes.json();
 
   const paymentStatus = String(np.payment_status ?? "").toLowerCase();
   if (!PAID_STATUSES.has(paymentStatus)) {
-    return { status: 409, body: {
-      error: "Deposit not eligible — provider reports payment is not paid",
+    return { status: 200, body: {
+      success: false,
+      code: "NOT_PAID",
+      error: `Deposit not eligible — NOWPayments reports status "${paymentStatus || "unknown"}". Only paid/finished deposits can be replayed.`,
       payment_status: paymentStatus,
       provider_response: { payment_id: np.payment_id, actually_paid: np.actually_paid, pay_currency: np.pay_currency },
     } };
