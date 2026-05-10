@@ -234,6 +234,7 @@ const IncomingCallBanner = () => {
         isOutgoing: false,
       });
       setIncomingCall(null);
+      void dismissCallNotifications("banner-accept");
     } catch (err: any) {
       logCallEvent(incomingCall.id, "failed", { stage: "answer", error: err?.message });
       toast.error(err.message || "Failed to answer call");
