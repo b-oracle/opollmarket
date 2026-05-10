@@ -20,23 +20,32 @@ self.addEventListener("push", (event) => {
     // fallback to defaults
   }
 
-  const isCall = data.is_call === true || (data.title && data.title.includes("Incoming Call"));
+  const isCall =
+    data.is_call === true ||
+    (typeof data.title === "string" && data.title.includes("Incoming Call"));
 
   const options = {
     body: data.body,
     icon: "/logo.png",
     badge: "/logo.png",
-    data: { url: data.url, is_call: isCall, call_id: data.call_id },
-    tag: isCall ? "incoming-call" : undefined,
+    data: {
+      url: data.url,
+      is_call: isCall,
+      call_id: data.call_id,
+    },
+    tag: isCall ? `incoming-call-${data.call_id || "x"}` : undefined,
     renotify: isCall,
     requireInteraction: isCall,
+    silent: false,
     vibrate: isCall
       ? [300, 200, 300, 200, 300, 200, 300, 200, 300, 200, 300]
       : [200, 100, 200],
     actions: isCall
       ? [
-          { action: "answer", title: "Answer" },
-          { action: "decline", title: "Decline" },
+          // Order matters on Android: first action shows on the LEFT.
+          // We put Decline left + Accept right to mirror WhatsApp's layout.
+          { action: "decline", title: "✕ Decline", icon: "/icons/call-decline.png" },
+          { action: "answer", title: "✓ Accept", icon: "/icons/call-accept.png" },
         ]
       : [{ action: "open", title: "View" }],
   };
@@ -44,27 +53,89 @@ self.addEventListener("push", (event) => {
   event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
+// Build a URL that will auto-accept (or pre-decline) the call once the chat
+// loads. IncomingCallBanner reads ?auto_accept=1&call_id=… and immediately
+// invokes the same answer flow as tapping the in-app banner.
+function buildCallUrl(baseUrl, callId, action) {
+  try {
+    const u = new URL(baseUrl, self.location.origin);
+    if (action === "answer") {
+      u.searchParams.set("auto_accept", "1");
+      if (callId) u.searchParams.set("call_id", callId);
+    } else if (action === "decline") {
+      if (callId) u.searchParams.set("decline_call_id", callId);
+    }
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return baseUrl || "/";
+  }
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const action = event.action;
   const isCall = event.notification.data?.is_call;
-  const url = event.notification.data?.url || "/";
+  const callId = event.notification.data?.call_id;
+  const baseUrl = event.notification.data?.url || "/";
 
-  // For decline action, just close the notification
-  if (action === "decline") {
-    return;
-  }
+  // For non-call notifications, just open the URL.
+  // For call notifications, EVERY tap (body, Accept, or Decline) needs to
+  // bring the app to the foreground — even Decline, so the user can see
+  // the call ended and reply if they want.
+  const intent = isCall
+    ? action === "decline"
+      ? "decline"
+      : "answer" // body tap or Accept → answer
+    : "open";
+
+  const targetUrl = isCall ? buildCallUrl(baseUrl, callId, intent) : baseUrl;
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+    (async () => {
+      const windowClients = await clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+
+      // Tell any already-open tab to act on the call immediately, then
+      // navigate it. This avoids the SW losing the gesture chain when
+      // client.navigate() is slow on Android Chrome.
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && "focus" in client) {
-          client.navigate(url);
-          return client.focus();
+        if (!client.url.includes(self.location.origin)) continue;
+
+        if (isCall) {
+          try {
+            client.postMessage({
+              type: "dm-call-action",
+              intent, // "answer" | "decline"
+              call_id: callId,
+              url: targetUrl,
+            });
+          } catch {
+            // ignore postMessage failures
+          }
         }
+
+        try {
+          if ("navigate" in client) {
+            await client.navigate(targetUrl);
+          }
+        } catch {
+          // some browsers reject cross-origin navigate — fall through
+        }
+        if ("focus" in client) {
+          try {
+            await client.focus();
+          } catch {
+            // ignore
+          }
+        }
+        return;
       }
-      return clients.openWindow(url);
-    })
+
+      // No open tab — open a fresh window straight at the deep link.
+      await clients.openWindow(targetUrl);
+    })()
   );
 });

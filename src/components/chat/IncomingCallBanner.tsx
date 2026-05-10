@@ -228,16 +228,15 @@ const IncomingCallBanner = () => {
     }
   }, [incomingCall, answering]);
 
-  // Auto-accept when arriving via the Android lockscreen deep link
-  // (?auto_accept=1&call_id=…). Fires once the realtime subscription has
-  // populated `incomingCall` and the caller matches.
+  // Auto-accept when arriving via the Android lockscreen deep link OR via
+  // the web push notification "Accept" action (?auto_accept=1&call_id=…).
+  // Fires once the realtime subscription has populated `incomingCall`.
   useEffect(() => {
     if (!incomingCall || activeCall || answering) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("auto_accept") !== "1") return;
     const targetId = params.get("call_id");
     if (targetId && targetId !== incomingCall.id) return;
-    // Clean the query so a back/forward doesn't re-trigger.
     const url = new URL(window.location.href);
     url.searchParams.delete("auto_accept");
     url.searchParams.delete("call_id");
@@ -289,6 +288,37 @@ const IncomingCallBanner = () => {
     window.addEventListener("dm-call-action", onAction);
     return () => window.removeEventListener("dm-call-action", onAction);
   }, [incomingCall]);
+
+  // Auto-decline via web-push deep link (?decline_call_id=…). Fires when the
+  // user hit "Decline" on the OS notification before the page was open.
+  useEffect(() => {
+    if (!incomingCall || activeCall) return;
+    const params = new URLSearchParams(window.location.search);
+    const declineId = params.get("decline_call_id");
+    if (!declineId || declineId !== incomingCall.id) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("decline_call_id");
+    window.history.replaceState({}, "", url.toString());
+    handleDecline();
+  }, [incomingCall, activeCall, handleDecline]);
+
+  // Listen for postMessage from public/push-sw.js when the user taps the
+  // notification's Accept/Decline buttons. The SW navigates the tab AND
+  // posts a message so we can act before navigation settles.
+  useEffect(() => {
+    if (!("serviceWorker" in navigator)) return;
+    const onMessage = (e: MessageEvent) => {
+      const msg = e.data;
+      if (!msg || msg.type !== "dm-call-action") return;
+      const intent = msg.intent as "answer" | "decline" | undefined;
+      const cid = msg.call_id as string | undefined;
+      if (!incomingCall || (cid && cid !== incomingCall.id)) return;
+      if (intent === "answer") handleAnswer();
+      else if (intent === "decline") handleDecline();
+    };
+    navigator.serviceWorker.addEventListener("message", onMessage);
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+  }, [incomingCall, handleAnswer, handleDecline]);
 
   if (!isFeatureEnabled("voice_calls")) return null;
 
