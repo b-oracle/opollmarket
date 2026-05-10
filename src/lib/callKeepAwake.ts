@@ -9,10 +9,11 @@ let wakeLock: any = null;
 let visibilityHandler: (() => void) | null = null;
 let active = false;
 
-const isAndroidNative = async (): Promise<boolean> => {
+const isCapacitorNative = async (): Promise<boolean> => {
   try {
     const { Capacitor } = await import("@capacitor/core");
-    return Capacitor?.getPlatform?.() === "android" && Capacitor?.isNativePlatform?.();
+    const p = Capacitor?.getPlatform?.();
+    return (p === "android" || p === "ios") && !!Capacitor?.isNativePlatform?.();
   } catch {
     return false;
   }
@@ -46,8 +47,9 @@ export const startCallKeepAwake = async (): Promise<void> => {
   };
   document.addEventListener("visibilitychange", visibilityHandler);
 
-  // Android native — flip FLAG_KEEP_SCREEN_ON via the audio router plugin.
-  if (await isAndroidNative()) {
+  // Native (Android + iOS) — flip FLAG_KEEP_SCREEN_ON / isIdleTimerDisabled
+  // via the AudioRouter plugin (Kotlin on Android, Swift on iOS).
+  if (await isCapacitorNative()) {
     try {
       const { registerPlugin } = await import("@capacitor/core");
       const Plugin: any = registerPlugin("AudioRouter");
@@ -74,7 +76,7 @@ export const stopCallKeepAwake = async (): Promise<void> => {
   }
   wakeLock = null;
 
-  if (await isAndroidNative()) {
+  if (await isCapacitorNative()) {
     try {
       const { registerPlugin } = await import("@capacitor/core");
       const Plugin: any = registerPlugin("AudioRouter");
