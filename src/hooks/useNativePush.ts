@@ -474,6 +474,7 @@ export const useNativePush = () => {
             stopForegroundCallRing();
             clearSnoozeTimer();
             clearLatestCall();
+            await dismissCallNotifications("notification-view-chat");
             const isFromIncoming = data.type === "incoming_call";
             logCallEvent(callId, "viewed_chat", {
               source: "notification_action",
