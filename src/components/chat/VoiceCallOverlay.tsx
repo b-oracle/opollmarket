@@ -167,6 +167,30 @@ const VoiceCallOverlay = ({
     statusRef.current = status;
   }, [status]);
 
+  // Intercept Android hardware back-button while a call is connected — minimise
+  // to the floating pill instead of unmounting / leaving the call. Without
+  // this the user can accidentally drop the call by swiping back.
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (!Capacitor?.isNativePlatform?.()) return;
+        const { App } = await import("@capacitor/app");
+        const handle = await App.addListener("backButton", () => {
+          if (statusRef.current === "active" || statusRef.current === "ringing" || statusRef.current === "connecting") {
+            if (!minimized) onMinimize?.();
+          }
+        });
+        unsub = () => { try { handle.remove(); } catch {} };
+      } catch {
+        /* no capacitor app plugin available — ignore */
+      }
+    })();
+    return () => { unsub?.(); };
+  }, [minimized, onMinimize]);
+
+
   const handleEnd = useCallback(() => {
     // Allow re-entry: if a previous end attempt started but didn't close,
     // the user should still be able to force-end.
