@@ -48,7 +48,7 @@ export const startCallKeepAwake = async (): Promise<void> => {
   document.addEventListener("visibilitychange", visibilityHandler);
 
   // Android native — flip FLAG_KEEP_SCREEN_ON via the audio router plugin.
-  if (await isAndroidNative()) {
+  if (await isCapacitorNative()) {
     try {
       const { registerPlugin } = await import("@capacitor/core");
       const Plugin: any = registerPlugin("AudioRouter");
@@ -75,7 +75,7 @@ export const stopCallKeepAwake = async (): Promise<void> => {
   }
   wakeLock = null;
 
-  if (await isAndroidNative()) {
+  if (await isCapacitorNative()) {
     try {
       const { registerPlugin } = await import("@capacitor/core");
       const Plugin: any = registerPlugin("AudioRouter");
