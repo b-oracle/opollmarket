@@ -451,7 +451,7 @@ async function replayPayaza(
   // USD amount stored on the transaction.
   const creditAmount = Number(tx.amount);
   if (!(creditAmount > 0)) {
-    return { status: 400, body: { error: "Transaction has no positive amount to credit" } };
+    return { status: 200, body: { success: false, code: "BAD_AMOUNT", error: "Transaction has no positive amount to credit" } };
   }
 
   // Atomic claim
