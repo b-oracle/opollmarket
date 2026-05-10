@@ -184,7 +184,7 @@ final class CallProviderDelegate: NSObject, CXProviderDelegate {
             $0 == .bluetoothA2DP || $0 == .bluetoothHFP || $0 == .bluetoothLE
         })
         DispatchQueue.main.async {
-            CAPBridge.notifyListeners("callRouteChanged", data: [
+            CallKitBridgePlugin.emit("callRouteChanged", [
                 "speakerOn": speakerOn,
                 "bluetooth": bluetoothOn
             ])
