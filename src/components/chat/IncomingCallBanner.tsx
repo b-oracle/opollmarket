@@ -362,6 +362,7 @@ const IncomingCallBanner = () => {
         // Only clear if the event matches the current call (or no id supplied).
         if (!detail.call_id || !incomingCall || detail.call_id === incomingCall.id) {
           setIncomingCall(null);
+          void dismissCallNotifications(`call-${detail.action}`);
         }
       }
     };
