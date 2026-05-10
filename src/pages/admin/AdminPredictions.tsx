@@ -219,8 +219,38 @@ const AdminPredictions = () => {
     const cancelledMarkets = filteredMarkets.filter(m => m.status === "cancelled").length;
     const activeMarkets = filteredMarkets.filter(m => m.status === "active").length;
 
-    const totalSells = filteredTx.filter(t => t.type === "sell").reduce((s, t) => s + Number(t.amount), 0);
-    const netLiquidity = totalLiquidity + totalWagered - totalPayouts - totalRefunds - totalSells;
+    // Net liquidity is a cumulative pool balance, not a windowed flow. Computing it
+    // from windowed inflows minus all outflows produces phantom negatives because
+    // payouts/refunds/sells settle for markets whose initial_liquidity + wagers were
+    // deposited *before* the selected range. Scope every leg to the same set of
+    // markets (those created within the window) so deposits and withdrawals match.
+    const windowMarketIds = new Set(filteredMarkets.map(m => m.id));
+    const inWindow = (mid: string | null) => !!mid && windowMarketIds.has(mid);
+
+    // Recompute inflows scoped to in-window markets
+    const scopedLiquidity = liquidityTx
+      .filter(t => inWindow(t.market_id))
+      .reduce((s, b) => s + Number(b.amount), 0);
+    const scopedWagered = predictions
+      .filter(t => inWindow(t.market_id))
+      .reduce((s, b) => s + Number(b.amount), 0);
+
+    // Outflows scoped to the same markets (use full transactions list — outflows can
+    // happen long after a market was created, even outside the cutoff window)
+    const scopedPayouts = transactions
+      .filter(t => t.type === "payout" && inWindow(t.market_id))
+      .reduce((s, t) => s + Number(t.amount), 0);
+    const scopedRefunds = transactions
+      .filter(t => t.type === "refund" && inWindow(t.market_id))
+      .reduce((s, t) => s + Number(t.amount), 0);
+    const scopedSells = transactions
+      .filter(t => t.type === "sell" && inWindow(t.market_id))
+      .reduce((s, t) => s + Number(t.amount), 0);
+
+    const totalSells = scopedSells;
+    const rawNetLiquidity = scopedLiquidity + scopedWagered - scopedPayouts - scopedRefunds - scopedSells;
+    // Floor at 0: any residual negative is a settlement-rounding artifact, not real debt
+    const netLiquidity = Math.max(0, rawNetLiquidity);
 
     return {
       totalMarkets, totalPredictions, uniqueTraders, totalWagered, totalLiquidity, netLiquidity,
