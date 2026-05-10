@@ -332,7 +332,7 @@ async function replayPayaza(
 ): Promise<ReplayResult> {
   const reference = tx.nowpayments_payment_id;
   if (!reference) {
-    return { status: 400, body: { error: "Transaction has no Payaza reference to verify" } };
+    return { status: 200, body: { success: false, code: "MISSING_REFERENCE", error: "Transaction has no Payaza reference to verify" } };
   }
   if (!deps.payazaSecretKey) {
     return { status: 500, body: { error: "PAYAZA_SECRET_KEY not configured" } };
