@@ -286,8 +286,6 @@ const VoiceCallOverlay = ({
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
     void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
-    // Mirror to iOS CallKit so the system UI dismisses too. No-op elsewhere.
-    void CallKitBridge.endCall(callId);
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
