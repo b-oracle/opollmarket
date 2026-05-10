@@ -158,7 +158,7 @@ const CallStatusScreen = ({
             />
           ) : (
             <span className="text-4xl font-bold text-primary">
-              {getAvatarInitials(otherName)}
+              {getAvatarInitials(otherName, { maxChars: 2 })}
             </span>
           )}
         </div>
