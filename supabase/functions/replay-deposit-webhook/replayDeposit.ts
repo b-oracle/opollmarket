@@ -143,7 +143,7 @@ export async function replayDeposit(
   const requestedAmount = Number(np.price_amount) || Number(tx.amount) || 0;
   const netReceived = Number(np.outcome_amount) || Number(np.actually_paid) || 0;
   if (!(netReceived > 0)) {
-    return { status: 409, body: { error: "Provider reports zero received amount — nothing to credit", provider_response: np } };
+    return { status: 200, body: { success: false, code: "ZERO_RECEIVED", error: "Provider reports zero received amount — nothing to credit", provider_response: np } };
   }
 
   const payCur = String(np.pay_currency ?? "").toLowerCase();
