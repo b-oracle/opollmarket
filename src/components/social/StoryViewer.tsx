@@ -312,7 +312,8 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
         {market && (
           <button
             onClick={() => { onClose(); navigate(`/market/${market.id}`); }}
-            className="absolute bottom-16 left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-white/10"
+            className="absolute left-4 right-4 z-20 bg-black/60 backdrop-blur-md rounded-xl p-3 flex items-center gap-3 border border-white/10"
+            style={{ bottom: 'calc(var(--content-bottom) + 0.75rem)' }}
           >
             {market.image_url && (
               <img src={optimizedImageUrl(market.image_url, "thumb")} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" loading="lazy" />
