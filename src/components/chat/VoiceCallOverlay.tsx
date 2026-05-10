@@ -227,6 +227,33 @@ const VoiceCallOverlay = ({
     };
   }, [minimized, onMaximize]);
 
+  // CallKit (iOS) → overlay sync. The native CallKit screen has its own mute,
+  // hangup, and audio-route controls — when the user taps any of them we get
+  // an event here and update the overlay state so the in-app UI never goes
+  // out of sync with the system UI.
+  useEffect(() => {
+    if (!CallKitBridge.isAvailable()) return;
+    const lower = callId.toLowerCase();
+
+    const offMuted = CallKitBridge.onMuted((e) => {
+      if (e.callId.toLowerCase() !== lower) return;
+      void applyMute(!!e.muted);
+    });
+
+    const offEnded = CallKitBridge.onEnded((e) => {
+      if (e.callId.toLowerCase() !== lower) return;
+      // System "End" tap — tear down the overlay. handleEnd is idempotent
+      // (guarded by endingRef) so it's safe even if we're mid-teardown.
+      handleEnd();
+    });
+
+    const offRoute = CallKitBridge.onRouteChanged(({ speakerOn }) => {
+      setSpeakerOn(speakerOn);
+    });
+
+    return () => { offMuted(); offEnded(); offRoute(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callId]);
 
 
   const handleEnd = useCallback(() => {
