@@ -136,7 +136,7 @@ final class CallProviderDelegate: NSObject, CXProviderDelegate {
         ]
         configureAudioSession()
         DispatchQueue.main.async {
-            CAPBridge.notifyListeners("callAccepted", data: payload)
+            CallKitBridgePlugin.emit("callAccepted", payload)
         }
         action.fulfill()
     }
