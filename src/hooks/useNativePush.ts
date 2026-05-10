@@ -347,7 +347,7 @@ export const useNativePush = () => {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
-              try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+              await dismissCallNotifications("call-terminated-push");
               return;
             }
 
@@ -355,6 +355,9 @@ export const useNativePush = () => {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
+              // Clear the prior incoming-call notification before we render
+              // the missed-call one — otherwise both stack up in the tray.
+              await dismissCallNotifications("call-missed-push");
               // fall through to render the missed-call notification below
             } else if (isCall) {
               // Persist the call context so cold-started action handlers
