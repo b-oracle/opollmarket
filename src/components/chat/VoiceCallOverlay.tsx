@@ -323,7 +323,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+    releaseCallResources("user_end");
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -353,7 +353,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+    releaseCallResources("user_cancel");
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -385,7 +385,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
     recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+    releaseCallResources("no_answer_timeout");
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -889,7 +889,7 @@ const VoiceCallOverlay = ({
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+      releaseCallResources("remote_disconnect");
       room.disconnect();
       roomRef.current = null;
     };
