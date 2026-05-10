@@ -116,7 +116,7 @@ export async function replayDeposit(
   }
 
   const npId = tx.nowpayments_payment_id || paymentId;
-  if (!npId) return { status: 400, body: { error: "Transaction has no NOWPayments payment_id to verify" } };
+  if (!npId) return { status: 200, body: { success: false, code: "MISSING_PAYMENT_ID", error: "Transaction has no NOWPayments payment_id to verify" } };
 
   if (!npApiKey) return { status: 500, body: { error: "NOWPAYMENTS_API_KEY not configured" } };
 
