@@ -1281,72 +1281,84 @@ const VoiceCallOverlay = ({
 
   const hasAnyVideo = cameraOn || hasRemoteVideo || hasRemoteScreenShare || screenShareOn;
 
-  // ── Mini call bar ──
+  // ── WhatsApp-style "Tap to return to call" top banner ──
   if (minimized) {
+    const subline =
+      status === "active" && (waitingReconnect || reconnecting)
+        ? "Reconnecting…"
+        : status === "active"
+        ? formatTime(duration)
+        : status === "ringing"
+        ? (isOutgoing ? "Calling…" : "Incoming…")
+        : "Connecting…";
     return (
-      <div
-        className="fixed bottom-20 lg:bottom-4 left-3 right-3 lg:left-auto lg:right-4 lg:w-80 z-[9999] rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-xl animate-in slide-in-from-bottom"
+      <button
+        type="button"
+        onClick={onMaximize}
+        aria-label={`Return to call with ${otherUserName}`}
+        className="fixed top-0 inset-x-0 z-[9999] w-full bg-emerald-500 text-white shadow-lg animate-in slide-in-from-top focus:outline-none active:bg-emerald-600 transition-colors"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="flex items-center gap-3 px-4 py-3">
-          {/* Live indicator + info */}
-          <div className="flex-1 min-w-0 cursor-pointer" onClick={onMaximize}>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                CALL
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                {status === "active" && (waitingReconnect || reconnecting) ? "Reconnecting..." : status === "active" ? formatTime(duration) : status === "ringing" ? "Calling..." : "Connecting..."}
-              </span>
-              {(cameraOn || hasRemoteVideo) && <Video className="w-2.5 h-2.5 text-primary" />}
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <div
-                className="w-5 h-5 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0 transition-shadow duration-150"
-                style={{
-                  boxShadow: remoteAudioLevel > 0.05
-                    ? `0 0 ${4 + remoteAudioLevel * 8}px ${1 + remoteAudioLevel * 3}px rgba(59,130,246,${0.4 + remoteAudioLevel * 0.5})`
-                    : "none",
-                }}
-              >
-                {otherUserAvatar ? (
-                  <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
-                ) : (
-                  <span className="text-[8px] font-bold text-foreground">{otherUserName.charAt(0).toUpperCase()}</span>
-                )}
-              </div>
-              <p className="text-xs font-semibold truncate">{otherUserName}</p>
-            </div>
+        <div className="flex items-center gap-3 px-4 py-2.5">
+          {/* Pulsing call icon */}
+          <div className="relative shrink-0">
+            <span className="absolute inset-0 rounded-full bg-white/30 animate-ping" />
+            <span className="relative w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+              <Phone className="w-4 h-4" />
+            </span>
           </div>
 
-          {/* Controls */}
+          {/* Avatar + name + duration */}
+          <div className="flex-1 min-w-0 text-left">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold truncate">{otherUserName}</p>
+              {(cameraOn || hasRemoteVideo) && <Video className="w-3 h-3 opacity-90 shrink-0" />}
+            </div>
+            <p className="text-[11px] opacity-90 truncate">
+              <span className="font-mono">{subline}</span>
+              <span className="mx-1.5 opacity-60">·</span>
+              <span>Tap to return</span>
+            </p>
+          </div>
+
+          {/* Quick mute + hangup */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={onMaximize}
-              className="w-8 h-8 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title="Expand"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-            </button>
-            <button
+            <span
+              role="button"
+              tabIndex={0}
               onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                muted ? "bg-muted/80 text-muted-foreground" : "bg-primary/20 text-primary"
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); setMuted(!muted); } }}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                muted ? "bg-white/30" : "bg-white/15 hover:bg-white/25"
               }`}
+              aria-label={muted ? "Unmute" : "Mute"}
             >
-              {muted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
-            </button>
-            <button
-              onClick={(e) => { e.stopPropagation(); status === "ringing" && isOutgoing ? handleCancel() : handleEnd(); }}
-              className="w-8 h-8 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+              {muted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </span>
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                status === "ringing" && isOutgoing ? handleCancel() : handleEnd();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  status === "ringing" && isOutgoing ? handleCancel() : handleEnd();
+                }
+              }}
+              className="w-9 h-9 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center"
+              aria-label="End call"
             >
-              <PhoneOff className="w-3.5 h-3.5" />
-            </button>
+              <PhoneOff className="w-4 h-4" />
+            </span>
           </div>
         </div>
-      </div>
+      </button>
     );
   }
+
 
   // ── SVG doodle pattern for call background ──
   const doodlePatternSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'>
