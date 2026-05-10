@@ -82,7 +82,7 @@ export async function replayDeposit(
 ): Promise<ReplayResult> {
   const { actorId, transactionId, paymentId, manualOverride, manualReference, manualNote } = input;
   if (!transactionId && !paymentId) {
-    return { status: 400, body: { error: "transaction_id or payment_id required" } };
+    return { status: 200, body: { success: false, code: "BAD_REQUEST", error: "transaction_id or payment_id required" } };
   }
 
   // Look up the transaction
