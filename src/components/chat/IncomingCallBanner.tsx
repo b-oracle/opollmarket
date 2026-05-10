@@ -450,7 +450,11 @@ const IncomingCallBanner = () => {
             minimized={callMinimized}
             onMinimize={() => setCallMinimized(true)}
             onMaximize={() => setCallMinimized(false)}
-            onClose={() => { setActiveCall(null); setCallMinimized(false); }}
+            onClose={() => {
+              setActiveCall(null);
+              setCallMinimized(false);
+              void dismissCallNotifications("active-call-closed");
+            }}
           />
         </Suspense>
       )}
