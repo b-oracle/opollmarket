@@ -1056,6 +1056,16 @@ const VoiceCallOverlay = ({
               : 0;
             setFinalDuration(durationSec);
             roomRef.current?.disconnect();
+            if (newStatus === "missed") {
+              recordCallLifecycle(callId, "missed_remote", {
+                status: statusRef.current,
+                level: "warn",
+              });
+            }
+            // Release OS resources (idle-timer, foreground service, audio
+            // route, CallKit screen) — without this, an unanswered/declined
+            // call leaves the screen awake until the user manually closes.
+            releaseCallResources(`remote_${newStatus}`);
             setTimeout(onClose, 2500);
           } else if (newStatus === "active") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
