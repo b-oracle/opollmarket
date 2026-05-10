@@ -20,7 +20,7 @@
 //   await AudioRouter.setSpeakerphone({ on: true | false });
 //   await AudioRouter.endCall();          // call this when the room disconnects
 //
-package <your.package.name>
+package com.opollmarket.app
 
 import android.content.Context
 import android.media.AudioAttributes

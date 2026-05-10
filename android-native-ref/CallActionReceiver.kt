@@ -14,26 +14,27 @@ import java.net.URL
 import kotlin.concurrent.thread
 
 /**
- * Broadcast receiver for the Accept/Decline actions on the incoming-call
- * notification AND the lockscreen IncomingCallActivity buttons.
+ * Broadcast receiver for the **Decline** action on the incoming-call
+ * notification AND the lockscreen IncomingCallActivity Decline button.
  *
- * Both actions launch MainActivity with an opoll:// deep link so the webview
- * is guaranteed to come to the foreground. The JS layer (useCallDeepLink)
- * then runs the appropriate side-effect:
- *   • opoll://call/accept  → navigate to /messages/<conv>?call_id=…&auto_accept=1
+ * ⚠️ ACCEPT IS HANDLED ELSEWHERE — never route Accept through this receiver.
+ * Android 10+ Background-Activity-Launch rules silently drop activity starts
+ * from broadcast receivers on Samsung / Xiaomi / many OEMs, which makes the
+ * Accept button look broken. The notification's Accept action and the
+ * lockscreen Activity's Accept button BOTH use `PendingIntent.getActivity` /
+ * direct `startActivity` to MainActivity so the foreground activation token
+ * is preserved. See:
+ *   - CallMessagingService.kt → acceptPending = PendingIntent.getActivity(...)
+ *   - IncomingCallActivity.kt → onAccept() → startActivity(MainActivity ...)
+ *
+ * Decline is safe in a receiver because it does NOT need to bring the app to
+ * the foreground. We use goAsync() to keep this process alive long enough to
+ * POST the decline to the edge function, then the OS reclaims it.
  *   • opoll://call/decline → POST dm-call-token { action: "decline" }
- *
- * Decline ALSO fires the edge-function POST directly from the receiver as a
- * background fallback so the call row flips to "declined" even if the
- * webview is killed before it can run. We use goAsync() so the broadcast
- * process is kept alive until the HTTP completes — this is critical when
- * the Decline button comes from the lockscreen Activity (which calls
- * finish() immediately after sending the broadcast).
  */
 class CallActionReceiver : BroadcastReceiver() {
 
     companion object {
-        const val ACTION_ACCEPT = "com.opollmarket.app.CALL_ACCEPT"
         const val ACTION_DECLINE = "com.opollmarket.app.CALL_DECLINE"
         private const val CALL_NOTIFICATION_ID = 1001
         private const val TAG = "CallActionReceiver"
@@ -60,36 +61,28 @@ class CallActionReceiver : BroadcastReceiver() {
                 .cancel(CALL_NOTIFICATION_ID)
         }.onFailure { Log.w(TAG, "cancel notification failed", it) }
 
-        when (intent.action) {
-            ACTION_ACCEPT -> {
-                // Launch the webview synchronously so the foreground intent
-                // is dispatched before onReceive returns.
-                launchAppWithDeepLink(appCtx, "accept", callId, conversationId)
-            }
-            ACTION_DECLINE -> {
-                // 1) Launch the app with the decline deep link first so the
-                //    webview can show feedback and run the realtime path
-                //    when present.
-                launchAppWithDeepLink(appCtx, "decline", callId, conversationId)
+        if (intent.action != ACTION_DECLINE) {
+            Log.w(TAG, "ignoring unsupported action: ${intent.action}")
+            return
+        }
 
-                // 2) Best-effort background HTTP decline. We wrap it in
-                //    goAsync() so this process is kept alive until the POST
-                //    completes — the Activity that broadcast this will have
-                //    already called finish() and would otherwise be killed.
-                if (callId.isNotEmpty()) {
-                    val pending = goAsync()
-                    thread(start = true, name = "decline-call-$callId") {
-                        try {
-                            postDeclineToEdgeFunction(appCtx, callId)
-                        } finally {
-                            // Always finish the broadcast so the OS can
-                            // reclaim the process.
-                            try { pending.finish() } catch (_: Throwable) { }
-                        }
-                    }
+        // 1) Bring the app to the foreground with the decline deep link so the
+        //    webview can show feedback and the realtime path can still run.
+        launchAppWithDeepLink(appCtx, "decline", callId, conversationId)
+
+        // 2) Best-effort background HTTP decline. We wrap it in goAsync() so
+        //    this process is kept alive until the POST completes — the
+        //    Activity that broadcast this will have already called finish()
+        //    and would otherwise be killed.
+        if (callId.isNotEmpty()) {
+            val pending = goAsync()
+            thread(start = true, name = "decline-call-$callId") {
+                try {
+                    postDeclineToEdgeFunction(appCtx, callId)
+                } finally {
+                    try { pending.finish() } catch (_: Throwable) { }
                 }
             }
-            else -> Log.w(TAG, "unknown action: ${intent.action}")
         }
     }
 
