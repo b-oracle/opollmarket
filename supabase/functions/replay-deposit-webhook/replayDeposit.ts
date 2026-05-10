@@ -82,7 +82,7 @@ export async function replayDeposit(
 ): Promise<ReplayResult> {
   const { actorId, transactionId, paymentId, manualOverride, manualReference, manualNote } = input;
   if (!transactionId && !paymentId) {
-    return { status: 400, body: { error: "transaction_id or payment_id required" } };
+    return { status: 200, body: { success: false, code: "BAD_REQUEST", error: "transaction_id or payment_id required" } };
   }
 
   // Look up the transaction
@@ -92,7 +92,7 @@ export async function replayDeposit(
   if (transactionId) q = q.eq("id", transactionId);
   else if (paymentId) q = q.eq("nowpayments_payment_id", paymentId);
   const { data: tx, error: txErr } = await q.maybeSingle();
-  if (txErr || !tx) return { status: 404, body: { error: "Transaction not found" } };
+  if (txErr || !tx) return { status: 200, body: { success: false, code: "NOT_FOUND", error: "Transaction not found" } };
 
   if (tx.status === "confirmed") {
     return { status: 200, body: { success: true, already_confirmed: true, message: "Already credited", transaction_id: tx.id } };
@@ -103,7 +103,7 @@ export async function replayDeposit(
   // Super-admin manual credit path: only for Payaza, only when admin pastes a reference.
   if (manualOverride) {
     if (provider !== "payaza") {
-      return { status: 400, body: { error: "Manual override is only supported for Payaza deposits." } };
+      return { status: 200, body: { success: false, code: "BAD_REQUEST", error: "Manual override is only supported for Payaza deposits." } };
     }
     return await creditPayazaManual(admin, actorId, tx, manualReference, manualNote);
   }
@@ -112,11 +112,11 @@ export async function replayDeposit(
     return await replayPayaza(admin, fetchImpl, deps, actorId, tx);
   }
   if (provider !== "nowpayments") {
-    return { status: 400, body: { error: `Replay not supported for ${provider} deposits. Use admin-credit-deposit for manual credits.` } };
+    return { status: 200, body: { success: false, code: "UNSUPPORTED_PROVIDER", error: `Replay not supported for ${provider} deposits. Use admin-credit-deposit for manual credits.` } };
   }
 
   const npId = tx.nowpayments_payment_id || paymentId;
-  if (!npId) return { status: 400, body: { error: "Transaction has no NOWPayments payment_id to verify" } };
+  if (!npId) return { status: 200, body: { success: false, code: "MISSING_PAYMENT_ID", error: "Transaction has no NOWPayments payment_id to verify" } };
 
   if (!npApiKey) return { status: 500, body: { error: "NOWPAYMENTS_API_KEY not configured" } };
 
@@ -125,14 +125,16 @@ export async function replayDeposit(
   });
   if (!npRes.ok) {
     const txt = await npRes.text();
-    return { status: 502, body: { error: `NOWPayments lookup failed (${npRes.status}): ${txt}` } };
+    return { status: 200, body: { success: false, code: "PROVIDER_LOOKUP_FAILED", error: `NOWPayments lookup failed (${npRes.status}): ${txt.substring(0, 300)}` } };
   }
   const np = await npRes.json();
 
   const paymentStatus = String(np.payment_status ?? "").toLowerCase();
   if (!PAID_STATUSES.has(paymentStatus)) {
-    return { status: 409, body: {
-      error: "Deposit not eligible — provider reports payment is not paid",
+    return { status: 200, body: {
+      success: false,
+      code: "NOT_PAID",
+      error: `Deposit not eligible — NOWPayments reports status "${paymentStatus || "unknown"}". Only paid/finished deposits can be replayed.`,
       payment_status: paymentStatus,
       provider_response: { payment_id: np.payment_id, actually_paid: np.actually_paid, pay_currency: np.pay_currency },
     } };
@@ -141,7 +143,7 @@ export async function replayDeposit(
   const requestedAmount = Number(np.price_amount) || Number(tx.amount) || 0;
   const netReceived = Number(np.outcome_amount) || Number(np.actually_paid) || 0;
   if (!(netReceived > 0)) {
-    return { status: 409, body: { error: "Provider reports zero received amount — nothing to credit", provider_response: np } };
+    return { status: 200, body: { success: false, code: "ZERO_RECEIVED", error: "Provider reports zero received amount — nothing to credit", provider_response: np } };
   }
 
   const payCur = String(np.pay_currency ?? "").toLowerCase();
@@ -330,7 +332,7 @@ async function replayPayaza(
 ): Promise<ReplayResult> {
   const reference = tx.nowpayments_payment_id;
   if (!reference) {
-    return { status: 400, body: { error: "Transaction has no Payaza reference to verify" } };
+    return { status: 200, body: { success: false, code: "MISSING_REFERENCE", error: "Transaction has no Payaza reference to verify" } };
   }
   if (!deps.payazaSecretKey) {
     return { status: 500, body: { error: "PAYAZA_SECRET_KEY not configured" } };
@@ -412,15 +414,17 @@ async function replayPayaza(
         },
       };
     }
-    return { status: 502, body: { error: lastErr } };
+    return { status: 200, body: { success: false, code: "PAYAZA_LOOKUP_FAILED", error: lastErr } };
   }
   let np: Record<string, unknown>;
   try { np = JSON.parse(text); } catch {
-    return { status: 502, body: { error: "Payaza returned non-JSON response" } };
+    return { status: 200, body: { success: false, code: "PAYAZA_NON_JSON", error: "Payaza returned non-JSON response" } };
   }
 
   if (!payazaIsSuccess(np)) {
-    return { status: 409, body: {
+    return { status: 200, body: {
+      success: false,
+      code: "PAYAZA_NOT_SUCCESS",
       error: "Deposit not eligible — Payaza reports payment is not successful",
       provider_response: np,
     } };
@@ -447,7 +451,7 @@ async function replayPayaza(
   // USD amount stored on the transaction.
   const creditAmount = Number(tx.amount);
   if (!(creditAmount > 0)) {
-    return { status: 400, body: { error: "Transaction has no positive amount to credit" } };
+    return { status: 200, body: { success: false, code: "BAD_AMOUNT", error: "Transaction has no positive amount to credit" } };
   }
 
   // Atomic claim
@@ -523,21 +527,21 @@ async function creditPayazaManual(
 ): Promise<ReplayResult> {
   const ref = (reference || "").trim();
   if (!ref) {
-    return { status: 400, body: { error: "Payaza reference is required for manual credit." } };
+    return { status: 200, body: { success: false, code: "BAD_REFERENCE", error: "Payaza reference is required for manual credit." } };
   }
   if (ref.length < 4 || ref.length > 200) {
-    return { status: 400, body: { error: "Payaza reference looks invalid." } };
+    return { status: 200, body: { success: false, code: "BAD_REFERENCE", error: "Payaza reference looks invalid." } };
   }
 
   // The reference the admin pastes MUST match the transaction's own payment ID.
   // This prevents admins from crediting arbitrary deposits with random references.
   if (ref !== tx.nowpayments_payment_id) {
-    return { status: 400, body: { error: "The reference you entered does not match this transaction's payment ID." } };
+    return { status: 200, body: { success: false, code: "BAD_REFERENCE", error: "The reference you entered does not match this transaction's payment ID." } };
   }
 
   const creditAmount = Number(tx.amount);
   if (!(creditAmount > 0)) {
-    return { status: 400, body: { error: "Transaction has no positive amount to credit" } };
+    return { status: 200, body: { success: false, code: "BAD_AMOUNT", error: "Transaction has no positive amount to credit" } };
   }
 
   // Hard block on reference reuse — rely on UNIQUE index for the race.
@@ -553,7 +557,7 @@ async function creditPayazaManual(
     const code = (refErr as any).code;
     const msg = String((refErr as any).message || "");
     if (code === "23505" || /duplicate|unique/i.test(msg)) {
-      return { status: 409, body: {
+      return { status: 200, body: {
         success: false,
         code: "DUPLICATE_REFERENCE",
         error: `Payaza reference "${ref}" has already been used to credit a deposit. Refusing to credit again.`,
