@@ -13,6 +13,7 @@ import { loadCallPreferences, saveCallPreferences, clearCallPreferences } from "
 import { startCallForegroundService, stopCallForegroundService } from "@/lib/callForegroundService";
 import { startCallKeepAwake, stopCallKeepAwake } from "@/lib/callKeepAwake";
 import { AudioRouter, isAndroidNativeAudio } from "@/lib/audioRouter";
+import { CallKitBridge } from "@/lib/callKitBridge";
 import CallDebugOverlay from "./CallDebugOverlay";
 import CallStatusBadge, { type CallStatusVariant } from "./CallStatusBadge";
 
@@ -226,6 +227,33 @@ const VoiceCallOverlay = ({
     };
   }, [minimized, onMaximize]);
 
+  // CallKit (iOS) → overlay sync. The native CallKit screen has its own mute,
+  // hangup, and audio-route controls — when the user taps any of them we get
+  // an event here and update the overlay state so the in-app UI never goes
+  // out of sync with the system UI.
+  useEffect(() => {
+    if (!CallKitBridge.isAvailable()) return;
+    const lower = callId.toLowerCase();
+
+    const offMuted = CallKitBridge.onMuted((e) => {
+      if (e.callId.toLowerCase() !== lower) return;
+      void applyMute(!!e.muted);
+    });
+
+    const offEnded = CallKitBridge.onEnded((e) => {
+      if (e.callId.toLowerCase() !== lower) return;
+      // System "End" tap — tear down the overlay. handleEnd is idempotent
+      // (guarded by endingRef) so it's safe even if we're mid-teardown.
+      handleEnd();
+    });
+
+    const offRoute = CallKitBridge.onRouteChanged(({ speakerOn }) => {
+      setSpeakerOn(speakerOn);
+    });
+
+    return () => { offMuted(); offEnded(); offRoute(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callId]);
 
 
   const handleEnd = useCallback(() => {
@@ -257,7 +285,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall();
+    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -287,7 +315,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall();
+    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -319,7 +347,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
     recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall();
+    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -823,7 +851,7 @@ const VoiceCallOverlay = ({
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall();
+      void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
       room.disconnect();
       roomRef.current = null;
     };
@@ -1006,13 +1034,27 @@ const VoiceCallOverlay = ({
     };
   }, [callId, onClose]);
 
-  const toggleMute = async () => {
+  // Apply a mute change without re-broadcasting to CallKit. Used by both the
+  // overlay UI button (which then ALSO pushes to CallKit) and by the
+  // system-side listener (which already came FROM CallKit).
+  const applyMute = useCallback(async (newMuted: boolean) => {
     if (!roomRef.current) return;
-    const newMuted = !muted;
+    if (muted === newMuted) return;
     userIntentMutedRef.current = newMuted;
-    await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
+    try {
+      await roomRef.current.localParticipant.setMicrophoneEnabled(!newMuted);
+    } catch (err) {
+      console.warn("[overlay] setMicrophoneEnabled failed:", err);
+    }
     setMuted(newMuted);
     saveCallPreferences(callId, { muted: newMuted });
+  }, [callId, muted]);
+
+  const toggleMute = async () => {
+    const newMuted = !muted;
+    await applyMute(newMuted);
+    // Mirror to the iOS CallKit screen so the system mute pill matches.
+    void CallKitBridge.setMuted(callId, newMuted);
   };
 
   const toggleCamera = async () => {

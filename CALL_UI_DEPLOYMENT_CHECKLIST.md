@@ -66,9 +66,10 @@ standard APNs alert. Setup steps:
 2. Copy these files into `ios/App/App/`:
    - `ios-native-ref/VoipPushHandler.swift`
    - `ios-native-ref/CallProviderDelegate.swift`
-   - `ios-native-ref/AudioRouterPlugin.swift`  ← keeps screen on during the
-     in-call UI (iOS counterpart to Android's `FLAG_KEEP_SCREEN_ON`). Required
-     for the WhatsApp-style persistent call screen + auto-restore on resume.
+   - `ios-native-ref/CallKitBridgePlugin.swift`  ← Capacitor plugin that
+     bridges CallKit ↔ the in-app overlay (mute / hangup / audio route).
+   - `ios-native-ref/AudioRouterPlugin.swift`    ← keep-screen-on parity
+     with Android (`isIdleTimerDisabled`).
 3. Merge `ios-native-ref/AppDelegate.swift.additions.swift` into `ios/App/App/AppDelegate.swift`.
 4. Merge `ios-native-ref/Info.plist.additions.xml` keys into `ios/App/App/Info.plist`:
    - `UIBackgroundModes` → `voip`, `audio`, `remote-notification`
