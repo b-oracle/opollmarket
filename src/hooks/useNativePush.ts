@@ -8,6 +8,7 @@ import {
   CALL_RING_PATTERN,
 } from "@/lib/haptics";
 import { logCallEvent } from "@/lib/callEvents";
+import { dismissCallNotifications } from "@/lib/callNotifications";
 
 // Tracks the active foreground-call vibration cancel function so we can stop
 // it when the user accepts/declines or when the call FCM "ended" arrives.
