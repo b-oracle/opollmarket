@@ -257,12 +257,11 @@ Deno.serve(async (req) => {
       // two cron invocations race.
       const predecessorEnd = latestEnd ? latestEnd.toISOString() : "1970-01-01T00:00:00.000Z";
 
-      // Only spawn if the latest round has already ended (or doesn't exist), unless force
+      // Only spawn if the latest round has already ended (or doesn't exist), unless force.
+      // We deliberately do NOT log "skipped" rows here — the cron runs every minute,
+      // which floods the audit table with thousands of no-op rows per day. Only
+      // spawn events and errors are kept as auditable signal.
       if (!force && latestEnd && latestEnd > now) {
-        await writeLog({
-          asset, duration_minutes: dur, status: "skipped",
-          message: `Active round still running until ${latestEnd.toISOString()}`,
-        });
         continue;
       }
 
@@ -275,10 +274,6 @@ Deno.serve(async (req) => {
           .eq("id", latest.market_id as string)
           .maybeSingle();
         if (prevMarket && prevMarket.status !== "resolved") {
-          await writeLog({
-            asset, duration_minutes: dur, status: "skipped",
-            message: `Previous round still resolving (status=${prevMarket.status})`,
-          });
           continue;
         }
       }
