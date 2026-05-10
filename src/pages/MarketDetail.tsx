@@ -72,7 +72,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
         ) : (
-          <span className="font-bold text-primary">{displayName.charAt(0)}</span>
+          <span className="font-bold text-primary">{getAvatarInitials(displayName)}</span>
         )}
       </div>
       <div className="flex-1 min-w-0">

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
@@ -519,7 +520,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 {creatorProfile?.avatar_url ? (
                   <img src={optimizedImageUrl(creatorProfile.avatar_url, "avatar-sm")} alt={market.creatorName} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
-                  <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
+                  <span className="text-[10px] font-bold text-primary">{getAvatarInitials(market.creatorName)}</span>
                 )}
               </div>
               <span className="text-xs font-medium text-foreground/80 truncate group-hover/creator:underline">{creatorLabel}</span>
