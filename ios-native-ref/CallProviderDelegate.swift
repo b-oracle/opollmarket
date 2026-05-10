@@ -158,7 +158,7 @@ final class CallProviderDelegate: NSObject, CXProviderDelegate {
 
     func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
         DispatchQueue.main.async {
-            CAPBridge.notifyListeners("callMuted", data: [
+            CallKitBridgePlugin.emit("callMuted", [
                 "callId": action.callUUID.uuidString.lowercased(),
                 "muted": action.isMuted
             ])
