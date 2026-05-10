@@ -116,7 +116,7 @@ const CallHistoryTab = () => {
               <img src={call.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
             ) : (
               <span className="text-sm font-bold text-primary">
-                {(call.other_user?.display_name || "?").charAt(0).toUpperCase()}
+                {getAvatarInitials(call.other_user?.display_name)}
               </span>
             )}
           </div>
