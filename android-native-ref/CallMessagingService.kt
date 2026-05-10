@@ -11,6 +11,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.app.Person
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -115,26 +116,44 @@ class CallMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(this, CALL_CHANNEL_ID)
+        // Build a Person for CallStyle. Avatar URL would need to be loaded
+        // async; we use a name-only Person which is sufficient for the OS to
+        // grant call-priority full-screen-intent treatment on Android 12+.
+        val caller = Person.Builder()
+            .setName(callerName)
+            .setImportant(true)
+            .build()
+
+        // CallStyle.forIncomingCall is REQUIRED on Android 14 (API 34) and
+        // strongly recommended on 12+: without it, Samsung One UI / Pixel both
+        // silently demote the notification and the FullScreenIntent never
+        // launches over the lockscreen — the channel just vibrates once and
+        // disappears, which is exactly the symptom we were seeing.
+        // Reference: https://developer.android.com/develop/ui/views/notifications/call-style
+        val builder = NotificationCompat.Builder(this, CALL_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle(callerName)
-            .setContentText("Incoming call")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setOngoing(true)
-            // Auto-cancel so tapping the notification body dismisses it
-            // instead of leaving a stuck "ongoing" entry in the shade.
             .setAutoCancel(true)
             .setFullScreenIntent(fullScreenPending, true)
             .setContentIntent(tapAcceptPending)
-            .addAction(R.mipmap.ic_launcher, "Decline", declinePending)
-            .addAction(R.mipmap.ic_launcher, "Accept", acceptPending)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .build()
+            .setStyle(
+                NotificationCompat.CallStyle.forIncomingCall(
+                    caller,
+                    /* declineIntent = */ declinePending,
+                    /* answerIntent  = */ acceptPending,
+                ).setIsVideo(false)
+            )
+
+        val notification = builder.build()
+        // CallStyle requires FLAG_INSISTENT to keep ringing — but the channel
+        // already loops the ringtone, so we leave the default flags.
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(CALL_NOTIFICATION_ID, notification)
-        android.util.Log.i(TAG, "posted incoming-call notification id=$CALL_NOTIFICATION_ID call=$callId")
+        android.util.Log.i(TAG, "posted incoming-call notification (CallStyle) id=$CALL_NOTIFICATION_ID call=$callId")
     }
 
     private fun showStandardNotification(data: Map<String, String>, message: RemoteMessage) {
