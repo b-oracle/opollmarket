@@ -316,9 +316,17 @@ const IncomingCallBanner = () => {
     return () => window.removeEventListener("start-voice-call" as any, handler);
   }, []);
 
-  // Cross-surface call action events (fired by useCallDeepLink when the user
-  // taps Accept/Decline on the native lockscreen notification). Lets the
-  // banner dismiss instantly without waiting on realtime.
+  // Tap-to-return: when the foreground-service notification is tapped it
+  // re-launches the WebView with ?return_to_call=1 — un-minimise the overlay.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("return_to_call") !== "1") return;
+    if (activeCall) setCallMinimized(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("return_to_call");
+    window.history.replaceState({}, "", url.toString());
+  }, [location.search, activeCall]);
+
   useEffect(() => {
     const onAction = (e: Event) => {
       const detail = (e as CustomEvent).detail as { action?: string; call_id?: string } | undefined;
