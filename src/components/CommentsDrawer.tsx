@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAvatarInitials } from "@/lib/utils";
 import BottomSheet from "@/components/BottomSheet";
 import { X, Send, ChevronDown, Heart, CornerDownRight, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
@@ -155,9 +156,9 @@ const CommentItem = ({
             {comment.avatar_url ? (
               <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-xs font-bold text-primary">
-                {comment.author_name.charAt(0).toUpperCase()}
-              </span>
+                <span className="text-xs font-bold text-primary">
+                  {getAvatarInitials(comment.author_name)}
+                </span>
             )}
           </div>
         </div>
@@ -546,7 +547,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawer
                       <img src={currentUserAvatar} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xs font-bold text-primary">
-                        {displayName.charAt(0).toUpperCase()}
+                        {getAvatarInitials(displayName)}
                       </span>
                     )}
                   </div>
