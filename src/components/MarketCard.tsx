@@ -519,7 +519,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                 {creatorProfile?.avatar_url ? (
                   <img src={optimizedImageUrl(creatorProfile.avatar_url, "avatar-sm")} alt={market.creatorName} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
-                  <span className="text-[10px] font-bold text-primary">{market.creatorName.charAt(0)}</span>
+                  <span className="text-[10px] font-bold text-primary">{(market.creatorName || "?").charAt(0)}</span>
                 )}
               </div>
               <span className="text-xs font-medium text-foreground/80 truncate group-hover/creator:underline">{creatorLabel}</span>
