@@ -190,6 +190,43 @@ const VoiceCallOverlay = ({
     return () => { unsub?.(); };
   }, [minimized, onMinimize]);
 
+  // Auto-restore the full-screen call UI when the user brings the app back to
+  // the foreground (tapping the OS foreground-service notification or the
+  // app switcher). Mirrors WhatsApp: returning to the app after a call
+  // started always lands you on the in-call screen.
+  useEffect(() => {
+    let unsubApp: (() => void) | undefined;
+
+    const restore = () => {
+      const s = statusRef.current;
+      if (s === "active" || s === "ringing" || s === "connecting") {
+        if (minimized) onMaximize?.();
+      }
+    };
+
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (Capacitor?.isNativePlatform?.()) {
+          const { App } = await import("@capacitor/app");
+          const handle = await App.addListener("appStateChange", ({ isActive }: { isActive: boolean }) => {
+            if (isActive) restore();
+          });
+          unsubApp = () => { try { handle.remove(); } catch {} };
+        }
+      } catch { /* ignore */ }
+    })();
+
+    const onVis = () => { if (document.visibilityState === "visible") restore(); };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      unsubApp?.();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [minimized, onMaximize]);
+
+
 
   const handleEnd = useCallback(() => {
     // Allow re-entry: if a previous end attempt started but didn't close,
