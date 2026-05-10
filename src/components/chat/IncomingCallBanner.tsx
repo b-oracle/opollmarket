@@ -273,13 +273,27 @@ const IncomingCallBanner = () => {
         .eq("id", call.caller_id)
         .maybeSingle();
       if (cancelled) return;
+      // Fall back to the FCM payload we persisted in localStorage if the
+      // profile fetch came back empty/blocked — otherwise the in-call overlay
+      // ends up with an empty name and the "?" avatar fallback even though
+      // the push notification displayed the right caller.
+      const cached = readLatestCall();
+      const cachedMatches = cached && cached.call_id === call.id;
+      const callerName =
+        profile?.display_name ||
+        (cachedMatches ? cached?.caller_name : undefined) ||
+        "Unknown";
+      const callerAvatar =
+        profile?.avatar_url ||
+        (cachedMatches ? cached?.caller_avatar : undefined) ||
+        undefined;
       setIncomingCall({
         id: call.id,
         conversation_id: call.conversation_id,
         caller_id: call.caller_id,
         room_name: call.room_name,
-        callerName: profile?.display_name || "Unknown",
-        callerAvatar: profile?.avatar_url || undefined,
+        callerName,
+        callerAvatar,
       });
       logCallEvent(call.id, "received", { source: "deep_link" });
       // The next render of this effect (with incomingCall populated) will
