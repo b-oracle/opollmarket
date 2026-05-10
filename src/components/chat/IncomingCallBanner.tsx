@@ -230,19 +230,61 @@ const IncomingCallBanner = () => {
 
   // Auto-accept when arriving via the Android lockscreen deep link OR via
   // the web push notification "Accept" action (?auto_accept=1&call_id=…).
-  // Fires once the realtime subscription has populated `incomingCall`.
+  //
+  // We do NOT depend on the realtime INSERT having arrived first — when the
+  // user accepts from the lockscreen, the realtime subscription is often
+  // mounted milliseconds AFTER the deep link runs (or the row was already
+  // delivered to a different tab). Instead we hydrate `incomingCall`
+  // directly from the DB so the overlay can mount immediately.
   useEffect(() => {
-    if (!incomingCall || activeCall || answering) return;
+    if (activeCall || answering) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("auto_accept") !== "1") return;
     const targetId = params.get("call_id");
-    if (targetId && targetId !== incomingCall.id) return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete("auto_accept");
-    url.searchParams.delete("call_id");
-    window.history.replaceState({}, "", url.toString());
-    handleAnswer();
-  }, [incomingCall, activeCall, answering, handleAnswer]);
+    if (!targetId) return;
+    if (incomingCall && incomingCall.id !== targetId) return;
+
+    let cancelled = false;
+    (async () => {
+      // If realtime already populated incomingCall for this id, just answer.
+      if (incomingCall && incomingCall.id === targetId) {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("auto_accept");
+        url.searchParams.delete("call_id");
+        window.history.replaceState({}, "", url.toString());
+        handleAnswer();
+        return;
+      }
+      // Otherwise hydrate directly from the DB.
+      const { data: call } = await supabase
+        .from("dm_calls")
+        .select("id, conversation_id, caller_id, room_name, status, callee_id")
+        .eq("id", targetId)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!call || call.status !== "ringing" || (user && call.callee_id !== user.id)) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", call.caller_id)
+        .maybeSingle();
+      if (cancelled) return;
+      setIncomingCall({
+        id: call.id,
+        conversation_id: call.conversation_id,
+        caller_id: call.caller_id,
+        room_name: call.room_name,
+        callerName: profile?.display_name || "Unknown",
+        callerAvatar: profile?.avatar_url || undefined,
+      });
+      logCallEvent(call.id, "received", { source: "deep_link" });
+      // The next render of this effect (with incomingCall populated) will
+      // strip the URL params and call handleAnswer().
+    })();
+
+    return () => { cancelled = true; };
+  }, [incomingCall, activeCall, answering, handleAnswer, user]);
+
 
   const handleDecline = useCallback(async () => {
     if (!incomingCall) return;
