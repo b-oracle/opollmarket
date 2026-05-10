@@ -1,3 +1,4 @@
+import { getAvatarInitials } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -362,7 +363,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
           {hostProfile?.avatar_url ? (
             <img src={hostProfile.avatar_url} alt={hostName} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-sm font-bold text-primary">{hostName.charAt(0).toUpperCase()}</span>
+            <span className="text-sm font-bold text-primary">{getAvatarInitials(hostName)}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
