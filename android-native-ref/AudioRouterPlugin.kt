@@ -107,6 +107,30 @@ class AudioRouterPlugin : Plugin() {
         }
     }
 
+    /**
+     * Toggle FLAG_KEEP_SCREEN_ON on the host Activity so the device doesn't
+     * dim/lock during a call. Called from src/lib/callKeepAwake.ts via the
+     * "AudioRouter" plugin handle on call connect / disconnect.
+     */
+    @PluginMethod
+    fun keepScreenOn(call: PluginCall) {
+        val on = call.getBoolean("on") ?: false
+        try {
+            activity?.runOnUiThread {
+                if (on) {
+                    activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+            val ret = JSObject()
+            ret.put("on", on)
+            call.resolve(ret)
+        } catch (e: Exception) {
+            call.reject("keepScreenOn failed: ${e.message}")
+        }
+    }
+
     private fun setSpeakerInternal(on: Boolean) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // Android 12+ — use the modern setCommunicationDevice API.
