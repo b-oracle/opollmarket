@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -216,7 +217,7 @@ const Followers = () => {
                         {profile?.avatar_url ? (
                           <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+                          <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
                         )}
                       </div>
                       

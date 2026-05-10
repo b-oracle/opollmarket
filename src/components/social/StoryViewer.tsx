@@ -240,7 +240,7 @@ const StoryViewer = ({ stories: initialStories, initialIndex = 0, profile, onClo
             {profile?.avatar_url ? (
               <img src={optimizedImageUrl(profile.avatar_url, "avatar-sm")} alt={name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
-              <span className="text-xs font-bold text-white">{name.charAt(0).toUpperCase()}</span>
+              <span className="text-xs font-bold text-white">{getAvatarInitials(name)}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getAvatarInitials } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
