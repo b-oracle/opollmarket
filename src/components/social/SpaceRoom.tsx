@@ -2331,7 +2331,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           {prof?.avatar_url ? (
             <img src={optimizedImageUrl(prof.avatar_url, "avatar-md")} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <span className={size === "lg" ? "text-lg" : "text-sm"}>{p.name.charAt(0).toUpperCase()}</span>
+            <span className={size === "lg" ? "text-lg" : "text-sm"}>{getAvatarInitials(p.name)}</span>
           )}
         </div>
         {vLevel !== "none" && (
@@ -3898,7 +3898,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
                         {u.avatar_url ? (
                           <img src={optimizedImg(u.avatar_url, "avatar-sm")} alt="" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-xs font-bold">{(u.display_name || "?").charAt(0).toUpperCase()}</span>
+                          <span className="text-xs font-bold">{getAvatarInitials(u.display_name)}</span>
                         )}
                       </div>
                       <span className="text-sm truncate flex-1">{u.display_name}</span>

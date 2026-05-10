@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarInitials } from "@/lib/utils";
 
 const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 
@@ -304,7 +304,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                     <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
                   ) : (
                     <span className="text-[10px] font-bold text-primary">
-                      {(m.profile?.display_name || "?").charAt(0).toUpperCase()}
+                      {getAvatarInitials(m.profile?.display_name)}
                     </span>
                   )}
                 </button>

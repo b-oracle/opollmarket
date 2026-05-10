@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
