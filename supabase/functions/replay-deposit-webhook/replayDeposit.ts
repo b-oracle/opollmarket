@@ -103,7 +103,7 @@ export async function replayDeposit(
   // Super-admin manual credit path: only for Payaza, only when admin pastes a reference.
   if (manualOverride) {
     if (provider !== "payaza") {
-      return { status: 400, body: { error: "Manual override is only supported for Payaza deposits." } };
+      return { status: 200, body: { success: false, code: "BAD_REQUEST", error: "Manual override is only supported for Payaza deposits." } };
     }
     return await creditPayazaManual(admin, actorId, tx, manualReference, manualNote);
   }
