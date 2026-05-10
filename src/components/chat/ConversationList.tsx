@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -363,7 +364,7 @@ const ConversationList = () => {
                           <img src={m.avatar_url} className="w-full h-full object-cover" alt="" />
                         ) : (
                           <span className="text-xs font-bold text-primary">
-                            {(m.display_name || "?").charAt(0).toUpperCase()}
+                            {getAvatarInitials(m.display_name)}
                           </span>
                         )}
                       </div>
@@ -548,9 +549,9 @@ function ConversationItem({
         {c.other_user?.avatar_url ? (
           <img src={c.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
         ) : (
-          <span className="text-sm font-bold text-primary">
-            {(c.other_user?.display_name || "?").charAt(0).toUpperCase()}
-          </span>
+            <span className="text-sm font-bold text-primary">
+              {getAvatarInitials(c.other_user?.display_name)}
+            </span>
         )}
         {(c.unread_count || 0) > 0 && (
           <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-destructive border-2 border-background" />

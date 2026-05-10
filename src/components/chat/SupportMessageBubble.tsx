@@ -8,7 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker, { Theme } from "emoji-picker-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarInitials } from "@/lib/utils";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -258,7 +258,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
             <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
           ) : (
             <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
-              {m.is_staff ? "S" : (m.profile?.display_name || "?").charAt(0).toUpperCase()}
+              {m.is_staff ? "S" : getAvatarInitials(m.profile?.display_name)}
             </span>
           )}
         </button>
