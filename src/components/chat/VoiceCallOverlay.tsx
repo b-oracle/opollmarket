@@ -299,6 +299,15 @@ const VoiceCallOverlay = ({
     });
   }, [callId]);
 
+  // Final safety net: if the overlay unmounts for ANY reason without going
+  // through an explicit terminal path (route change, parent re-render, error
+  // boundary), still release OS resources. Idempotent via resourcesReleasedRef.
+  useEffect(() => {
+    return () => {
+      releaseCallResources("overlay_unmount");
+    };
+  }, [releaseCallResources]);
+
 
   const handleEnd = useCallback(() => {
     // Allow re-entry: if a previous end attempt started but didn't close,
