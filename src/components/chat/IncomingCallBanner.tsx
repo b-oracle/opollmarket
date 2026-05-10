@@ -17,6 +17,7 @@ import {
 import { logCallEvent } from "@/lib/callEvents";
 import { ensureMicrophonePermission } from "@/lib/mediaPermissions";
 import { readLatestCall } from "@/hooks/useNativePush";
+import { dismissCallNotifications } from "@/lib/callNotifications";
 
 const VoiceCallOverlay = lazy(() => import("./VoiceCallOverlay"));
 import IncomingCallScreen from "./IncomingCallScreen";
@@ -68,6 +69,14 @@ const IncomingCallBanner = () => {
       // ignore
     }
   }, []);
+
+  // Safety net: any time the route changes while there's no incoming or
+  // active call (e.g. user navigated away from the call screen), make sure
+  // no stale incoming-call notification is left in the tray.
+  useEffect(() => {
+    if (incomingCall || activeCall) return;
+    void dismissCallNotifications(`route-change:${location.pathname}`);
+  }, [location.pathname, incomingCall, activeCall]);
 
   useEffect(() => {
     try {
@@ -171,6 +180,7 @@ const IncomingCallBanner = () => {
     const dismissTimer = setTimeout(() => {
       logCallEvent(incomingCall.id, "missed", { reason: "auto_dismiss_90s" });
       setIncomingCall(null);
+      void dismissCallNotifications("auto-dismiss-90s");
     }, 90_000);
 
     const channel = supabase
@@ -187,6 +197,7 @@ const IncomingCallBanner = () => {
           const newStatus = payload.new?.status;
           if (newStatus === "missed" || newStatus === "ended" || newStatus === "declined") {
             setIncomingCall(null);
+            void dismissCallNotifications(`status-${newStatus}`);
           }
         }
       )
@@ -233,6 +244,7 @@ const IncomingCallBanner = () => {
         isOutgoing: false,
       });
       setIncomingCall(null);
+      void dismissCallNotifications("banner-accept");
     } catch (err: any) {
       logCallEvent(incomingCall.id, "failed", { stage: "answer", error: err?.message });
       toast.error(err.message || "Failed to answer call");
@@ -328,6 +340,7 @@ const IncomingCallBanner = () => {
     } catch { /* ignore */ }
 
     setIncomingCall(null);
+    void dismissCallNotifications("banner-decline");
   }, [incomingCall]);
 
   // Expose a way for ChatView to start an outgoing call
@@ -359,6 +372,7 @@ const IncomingCallBanner = () => {
         // Only clear if the event matches the current call (or no id supplied).
         if (!detail.call_id || !incomingCall || detail.call_id === incomingCall.id) {
           setIncomingCall(null);
+          void dismissCallNotifications(`call-${detail.action}`);
         }
       }
     };
@@ -444,7 +458,11 @@ const IncomingCallBanner = () => {
             minimized={callMinimized}
             onMinimize={() => setCallMinimized(true)}
             onMaximize={() => setCallMinimized(false)}
-            onClose={() => { setActiveCall(null); setCallMinimized(false); }}
+            onClose={() => {
+              setActiveCall(null);
+              setCallMinimized(false);
+              void dismissCallNotifications("active-call-closed");
+            }}
           />
         </Suspense>
       )}

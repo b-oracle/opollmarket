@@ -8,6 +8,7 @@ import {
   CALL_RING_PATTERN,
 } from "@/lib/haptics";
 import { logCallEvent } from "@/lib/callEvents";
+import { dismissCallNotifications } from "@/lib/callNotifications";
 
 // Tracks the active foreground-call vibration cancel function so we can stop
 // it when the user accepts/declines or when the call FCM "ended" arrives.
@@ -192,6 +193,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("dm-call-banner-dismissed", () => {
     stopForegroundCallRing();
     clearSnoozeTimer();
+    void dismissCallNotifications("banner-dismissed");
   });
 }
 
@@ -345,7 +347,7 @@ export const useNativePush = () => {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
-              try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+              await dismissCallNotifications("call-terminated-push");
               return;
             }
 
@@ -353,6 +355,9 @@ export const useNativePush = () => {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
+              // Clear the prior incoming-call notification before we render
+              // the missed-call one — otherwise both stack up in the tray.
+              await dismissCallNotifications("call-missed-push");
               // fall through to render the missed-call notification below
             } else if (isCall) {
               // Persist the call context so cold-started action handlers
@@ -452,7 +457,7 @@ export const useNativePush = () => {
             clearSnoozeTimer();
             // Dismiss the incoming-call notification so it doesn't linger on
             // top of the in-call overlay after the user has answered.
-            try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+            await dismissCallNotifications("notification-accept");
             // Keep latest_call_v1 around briefly so the post-reload auto-accept
             // can hydrate caller name/avatar before we strip the URL params.
             if (convId && typeof window !== "undefined") {
@@ -469,6 +474,7 @@ export const useNativePush = () => {
             stopForegroundCallRing();
             clearSnoozeTimer();
             clearLatestCall();
+            await dismissCallNotifications("notification-view-chat");
             const isFromIncoming = data.type === "incoming_call";
             logCallEvent(callId, "viewed_chat", {
               source: "notification_action",
@@ -542,7 +548,7 @@ export const useNativePush = () => {
             logCallEvent(callId, "declined", { source: "notification_action" });
             clearSnoozeTimer();
             clearLatestCall();
-            try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+            await dismissCallNotifications("notification-decline");
             if (callId) {
               try {
                 await supabase.functions.invoke("dm-call-token", {
