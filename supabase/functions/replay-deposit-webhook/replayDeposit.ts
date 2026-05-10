@@ -527,21 +527,21 @@ async function creditPayazaManual(
 ): Promise<ReplayResult> {
   const ref = (reference || "").trim();
   if (!ref) {
-    return { status: 400, body: { error: "Payaza reference is required for manual credit." } };
+    return { status: 200, body: { success: false, code: "BAD_REFERENCE", error: "Payaza reference is required for manual credit." } };
   }
   if (ref.length < 4 || ref.length > 200) {
-    return { status: 400, body: { error: "Payaza reference looks invalid." } };
+    return { status: 200, body: { success: false, code: "BAD_REFERENCE", error: "Payaza reference looks invalid." } };
   }
 
   // The reference the admin pastes MUST match the transaction's own payment ID.
   // This prevents admins from crediting arbitrary deposits with random references.
   if (ref !== tx.nowpayments_payment_id) {
-    return { status: 400, body: { error: "The reference you entered does not match this transaction's payment ID." } };
+    return { status: 200, body: { success: false, code: "BAD_REFERENCE", error: "The reference you entered does not match this transaction's payment ID." } };
   }
 
   const creditAmount = Number(tx.amount);
   if (!(creditAmount > 0)) {
-    return { status: 400, body: { error: "Transaction has no positive amount to credit" } };
+    return { status: 200, body: { success: false, code: "BAD_AMOUNT", error: "Transaction has no positive amount to credit" } };
   }
 
   // Hard block on reference reuse — rely on UNIQUE index for the race.
