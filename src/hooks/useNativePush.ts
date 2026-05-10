@@ -24,6 +24,7 @@ type LatestCall = {
   conversation_id: string;
   caller_id?: string;
   caller_name?: string;
+  caller_avatar?: string;
   saved_at: number;
 };
 
@@ -37,6 +38,7 @@ const saveLatestCall = (data: Record<string, string>) => {
       conversation_id: data.conversation_id || "",
       caller_id: data.caller_id,
       caller_name: data.caller_name,
+      caller_avatar: data.caller_avatar,
       saved_at: Date.now(),
     };
     localStorage.setItem(LATEST_CALL_KEY, JSON.stringify(payload));
@@ -45,7 +47,7 @@ const saveLatestCall = (data: Record<string, string>) => {
   }
 };
 
-const readLatestCall = (): LatestCall | null => {
+export const readLatestCall = (): LatestCall | null => {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(LATEST_CALL_KEY);
