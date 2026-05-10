@@ -1080,7 +1080,7 @@ const VoiceCallOverlay = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   // Apply a mute change without re-broadcasting to CallKit. Used by both the
   // overlay UI button (which then ALSO pushes to CallKit) and by the
