@@ -345,6 +345,7 @@ export const useNativePush = () => {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
+              try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
               return;
             }
 
