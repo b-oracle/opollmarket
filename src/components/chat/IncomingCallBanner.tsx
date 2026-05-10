@@ -330,6 +330,7 @@ const IncomingCallBanner = () => {
     } catch { /* ignore */ }
 
     setIncomingCall(null);
+    void dismissCallNotifications("banner-decline");
   }, [incomingCall]);
 
   // Expose a way for ChatView to start an outgoing call
