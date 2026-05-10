@@ -365,7 +365,7 @@ const IncomingCallBanner = () => {
           url.searchParams.set("call_id", cid);
           window.history.replaceState({}, "", url.toString());
           // Trigger re-evaluation of the auto-accept effect.
-          window.dispatchEvent(new Event("popstate"));
+          setAutoAcceptTick((t) => t + 1);
           return;
         }
         if (incomingCall && (!cid || cid === incomingCall.id)) handleAnswer();
