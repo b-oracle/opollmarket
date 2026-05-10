@@ -193,6 +193,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("dm-call-banner-dismissed", () => {
     stopForegroundCallRing();
     clearSnoozeTimer();
+    void dismissCallNotifications("banner-dismissed");
   });
 }
 
