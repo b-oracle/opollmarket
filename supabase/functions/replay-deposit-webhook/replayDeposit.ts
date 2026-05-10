@@ -414,15 +414,17 @@ async function replayPayaza(
         },
       };
     }
-    return { status: 502, body: { error: lastErr } };
+    return { status: 200, body: { success: false, code: "PAYAZA_LOOKUP_FAILED", error: lastErr } };
   }
   let np: Record<string, unknown>;
   try { np = JSON.parse(text); } catch {
-    return { status: 502, body: { error: "Payaza returned non-JSON response" } };
+    return { status: 200, body: { success: false, code: "PAYAZA_NON_JSON", error: "Payaza returned non-JSON response" } };
   }
 
   if (!payazaIsSuccess(np)) {
-    return { status: 409, body: {
+    return { status: 200, body: {
+      success: false,
+      code: "PAYAZA_NOT_SUCCESS",
       error: "Deposit not eligible — Payaza reports payment is not successful",
       provider_response: np,
     } };
