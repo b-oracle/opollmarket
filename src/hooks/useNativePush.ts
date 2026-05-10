@@ -24,6 +24,7 @@ type LatestCall = {
   conversation_id: string;
   caller_id?: string;
   caller_name?: string;
+  caller_avatar?: string;
   saved_at: number;
 };
 
@@ -37,6 +38,7 @@ const saveLatestCall = (data: Record<string, string>) => {
       conversation_id: data.conversation_id || "",
       caller_id: data.caller_id,
       caller_name: data.caller_name,
+      caller_avatar: data.caller_avatar,
       saved_at: Date.now(),
     };
     localStorage.setItem(LATEST_CALL_KEY, JSON.stringify(payload));
@@ -45,7 +47,7 @@ const saveLatestCall = (data: Record<string, string>) => {
   }
 };
 
-const readLatestCall = (): LatestCall | null => {
+export const readLatestCall = (): LatestCall | null => {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(LATEST_CALL_KEY);
@@ -343,6 +345,7 @@ export const useNativePush = () => {
               stopForegroundCallRing();
               clearSnoozeTimer();
               clearLatestCall();
+              try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
               return;
             }
 
@@ -447,7 +450,11 @@ export const useNativePush = () => {
           if (actionId === "accept") {
             logCallEvent(callId, "accepted", { source: "notification_action" });
             clearSnoozeTimer();
-            clearLatestCall();
+            // Dismiss the incoming-call notification so it doesn't linger on
+            // top of the in-call overlay after the user has answered.
+            try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
+            // Keep latest_call_v1 around briefly so the post-reload auto-accept
+            // can hydrate caller name/avatar before we strip the URL params.
             if (convId && typeof window !== "undefined") {
               window.location.href = `/messages/${convId}?call_id=${encodeURIComponent(callId)}&auto_accept=1`;
             }
@@ -535,6 +542,7 @@ export const useNativePush = () => {
             logCallEvent(callId, "declined", { source: "notification_action" });
             clearSnoozeTimer();
             clearLatestCall();
+            try { await LocalNotifications?.removeAllDeliveredNotifications(); } catch { /* ignore */ }
             if (callId) {
               try {
                 await supabase.functions.invoke("dm-call-token", {
