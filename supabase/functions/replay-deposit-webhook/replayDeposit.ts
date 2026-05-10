@@ -557,7 +557,7 @@ async function creditPayazaManual(
     const code = (refErr as any).code;
     const msg = String((refErr as any).message || "");
     if (code === "23505" || /duplicate|unique/i.test(msg)) {
-      return { status: 409, body: {
+      return { status: 200, body: {
         success: false,
         code: "DUPLICATE_REFERENCE",
         error: `Payaza reference "${ref}" has already been used to credit a deposit. Refusing to credit again.`,
