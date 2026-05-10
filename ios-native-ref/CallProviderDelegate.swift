@@ -147,7 +147,7 @@ final class CallProviderDelegate: NSObject, CXProviderDelegate {
         let meta = pendingMeta.removeValue(forKey: uuid)
         let event = wasAnswered ? "callEnded" : "callDeclined"
         DispatchQueue.main.async {
-            CAPBridge.notifyListeners(event, data: [
+            CallKitBridgePlugin.emit(event, [
                 "callId": uuid.uuidString.lowercased(),
                 "conversationId": meta?.conversationId ?? "",
                 "callerId": meta?.callerId ?? ""
