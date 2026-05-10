@@ -985,7 +985,7 @@ const ChatView = () => {
             {(convo as any)?.other_user?.avatar_url ? (
               <img src={(convo as any).other_user.avatar_url} className="w-full h-full object-cover" alt="" />
             ) : (
-              <span className="text-xs font-bold text-primary">{otherName.charAt(0).toUpperCase()}</span>
+              <span className="text-xs font-bold text-primary">{(otherName || "?").charAt(0).toUpperCase()}</span>
             )}
           </div>
           <span className="text-sm font-semibold truncate">{otherName}</span>

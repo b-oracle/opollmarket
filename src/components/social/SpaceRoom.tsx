@@ -2331,7 +2331,7 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           {prof?.avatar_url ? (
             <img src={optimizedImageUrl(prof.avatar_url, "avatar-md")} alt={p.name} className="w-full h-full object-cover" loading="lazy" />
           ) : (
-            <span className={size === "lg" ? "text-lg" : "text-sm"}>{p.name.charAt(0).toUpperCase()}</span>
+            <span className={size === "lg" ? "text-lg" : "text-sm"}>{(p.name || "?").charAt(0).toUpperCase()}</span>
           )}
         </div>
         {vLevel !== "none" && (

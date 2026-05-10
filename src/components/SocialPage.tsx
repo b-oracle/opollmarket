@@ -200,7 +200,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
             {prof?.avatar_url ? (
               <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-bold text-primary">{(name || "?").charAt(0).toUpperCase()}</span>
             )}
           </div>
           
@@ -272,7 +272,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                     {profile?.avatar_url ? (
                       <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                      <span className="text-xl font-bold text-primary">{(displayName || "?").charAt(0).toUpperCase()}</span>
                     )}
                   </div>
                   

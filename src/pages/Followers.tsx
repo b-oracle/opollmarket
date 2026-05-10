@@ -216,7 +216,7 @@ const Followers = () => {
                         {profile?.avatar_url ? (
                           <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+                          <span className="text-sm font-bold text-primary">{(name || "?").charAt(0).toUpperCase()}</span>
                         )}
                       </div>
                       

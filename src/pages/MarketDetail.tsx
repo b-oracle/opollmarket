@@ -71,7 +71,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
         ) : (
-          <span className="font-bold text-primary">{displayName.charAt(0)}</span>
+          <span className="font-bold text-primary">{(displayName || "?").charAt(0)}</span>
         )}
       </div>
       <div className="flex-1 min-w-0">
@@ -162,7 +162,7 @@ const InlineCommentItem = ({
           {comment.avatar_url ? (
             <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+            <span className="text-[10px] font-bold text-primary">{(comment.author_name || "?").charAt(0).toUpperCase()}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
