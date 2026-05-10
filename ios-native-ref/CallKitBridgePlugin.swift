@@ -29,7 +29,24 @@ import Capacitor
 @objc(CallKitBridgePlugin)
 public class CallKitBridgePlugin: CAPPlugin {
 
-    @objc func setMuted(_ call: CAPPluginCall) {
+    /// Weak singleton so CallProviderDelegate can fan CallKit events through
+    /// `notifyListeners` on this plugin instance. Capacitor's static
+    /// `CAPBridge.notifyListeners` is not available in 5.x+ — events MUST be
+    /// emitted from a CAPPlugin instance.
+    static weak var shared: CallKitBridgePlugin?
+
+    public override func load() {
+        CallKitBridgePlugin.shared = self
+    }
+
+    /// Helper used by CallProviderDelegate to emit events to the JS layer.
+    static func emit(_ name: String, _ data: [String: Any]) {
+        DispatchQueue.main.async {
+            shared?.notifyListeners(name, data: data)
+        }
+    }
+
+
         guard let callId = call.getString("callId") else {
             call.reject("callId is required")
             return
