@@ -9,10 +9,11 @@ let wakeLock: any = null;
 let visibilityHandler: (() => void) | null = null;
 let active = false;
 
-const isAndroidNative = async (): Promise<boolean> => {
+const isCapacitorNative = async (): Promise<boolean> => {
   try {
     const { Capacitor } = await import("@capacitor/core");
-    return Capacitor?.getPlatform?.() === "android" && Capacitor?.isNativePlatform?.();
+    const p = Capacitor?.getPlatform?.();
+    return (p === "android" || p === "ios") && !!Capacitor?.isNativePlatform?.();
   } catch {
     return false;
   }
