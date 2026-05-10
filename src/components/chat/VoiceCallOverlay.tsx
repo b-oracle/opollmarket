@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { useQuery } from "@tanstack/react-query";
 import { playDialTone } from "@/lib/sounds";
