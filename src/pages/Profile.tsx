@@ -26,7 +26,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarInitials } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 
 import CopyTradeStats from "@/components/CopyTradeStats";
@@ -910,7 +910,7 @@ const Profile = () => {
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                    <span className="text-2xl font-bold text-primary">{getAvatarInitials(displayName)}</span>
                   )}
                 </div>
                 {(profile as any)?.verification_level && (profile as any).verification_level !== "none" && <NftBadge className="absolute -bottom-0.5 -right-0.5" level={(profile as any).verification_level} />}
@@ -956,7 +956,7 @@ const Profile = () => {
               {profile?.avatar_url ? (
                 <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                <span className="text-2xl font-bold text-primary">{getAvatarInitials(displayName)}</span>
               )}
             </div>
             {(profile as any)?.verification_level && (profile as any).verification_level !== "none" && <NftBadge className="absolute -bottom-0.5 -right-0.5" level={(profile as any).verification_level} />}
@@ -1011,7 +1011,7 @@ const Profile = () => {
                         ) : profile?.avatar_url ? (
                           <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                          <span className="text-xl font-bold text-primary">{getAvatarInitials(displayName)}</span>
                         )}
                       </div>
                       <div className="absolute inset-0 rounded-full bg-background/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

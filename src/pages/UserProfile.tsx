@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import PullToRefreshIndicator from "@/components/PullToRefreshIndicator";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
@@ -395,7 +396,7 @@ const UserProfile = () => {
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-2xl font-bold text-primary">{displayName.charAt(0).toUpperCase()}</span>
+                  <span className="text-2xl font-bold text-primary">{getAvatarInitials(displayName)}</span>
                 )}
               </div>
               {isVerified && (
