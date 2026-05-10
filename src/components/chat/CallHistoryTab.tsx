@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { getAvatarInitials } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -115,7 +116,7 @@ const CallHistoryTab = () => {
               <img src={call.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
             ) : (
               <span className="text-sm font-bold text-primary">
-                {(call.other_user?.display_name || "?").charAt(0).toUpperCase()}
+                {getAvatarInitials(call.other_user?.display_name)}
               </span>
             )}
           </div>

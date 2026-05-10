@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -154,7 +155,7 @@ const StatusComments = ({ statusId }: StatusCommentsProps) => {
             {prof?.avatar_url ? (
               <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-[10px] font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+              <span className="text-[10px] font-bold text-primary">{getAvatarInitials(name)}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">

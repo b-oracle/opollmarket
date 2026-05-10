@@ -15,7 +15,7 @@
 // VoiceCallOverlay.
 import { Phone, PhoneOff } from "lucide-react";
 import CallStatusBadge, { type CallStatusVariant } from "./CallStatusBadge";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarInitials } from "@/lib/utils";
 
 export type CallScreenView = "ringing" | "connected" | "ended";
 
@@ -158,7 +158,7 @@ const CallStatusScreen = ({
             />
           ) : (
             <span className="text-4xl font-bold text-primary">
-              {(otherName || "?").charAt(0).toUpperCase()}
+              {getAvatarInitials(otherName)}
             </span>
           )}
         </div>

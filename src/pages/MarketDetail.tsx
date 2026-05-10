@@ -1,4 +1,5 @@
 import SEOHead from "@/components/SEOHead";
+import { getAvatarInitials } from "@/lib/utils";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
 import { useParams, useNavigate } from "react-router-dom";
 import watermarkLogo from "@/assets/watermark-logo.png";
@@ -162,7 +163,7 @@ const InlineCommentItem = ({
           {comment.avatar_url ? (
             <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[10px] font-bold text-primary">{comment.author_name.charAt(0).toUpperCase()}</span>
+            <span className="text-[10px] font-bold text-primary">{getAvatarInitials(comment.author_name)}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">

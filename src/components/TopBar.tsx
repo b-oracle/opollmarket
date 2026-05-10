@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { getAvatarInitials } from "@/lib/utils";
 
 const AdminBadgeButton = ({ isAdminRoute, onClick, userId, label }: { isAdminRoute: boolean; onClick: () => void; userId: string; label?: string }) => {
   const { data: pendingCount = 0 } = useQuery({
@@ -77,7 +78,7 @@ const TopBar = () => {
 
   const isAdminRoute = location.pathname.startsWith("/admin");
 
-  const initial = displayName.charAt(0).toUpperCase();
+  const initial = getAvatarInitials(displayName);
 
   const { data: avatarUrl } = useQuery({
     queryKey: ["user-avatar", user?.id],

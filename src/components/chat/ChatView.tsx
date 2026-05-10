@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import ChatDoodleBackground from "./ChatDoodleBackground";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -985,7 +986,7 @@ const ChatView = () => {
             {(convo as any)?.other_user?.avatar_url ? (
               <img src={(convo as any).other_user.avatar_url} className="w-full h-full object-cover" alt="" />
             ) : (
-              <span className="text-xs font-bold text-primary">{otherName.charAt(0).toUpperCase()}</span>
+              <span className="text-xs font-bold text-primary">{getAvatarInitials(otherName)}</span>
             )}
           </div>
           <span className="text-sm font-semibold truncate">{otherName}</span>

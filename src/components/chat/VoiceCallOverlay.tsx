@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { useQuery } from "@tanstack/react-query";
 import { playDialTone } from "@/lib/sounds";
@@ -1606,7 +1607,7 @@ const VoiceCallOverlay = ({
                   {otherUserAvatar ? (
                     <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
                   ) : (
-                    <span className="text-3xl lg:text-4xl font-bold text-primary">{(otherUserName || "?").charAt(0).toUpperCase()}</span>
+                    <span className="text-3xl lg:text-4xl font-bold text-primary">{getAvatarInitials(otherUserName)}</span>
                   )}
                 </div>
               </div>
@@ -1692,7 +1693,7 @@ const VoiceCallOverlay = ({
                 {otherUserAvatar ? (
                   <img src={otherUserAvatar} className="w-full h-full object-cover" alt="" />
                 ) : (
-                  <span className="text-3xl lg:text-4xl font-bold text-primary">{(otherUserName || "?").charAt(0).toUpperCase()}</span>
+                  <span className="text-3xl lg:text-4xl font-bold text-primary">{getAvatarInitials(otherUserName)}</span>
                 )}
               </div>
             </div>

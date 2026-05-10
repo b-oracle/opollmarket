@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { getAvatarInitials } from "@/lib/utils";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -296,7 +297,7 @@ const StatusCard = ({ status, profile, market, index = 0, repostedBy }: StatusCa
             {profile?.avatar_url ? (
               <img src={optimizedImageUrl(profile.avatar_url, "avatar-md")} alt={name} className="w-full h-full object-cover" loading="lazy" />
             ) : (
-              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
             )}
           </div>
           <LiveAvatarBadge isLive={isUserLive} />
