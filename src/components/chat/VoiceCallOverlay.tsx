@@ -255,6 +255,59 @@ const VoiceCallOverlay = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [callId]);
 
+  // Idempotent teardown of OS-level call resources (foreground service,
+  // wake-lock / iOS idle-timer, audio routing, CallKit screen). MUST run on
+  // every terminal path — user end, cancel, no-answer timeout, remote end,
+  // declined, missed — otherwise the screen stays awake and the system call
+  // UI lingers. Records a lifecycle entry per call so we can audit whether
+  // keep-awake actually got released.
+  const resourcesReleasedRef = useRef(false);
+  const releaseCallResources = useCallback((reason: string) => {
+    if (resourcesReleasedRef.current) return;
+    resourcesReleasedRef.current = true;
+    recordCallLifecycle(callId, "resources_release_start", {
+      status: statusRef.current,
+      data: { reason },
+    });
+    void Promise.allSettled([
+      stopCallForegroundService(),
+      stopCallKeepAwake(),
+      AudioRouter.endCall(),
+      CallKitBridge.endCall(callId),
+    ]).then((results) => {
+      const keepAwakeResult = results[1];
+      recordCallLifecycle(callId, "keepawake_stopped", {
+        status: statusRef.current,
+        data: { reason, ok: keepAwakeResult.status === "fulfilled" },
+        level: keepAwakeResult.status === "fulfilled" ? "info" : "warn",
+      });
+      const labels = ["foregroundService", "keepAwake", "audioRouter", "callKit"];
+      const failures = results
+        .map((r, i) => ({ r, i }))
+        .filter(({ r }) => r.status === "rejected")
+        .map(({ i, r }) => ({
+          step: labels[i],
+          error:
+            (r as PromiseRejectedResult).reason?.message ??
+            String((r as PromiseRejectedResult).reason),
+        }));
+      recordCallLifecycle(callId, "resources_released", {
+        status: statusRef.current,
+        data: { reason, failures },
+        level: failures.length ? "warn" : "info",
+      });
+    });
+  }, [callId]);
+
+  // Final safety net: if the overlay unmounts for ANY reason without going
+  // through an explicit terminal path (route change, parent re-render, error
+  // boundary), still release OS resources. Idempotent via resourcesReleasedRef.
+  useEffect(() => {
+    return () => {
+      releaseCallResources("overlay_unmount");
+    };
+  }, [releaseCallResources]);
+
 
   const handleEnd = useCallback(() => {
     // Allow re-entry: if a previous end attempt started but didn't close,
@@ -285,7 +338,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "ended", { duration_seconds: durationSec, via: "user_end" });
     recordCallLifecycle(callId, "user_end", { status: statusRef.current, data: { duration_seconds: durationSec } });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+    releaseCallResources("user_end");
 
     // Fire-and-forget — don't block close on network
     supabase.functions.invoke("dm-call-token", {
@@ -294,7 +347,7 @@ const VoiceCallOverlay = ({
 
     // Hold the post-call screen long enough for the user to read why it ended
     setTimeout(onClose, 2500);
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   const handleCancel = useCallback(() => {
     if (endingRef.current) {
@@ -315,7 +368,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "cancelled", { via: "caller_cancel" });
     recordCallLifecycle(callId, "user_cancel", { status: statusRef.current });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+    releaseCallResources("user_cancel");
 
     // Fire-and-forget
     supabase.functions.invoke("dm-call-token", {
@@ -323,7 +376,7 @@ const VoiceCallOverlay = ({
     }).catch(() => {});
 
     setTimeout(onClose, 2000);
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   // Auto-fired when the callee never answers within the ringing timeout.
   // Logged distinctly from a manual caller-cancel so the dashboard can tell
@@ -347,7 +400,7 @@ const VoiceCallOverlay = ({
     logCallEvent(callId, "timeout", { via: "no_answer", timeout_seconds: 90 });
     recordCallLifecycle(callId, "no_answer_timeout", { status: statusRef.current, level: "warn" });
     clearCallPreferences(callId);
-    void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+    releaseCallResources("no_answer_timeout");
 
     // Fire-and-forget — server still needs to clean up the call row
     supabase.functions.invoke("dm-call-token", {
@@ -355,7 +408,7 @@ const VoiceCallOverlay = ({
     }).catch(() => {});
 
     setTimeout(onClose, 2500);
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   // Track whether the user intentionally muted, so we can auto-restore on app switch
   const userIntentMutedRef = useRef(persistedPrefs?.muted ?? false);
@@ -723,7 +776,11 @@ const VoiceCallOverlay = ({
         // on iOS/web. Without this, the WebView is suspended seconds
         // after pickup and the WSS dies → "call ends right after pickup".
         void startCallForegroundService(otherUserName);
-        void startCallKeepAwake();
+        void startCallKeepAwake().then(() => {
+          recordCallLifecycle(callId, "keepawake_started", {
+            status: statusRef.current,
+          });
+        });
         // Switch Android AudioManager into VoIP mode and route to the
         // earpiece by default. Without this, WebRTC audio is played on
         // STREAM_MUSIC → loudspeaker, and JS toggles cannot change it.
@@ -851,7 +908,7 @@ const VoiceCallOverlay = ({
       try { remoteAnalyserRef.current?.ctx.close(); } catch {} remoteAnalyserRef.current = null;
       try { localAnalyserRef.current?.ctx.close(); } catch {} localAnalyserRef.current = null;
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      void stopCallForegroundService(); void stopCallKeepAwake(); void AudioRouter.endCall(); void CallKitBridge.endCall(callId);
+      releaseCallResources("remote_disconnect");
       room.disconnect();
       roomRef.current = null;
     };
@@ -1018,6 +1075,16 @@ const VoiceCallOverlay = ({
               : 0;
             setFinalDuration(durationSec);
             roomRef.current?.disconnect();
+            if (newStatus === "missed") {
+              recordCallLifecycle(callId, "missed_remote", {
+                status: statusRef.current,
+                level: "warn",
+              });
+            }
+            // Release OS resources (idle-timer, foreground service, audio
+            // route, CallKit screen) — without this, an unanswered/declined
+            // call leaves the screen awake until the user manually closes.
+            releaseCallResources(`remote_${newStatus}`);
             setTimeout(onClose, 2500);
           } else if (newStatus === "active") {
             if (stopToneRef.current) { stopToneRef.current(); stopToneRef.current = null; }
@@ -1032,7 +1099,7 @@ const VoiceCallOverlay = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [callId, onClose]);
+  }, [callId, onClose, releaseCallResources]);
 
   // Apply a mute change without re-broadcasting to CallKit. Used by both the
   // overlay UI button (which then ALSO pushes to CallKit) and by the

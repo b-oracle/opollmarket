@@ -35,6 +35,11 @@ export type CallLifecycleStage =
   | "show_rejoin"
   | "rejoin_attempt"
   | "rejoin_failed"
+  | "resources_release_start"
+  | "resources_released"
+  | "keepawake_started"
+  | "keepawake_stopped"
+  | "missed_remote"
   | "info";
 
 export interface CallLifecycleEntry {
