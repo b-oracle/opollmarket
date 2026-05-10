@@ -112,7 +112,7 @@ export async function replayDeposit(
     return await replayPayaza(admin, fetchImpl, deps, actorId, tx);
   }
   if (provider !== "nowpayments") {
-    return { status: 400, body: { error: `Replay not supported for ${provider} deposits. Use admin-credit-deposit for manual credits.` } };
+    return { status: 200, body: { success: false, code: "UNSUPPORTED_PROVIDER", error: `Replay not supported for ${provider} deposits. Use admin-credit-deposit for manual credits.` } };
   }
 
   const npId = tx.nowpayments_payment_id || paymentId;
