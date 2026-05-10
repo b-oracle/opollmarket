@@ -47,7 +47,8 @@ export const startCallKeepAwake = async (): Promise<void> => {
   };
   document.addEventListener("visibilitychange", visibilityHandler);
 
-  // Android native — flip FLAG_KEEP_SCREEN_ON via the audio router plugin.
+  // Native (Android + iOS) — flip FLAG_KEEP_SCREEN_ON / isIdleTimerDisabled
+  // via the AudioRouter plugin (Kotlin on Android, Swift on iOS).
   if (await isCapacitorNative()) {
     try {
       const { registerPlugin } = await import("@capacitor/core");
