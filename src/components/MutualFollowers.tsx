@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Users } from "lucide-react";
+import { getAvatarInitials } from "@/lib/utils";
 
 interface MutualFollowersProps {
   targetUserId: string;
@@ -73,7 +74,7 @@ const MutualFollowers = ({ targetUserId }: MutualFollowersProps) => {
               <img src={p.avatar_url} alt={p.display_name || ""} className="w-full h-full object-cover" />
             ) : (
               <span className="text-[8px] font-bold text-primary">
-                {(p.display_name || "?").charAt(0).toUpperCase()}
+                {getAvatarInitials(p.display_name)}
               </span>
             )}
           </button>

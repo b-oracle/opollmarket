@@ -11,6 +11,7 @@ import StoriesCarousel from "@/components/social/StoriesCarousel";
 import SpacesFeed from "@/components/social/SpacesFeed";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
+import { getAvatarInitials } from "@/lib/utils";
 import {
   Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X, FileText, Radio,
 } from "lucide-react";
@@ -144,7 +145,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
             {prof?.avatar_url ? (
               <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-primary">{name.charAt(0).toUpperCase()}</span>
+              <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
             )}
           </div>
           
