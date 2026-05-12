@@ -519,6 +519,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <PWAUpdatePrompt />
+                <FsiPermissionBanner />
                 <BrowserRouter>
                 <FirstRunRedirector />
                 {/* IncomingCallBanner must be OUTSIDE ConditionalWagmiProvider so it persists across all route changes */}
