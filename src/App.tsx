@@ -23,6 +23,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
+import FsiPermissionBanner from "./components/FsiPermissionBanner";
 import LogoLoader from "./components/LogoLoader";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
