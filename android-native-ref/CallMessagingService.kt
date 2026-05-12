@@ -152,6 +152,31 @@ class CallMessagingService : FirebaseMessagingService() {
         // already loops the ringtone, so we leave the default flags.
 
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Diagnostic: log the three things most likely to cause the
+        // "buzz once and disappear" symptom on Android 14 / Samsung One UI.
+        // Filter with: adb logcat -s CallMessagingService
+        val canFsi = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            runCatching { nm.canUseFullScreenIntent() }.getOrDefault(false)
+        } else true
+        val channel = nm.getNotificationChannel(CALL_CHANNEL_ID)
+        val channelImportance = channel?.importance ?: -1
+        val channelSound = channel?.sound?.toString() ?: "null"
+        android.util.Log.i(
+            TAG,
+            "pre-notify diag: sdk=${Build.VERSION.SDK_INT} oem=${Build.MANUFACTURER} " +
+                "canUseFSI=$canFsi channelImportance=$channelImportance " +
+                "channelSound=$channelSound notifEnabled=${nm.areNotificationsEnabled()}"
+        )
+        if (!canFsi) {
+            android.util.Log.w(
+                TAG,
+                "USE_FULL_SCREEN_INTENT NOT granted on Android 14+. The lockscreen " +
+                    "IncomingCallActivity will NOT launch. User must enable " +
+                    "Settings → Apps → opollmarket → Notifications → Allow full-screen notifications."
+            )
+        }
+
         nm.notify(CALL_NOTIFICATION_ID, notification)
         android.util.Log.i(TAG, "posted incoming-call notification (CallStyle) id=$CALL_NOTIFICATION_ID call=$callId")
     }
