@@ -325,7 +325,7 @@ const AdminSettings = () => {
         setCreatorFeeBlue(String(d.creator_fee_blue_percent ?? d.creator_fee_percent ?? 3));
         setCreatorFeeGold(String(d.creator_fee_gold_percent ?? d.creator_fee_percent ?? 3));
         setReferrerCommission(String(d.referrer_commission_percent ?? 0));
-        setReferralReward(String(d.referral_reward_amount ?? 5));
+        setReferralReward(String(d.referral_reward_amount ?? 2));
         setMinTokenBalance(String(d.min_token_balance ?? 10000000));
         setMinGoldTokenBalance(String(d.min_gold_token_balance ?? 100000000));
         setMinNftBalance(String(d.min_nft_balance ?? 1));

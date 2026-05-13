@@ -115,7 +115,7 @@ const Referrals = () => {
   });
 
   // Fetch referral reward amount setting
-  const { data: rewardAmount = 5 } = useQuery({
+  const { data: rewardAmount = 2 } = useQuery({
     queryKey: ["referral_reward_amount"],
     queryFn: async () => {
       const { data } = await supabase
@@ -123,7 +123,7 @@ const Referrals = () => {
         .select("referral_reward_amount")
         .limit(1)
         .single();
-      return Number((data as any)?.referral_reward_amount ?? 5);
+      return Number((data as any)?.referral_reward_amount ?? 2);
     },
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
