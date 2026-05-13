@@ -24,6 +24,7 @@ import DesktopSidebar from "./components/DesktopSidebar";
 import DesktopFooter from "./components/DesktopFooter";
 import PWAUpdatePrompt from "./components/PWAUpdatePrompt";
 import FsiPermissionBanner from "./components/FsiPermissionBanner";
+import CallPermissionsOnboarding from "./components/CallPermissionsOnboarding";
 import LogoLoader from "./components/LogoLoader";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
@@ -520,6 +521,7 @@ const App = () => {
                 <Sonner />
                 <PWAUpdatePrompt />
                 <FsiPermissionBanner />
+                <CallPermissionsOnboarding />
                 <BrowserRouter>
                 <FirstRunRedirector />
                 {/* IncomingCallBanner must be OUTSIDE ConditionalWagmiProvider so it persists across all route changes */}
