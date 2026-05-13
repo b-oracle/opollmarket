@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
       if (upsertError.code === "23503") {
         // Generate a unique username via DB function so we don't collide on the default 'user'
         const { data: uname } = await adminClient.rpc("generate_unique_username", {
-          base_name: (user.email?.split("@")[0]) || "user",
+          _display_name: (user.email?.split("@")[0]) || "user",
         });
         const { error: profileErr } = await adminClient
           .from("profiles")
