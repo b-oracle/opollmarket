@@ -223,22 +223,42 @@ export const CALL_ENDED_PATTERN: number[] = [200];
  *   2. Then loops CALL_RING_PATTERN every CALL_RING_PATTERN_DURATION ms.
  */
 export const startIncomingCallVibration = (): (() => void) => {
-  // Kick off with the attention buzz immediately.
-  void vibrate(CALL_ATTENTION_PATTERN);
+  let cancelled = false;
+  let loopTimer: ReturnType<typeof setTimeout> | null = null;
+  let impactTimer: ReturnType<typeof setInterval> | null = null;
 
-  // After the attention buzz finishes, start the ringing cadence.
-  const attentionMs = CALL_ATTENTION_PATTERN.reduce((a, b) => a + b, 0);
-  let ringInterval: ReturnType<typeof setInterval> | null = null;
-  const startTimer = setTimeout(() => {
+  // Self-rescheduling loop — each cycle re-arms the next one only after the
+  // current pattern duration elapses. Avoids drift and ensures we keep
+  // buzzing for as long as the banner is visible (some browsers cancel the
+  // previous vibrate when a new one is issued, so we always re-issue).
+  const cycleMs = CALL_RING_PATTERN.reduce((a, b) => a + b, 0);
+  const tick = () => {
+    if (cancelled) return;
     void vibrate(CALL_RING_PATTERN);
-    ringInterval = setInterval(() => {
-      void vibrate(CALL_RING_PATTERN);
-    }, CALL_RING_PATTERN_DURATION);
-  }, attentionMs + 80);
+    loopTimer = setTimeout(tick, cycleMs);
+  };
+
+  // Kick off with the attention buzz, then start the ringing loop.
+  void vibrate(CALL_ATTENTION_PATTERN);
+  const attentionMs = CALL_ATTENTION_PATTERN.reduce((a, b) => a + b, 0);
+  loopTimer = setTimeout(tick, attentionMs + 80);
+
+  // iOS Safari has no navigator.vibrate, and on iOS Capacitor the Haptics
+  // plugin maps vibrate() to a tiny tap. To make the device actually pulse
+  // continuously, fire a heavy haptic impact ~every 700ms in parallel. On
+  // Android this stacks with the real vibration; on iOS native it becomes
+  // the primary ring feedback.
+  if (isCapacitorNative()) {
+    impactTimer = setInterval(() => {
+      if (cancelled) return;
+      void hapticHeavy();
+    }, 700);
+  }
 
   return () => {
-    clearTimeout(startTimer);
-    if (ringInterval) clearInterval(ringInterval);
+    cancelled = true;
+    if (loopTimer) clearTimeout(loopTimer);
+    if (impactTimer) clearInterval(impactTimer);
     stopVibration();
   };
 };
