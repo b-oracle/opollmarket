@@ -88,16 +88,36 @@ Deno.serve(async (req) => {
       }, { onConflict: "user_id" });
 
     if (upsertError) {
-      console.error("Failed to save PIN:", upsertError);
-      // If FK violation (no profile), create profile first and retry
+      console.error("Failed to save PIN:", JSON.stringify(upsertError));
+
+      // If FK violation (no profile yet), create profile via RPC, then retry
       if (upsertError.code === "23503") {
+        // Generate a unique username via DB function so we don't collide on the default 'user'
+        const { data: uname } = await adminClient.rpc("generate_unique_username", {
+          base_name: (user.email?.split("@")[0]) || "user",
+        });
         const { error: profileErr } = await adminClient
           .from("profiles")
-          .upsert({ id: user.id, email: user.email }, { onConflict: "id" });
-        if (!profileErr) {
-          const { error: retryErr } = await adminClient
-            .from("user_security_settings")
-            .upsert({
+          .upsert(
+            {
+              id: user.id,
+              email: user.email,
+              display_name: user.email?.split("@")[0] || "user",
+              username: uname || `user_${user.id.slice(0, 8)}`,
+            },
+            { onConflict: "id" }
+          );
+        if (profileErr) {
+          console.error("Profile auto-create failed:", JSON.stringify(profileErr));
+          return new Response(
+            JSON.stringify({ error: `Profile setup failed: ${profileErr.message}` }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const { error: retryErr } = await adminClient
+          .from("user_security_settings")
+          .upsert(
+            {
               user_id: user.id,
               pin_hash: pinHash,
               pin_enabled: true,
@@ -105,17 +125,28 @@ Deno.serve(async (req) => {
               require_pin_withdrawal: true,
               security_setup_complete: true,
               updated_at: new Date().toISOString(),
-            }, { onConflict: "user_id" });
-          if (!retryErr) {
-            return new Response(JSON.stringify({ success: true }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            });
-          }
+            },
+            { onConflict: "user_id" }
+          );
+        if (!retryErr) {
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
         }
+        console.error("Retry upsert failed:", JSON.stringify(retryErr));
+        return new Response(
+          JSON.stringify({ error: `Failed to save PIN: ${retryErr.message}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
-      return new Response(JSON.stringify({ error: "Failed to save PIN. Please try again." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+      // Surface the real error to help diagnose (length limit, RLS, etc.)
+      return new Response(
+        JSON.stringify({
+          error: `Failed to save PIN: ${upsertError.message || upsertError.code || "unknown error"}`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     return new Response(JSON.stringify({ success: true }), {
