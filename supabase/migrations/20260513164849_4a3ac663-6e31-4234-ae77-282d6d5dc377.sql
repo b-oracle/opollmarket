@@ -1,0 +1,1 @@
+UPDATE public.commission_settings SET referral_reward_amount = 2;
