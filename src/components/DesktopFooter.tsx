@@ -12,6 +12,7 @@ const footerLinks = [
   { icon: Scale, label: "Disclaimer", href: "/disclaimer" },
   { icon: FileText, label: "Terms & Conditions", href: "/terms" },
   { icon: Shield, label: "Privacy Policy", href: "/privacy" },
+  { icon: Shield, label: "Child Safety Standards", href: "/child-safety" },
   { icon: Trash2, label: "Delete Account", href: "/delete-account" },
 ];
 
@@ -141,6 +142,9 @@ const DesktopFooter = () => {
             </a>
             <a href="/disclaimer" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
               Disclaimer
+            </a>
+            <a href="/child-safety" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">
+              Child Safety
             </a>
           </div>
         </div>

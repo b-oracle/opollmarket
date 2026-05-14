@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import BackToTop from "@/components/BackToTop";
 
 const LAST_UPDATED = "May 14, 2026";
-const CONTACT_EMAIL = "boundlesspay@gmail.com";
+const CONTACT_EMAIL = "cultivator400@gmail.com";
 
 const ChildSafety = () => {
   const navigate = useNavigate();
