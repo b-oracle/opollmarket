@@ -127,6 +127,8 @@ const UserProfile = () => {
     refetchOnMount: true,
   });
 
+  const referralProfileId = profile?.id ?? (isUUID ? id ?? null : null);
+
   // Markets created by user
   const { data: userMarkets = [] } = useQuery({
     queryKey: ["user-markets", profileUserId],
@@ -180,16 +182,18 @@ const UserProfile = () => {
 
   // Referral count
   const { data: referralCount = 0 } = useQuery({
-    queryKey: ["user-referral-count", profileUserId],
+    queryKey: ["user-referral-count", referralProfileId],
     queryFn: async () => {
-      if (!profileUserId) return 0;
-      const { count } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("referred_by", profileUserId);
-      return count || 0;
+      if (!referralProfileId) return 0;
+      const { data, error } = await supabase.rpc("get_user_referral_count" as any, {
+        _user_id: referralProfileId,
+      } as any);
+      if (error) throw error;
+      return Number(data ?? 0);
     },
-    enabled: !!profileUserId,
+    enabled: !!referralProfileId && !!user,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Leaderboard ranks
