@@ -121,6 +121,7 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const Disclaimer = lazy(() => import("./pages/Disclaimer"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const ChildSafety = lazy(() => import("./pages/ChildSafety"));
 const DataUse = lazy(() => import("./pages/DataUse"));
 const DeleteAccount = lazy(() => import("./pages/DeleteAccount"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -574,6 +575,7 @@ const App = () => {
                         <Route path="/disclaimer" element={<Disclaimer />} />
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/child-safety" element={<ChildSafety />} />
                         <Route path="/data-use" element={<DataUse />} />
                         <Route path="/delete-account" element={<DeleteAccount />} />
                         <Route path="/maintenance" element={<Maintenance />} />
