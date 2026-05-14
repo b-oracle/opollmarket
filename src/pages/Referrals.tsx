@@ -49,14 +49,15 @@ const Referrals = () => {
     queryKey: ["referred_signups", user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, created_at")
-        .eq("referred_by", user.id)
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("get_user_referral_signups" as any, {
+        _user_id: user.id,
+      } as any);
+      if (error) throw error;
       return data || [];
     },
     enabled: !!user,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });

@@ -78,6 +78,7 @@ const UserProfile = () => {
       await queryClient.invalidateQueries({ queryKey: ["user-positions-public", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-likes-count", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-leaderboard-ranks", profileUserId] });
+      await queryClient.invalidateQueries({ queryKey: ["user-referral-count"] });
     },
     scrollRef: containerRef,
   });
@@ -126,6 +127,8 @@ const UserProfile = () => {
     staleTime: 10_000,
     refetchOnMount: true,
   });
+
+  const referralProfileId = profile?.id ?? (isUUID ? id ?? null : null);
 
   // Markets created by user
   const { data: userMarkets = [] } = useQuery({
@@ -180,16 +183,18 @@ const UserProfile = () => {
 
   // Referral count
   const { data: referralCount = 0 } = useQuery({
-    queryKey: ["user-referral-count", profileUserId],
+    queryKey: ["user-referral-count", referralProfileId],
     queryFn: async () => {
-      if (!profileUserId) return 0;
-      const { count } = await supabase
-        .from("profiles")
-        .select("id", { count: "exact", head: true })
-        .eq("referred_by", profileUserId);
-      return count || 0;
+      if (!referralProfileId) return 0;
+      const { data, error } = await supabase.rpc("get_user_referral_count" as any, {
+        _user_id: referralProfileId,
+      } as any);
+      if (error) throw error;
+      return Number(data ?? 0);
     },
-    enabled: !!profileUserId,
+    enabled: !!referralProfileId && !!user,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   // Leaderboard ranks
@@ -383,7 +388,7 @@ const UserProfile = () => {
           onOpenChange={setShareOpen}
           title={`${displayName} on OPoll`}
           description={`Join me on OPoll — the social prediction platform. Predict and earn! 🔥`}
-          marketUrl={`${getCanonicalOrigin()}/user/${(profile as any)?.username || profileUserId}${profile?.display_name ? `?ref=${encodeURIComponent(profile.display_name)}` : ""}`}
+          marketUrl={`${getCanonicalOrigin()}/user/${(profile as any)?.username || profileUserId}${(profile as any)?.username ? `?ref=${encodeURIComponent((profile as any).username)}` : ""}`}
           captureRef={profileCardRef}
         />
 

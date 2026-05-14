@@ -5442,6 +5442,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_user_referral_count: { Args: { _user_id: string }; Returns: number }
+      get_user_referral_signups: {
+        Args: { _user_id: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          id: string
+        }[]
+      }
       get_user_trade_count: {
         Args: { _user_id: string }
         Returns: {
