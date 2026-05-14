@@ -78,6 +78,7 @@ const UserProfile = () => {
       await queryClient.invalidateQueries({ queryKey: ["user-positions-public", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-likes-count", profileUserId] });
       await queryClient.invalidateQueries({ queryKey: ["user-leaderboard-ranks", profileUserId] });
+      await queryClient.invalidateQueries({ queryKey: ["user-referral-count"] });
     },
     scrollRef: containerRef,
   });
@@ -387,7 +388,7 @@ const UserProfile = () => {
           onOpenChange={setShareOpen}
           title={`${displayName} on OPoll`}
           description={`Join me on OPoll — the social prediction platform. Predict and earn! 🔥`}
-          marketUrl={`${getCanonicalOrigin()}/user/${(profile as any)?.username || profileUserId}${profile?.display_name ? `?ref=${encodeURIComponent(profile.display_name)}` : ""}`}
+          marketUrl={`${getCanonicalOrigin()}/user/${(profile as any)?.username || profileUserId}${(profile as any)?.username ? `?ref=${encodeURIComponent((profile as any).username)}` : ""}`}
           captureRef={profileCardRef}
         />
 
