@@ -182,7 +182,7 @@ const UserProfile = () => {
   const { data: referralCount = 0 } = useQuery({
     queryKey: ["user-referral-count", profileUserId],
     queryFn: async () => {
-      if (!id) return 0;
+      if (!profileUserId) return 0;
       const { count } = await supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
