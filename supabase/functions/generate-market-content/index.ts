@@ -155,15 +155,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
 
       if (!aiResponse.ok) {
         // Refund on AI failure
-        await adminClient
-          .from("balances")
-          .update({
-            bonus_balance: bonus,
-            amount: main,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id)
-          .eq("currency", "USDT");
+        await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
         if (aiResponse.status === 429) {
           return new Response(JSON.stringify({ error: "AI is temporarily busy — please wait a few seconds and try again" }), {
@@ -214,15 +206,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
 
       if (!aiResponse.ok) {
         // Refund on AI failure
-        await adminClient
-          .from("balances")
-          .update({
-            bonus_balance: bonus,
-            amount: main,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id)
-          .eq("currency", "USDT");
+        await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
         if (aiResponse.status === 429) {
           return new Response(JSON.stringify({ error: "AI is temporarily busy — please wait a few seconds and try again" }), {
@@ -248,15 +232,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
 
       if (!imageUrl || !imageUrl.startsWith("data:image")) {
         // Refund
-        await adminClient
-          .from("balances")
-          .update({
-            bonus_balance: bonus,
-            amount: main,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id)
-          .eq("currency", "USDT");
+        await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
         return new Response(JSON.stringify({ error: "No image was generated. You have been refunded." }), {
           status: 200,
@@ -280,15 +256,7 @@ Use markdown formatting (headers, bullet points, bold). Keep it between 200-800 
       if (uploadErr) {
         console.error("Storage upload error:", uploadErr);
         // Refund
-        await adminClient
-          .from("balances")
-          .update({
-            bonus_balance: bonus,
-            amount: main,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("user_id", user.id)
-          .eq("currency", "USDT");
+        await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
         return new Response(JSON.stringify({ error: "Failed to save generated image. You have been refunded." }), {
           status: 200,
