@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { verifyCronSecret } from "../_shared/cronAuth.ts";
 import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-cron-secret",
 };
 
 const GAMMA_API = "https://gamma-api.polymarket.com";
@@ -13,6 +14,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const cronCheck = verifyCronSecret(req, { functionName: "check-poly-resolve", corsHeaders });
+  if (!cronCheck.ok) return cronCheck.response!;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

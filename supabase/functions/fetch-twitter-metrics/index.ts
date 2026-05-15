@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { verifyCronSecret } from "../_shared/cronAuth.ts";
 import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-cron-secret",
 };
 
 interface TwitterMetrics {
@@ -180,6 +181,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const cronCheck = verifyCronSecret(req, { functionName: "fetch-twitter-metrics", corsHeaders });
+  if (!cronCheck.ok) return cronCheck.response!;
 
   try {
     const bearerToken = Deno.env.get("X_BEARER_TOKEN");
