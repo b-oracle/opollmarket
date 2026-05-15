@@ -4,7 +4,7 @@ import { getErrorMessage } from "../_shared/errors.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 // CoinGecko ID mapping for crypto
@@ -279,6 +279,15 @@ function conditionMet(currentPrice: number, targetPrice: number, operator: strin
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Cron secret guard
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const incoming = req.headers.get("x-cron-secret");
+  if (!cronSecret || incoming !== cronSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   try {
