@@ -14,6 +14,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Per-user rate limit (cold-start in-memory) — protects against AI cost abuse.
+  const rl = await requireAuthAndRateLimit(req, { perMinute: 10 });
+  if (!rl.ok) return rl.response;
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
