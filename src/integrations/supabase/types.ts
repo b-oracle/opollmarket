@@ -5077,6 +5077,23 @@ export type Database = {
         Returns: undefined
       }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
+      admin_get_profiles_with_email: {
+        Args: { _ids: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          id: string
+          username: string
+        }[]
+      }
+      admin_search_profiles: {
+        Args: { _limit?: number; _offset?: number; _term?: string }
+        Returns: {
+          rows: Json
+          total_count: number
+        }[]
+      }
       admin_update_profile: {
         Args: {
           _block_reason?: string
@@ -5288,6 +5305,44 @@ export type Database = {
         }[]
       }
       get_live_space_user_ids: { Args: never; Returns: string[] }
+      get_my_full_profile: {
+        Args: never
+        Returns: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          created_at: string
+          date_of_birth: string | null
+          display_name: string | null
+          email: string | null
+          gender: string | null
+          id: string
+          interests: string[] | null
+          is_blocked: boolean
+          is_public: boolean
+          kyc_status: string
+          location: string | null
+          referred_by: string | null
+          social_tutorial_seen: boolean
+          twitter_avatar_url: string | null
+          twitter_id: string | null
+          twitter_linked_at: string | null
+          twitter_username: string | null
+          unlimited_markets: boolean
+          updated_at: string
+          username: string
+          verification_level: string
+          wallet_address: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_my_profile: {
         Args: never
         Returns: {
