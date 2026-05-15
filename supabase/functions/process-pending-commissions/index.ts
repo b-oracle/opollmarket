@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { constantTimeEqual } from "../_shared/cronAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +17,7 @@ Deno.serve(async (req) => {
     // OR an authenticated admin/super_admin user token (for manual runs).
     const cronSecret = Deno.env.get("CRON_SECRET");
     const incomingCron = req.headers.get("x-cron-secret");
-    const cronAuthorized = !!cronSecret && incomingCron === cronSecret;
+    const cronAuthorized = !!cronSecret && !!incomingCron && constantTimeEqual(incomingCron, cronSecret);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
