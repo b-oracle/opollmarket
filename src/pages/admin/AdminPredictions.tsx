@@ -92,7 +92,7 @@ const AdminPredictions = () => {
       if (userIds.length > 0) {
         const batches = [];
         for (let i = 0; i < userIds.length; i += 100) {
-          batches.push(supabase.from("profiles").select("id, display_name, email").in("id", userIds.slice(i, i + 100)));
+          batches.push(supabase.rpc("admin_get_profiles_with_email", { _ids: userIds.slice(i, i + 100) }));
         }
         const results = await Promise.all(batches);
         const map = new Map<string, string>();

@@ -201,17 +201,18 @@ const AdminSocial = () => {
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
     const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
 
-    let query = supabase.from("profiles").select("id, display_name, email, avatar_url, bio, is_public, created_at", { count: "exact" }).order("created_at", { ascending: false });
+    // Use SECURITY DEFINER admin search RPC since email is not directly readable.
+    const { data: rpcData } = await supabase.rpc("admin_search_profiles", {
+      _term: debouncedSearch.trim() || null,
+      _limit: PAGE_SIZE,
+      _offset: from,
+    });
 
-    if (debouncedSearch.trim()) {
-      const q = `%${debouncedSearch.trim()}%`;
-      query = query.or(`display_name.ilike.${q},email.ilike.${q}`);
-    }
-
-    const { data: profileData, count } = await query.range(from, to);
-    setTotalCount(count ?? 0);
+    const row: any = Array.isArray(rpcData) ? rpcData[0] : null;
+    const profileData: any[] = Array.isArray(row?.rows) ? row.rows : [];
+    const count = Number(row?.total_count) || 0;
+    setTotalCount(count);
 
     if (!profileData || profileData.length === 0) {
       setProfiles([]);
@@ -219,7 +220,7 @@ const AdminSocial = () => {
       return;
     }
 
-    const userIds = profileData.map(p => p.id);
+    const userIds = profileData.map((p: any) => p.id);
 
     // Batch fetch follower/following counts to handle >1000 rows
     const batchFetchFollows = async (column: string, ids: string[]) => {

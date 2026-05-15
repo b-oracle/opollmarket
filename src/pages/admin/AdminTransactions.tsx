@@ -60,10 +60,12 @@ const AdminTransactions = () => {
       if (debouncedSearch) {
         const searchTerm = `%${debouncedSearch}%`;
         const [profilesSearch, marketsSearch] = await Promise.all([
-          supabase.from("profiles").select("id").or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
+          supabase.rpc("admin_search_profiles", { _term: debouncedSearch, _limit: 1000, _offset: 0 }),
           supabase.from("markets").select("id").ilike("title", searchTerm),
         ]);
-        matchingUserIds = profilesSearch.data?.map((p) => p.id) || [];
+        const searchRow: any = profilesSearch.data?.[0];
+        const profileRows: any[] = Array.isArray(searchRow?.rows) ? searchRow.rows : [];
+        matchingUserIds = profileRows.map((p: any) => p.id);
         matchingMarketIds = marketsSearch.data?.map((m) => m.id) || [];
 
         if (matchingUserIds.length === 0 && matchingMarketIds.length === 0) {
@@ -155,7 +157,7 @@ const AdminTransactions = () => {
           ? supabase.from("markets").select("id, title").in("id", marketIds)
           : Promise.resolve({ data: [] }),
         userIds.length > 0
-          ? supabase.from("profiles").select("id, email, display_name").in("id", userIds)
+          ? supabase.rpc("admin_get_profiles_with_email", { _ids: userIds })
           : Promise.resolve({ data: [] }),
         optionIds.length > 0
           ? supabase.from("market_options").select("id, label").in("id", optionIds)

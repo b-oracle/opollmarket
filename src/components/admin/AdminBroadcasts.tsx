@@ -79,7 +79,7 @@ const AdminBroadcasts = () => {
 
     const [marketsRes, profilesRes] = await Promise.all([
       supabase.from("markets").select("id, title").in("id", marketIds),
-      supabase.from("profiles").select("id, display_name, email").in("id", userIds),
+      supabase.rpc("admin_get_profiles_with_email", { _ids: userIds }),
     ]);
 
     const titleMap = new Map(marketsRes.data?.map((m) => [m.id, m.title]) || []);

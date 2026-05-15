@@ -112,7 +112,7 @@ const AdminAuditLog = () => {
       });
 
       const { data: profiles } = userIds.size > 0
-        ? await supabase.from("profiles").select("id, display_name, email").in("id", Array.from(userIds))
+        ? await supabase.rpc("admin_get_profiles_with_email", { _ids: Array.from(userIds) })
         : { data: [] };
 
       const nameMap = new Map<string, string>();

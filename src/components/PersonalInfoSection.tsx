@@ -28,17 +28,16 @@ const PersonalInfoSection = ({ userId }: PersonalInfoSectionProps) => {
 
   useEffect(() => {
     if (!userId) return;
+    // Sensitive cols (gender, location) are not directly readable; use SECURITY DEFINER RPC for owner self-read
     supabase
-      .from("profiles")
-      .select("age, gender, location, interests")
-      .eq("id", userId)
+      .rpc("get_my_full_profile")
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data }: any) => {
         if (data) {
           setAge(data.age?.toString() || "");
-          setGender((data as any).gender || "");
-          setLocation((data as any).location || "");
-          setInterests((data as any).interests || []);
+          setGender(data.gender || "");
+          setLocation(data.location || "");
+          setInterests(data.interests || []);
         }
         setLoaded(true);
       });

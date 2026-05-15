@@ -52,25 +52,30 @@ const AdminUsers = () => {
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     const from = (page - 1) * PAGE_SIZE;
-    const to = from + PAGE_SIZE - 1;
 
-    let query = supabase
-      .from("profiles")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false });
+    // Sensitive columns on profiles are not readable directly; use admin RPC.
+    const { data: rpcData, error } = await supabase.rpc("admin_search_profiles", {
+      _term: debouncedSearch.trim() || null,
+      _limit: PAGE_SIZE,
+      _offset: from,
+    });
 
-    if (debouncedSearch.trim()) {
-      const q = `%${debouncedSearch.trim()}%`;
-      query = query.or(`display_name.ilike.${q},email.ilike.${q}`);
+    if (error || !rpcData || rpcData.length === 0) {
+      setLoading(false);
+      if (!error) {
+        setUsers([]);
+        setTotalCount(0);
+      }
+      return;
     }
 
-    const { data: profiles, count, error } = await query.range(from, to);
+    const row = rpcData[0] as any;
+    const profiles: any[] = Array.isArray(row.rows) ? row.rows : [];
+    const count = Number(row.total_count) || 0;
 
-    if (error) { setLoading(false); return; }
+    setTotalCount(count);
 
-    setTotalCount(count ?? 0);
-
-    const userIds = (profiles || []).map(p => p.id);
+    const userIds = profiles.map((p: any) => p.id);
 
     if (userIds.length === 0) {
       setUsers([]);
@@ -94,12 +99,12 @@ const AdminUsers = () => {
     balances?.forEach((b) => balanceMap.set(b.user_id, Number(b.amount)));
 
     setUsers(
-      (profiles || []).map((p) => ({
+      profiles.map((p: any) => ({
         ...p,
         roles: roleMap.get(p.id) || [],
         balance: balanceMap.get(p.id) ?? 0,
-        is_blocked: !!(p as any).is_blocked,
-        unlimited_markets: !!(p as any).unlimited_markets,
+        is_blocked: !!p.is_blocked,
+        unlimited_markets: !!p.unlimited_markets,
       }))
     );
     setLoading(false);

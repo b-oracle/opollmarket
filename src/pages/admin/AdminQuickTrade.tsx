@@ -85,7 +85,7 @@ const AdminQuickTrade = () => {
 
       const userIds = [...new Set((betData || []).map(b => b.user_id))];
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, display_name, email").in("id", userIds);
+        const { data: profiles } = await supabase.rpc("admin_get_profiles_with_email", { _ids: userIds });
         setProfileMap(new Map((profiles || []).map(p => [p.id, p.display_name || p.email || p.id.slice(0, 8)])));
       }
       setLoading(false);

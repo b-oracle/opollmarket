@@ -128,7 +128,7 @@ const AdminBoosts = () => {
 
     const [marketsRes, profilesRes] = await Promise.all([
       supabase.from("markets").select("id, title").in("id", marketIds),
-      supabase.from("profiles").select("id, display_name, email").in("id", payerIds),
+      supabase.rpc("admin_get_profiles_with_email", { _ids: payerIds }),
     ]);
 
     const titleMap = new Map(marketsRes.data?.map((m) => [m.id, m.title]) || []);
