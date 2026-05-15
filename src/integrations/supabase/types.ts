@@ -5061,6 +5061,7 @@ export type Database = {
       }
     }
     Functions: {
+      _cron_edge_headers: { Args: never; Returns: Json }
       accept_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       add_market_liquidity: {
         Args: { _amount: number; _market_id: string; _user_id: string }
