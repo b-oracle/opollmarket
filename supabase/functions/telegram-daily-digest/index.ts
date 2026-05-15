@@ -19,7 +19,13 @@ function truncate(text: string, max = 35): string {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+  const cronCheck = verifyCronSecret(req, { functionName: "telegram-daily-digest", corsHeaders });
+  if (!cronCheck.ok) return cronCheck.response!;
+
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!token) {
     return new Response(JSON.stringify({ error: "Bot token not configured" }), { status: 500 });
