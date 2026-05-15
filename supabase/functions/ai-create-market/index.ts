@@ -199,11 +199,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
 
     if (!aiResponse.ok) {
       // Refund
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "AI is temporarily busy — please wait a few seconds and try again" }), {
@@ -226,11 +222,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
 
     if (!toolCall?.function?.arguments) {
       // Refund
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
       return new Response(JSON.stringify({ error: "AI could not generate market data. You have been refunded." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -241,11 +233,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
     try {
       marketData = JSON.parse(toolCall.function.arguments);
     } catch {
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
       return new Response(JSON.stringify({ error: "AI returned invalid data. You have been refunded." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
