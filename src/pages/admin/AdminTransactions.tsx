@@ -157,7 +157,7 @@ const AdminTransactions = () => {
           ? supabase.from("markets").select("id, title").in("id", marketIds)
           : Promise.resolve({ data: [] }),
         userIds.length > 0
-          ? supabase.from("profiles").select("id, email, display_name").in("id", userIds)
+          ? supabase.rpc("admin_get_profiles_with_email", { _ids: userIds })
           : Promise.resolve({ data: [] }),
         optionIds.length > 0
           ? supabase.from("market_options").select("id, label").in("id", optionIds)
