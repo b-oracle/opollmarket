@@ -1,5 +1,6 @@
 // Shared helper for validating cron-secret-protected edge functions.
 // Logs rejections in a structured form WITHOUT leaking the secret value.
+// Uses a constant-time comparison to mitigate timing-attack risks.
 
 export interface CronAuthResult {
   ok: boolean;
@@ -9,6 +10,24 @@ export interface CronAuthResult {
 interface VerifyOpts {
   functionName: string;
   corsHeaders: Record<string, string>;
+}
+
+/**
+ * Constant-time byte comparison. Always iterates over the full length of
+ * `expected` so the runtime is not influenced by where the first mismatch
+ * occurs. Length-mismatched inputs short-circuit (length itself is not a
+ * sensitive value here — the secret length is fixed and known).
+ */
+export function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  const aBytes = new TextEncoder().encode(a);
+  const bBytes = new TextEncoder().encode(b);
+  if (aBytes.byteLength !== bBytes.byteLength) return false;
+  let diff = 0;
+  for (let i = 0; i < aBytes.byteLength; i++) {
+    diff |= aBytes[i] ^ bBytes[i];
+  }
+  return diff === 0;
 }
 
 /**
@@ -25,7 +44,7 @@ export function verifyCronSecret(req: Request, opts: VerifyOpts): CronAuthResult
   if (!expected) reason = "server_missing_secret";
   else if (!incoming) reason = "missing_header";
   else if (incoming.length !== expected.length) reason = "length_mismatch";
-  else if (incoming !== expected) reason = "value_mismatch";
+  else if (!constantTimeEqual(incoming, expected)) reason = "value_mismatch";
 
   if (!reason) return { ok: true };
 
