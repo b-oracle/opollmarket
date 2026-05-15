@@ -99,12 +99,12 @@ const AdminUsers = () => {
     balances?.forEach((b) => balanceMap.set(b.user_id, Number(b.amount)));
 
     setUsers(
-      (profiles || []).map((p) => ({
+      profiles.map((p: any) => ({
         ...p,
         roles: roleMap.get(p.id) || [],
         balance: balanceMap.get(p.id) ?? 0,
-        is_blocked: !!(p as any).is_blocked,
-        unlimited_markets: !!(p as any).unlimited_markets,
+        is_blocked: !!p.is_blocked,
+        unlimited_markets: !!p.unlimited_markets,
       }))
     );
     setLoading(false);
