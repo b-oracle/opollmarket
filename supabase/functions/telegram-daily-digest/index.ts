@@ -1,6 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyCronSecret } from "../_shared/cronAuth.ts";
 
 const TELEGRAM_API = "https://api.telegram.org/bot";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
+};
 
 function escapeHtml(text: string): string {
   return text
@@ -13,7 +19,13 @@ function truncate(text: string, max = 35): string {
   return text.length > max ? text.slice(0, max) + "…" : text;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+  const cronCheck = verifyCronSecret(req, { functionName: "telegram-daily-digest", corsHeaders });
+  if (!cronCheck.ok) return cronCheck.response!;
+
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!token) {
     return new Response(JSON.stringify({ error: "Bot token not configured" }), { status: 500 });

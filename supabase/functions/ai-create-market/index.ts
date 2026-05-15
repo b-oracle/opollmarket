@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getErrorMessage } from "../_shared/errors.ts";
+import { requireAuthAndRateLimit } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Per-user rate limit (cold-start in-memory) — protects against AI cost abuse.
+  const rl = await requireAuthAndRateLimit(req, { perMinute: 6 });
+  if (!rl.ok) return rl.response;
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -69,7 +74,8 @@ serve(async (req) => {
       .single();
     const cost = Number(settings?.ai_generation_cost ?? 0.5);
 
-    // Check and deduct balance
+    // Atomic check + deduct via SECURITY DEFINER RPC with row lock
+    // (prevents TOCTOU double-spend on concurrent requests).
     const { data: bal, error: balErr } = await adminClient
       .from("balances")
       .select("amount, bonus_balance")
@@ -97,18 +103,14 @@ serve(async (req) => {
     const bonusDeduct = Math.min(bonus, cost);
     const mainDeduct = cost - bonusDeduct;
 
-    const { error: updateErr } = await adminClient
-      .from("balances")
-      .update({
-        bonus_balance: bonus - bonusDeduct,
-        amount: main - mainDeduct,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id)
-      .eq("currency", "USDT");
+    const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
+      _user_id: user.id,
+      _main_deduct: mainDeduct,
+      _bonus_deduct: bonusDeduct,
+    });
 
-    if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to deduct balance. Please try again." }), {
+    if (!debitResult?.success) {
+      return new Response(JSON.stringify({ error: debitResult?.error || "Failed to deduct balance. Please try again." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -197,11 +199,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
 
     if (!aiResponse.ok) {
       // Refund
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "AI is temporarily busy — please wait a few seconds and try again" }), {
@@ -224,11 +222,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
 
     if (!toolCall?.function?.arguments) {
       // Refund
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
       return new Response(JSON.stringify({ error: "AI could not generate market data. You have been refunded." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -239,11 +233,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
     try {
       marketData = JSON.parse(toolCall.function.arguments);
     } catch {
-      await adminClient
-        .from("balances")
-        .update({ bonus_balance: bonus, amount: main, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id)
-        .eq("currency", "USDT");
+      await adminClient.rpc("adjust_balance", { _user_id: user.id, _delta: mainDeduct, _bonus_delta: bonusDeduct });
 
       return new Response(JSON.stringify({ error: "AI returned invalid data. You have been refunded." }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },

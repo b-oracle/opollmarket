@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyCronSecret } from "../_shared/cronAuth.ts";
 import { getErrorMessage } from "../_shared/errors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const ASSET_GECKO_MAP: Record<string, string> = {
@@ -261,6 +262,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const cronCheck = verifyCronSecret(req, { functionName: "resolve-quick-round", corsHeaders });
+  if (!cronCheck.ok) return cronCheck.response!;
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

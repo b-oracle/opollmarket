@@ -50,6 +50,20 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Pre-check lockout from prior failed attempts to prevent brute force
+      // of the change endpoint (mirrors verify-security flow).
+      const { data: lockCheck } = await adminClient
+        .from("user_security_attempts")
+        .select("locked_until")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (lockCheck?.locked_until && new Date(lockCheck.locked_until) > new Date()) {
+        return new Response(
+          JSON.stringify({ error: "Too many attempts. Please wait before trying again." }),
+          { status: 429, headers: corsHeaders }
+        );
+      }
+
       const { data: settings } = await adminClient
         .from("user_security_settings")
         .select("pin_hash")
@@ -57,10 +71,15 @@ Deno.serve(async (req) => {
         .single();
 
       if (!settings?.pin_hash || !bcrypt.compareSync(old_pin, settings.pin_hash)) {
+        // Record failed attempt → enforces lockout after N failures.
+        await adminClient.rpc("record_security_attempt", { _user_id: user.id, _success: false });
         return new Response(JSON.stringify({ error: "Current PIN is incorrect" }), {
           status: 400, headers: corsHeaders,
         });
       }
+
+      // Successful old-PIN verification → reset attempt counter.
+      await adminClient.rpc("record_security_attempt", { _user_id: user.id, _success: true });
     }
 
     // Validate PIN format

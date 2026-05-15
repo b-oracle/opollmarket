@@ -2,11 +2,12 @@
 // whenever the active round for that pair has ended. Resolution is handled
 // by the existing `check-auto-resolve` cron via the markets table fields.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.98.0";
+import { verifyCronSecret } from "../_shared/cronAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 // ─── Price fetch (mirrors check-auto-resolve fallbacks) ──────────────────────
@@ -81,6 +82,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const cronCheck = verifyCronSecret(req, { functionName: "crypto-round-spawner", corsHeaders });
+  if (!cronCheck.ok) return cronCheck.response!;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
