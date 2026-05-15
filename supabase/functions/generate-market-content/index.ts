@@ -96,22 +96,18 @@ serve(async (req) => {
       });
     }
 
-    // Deduct: bonus first, then main
-    let bonusDeduct = Math.min(bonus, cost);
-    let mainDeduct = cost - bonusDeduct;
+    // Atomic deduct: bonus first, then main (prevents TOCTOU double-spend).
+    const bonusDeduct = Math.min(bonus, cost);
+    const mainDeduct = cost - bonusDeduct;
 
-    const { error: updateErr } = await adminClient
-      .from("balances")
-      .update({
-        bonus_balance: bonus - bonusDeduct,
-        amount: main - mainDeduct,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id)
-      .eq("currency", "USDT");
+    const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
+      _user_id: user.id,
+      _main_deduct: mainDeduct,
+      _bonus_deduct: bonusDeduct,
+    });
 
-    if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to deduct balance. Please try again." }), {
+    if (!debitResult?.success) {
+      return new Response(JSON.stringify({ error: debitResult?.error || "Failed to deduct balance. Please try again." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
