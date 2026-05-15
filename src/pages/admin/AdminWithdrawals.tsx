@@ -68,7 +68,7 @@ const AdminWithdrawals = () => {
       // Enrich with profile info
       const userIds = [...new Set((data || []).map((w) => w.user_id))];
       const { data: profiles } = userIds.length
-        ? await supabase.from("profiles").select("id, display_name, email").in("id", userIds)
+        ? await supabase.rpc("admin_get_profiles_with_email", { _ids: userIds })
         : { data: [] };
       const profileMap = Object.fromEntries((profiles || []).map((p) => [p.id, p]));
 

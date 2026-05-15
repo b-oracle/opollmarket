@@ -66,7 +66,7 @@ const AdminTelegram = () => {
     const userIds = tgUsers.map(u => u.user_id);
 
     const [{ data: profiles }, { data: balances }] = await Promise.all([
-      supabase.from("profiles").select("id, display_name, email, avatar_url").in("id", userIds),
+      supabase.rpc("admin_get_profiles_with_email", { _ids: userIds }),
       supabase.from("balances").select("user_id, amount").in("user_id", userIds),
     ]);
 
