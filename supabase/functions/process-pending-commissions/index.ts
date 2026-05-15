@@ -25,7 +25,24 @@ Deno.serve(async (req) => {
 
     if (!cronAuthorized) {
       const authHeader = req.headers.get("Authorization");
+      const baseLog = {
+        event: "cron_auth_rejected",
+        function: "process-pending-commissions",
+        method: req.method,
+        url_path: new URL(req.url).pathname,
+        ip:
+          req.headers.get("cf-connecting-ip") ||
+          req.headers.get("x-real-ip") ||
+          req.headers.get("x-forwarded-for") ||
+          null,
+        user_agent: req.headers.get("user-agent") || null,
+        has_authorization: !!authHeader,
+        has_cron_header: !!incomingCron,
+        cron_header_length: incomingCron?.length ?? 0,
+        timestamp: new Date().toISOString(),
+      };
       if (!authHeader?.startsWith("Bearer ")) {
+        console.warn(JSON.stringify({ ...baseLog, reason: "no_cron_secret_no_bearer" }));
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -37,6 +54,7 @@ Deno.serve(async (req) => {
       );
       const { data: { user }, error: userErr } = await userClient.auth.getUser();
       if (userErr || !user) {
+        console.warn(JSON.stringify({ ...baseLog, reason: "invalid_user_token" }));
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -44,6 +62,7 @@ Deno.serve(async (req) => {
       const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "admin" });
       const { data: isSuperAdmin } = await supabase.rpc("has_role", { _user_id: user.id, _role: "super_admin" });
       if (!isAdmin && !isSuperAdmin) {
+        console.warn(JSON.stringify({ ...baseLog, reason: "user_not_admin", user_id: user.id }));
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
