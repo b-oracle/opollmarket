@@ -60,10 +60,12 @@ const AdminTransactions = () => {
       if (debouncedSearch) {
         const searchTerm = `%${debouncedSearch}%`;
         const [profilesSearch, marketsSearch] = await Promise.all([
-          supabase.from("profiles").select("id").or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
+          supabase.rpc("admin_search_profiles", { _term: debouncedSearch, _limit: 1000, _offset: 0 }),
           supabase.from("markets").select("id").ilike("title", searchTerm),
         ]);
-        matchingUserIds = profilesSearch.data?.map((p) => p.id) || [];
+        const searchRow: any = profilesSearch.data?.[0];
+        const profileRows: any[] = Array.isArray(searchRow?.rows) ? searchRow.rows : [];
+        matchingUserIds = profileRows.map((p: any) => p.id);
         matchingMarketIds = marketsSearch.data?.map((m) => m.id) || [];
 
         if (matchingUserIds.length === 0 && matchingMarketIds.length === 0) {
