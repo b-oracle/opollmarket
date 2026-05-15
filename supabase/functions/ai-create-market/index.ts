@@ -74,7 +74,8 @@ serve(async (req) => {
       .single();
     const cost = Number(settings?.ai_generation_cost ?? 0.5);
 
-    // Check and deduct balance
+    // Atomic check + deduct via SECURITY DEFINER RPC with row lock
+    // (prevents TOCTOU double-spend on concurrent requests).
     const { data: bal, error: balErr } = await adminClient
       .from("balances")
       .select("amount, bonus_balance")
@@ -102,18 +103,14 @@ serve(async (req) => {
     const bonusDeduct = Math.min(bonus, cost);
     const mainDeduct = cost - bonusDeduct;
 
-    const { error: updateErr } = await adminClient
-      .from("balances")
-      .update({
-        bonus_balance: bonus - bonusDeduct,
-        amount: main - mainDeduct,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", user.id)
-      .eq("currency", "USDT");
+    const { data: debitResult } = await adminClient.rpc("debit_balance_atomic", {
+      _user_id: user.id,
+      _main_deduct: mainDeduct,
+      _bonus_deduct: bonusDeduct,
+    });
 
-    if (updateErr) {
-      return new Response(JSON.stringify({ error: "Failed to deduct balance. Please try again." }), {
+    if (!debitResult?.success) {
+      return new Response(JSON.stringify({ error: debitResult?.error || "Failed to deduct balance. Please try again." }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
