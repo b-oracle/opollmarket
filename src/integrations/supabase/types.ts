@@ -433,6 +433,117 @@ export type Database = {
         }
         Relationships: []
       }
+      bsc_deposit_addresses: {
+        Row: {
+          address: string
+          created_at: string
+          hd_index: number
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          hd_index: number
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          hd_index?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bsc_deposit_events: {
+        Row: {
+          address: string
+          amount_usd: number
+          amount_wei: number
+          block_number: number
+          confirmations: number
+          credited_at: string | null
+          credited_tx_id: string | null
+          detected_at: string
+          from_address: string
+          id: string
+          log_index: number
+          status: string
+          token: string
+          token_contract: string
+          tx_hash: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          amount_usd: number
+          amount_wei: number
+          block_number: number
+          confirmations?: number
+          credited_at?: string | null
+          credited_tx_id?: string | null
+          detected_at?: string
+          from_address: string
+          id?: string
+          log_index: number
+          status?: string
+          token: string
+          token_contract: string
+          tx_hash: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          amount_usd?: number
+          amount_wei?: number
+          block_number?: number
+          confirmations?: number
+          credited_at?: string | null
+          credited_tx_id?: string | null
+          detected_at?: string
+          from_address?: string
+          id?: string
+          log_index?: number
+          status?: string
+          token?: string
+          token_contract?: string
+          tx_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bsc_deposit_events_credited_tx_id_fkey"
+            columns: ["credited_tx_id"]
+            isOneToOne: false
+            referencedRelation: "public_market_trades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bsc_deposit_events_credited_tx_id_fkey"
+            columns: ["credited_tx_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bsc_deposit_state: {
+        Row: {
+          id: number
+          last_scanned_block: number
+          updated_at: string
+        }
+        Insert: {
+          id: number
+          last_scanned_block: number
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          last_scanned_block?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -5104,6 +5215,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      allocate_bsc_deposit_index: {
+        Args: { _user_id: string }
+        Returns: number
+      }
       buy_update_market_prices: {
         Args: {
           _bet_amount: number
@@ -5197,6 +5312,7 @@ export type Database = {
         Args: { _draft_id?: string; _market_data: Json; _options?: string[] }
         Returns: Json
       }
+      credit_bsc_deposit: { Args: { _event_id: string }; Returns: string }
       db_now: { Args: never; Returns: string }
       debit_balance_atomic: {
         Args: { _bonus_deduct?: number; _main_deduct: number; _user_id: string }
@@ -5630,6 +5746,21 @@ export type Database = {
           _user_id?: string
         }
         Returns: string
+      }
+      register_bsc_deposit_address: {
+        Args: { _address: string; _hd_index: number; _user_id: string }
+        Returns: {
+          address: string
+          created_at: string
+          hd_index: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bsc_deposit_addresses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       release_creation_fee_escrow: {
