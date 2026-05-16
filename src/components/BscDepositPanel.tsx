@@ -40,10 +40,10 @@ export default function BscDepositPanel() {
   const [rescanStartedAt, setRescanStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    if (cooldownUntil <= Date.now()) return;
+    if (cooldownUntil <= Date.now() && !rescanning) return;
     const id = setInterval(() => setNowTs(Date.now()), 250);
     return () => clearInterval(id);
-  }, [cooldownUntil]);
+  }, [cooldownUntil, rescanning]);
 
   const cooldownRemainingMs = Math.max(0, cooldownUntil - nowTs);
   const cooldownActive = cooldownRemainingMs > 0;
