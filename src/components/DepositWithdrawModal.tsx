@@ -30,6 +30,7 @@ import {
   Banknote,
   RefreshCw,
   Coins,
+  Zap,
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
