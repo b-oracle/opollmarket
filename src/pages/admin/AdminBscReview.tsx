@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -13,6 +15,8 @@ import {
   XCircle,
   ExternalLink,
   Copy,
+  Settings2,
+  Save,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -23,7 +27,45 @@ const statusColors: Record<string, string> = {
 
 const AdminBscReview = () => {
   const qc = useQueryClient();
+  const { isSuperAdmin } = useAuth();
   const [filter, setFilter] = useState<"manual_review" | "rejected" | "credited">("manual_review");
+  const [thresholdInput, setThresholdInput] = useState<string>("");
+
+  const { data: threshold } = useQuery({
+    queryKey: ["app-setting", "bsc_max_auto_credit_usd"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings" as any)
+        .select("value, updated_at")
+        .eq("key", "bsc_max_auto_credit_usd")
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  useEffect(() => {
+    if (threshold?.value != null) setThresholdInput(String(threshold.value));
+  }, [threshold?.value]);
+
+  const saveThreshold = useMutation({
+    mutationFn: async (newValue: number) => {
+      const { error } = await supabase
+        .from("app_settings" as any)
+        .update({
+          value: newValue as any,
+          updated_at: new Date().toISOString(),
+          updated_by: (await supabase.auth.getUser()).data.user?.id,
+        })
+        .eq("key", "bsc_max_auto_credit_usd");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Auto-credit threshold updated. Takes effect on next poll (~30s).");
+      qc.invalidateQueries({ queryKey: ["app-setting", "bsc_max_auto_credit_usd"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to save"),
+  });
 
   const { data: events, isLoading, refetch } = useQuery({
     queryKey: ["bsc-review-events", filter],
@@ -99,6 +141,65 @@ const AdminBscReview = () => {
           <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
+
+      {/* Auto-credit threshold setting (super admin only) */}
+      {isSuperAdmin && (
+        <div className="border border-border bg-card rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Settings2 className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold">Auto-credit threshold</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            BSC deposits at or below this USD amount auto-credit after 12 confirmations.
+            Larger deposits land in this review queue. Changes take effect on the next poll (~30 seconds).
+          </p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[180px]">
+              <label className="text-[11px] text-muted-foreground font-medium block mb-1">
+                Max auto-credit (USD)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <Input
+                  type="number"
+                  step="1"
+                  min="1"
+                  className="pl-7 font-mono"
+                  value={thresholdInput}
+                  onChange={(e) => setThresholdInput(e.target.value)}
+                  placeholder="5000"
+                />
+              </div>
+            </div>
+            <Button
+              size="sm"
+              disabled={
+                saveThreshold.isPending ||
+                !thresholdInput ||
+                Number(thresholdInput) <= 0 ||
+                Number(thresholdInput) === Number(threshold?.value)
+              }
+              onClick={() => {
+                const v = Number(thresholdInput);
+                if (!Number.isFinite(v) || v <= 0) {
+                  toast.error("Enter a positive number");
+                  return;
+                }
+                if (!confirm(`Set BSC auto-credit limit to $${v.toLocaleString()}?`)) return;
+                saveThreshold.mutate(v);
+              }}
+            >
+              {saveThreshold.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+              Save
+            </Button>
+            {threshold?.updated_at && (
+              <div className="text-[11px] text-muted-foreground">
+                Last updated {format(new Date(threshold.updated_at), "MMM d, HH:mm")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex gap-1.5 mb-4">
         {(["manual_review", "rejected", "credited"] as const).map((f) => (
