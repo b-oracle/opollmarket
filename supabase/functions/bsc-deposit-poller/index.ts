@@ -111,6 +111,13 @@ Deno.serve(async (req) => {
     );
     const MAX_AUTO_CREDIT_USD = await loadMaxAutoCreditUsd(admin);
 
+    // Acquire advisory lock — if another poller run is in flight, bail out cleanly.
+    const { data: gotLock } = await admin.rpc("try_bsc_poller_lock");
+    if (!gotLock) {
+      return jsonOk({ skipped: "another_run_in_progress" });
+    }
+
+    try {
     // 1. Current head
     const headHex = await rpc(RPC_URL, "eth_blockNumber", []);
     const head = Number(hexToBigInt(headHex));
