@@ -315,6 +315,12 @@ Deno.serve(async (req) => {
     for (const cfg of configs) {
       const asset = cfg.asset as string;
       const dur = cfg.duration_minutes as number;
+
+      // Skip commodity/forex spawns outside trading hours (Sun 17:00 → Fri 17:00 ET).
+      // Force=true (admin "Spawn Now") bypasses to allow ops testing.
+      if (!force && !isAssetMarketOpen(asset)) {
+        continue;
+      }
       // Crypto rounds always start at $0 liquidity — losers fund winners.
 
       // Latest round for this pair
