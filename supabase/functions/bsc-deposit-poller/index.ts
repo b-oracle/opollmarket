@@ -172,6 +172,11 @@ Deno.serve(async (req) => {
 
     // 6. Filter logs where `to` is one of our addresses
     const inserts: any[] = [];
+    // Per-user rolling totals (24h baseline + this batch) — used to detect smurfing
+    // attempts that stay under the per-tx auto-credit threshold individually.
+    const userBaseline = new Map<string, number>();
+    const userRunning = new Map<string, number>();
+
     for (const log of logs) {
       // Skip logs from reorged blocks
       if (log.removed === true) continue;
@@ -180,8 +185,25 @@ Deno.serve(async (req) => {
       if (!user_id) continue;
       const tokenInfo = TOKENS[(log.address as string).toLowerCase()];
       if (!tokenInfo) continue;
-      const amountUsd = wei18ToUsd(log.data); // data = amount (uint256)
+      const amountUsd = wei18ToUsd(log.data);
       if (amountUsd < MIN_USD) continue;
+
+      // Lazy-load this user's last-24h credited+pending+in-review total
+      if (!userBaseline.has(user_id)) {
+        const { data: total } = await admin.rpc("bsc_user_24h_total_usd", { _user_id: user_id });
+        userBaseline.set(user_id, Number(total ?? 0));
+        userRunning.set(user_id, 0);
+      }
+      const projected =
+        (userBaseline.get(user_id) ?? 0) + (userRunning.get(user_id) ?? 0) + amountUsd;
+
+      // Flag for manual review if either:
+      //  - this single tx exceeds the per-tx threshold, OR
+      //  - this user's rolling 24h total would cross the threshold (smurfing guard)
+      const flagged = amountUsd > MAX_AUTO_CREDIT_USD || projected > MAX_AUTO_CREDIT_USD;
+
+      userRunning.set(user_id, (userRunning.get(user_id) ?? 0) + amountUsd);
+
       inserts.push({
         user_id,
         address: to_addr,
@@ -194,26 +216,31 @@ Deno.serve(async (req) => {
         amount_wei: BigInt(log.data).toString(),
         amount_usd: amountUsd,
         confirmations: Math.max(0, head - Number(hexToBigInt(log.blockNumber))),
-        // Large deposits go to manual review, not auto-credit
-        status: amountUsd > MAX_AUTO_CREDIT_USD ? "manual_review" : "detected",
+        status: flagged ? "manual_review" : "detected",
+        review_reason: flagged && amountUsd <= MAX_AUTO_CREDIT_USD
+          ? `Smurfing guard: rolling 24h total $${projected.toFixed(2)} exceeds threshold $${MAX_AUTO_CREDIT_USD}`
+          : null,
       });
     }
 
     if (inserts.length) {
-      // upsert ignore-on-conflict so reorgs / retries are safe
       const { error } = await admin
         .from("bsc_deposit_events")
         .upsert(inserts, { onConflict: "tx_hash,log_index", ignoreDuplicates: true });
       if (error) console.error("event insert error:", error);
     }
 
-    // 7. Advance state
-    await admin.from("bsc_deposit_state").upsert({ id: 1, last_scanned_block: to, updated_at: new Date().toISOString() });
+    // 7. Advance state via monotonic helper (concurrent runs can never regress this value)
+    await admin.rpc("advance_bsc_scan_state", { _to: to });
 
     // 8. Update confirmations & credit eligible
     const credited = await updateConfirmationsAndCredit(admin, head);
 
     return jsonOk({ scanned: to - from + 1, from, to, head, detected: inserts.length, credited });
+    } finally {
+      // Always release the advisory lock, even if the run errored.
+      try { await admin.rpc("release_bsc_poller_lock"); } catch (_) { /* noop */ }
+    }
   } catch (e) {
     console.error("bsc-deposit-poller error:", e);
     return new Response(JSON.stringify({ error: (e as Error).message }), {
