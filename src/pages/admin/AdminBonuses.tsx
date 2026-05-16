@@ -173,6 +173,56 @@ const AdminBonuses = () => {
     run();
   }, [range]);
 
+  // Integrity check: scan ALL registration_bonus rows (independent of range)
+  // and flag users with more than one — the unique partial index should keep this at 0.
+  const scanDuplicates = async () => {
+    setDupesLoading(true);
+    let all: any[] = [];
+    let p = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("user_id, amount, bonus_amount")
+        .eq("type", "registration_bonus")
+        .range(p * 1000, (p + 1) * 1000 - 1);
+      if (error || !data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < 1000) break;
+      p++;
+    }
+    const agg = new Map<string, { count: number; total: number }>();
+    all.forEach(r => {
+      const v = agg.get(r.user_id) ?? { count: 0, total: 0 };
+      v.count += 1;
+      v.total += Number(r.bonus_amount ?? r.amount ?? 0);
+      agg.set(r.user_id, v);
+    });
+    const dupeIds = Array.from(agg.entries()).filter(([, v]) => v.count > 1);
+    const nameMap = new Map<string, string>();
+    if (dupeIds.length > 0) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", dupeIds.map(([id]) => id));
+      data?.forEach((p: any) =>
+        nameMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8))
+      );
+    }
+    setDupes(
+      dupeIds
+        .map(([user_id, v]) => ({
+          user_id,
+          count: v.count,
+          total_amount: v.total,
+          user_name: nameMap.get(user_id),
+        }))
+        .sort((a, b) => b.count - a.count)
+    );
+    setDupesLoading(false);
+  };
+
+  useEffect(() => { scanDuplicates(); }, []);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter(r => {
