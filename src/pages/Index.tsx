@@ -150,6 +150,8 @@ const Index = () => {
       filtered = markets.filter((m) => m.createdAt >= oneDayAgo);
     } else if (filter === "live") {
       filtered = markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset || (m.twitterResourceId && m.twitterMetricType)));
+    } else if (filter === "updown") {
+      filtered = markets.filter((m) => m.isCryptoRound);
     }
     if (categoryFilter !== "All") {
       filtered = filtered.filter((m) => m.category === categoryFilter);
