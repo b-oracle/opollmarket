@@ -110,6 +110,7 @@ const AdminWebhookEvents = lazy(() => import("./pages/admin/AdminWebhookEvents")
 const AdminKyc = lazy(() => import("./pages/admin/AdminKyc"));
 const AdminFiatSettings = lazy(() => import("./pages/admin/AdminFiatSettings"));
 const AdminReferrals = lazy(() => import("./pages/admin/AdminReferrals"));
+const AdminBonuses = lazy(() => import("./pages/admin/AdminBonuses"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp"));
 const AdminTelegram = lazy(() => import("./pages/admin/AdminTelegram"));
 const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
