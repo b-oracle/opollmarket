@@ -557,7 +557,10 @@ export default function BscDepositPanel() {
               {filtered.map((ev) => {
                 const isPending = ev.status === "detected";
                 const isConfirmed = ev.status === "credited";
-                const isFailed = ev.status === "orphaned";
+                const isOrphaned = ev.status === "orphaned";
+                const isReview = ev.status === "manual_review";
+                const isRejected = ev.status === "rejected";
+                const isFailed = isOrphaned || isRejected;
                 const progressPct = Math.min(100, (ev.confirmations / CONFIRMATIONS_REQUIRED) * 100);
                 return (
                   <motion.div
@@ -567,6 +570,7 @@ export default function BscDepositPanel() {
                     className={`rounded-xl border bg-card p-3 text-xs ${
                       isConfirmed ? "border-emerald-500/30" :
                       isFailed ? "border-destructive/30" :
+                      isReview ? "border-amber-500/40" :
                       "border-primary/30"
                     }`}
                   >
@@ -574,7 +578,9 @@ export default function BscDepositPanel() {
                       <div className="flex items-center gap-2 min-w-0">
                         {isConfirmed && <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
                         {isPending && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
-                        {isFailed && <XCircle className="w-4 h-4 text-destructive shrink-0" />}
+                        {isOrphaned && <XCircle className="w-4 h-4 text-destructive shrink-0" />}
+                        {isReview && <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />}
+                        {isRejected && <Ban className="w-4 h-4 text-destructive shrink-0" />}
                         <span className="font-semibold truncate">
                           ${Number(ev.amount_usd).toFixed(2)} {ev.token}
                         </span>
@@ -582,9 +588,14 @@ export default function BscDepositPanel() {
                       <span className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                         isConfirmed ? "text-emerald-500" :
                         isFailed ? "text-destructive" :
+                        isReview ? "text-amber-500" :
                         "text-primary"
                       }`}>
-                        {isConfirmed ? "Confirmed" : isFailed ? "Failed" : "Pending"}
+                        {isConfirmed ? "Confirmed" :
+                         isRejected ? "Rejected" :
+                         isOrphaned ? "Failed" :
+                         isReview ? "Under Review" :
+                         "Pending"}
                       </span>
                     </div>
 
@@ -606,8 +617,37 @@ export default function BscDepositPanel() {
                       </div>
                     )}
 
-                    {/* Failure reason */}
-                    {isFailed && (
+                    {/* Under review notice */}
+                    {isReview && (
+                      <div className="mt-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-2 space-y-1">
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                          Above auto-credit threshold — manual review in progress.
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          On-chain transfer is confirmed and safe. Our team verifies large deposits before crediting; this typically completes within a few hours.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Rejected reason */}
+                    {isRejected && (
+                      <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/20 p-2 space-y-1">
+                        <p className="text-[10px] text-destructive font-semibold">
+                          Rejected after review{ev.reviewed_at ? ` · ${formatDistanceToNow(new Date(ev.reviewed_at), { addSuffix: true })}` : ""}.
+                        </p>
+                        {ev.review_reason && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Reason: {ev.review_reason}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground">
+                          Contact support with the tx hash if you believe this is a mistake.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Orphaned reason */}
+                    {isOrphaned && (
                       <p className="mt-1.5 text-[10px] text-destructive/90">
                         Orphaned by chain reorg or duplicate. Contact support with the tx hash if funds were sent.
                       </p>
