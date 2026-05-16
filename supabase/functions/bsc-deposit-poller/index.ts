@@ -15,8 +15,8 @@ const TOKENS: Record<string, { symbol: string; decimals: number }> = {
 };
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const CONFIRMATIONS_REQUIRED = 12;
-const MAX_BLOCKS_PER_RUN = 100;   // cap per cron tick
-const CHUNK_BLOCKS = 5;           // strict — many free BSC RPCs limit to 5 blocks
+const MAX_BLOCKS_PER_RUN = 500;   // ~25 min of BSC per tick
+const CHUNK_BLOCKS = 100;         // safe when filtering by recipient topic
 const MIN_USD = 1;                // ignore dust
 
 async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
