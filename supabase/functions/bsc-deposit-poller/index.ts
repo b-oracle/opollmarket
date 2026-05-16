@@ -76,24 +76,35 @@ Deno.serve(async (req) => {
       return jsonOk({ scanned: 0, head });
     }
 
-    // 4. Load watched addresses (full list; for tens of thousands consider chunked dump)
+    // 4. Load watched addresses
     const { data: addrRows } = await admin
       .from("bsc_deposit_addresses")
       .select("user_id, address");
     const addrMap = new Map<string, string>();
     for (const r of addrRows || []) addrMap.set((r.address as string).toLowerCase(), r.user_id as string);
 
-    // 5. Fetch Transfer logs in [from, to] for both tokens, chunked to respect RPC limits
+    // If no addresses, skip log fetch entirely (avoids RPC bandwidth waste / limits)
     const logs: any[] = [];
-    for (let start = from; start <= to; start += CHUNK_BLOCKS) {
-      const end = Math.min(to, start + CHUNK_BLOCKS - 1);
-      const chunk: any[] = await rpc(RPC_URL, "eth_getLogs", [{
-        fromBlock: "0x" + start.toString(16),
-        toBlock: "0x" + end.toString(16),
-        address: Object.keys(TOKENS),
-        topics: [TRANSFER_TOPIC],
-      }]);
-      logs.push(...chunk);
+    if (addrMap.size > 0) {
+      // Encode addresses as 32-byte topic values for eth_getLogs `topics[2]` filter
+      const recipientTopics = Array.from(addrMap.keys()).map(
+        (a) => "0x" + a.slice(2).toLowerCase().padStart(64, "0"),
+      );
+      // Chunk recipients (some RPCs cap topic array length) and block ranges
+      const RECIP_CHUNK = 100;
+      for (let start = from; start <= to; start += CHUNK_BLOCKS) {
+        const end = Math.min(to, start + CHUNK_BLOCKS - 1);
+        for (let ri = 0; ri < recipientTopics.length; ri += RECIP_CHUNK) {
+          const recips = recipientTopics.slice(ri, ri + RECIP_CHUNK);
+          const chunk: any[] = await rpc(RPC_URL, "eth_getLogs", [{
+            fromBlock: "0x" + start.toString(16),
+            toBlock: "0x" + end.toString(16),
+            address: Object.keys(TOKENS),
+            topics: [TRANSFER_TOPIC, null, recips],
+          }]);
+          logs.push(...chunk);
+        }
+      }
     }
 
     // 6. Filter logs where `to` is one of our addresses
