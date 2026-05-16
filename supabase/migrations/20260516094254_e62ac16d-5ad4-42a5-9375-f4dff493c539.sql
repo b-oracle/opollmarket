@@ -1,0 +1,1 @@
+ALTER TABLE public.bsc_deposit_events REPLICA IDENTITY FULL;
