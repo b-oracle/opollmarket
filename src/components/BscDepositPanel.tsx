@@ -21,10 +21,13 @@ interface BscDepositEvent {
   credited_at: string | null;
 }
 
+type StatusFilter = "all" | "pending" | "confirmed" | "failed";
+
 export default function BscDepositPanel() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const [filter, setFilter] = useState<StatusFilter>("all");
 
   // 1. Fetch / allocate this user's deposit address
   const {
