@@ -5188,6 +5188,10 @@ export type Database = {
         Returns: undefined
       }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
+      admin_approve_bsc_deposit: {
+        Args: { _event_id: string }
+        Returns: string
+      }
       admin_get_profiles_with_email: {
         Args: { _ids: string[] }
         Returns: {
@@ -5364,6 +5368,21 @@ export type Database = {
         }[]
       }
       expire_stale_pending_deposits: { Args: never; Returns: undefined }
+      finalize_bsc_deposit_address: {
+        Args: { _address: string; _hd_index: number; _user_id: string }
+        Returns: {
+          address: string
+          created_at: string
+          hd_index: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bsc_deposit_addresses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       finalize_market_creation_atomic: {
         Args: {
           _auto_resolve_fee_amount?: number
@@ -5768,6 +5787,14 @@ export type Database = {
         Returns: Json
       }
       requeue_webhook_event: { Args: { _event_id: string }; Returns: Json }
+      reserve_bsc_deposit_slot: {
+        Args: { _user_id: string }
+        Returns: {
+          address: string
+          hd_index: number
+          is_new: boolean
+        }[]
+      }
       resolve_webhook_failure: { Args: { _id: string }; Returns: boolean }
       sell_update_market_prices: {
         Args: {
