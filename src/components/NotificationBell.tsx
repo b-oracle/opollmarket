@@ -112,6 +112,13 @@ const NotificationBell = () => {
       return;
     }
 
+    // Welcome bonus notification → balance breakdown
+    if (n.type === "welcome_bonus" || n.title?.includes("Welcome Bonus")) {
+      setOpen(false);
+      navigate("/commissions");
+      return;
+    }
+
     // Gift notifications → navigate to sender's profile
     if ((n.type === "gift" || n.title.includes("Gift Received")) && n.actor_id) {
       setOpen(false);
