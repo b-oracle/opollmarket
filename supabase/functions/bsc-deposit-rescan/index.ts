@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     // 1. Load this user's pending deposits only
     const { data: pending, error: pendingErr } = await admin
       .from("bsc_deposit_events")
-      .select("id, block_number")
+      .select("id, block_number, tx_hash, log_index, address, amount_wei, token_contract")
       .eq("user_id", userId)
       .eq("status", "detected")
       .limit(200);
@@ -85,9 +85,33 @@ Deno.serve(async (req) => {
     let credited = 0;
     let failed = 0;
     let stillPending = 0;
+    let flaggedReview = 0;
     for (const row of pending) {
       const confirmations = Math.max(0, head - Number(row.block_number));
       if (confirmations >= CONFIRMATIONS_REQUIRED) {
+        // Re-verify receipt (reorg/RPC-poisoning guard)
+        let verified = false;
+        try {
+          const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [row.tx_hash]);
+          if (receipt && receipt.status === "0x1") {
+            const matching = (receipt.logs || []).find((l: any) =>
+              Number(BigInt(l.logIndex)) === Number(row.log_index) &&
+              String(l.address).toLowerCase() === String(row.token_contract).toLowerCase() &&
+              ("0x" + String(l.topics?.[2] ?? "").slice(-40)).toLowerCase() === String(row.address).toLowerCase() &&
+              BigInt(l.data) === BigInt(row.amount_wei),
+            );
+            verified = !!matching;
+          }
+        } catch (_e) { /* verified stays false */ }
+
+        if (!verified) {
+          await admin.from("bsc_deposit_events")
+            .update({ status: "manual_review" })
+            .eq("id", row.id);
+          flaggedReview++;
+          continue;
+        }
+
         const { error } = await admin.rpc("credit_bsc_deposit", { _event_id: row.id });
         if (error) failed++;
         else credited++;
