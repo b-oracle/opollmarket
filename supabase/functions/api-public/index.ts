@@ -522,19 +522,8 @@ Deno.serve(async (req) => {
       const creationFee = feeSettings?.market_creation_fee || 0;
       const totalCost = liquidity + creationFee;
 
-      // Check balance if totalCost > 0
-      if (totalCost > 0) {
-        const { data: bal } = await admin
-          .from("balances")
-          .select("amount")
-          .eq("user_id", userId)
-          .eq("currency", "USDT")
-          .maybeSingle();
-
-        if (!bal || bal.amount < totalCost) {
-          return err("Insufficient balance for initial liquidity and creation fee");
-        }
-      }
+      // Note: atomic debit happens AFTER market insert to avoid double-debit race;
+      // a pre-check here is best-effort only and intentionally omitted.
 
       // Run AI moderation
       try {
