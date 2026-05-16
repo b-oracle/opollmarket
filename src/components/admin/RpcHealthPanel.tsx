@@ -92,7 +92,7 @@ const RpcHealthPanel = () => {
         .eq("id", 1)
         .maybeSingle();
       if (error) throw error;
-      return data as { last_scanned_block: number; updated_at: string } | null;
+      return data as unknown as { last_scanned_block: number; updated_at: string } | null;
     },
     refetchInterval: 30_000,
   });
