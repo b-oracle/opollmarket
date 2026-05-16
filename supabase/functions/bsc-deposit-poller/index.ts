@@ -19,6 +19,7 @@ const MAX_BLOCKS_PER_RUN = 500;   // ~25 min of BSC per tick
 const CHUNK_BLOCKS = 25;          // safer default — public BSC RPCs cap eth_getLogs aggressively
 const MIN_CHUNK_BLOCKS = 1;       // floor when halving on "limit exceeded"
 const MIN_USD = 1;                // ignore dust
+const MAX_AUTO_CREDIT_USD = Number(Deno.env.get("BSC_MAX_AUTO_CREDIT_USD") ?? "5000");
 
 async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
   const r = await fetch(url, {
@@ -151,6 +152,8 @@ Deno.serve(async (req) => {
     // 6. Filter logs where `to` is one of our addresses
     const inserts: any[] = [];
     for (const log of logs) {
+      // Skip logs from reorged blocks
+      if (log.removed === true) continue;
       const to_addr = topicToAddress(log.topics[2]);
       const user_id = addrMap.get(to_addr);
       if (!user_id) continue;
@@ -170,7 +173,8 @@ Deno.serve(async (req) => {
         amount_wei: BigInt(log.data).toString(),
         amount_usd: amountUsd,
         confirmations: Math.max(0, head - Number(hexToBigInt(log.blockNumber))),
-        status: "detected",
+        // Large deposits go to manual review, not auto-credit
+        status: amountUsd > MAX_AUTO_CREDIT_USD ? "manual_review" : "detected",
       });
     }
 
@@ -200,15 +204,44 @@ Deno.serve(async (req) => {
 async function updateConfirmationsAndCredit(admin: any, head: number): Promise<number> {
   const { data: pending } = await admin
     .from("bsc_deposit_events")
-    .select("id, block_number")
+    .select("id, block_number, tx_hash, log_index, address, amount_wei, token_contract")
     .eq("status", "detected")
     .limit(500);
   if (!pending || !pending.length) return 0;
 
+  const RPC_URL = Deno.env.get("BSC_RPC_URL")!;
   let creditedCount = 0;
   for (const row of pending) {
     const confirmations = Math.max(0, head - Number(row.block_number));
     if (confirmations >= CONFIRMATIONS_REQUIRED) {
+      // Re-verify the on-chain receipt before crediting.
+      // Guards against: chain reorgs, poisoned RPC responses, indexer bugs.
+      let verified = false;
+      try {
+        const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [row.tx_hash]);
+        if (!receipt || receipt.status !== "0x1") {
+          console.warn("receipt missing or failed", row.tx_hash);
+        } else {
+          const matching = (receipt.logs || []).find((l: any) =>
+            Number(BigInt(l.logIndex)) === Number(row.log_index) &&
+            String(l.address).toLowerCase() === String(row.token_contract).toLowerCase() &&
+            topicToAddress(l.topics?.[2] ?? "") === String(row.address).toLowerCase() &&
+            BigInt(l.data) === BigInt(row.amount_wei),
+          );
+          verified = !!matching;
+        }
+      } catch (e) {
+        console.error("receipt verify error", row.id, (e as Error).message);
+      }
+
+      if (!verified) {
+        // Flip to manual_review so an admin can inspect rather than auto-credit.
+        await admin.from("bsc_deposit_events")
+          .update({ status: "manual_review" })
+          .eq("id", row.id);
+        continue;
+      }
+
       const { error } = await admin.rpc("credit_bsc_deposit", { _event_id: row.id });
       if (error) console.error("credit_bsc_deposit failed", row.id, error.message);
       else creditedCount++;
