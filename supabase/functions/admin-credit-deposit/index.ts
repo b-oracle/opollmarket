@@ -317,12 +317,23 @@ Deno.serve(async (req) => {
       `Admin ${user.id} credited $${amount.toFixed(2)} to user ${targetUserId} (${profile.display_name})`,
     );
 
-    return json({
+    const responsePayload = {
       success: true,
       transaction_id: tx?.id || null,
       credited_amount: amount,
       user_id: targetUserId,
-    });
+      correlation_id: correlationId,
+      idempotency_key: idempotencyKey,
+    };
+
+    // Cache the response on the idempotency row so replays return the same result.
+    await adminClient
+      .from("admin_action_idempotency")
+      .update({ response: responsePayload })
+      .eq("action", "admin_credit_deposit")
+      .eq("idempotency_key", idempotencyKey);
+
+    return json(responsePayload);
   } catch (err) {
     if (err instanceof RpcContractError) {
       console.error("admin-credit-deposit contract error:", err.message);
