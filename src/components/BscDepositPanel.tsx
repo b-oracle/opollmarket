@@ -29,6 +29,31 @@ export default function BscDepositPanel() {
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
+  const [rescanning, setRescanning] = useState(false);
+
+  const rescan = async () => {
+    if (rescanning) return;
+    setRescanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("bsc-deposit-rescan", { body: {} });
+      if (error || (data as any)?.error) {
+        const err = (data as any)?.error || error?.message;
+        if (err === "cooldown") {
+          const secs = Math.ceil(((data as any)?.retry_after_ms || 0) / 1000);
+          toast.message(`Please wait ${secs}s before rescanning again.`);
+        } else {
+          toast.error("Rescan failed. Try again shortly.");
+        }
+        return;
+      }
+      toast.success("Rescan complete — confirmations refreshed.");
+      qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user?.id] });
+    } catch {
+      toast.error("Rescan failed. Try again shortly.");
+    } finally {
+      setRescanning(false);
+    }
+  };
 
   // 1. Fetch / allocate this user's deposit address
   const {
