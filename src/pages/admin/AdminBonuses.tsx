@@ -40,6 +40,13 @@ const PAGE_SIZE = 25;
 const fmtUsd = (n: number) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+interface DuplicateRow {
+  user_id: string;
+  count: number;
+  total_amount: number;
+  user_name?: string;
+}
+
 const AdminBonuses = () => {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<BonusRow[]>([]);
@@ -48,6 +55,8 @@ const AdminBonuses = () => {
     new Set(["registration", "referral_signup", "referral_commission"])
   );
   const [search, setSearch] = useState("");
+  const [dupes, setDupes] = useState<DuplicateRow[] | null>(null);
+  const [dupesLoading, setDupesLoading] = useState(true);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
