@@ -47,6 +47,9 @@ type ReverifyOutcome =
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  const auth = verifyCronSecret(req, { functionName: "bsc-deposit-reverify", corsHeaders });
+  if (!auth.ok) return auth.response!;
+
   try {
     const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
