@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
     };
 
     try {
-      const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [ev.tx_hash]);
+      const receipt: any = await bscRpc("eth_getTransactionReceipt", [ev.tx_hash], { admin, alertSource: "admin-bsc-deposit-action" });
       verification.receipt_status = receipt?.status ?? null;
       if (receipt?.status === "0x1") {
         const log = (receipt.logs || []).find((l: any) =>
