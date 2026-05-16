@@ -1,74 +1,104 @@
-# Persistent In-Call Screen (WhatsApp-style)
+# Native BSC Deposit Listener (USDT / USDC on BSC)
 
-## What's happening today
+Replace NOWPayments for stablecoin deposits with an on-chain listener that:
+1. Generates a unique BSC deposit address per user (HD-derived from a master seed).
+2. Polls BSC `Transfer` event logs from USDT/USDC contracts every ~15s.
+3. Waits for N confirmations, then credits the user's main balance.
+4. Sweeps deposited funds to a hot wallet on a separate schedule (optional, can ship later).
 
-When you accept a call, three things go right and one goes wrong:
+Existing NOWPayments + Payaza flows stay intact as fallbacks.
 
-1. The native `IncomingCallActivity` finishes (correct — it only owns the *ringing* screen).
-2. The Android foreground service keeps the mic alive in the background (correct — that's why audio continues).
-3. Capacitor brings `MainActivity` (the WebView) to the front and deep-links to `/messages/<id>?auto_accept=1&call_id=…`.
-4. **Nothing visible mounts.** The WebView opens the chat thread, but the in-app `VoiceCallOverlay` doesn't appear because it depends on a realtime `dm_calls` INSERT that has often already been consumed (or arrives milliseconds after the deep-link runs and is ignored). The user sees the message thread or a black screen while audio plays — exactly the "screen goes off but call continues" symptom.
+---
 
-There's also a secondary issue: while the call is connected, the device's screen is allowed to dim and lock, so even when the overlay does mount the screen turns off after ~30s like any normal page.
+## What the user will see
 
-The screenshot you sent is actually from a *different* (third-party) app's call UI — a reference for what we should match.
+- New "Deposit (BSC USDT/USDC)" option in the deposit modal.
+- One permanent address assigned to their account, shown with QR + copy.
+- Live status: "Waiting for transfer" → "Detected (X/12 confirmations)" → "Credited".
+- Min deposit $1, no fee taken by us, no provider fee.
 
-## Fix overview
+---
 
-Keep the call UI in the WebView (so it works for PWA, iOS, and Android with one codebase), but make it bulletproof in three ways:
-
-1. **Mount the in-call screen immediately on accept** — don't wait for realtime to repopulate `incomingCall`. Pass enough info through the deep link / SW message to call the answer edge function directly.
-2. **Keep the screen on for the duration of the call** — request a wake-lock on web, and on Android Capacitor add `FLAG_KEEP_SCREEN_ON` while a call is active.
-3. **Make the in-call overlay full-screen, persistent, and route-independent** (it already lives at the App root, but we'll harden it so it can't be dismissed by navigation, back-press, or minimize-to-PiP unless the user explicitly hangs up).
-
-## Detailed changes
-
-### 1. Reliable mount on accept (`src/components/chat/IncomingCallBanner.tsx`)
-
-- Add a new "auto-accept by URL" path that, when `?auto_accept=1&call_id=X` is present and there is no `incomingCall` yet, fetches the `dm_calls` row directly via `supabase.from('dm_calls').select(...).eq('id', X)` and synthesises the `incomingCall` state, then runs `handleAnswer()`. This removes the realtime dependency.
-- On `dm-call-action` postMessage with `intent: 'answer'`, do the same: if no `incomingCall` is present, fetch the row and answer directly.
-- Persist `activeCall` to `sessionStorage` and on mount **do** restore it (currently we throw it away). Token TTL is short, but if the user navigates away and back within ~5 min the call should stay visible. Validate the token by attempting a LiveKit reconnect; if it fails, gracefully end.
-
-### 2. Keep-screen-on while in a call
-
-- New helper `src/lib/callKeepAwake.ts`:
-  - Web: `navigator.wakeLock.request('screen')`, release on call end.
-  - Capacitor Android: call a tiny new method on `AudioRouterPlugin` (rename to `CallSessionPlugin` or add to existing) that sets `getWindow().addFlags(FLAG_KEEP_SCREEN_ON)` on `startCall` and clears it on `endCall`.
-- Wire it into `VoiceCallOverlay` mount/unmount.
-
-### 3. Persistent full-screen overlay
-
-- `VoiceCallOverlay` is already mounted at the app root via `IncomingCallBanner` (`src/App.tsx:524`). Harden it:
-  - Render at z-index above everything (`z-[100]` style class), `position: fixed; inset: 0`.
-  - Intercept Android hardware back-press (Capacitor `App.addListener('backButton')`) while a call is active — minimise to a floating pill instead of leaving the call.
-  - Block the user from accidentally ending the call by route navigation: if the user navigates while `activeCall` is set, keep the overlay mounted (it already is) but switch to the existing `minimized` state so they can return.
-  - Add a "Return to call" pill (the existing minimised state) with caller name + duration when minimised.
-
-### 4. Native foreground service notification → tap to return
-
-- The foreground service notification we already start (`src/lib/callForegroundService.ts`) needs a `contentIntent` that re-launches `MainActivity` with `?return_to_call=1`. In the WebView we listen for that param and force the overlay to maximise. This gives the WhatsApp-style "tap the green bar to return to call" behaviour when the user swipes the app away.
-
-### 5. iOS parity
-
-- iOS already has CallKit owning the in-call UI natively (`ios-native-ref/CallProviderDelegate.swift`). Keep that as-is; the WebView overlay only needs to render when the user taps "back to app" from CallKit. No changes required for this fix on iOS.
-
-## Files touched
+## Architecture
 
 ```text
-edit   src/components/chat/IncomingCallBanner.tsx     # direct-answer path, restore activeCall
-edit   src/components/chat/VoiceCallOverlay.tsx       # wake-lock + back-press handler + z-index
-new    src/lib/callKeepAwake.ts                       # wakeLock API + bridge to native
-edit   src/lib/callForegroundService.ts               # add contentIntent return-to-call URL
-edit   android-native-ref/AudioRouterPlugin.kt        # add keepScreenOn / clearScreenOn methods
-edit   android-native-ref/AndroidManifest.additions.xml  # WAKE_LOCK already present, no change
-edit   public/push-sw.js                              # include caller_id in postMessage so direct-answer has all data
+User wallet ──BSC tx──> per-user deposit address (HD index N)
+                                 │
+                  bsc-deposit-poller (cron 15s)
+                                 │
+                  eth_getLogs(Transfer, [USDT, USDC])
+                                 │
+              insert/update bsc_deposit_events (status: detected)
+                                 │
+            after >= CONFIRMATIONS blocks → status=confirmed
+                                 │
+                 RPC credit_bsc_deposit() → +balance + transaction row
+                                 │
+       bsc-deposit-sweeper (cron, hourly) → ERC20.transfer to hot wallet
 ```
 
-No DB or edge-function changes.
+---
 
-## What you'll see after the fix
+## Database (new)
 
-1. Tap Accept on the lockscreen → IncomingCallActivity closes → WebView slides up the **full-screen call overlay** (avatar, name, timer, mute / speaker / video / hangup) within ~200 ms.
-2. Screen stays on for the duration of the call (no auto-lock).
-3. If you press Home or Back, the overlay shrinks to a floating pill (existing minimised state) and a green "Call in progress" notification appears in the shade — tapping it returns you to the full overlay.
-4. The call only ends when you tap the red hangup button or the other side hangs up.
+- `bsc_deposit_addresses` — `(user_id uuid PK, hd_index int unique, address text unique, created_at)`
+- `bsc_deposit_events` — `(id, tx_hash, log_index, address, token, amount_wei numeric, amount_usd numeric, block_number bigint, confirmations int, status text [detected|confirmed|credited|orphaned], user_id, credited_tx_id, detected_at, credited_at)` with unique `(tx_hash, log_index)`.
+- `bsc_deposit_state` — singleton `(id=1, last_scanned_block bigint, updated_at)`.
+- RPC `credit_bsc_deposit(event_id uuid)` — SECURITY DEFINER, atomic: locks event row, marks credited, inserts `transactions` row (type='deposit', payment_provider='bsc_native'), updates user balance.
+- RPC `get_or_create_bsc_address(_user_id uuid)` — returns existing address or allocates next hd_index.
+- RLS: users select only their own row in `bsc_deposit_addresses` / `bsc_deposit_events`. Service role manages writes.
+
+## Secrets
+
+- `BSC_DEPOSIT_MASTER_SEED` (12/24-word mnemonic OR 32-byte hex) — used to derive `m/44'/60'/0'/0/{index}` addresses. Stored in vault, only read by the address-allocator function.
+- `BSC_RPC_URL` — QuickNode/Ankr/Alchemy BSC RPC (HTTPS).
+- `BSC_HOT_WALLET_ADDRESS` — destination for sweeps (optional, only needed when sweeper ships).
+- Existing `CRON_SECRET` reused for the poller cron auth.
+
+## Edge functions (new)
+
+- `get-bsc-deposit-address` — user-authed; calls `get_or_create_bsc_address`; derives address with viem `mnemonicToAccount` + `hdKey.derive(path)`; persists; returns `{ address }`.
+- `bsc-deposit-poller` — cron-only (x-cron-secret); fetches `last_scanned_block`, current `eth_blockNumber`, calls `eth_getLogs` in batches of ≤2000 blocks for the two contracts filtered by `topics[2] in (known addresses)`. Inserts new events as `detected`. Updates `confirmations` on existing detected events; when `>= CONFIRMATIONS_REQUIRED (12)`, calls `credit_bsc_deposit`. Updates `last_scanned_block` only on success.
+- `bsc-deposit-sweeper` (deferred — can ship in a follow-up): for each address with balance > threshold, derive privkey, build ERC20 transfer to hot wallet, send via `eth_sendRawTransaction`. Needs BNB for gas at each address (pre-fund or just-in-time top-up).
+
+## Cron
+
+- `bsc-deposit-poller-15s` every 15s (or 30s to start), posting to the function with `x-cron-secret` from vault (matches existing pattern).
+
+## Frontend
+
+- New deposit option card in the deposit modal: "BSC USDT/USDC — instant, no fees".
+- New `BscDepositPanel` component: calls `get-bsc-deposit-address`, shows address + QR (use existing `qrcode.react` if present, else add), token chooser (USDT/USDC), min $1 notice, polls `bsc_deposit_events` via realtime channel scoped to the user, renders status timeline.
+- Add a row in `TransactionHistory` for `payment_provider='bsc_native'` (existing component already renders any deposit, just add label).
+
+## Token addresses (BSC mainnet)
+
+- USDT (BEP20): `0x55d398326f99059fF775485246999027B3197955` (18 decimals)
+- USDC (BEP20): `0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d` (18 decimals)
+- Transfer topic: `0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef`
+
+## Safety / edge cases
+
+- Idempotency via unique `(tx_hash, log_index)`.
+- Reorg protection: 12-confirmation wait (BSC finality is ~45s).
+- Unknown-recipient logs are skipped (only credit if `to` matches a row in `bsc_deposit_addresses`).
+- USD amount = wei / 1e18 (stablecoins are ~$1, no oracle needed for v1; can add chainlink price feed later).
+- Spam: address allocated lazily on first request; one per user, reused forever.
+- Audit: every credit writes a `transactions` row + an `audit_logs` row.
+
+## Out of scope for this PR
+
+- Sweeper (will do as follow-up once master-seed flow is validated).
+- Multi-chain (Polygon, Base, Arbitrum) — same pattern, separate function per chain.
+- Withdrawals — keep current NOWPayments payout for now.
+
+---
+
+## Step-by-step build order
+
+1. Migration: tables, RLS, RPCs.
+2. Add `BSC_DEPOSIT_MASTER_SEED` + `BSC_RPC_URL` via `add_secret`.
+3. Edge function `get-bsc-deposit-address`.
+4. Edge function `bsc-deposit-poller` + cron schedule.
+5. Frontend `BscDepositPanel` + integration into deposit modal.
+6. Smoke test on testnet/mainnet with a small USDT transfer.
