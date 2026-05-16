@@ -47,8 +47,8 @@ export default function BscDepositPanel() {
     },
   });
 
-  // 2. Fetch recent deposit events for this user
-  const { data: events = [] } = useQuery<BscDepositEvent[]>({
+  // 2. Fetch deposit history for this user
+  const { data: events = [], isLoading: eventsLoading } = useQuery<BscDepositEvent[]>({
     queryKey: ["bsc-deposit-events", user?.id],
     enabled: !!user,
     refetchInterval: 15_000,
@@ -58,7 +58,7 @@ export default function BscDepositPanel() {
         .select("id, token, tx_hash, amount_usd, confirmations, status, detected_at, credited_at")
         .eq("user_id", user!.id)
         .order("detected_at", { ascending: false })
-        .limit(10);
+        .limit(100);
       if (error) throw error;
       return (data || []) as BscDepositEvent[];
     },
