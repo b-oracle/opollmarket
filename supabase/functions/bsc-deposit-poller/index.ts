@@ -253,7 +253,6 @@ async function updateConfirmationsAndCredit(admin: any, head: number): Promise<n
     .limit(500);
   if (!pending || !pending.length) return 0;
 
-  const RPC_URL = Deno.env.get("BSC_RPC_URL")!;
   let creditedCount = 0;
   for (const row of pending) {
     const confirmations = Math.max(0, head - Number(row.block_number));
@@ -262,7 +261,7 @@ async function updateConfirmationsAndCredit(admin: any, head: number): Promise<n
       // Guards against: chain reorgs, poisoned RPC responses, indexer bugs.
       let verified = false;
       try {
-        const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [row.tx_hash]);
+        const receipt = await bscRpc("eth_getTransactionReceipt", [row.tx_hash], { admin, alertSource: "bsc-deposit-poller" }) as any;
         if (!receipt || receipt.status !== "0x1") {
           console.warn("receipt missing or failed", row.tx_hash);
         } else {
