@@ -537,6 +537,7 @@ const App = () => {
                   <SocialTutorialTrigger />
                   <Suspense fallback={null}><PendingCopyTrades /></Suspense>
                   <NativePushRegistrar />
+                  <WelcomeBonusGate />
                 </DeferredMount>
                 <GlobalSpaceRoom />
                 <Suspense fallback={null}><SpaceReplayModal /></Suspense>
