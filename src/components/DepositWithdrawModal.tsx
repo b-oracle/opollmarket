@@ -857,6 +857,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       </>
                     )}
 
+                    {!(isDeposit && paymentMethod === "bsc_direct") && <>
                     {/* KYC gate for withdrawals */}
                     {!isDeposit && (kycStatus === "none" || kycStatus === "pending" || kycStatus === "rejected") && (
                       <div className="rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 mb-5 space-y-3">
