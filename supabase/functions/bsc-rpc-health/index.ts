@@ -72,25 +72,33 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden" }, 403);
     }
 
+    // Serve cached probe if fresh — avoids burning provider quota when multiple
+    // admin tabs or refresh loops poll concurrently. Auth/role check is always
+    // re-run above; only the upstream probe is cached.
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      return json({ ...cached.body, cached: true });
+    }
+
     const primaryUrl = Deno.env.get("BSC_RPC_URL") || null;
     const fallbackUrl = Deno.env.get("BSC_RPC_URL_FALLBACK") || null;
 
     const [primary, fallback] = await Promise.all([
-      primaryUrl ? probe(primaryUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL not configured" }),
-      fallbackUrl ? probe(fallbackUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL_FALLBACK not configured" }),
+      primaryUrl ? probe(primaryUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL not configured" } as ProbeResult),
+      fallbackUrl ? probe(fallbackUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL_FALLBACK not configured" } as ProbeResult),
     ]);
 
-    // Block drift between endpoints (helps spot a stale provider)
     const drift = primary.block != null && fallback.block != null
       ? Math.abs(primary.block - fallback.block) : null;
 
-    return json({
+    const body = {
       checked_at: new Date().toISOString(),
       primary: { configured: !!primaryUrl, ...primary },
       fallback: { configured: !!fallbackUrl, ...fallback },
       block_drift: drift,
-    });
+    };
+    cached = { at: Date.now(), body };
+    return json(body);
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: (e as Error).message?.slice(0, 200) ?? "internal error" }, 500);
   }
 });
