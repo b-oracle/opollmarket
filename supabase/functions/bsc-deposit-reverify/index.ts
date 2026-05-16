@@ -13,6 +13,7 @@
 // Designed to be called by pg_cron every few minutes. Idempotent and side-effect-light.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { verifyCronSecret } from "../_shared/cronAuth.ts";
+import { bscRpc } from "../_shared/bscRpc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
