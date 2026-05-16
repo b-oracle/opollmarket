@@ -4,6 +4,7 @@
 // - Calls approve / reject RPC under service role
 // - Writes a structured audit_logs entry with exact verification inputs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { bscRpc, getBscRpcUrls } from "../_shared/bscRpc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,17 +18,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const j = await r.json();
-  if (j.error) throw new Error(`${method}: ${j.error.message || JSON.stringify(j.error)}`);
-  return j.result;
 }
 
 Deno.serve(async (req) => {
