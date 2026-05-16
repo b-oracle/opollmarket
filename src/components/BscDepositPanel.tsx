@@ -127,7 +127,11 @@ export default function BscDepositPanel() {
       return;
     }
     const statusLabel = (s: BscDepositEvent["status"]) =>
-      s === "credited" ? "Confirmed" : s === "orphaned" ? "Failed" : "Pending";
+      s === "credited" ? "Confirmed" :
+      s === "orphaned" ? "Failed" :
+      s === "manual_review" ? "Under Review" :
+      s === "rejected" ? "Rejected" :
+      "Pending";
     const escape = (v: unknown) => {
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
