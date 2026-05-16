@@ -235,6 +235,7 @@ const Auth = () => {
         if (error) {
           toast.error(error.message);
         } else {
+          try { localStorage.setItem("pending_welcome_bonus", "1"); } catch {}
           toast.success("Account created! Please check your email to verify your account.");
           setMode("login");
           return;
