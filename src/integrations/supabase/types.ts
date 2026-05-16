@@ -5268,10 +5268,12 @@ export type Database = {
         }
         Returns: undefined
       }
+      advance_bsc_scan_state: { Args: { _to: number }; Returns: number }
       allocate_bsc_deposit_index: {
         Args: { _user_id: string }
         Returns: number
       }
+      bsc_user_24h_total_usd: { Args: { _user_id: string }; Returns: number }
       buy_update_market_prices: {
         Args: {
           _bet_amount: number
@@ -5831,6 +5833,7 @@ export type Database = {
         }
       }
       reject_dm_request: { Args: { _conversation_id: string }; Returns: Json }
+      release_bsc_poller_lock: { Args: never; Returns: boolean }
       release_creation_fee_escrow: {
         Args: { _action: string; _escrow_id: string }
         Returns: Json
@@ -5903,6 +5906,7 @@ export type Database = {
         Args: { _amount: number; _user_id: string }
         Returns: Json
       }
+      try_bsc_poller_lock: { Args: never; Returns: boolean }
       update_trending_markets: { Args: never; Returns: undefined }
       withdraw_rewards_balance: {
         Args: { _amount: number; _user_id: string }
