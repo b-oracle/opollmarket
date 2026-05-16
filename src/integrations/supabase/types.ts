@@ -3958,6 +3958,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          code: string
+          created_at: string
+          details: Json
+          id: string
+          message: string
+          severity: string
+          source: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          code: string
+          created_at?: string
+          details?: Json
+          id?: string
+          message: string
+          severity: string
+          source: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          code?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          message?: string
+          severity?: string
+          source?: string
+        }
+        Relationships: []
+      }
       telegram_link_sessions: {
         Row: {
           chat_id: number
@@ -5809,6 +5845,17 @@ export type Database = {
       record_security_attempt: {
         Args: { _success: boolean; _user_id: string }
         Returns: Json
+      }
+      record_system_alert: {
+        Args: {
+          _code: string
+          _dedupe_minutes?: number
+          _details?: Json
+          _message: string
+          _severity: string
+          _source: string
+        }
+        Returns: string
       }
       record_webhook_event: {
         Args: { _event_key: string; _payload?: Json; _provider: string }
