@@ -35,6 +35,7 @@ const navItems: NavItem[] = [
   { to: "/admin/comments", label: "Comments", icon: MessageSquare, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/users", label: "Users", icon: Users, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/referrals", label: "Referrals", icon: Gift, roles: ["super_admin", "admin"] },
+  { to: "/admin/bonuses", label: "Bonuses", icon: Gift, roles: ["super_admin", "admin"] },
   { to: "/admin/commissions", label: "Commissions", icon: Coins, roles: ["super_admin", "admin"] },
   { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["super_admin", "admin"] },
   { to: "/admin/contracts", label: "Smart Contracts", icon: FileCode2, roles: ["super_admin"] },
