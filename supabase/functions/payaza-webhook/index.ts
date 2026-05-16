@@ -152,9 +152,15 @@ Deno.serve(async (req) => {
       message: `claimed for processing (rawStatus=${rawStatus})`,
     });
 
-    // Check if payment was successful
-    const successStatuses = ["approved", "successful", "completed", "funds received", "success"];
-    const isSuccess = successStatuses.some(s => rawStatus.includes(s));
+    // Tokenize status and match whole words only so "partially successful",
+    // "partial success", "failed (formerly successful)" etc. cannot pass.
+    const normStatus = String(rawStatus).toLowerCase().trim();
+    const statusTokens = new Set(normStatus.split(/[^a-z0-9]+/).filter(Boolean));
+    const failureTokens = ["failed", "declined", "rejected", "reversed", "cancelled", "canceled", "partial", "partially", "pending", "refunded", "chargeback"];
+    const successTokens = ["approved", "successful", "completed", "success"];
+    const hasFailureToken = failureTokens.some(t => statusTokens.has(t));
+    const hasSuccessToken = successTokens.some(t => statusTokens.has(t)) || normStatus === "funds received";
+    const isSuccess = hasSuccessToken && !hasFailureToken;
 
     console.log(`Payaza webhook: isSuccess=${isSuccess} for status="${rawStatus}"`);
 
