@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       const confirmations = Math.max(0, head - Number(ev.block_number));
 
       try {
-        const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [ev.tx_hash]);
+        const receipt = await bscRpc("eth_getTransactionReceipt", [ev.tx_hash], { admin, alertSource: "bsc-deposit-reverify" }) as any;
         if (!receipt) {
           outcome = "tx_missing";
         } else {
