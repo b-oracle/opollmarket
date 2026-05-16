@@ -31,6 +31,7 @@ import { SidebarStateProvider, useSidebarState } from "./hooks/useSidebarState";
 import SocialTutorial, { checkTutorialSeenFromDB } from "./components/SocialTutorial";
 import { useFeatureToggles } from "./hooks/useFeatureToggles";
 import DeferredMount from "./components/DeferredMount";
+import WelcomeBonusGate from "./components/WelcomeBonusGate";
 import { VerificationThresholdProvider } from "./components/NftBadge";
 import { useNativePush } from "./hooks/useNativePush";
 import { useCallDeepLink } from "./hooks/useCallDeepLink";
