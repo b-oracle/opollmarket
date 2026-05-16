@@ -16,7 +16,15 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function probe(url: string): Promise<{ ok: boolean; block: number | null; latency_ms: number; error: string | null }> {
+// Truncate any upstream-controlled string before returning it to the admin UI.
+const safeErr = (s: unknown): string => {
+  const str = typeof s === "string" ? s : (s as Error)?.message ?? String(s);
+  return str.length > 200 ? str.slice(0, 200) + "…" : str;
+};
+
+type ProbeResult = { ok: boolean; block: number | null; latency_ms: number; error: string | null };
+
+async function probe(url: string): Promise<ProbeResult> {
   const t0 = Date.now();
   try {
     const r = await fetch(url, {
@@ -27,12 +35,17 @@ async function probe(url: string): Promise<{ ok: boolean; block: number | null; 
     });
     const latency_ms = Date.now() - t0;
     const j = await r.json();
-    if (j.error) return { ok: false, block: null, latency_ms, error: j.error.message || JSON.stringify(j.error) };
+    if (j.error) return { ok: false, block: null, latency_ms, error: safeErr(j.error.message || JSON.stringify(j.error)) };
     return { ok: true, block: Number(BigInt(j.result)), latency_ms, error: null };
   } catch (e) {
-    return { ok: false, block: null, latency_ms: Date.now() - t0, error: (e as Error).message };
+    return { ok: false, block: null, latency_ms: Date.now() - t0, error: safeErr(e) };
   }
 }
+
+// In-memory cache shared across requests in the same isolate. Caps quota burn
+// when multiple admin tabs or a stuck refresh loop hammer the panel.
+const CACHE_TTL_MS = 10_000;
+let cached: { at: number; body: Record<string, unknown> } | null = null;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
