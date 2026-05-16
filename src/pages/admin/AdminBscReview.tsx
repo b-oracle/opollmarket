@@ -18,6 +18,7 @@ import {
   Settings2,
   Save,
 } from "lucide-react";
+import RpcHealthPanel from "@/components/admin/RpcHealthPanel";
 
 const statusColors: Record<string, string> = {
   manual_review: "bg-amber-500/15 text-amber-500 border-amber-500/20",
