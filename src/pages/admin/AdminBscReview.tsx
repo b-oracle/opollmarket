@@ -92,32 +92,57 @@ const AdminBscReview = () => {
     },
   });
 
-  const approveMutation = useMutation({
-    mutationFn: async (eventId: string) => {
-      const { data, error } = await supabase.rpc("admin_approve_bsc_deposit" as any, { _event_id: eventId });
-      if (error) throw error;
-      return data;
+  const actionMutation = useMutation({
+    mutationFn: async (vars: { eventId: string; action: "approve" | "reject"; reason?: string }) => {
+      const { data, error } = await supabase.functions.invoke("admin-bsc-deposit-action", {
+        body: { event_id: vars.eventId, action: vars.action, reason: vars.reason },
+      });
+      if (error) throw new Error(error.message || "Action failed");
+      if ((data as any)?.error) throw new Error((data as any).error);
+      return data as any;
     },
-    onSuccess: () => {
-      toast.success("Deposit approved and credited");
+    onSuccess: (data) => {
+      toast.success(
+        data?.action === "approved"
+          ? "Deposit approved, credited, and logged"
+          : "Deposit rejected and logged",
+      );
       qc.invalidateQueries({ queryKey: ["bsc-review-events"] });
+      qc.invalidateQueries({ queryKey: ["bsc-review-audit"] });
     },
-    onError: (err: any) => toast.error(err.message || "Failed to approve"),
+    onError: (err: any) => toast.error(err.message || "Action failed"),
   });
 
-  const rejectMutation = useMutation({
-    mutationFn: async ({ eventId, reason }: { eventId: string; reason: string }) => {
-      const { error } = await supabase.rpc("admin_reject_bsc_deposit" as any, {
-        _event_id: eventId,
-        _reason: reason,
-      });
-      if (error) throw error;
+  // Audit history for displayed events
+  const eventIds = (events || []).map((e: any) => e.id);
+  const { data: auditMap } = useQuery({
+    queryKey: ["bsc-review-audit", eventIds.join(",")],
+    enabled: eventIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audit_logs" as any)
+        .select("id, actor_id, action, target_id, details, created_at")
+        .in("action", ["bsc_deposit_approve", "bsc_deposit_reject"])
+        .in("target_id", eventIds)
+        .order("created_at", { ascending: false });
+      if (error) return {} as Record<string, any[]>;
+      const map: Record<string, any[]> = {};
+      for (const row of (data as any[]) || []) {
+        (map[row.target_id] = map[row.target_id] || []).push(row);
+      }
+      // Resolve actor display names
+      const actorIds = [...new Set(((data as any[]) || []).map((r) => r.actor_id))];
+      if (actorIds.length) {
+        const { data: actors } = await supabase.rpc("admin_get_profiles_with_email", { _ids: actorIds });
+        const amap = Object.fromEntries(((actors as any[]) || []).map((p) => [p.id, p]));
+        for (const arr of Object.values(map)) {
+          for (const r of arr) {
+            r.actor_name = amap[r.actor_id]?.display_name || amap[r.actor_id]?.email || r.actor_id.slice(0, 8);
+          }
+        }
+      }
+      return map;
     },
-    onSuccess: () => {
-      toast.success("Deposit rejected");
-      qc.invalidateQueries({ queryKey: ["bsc-review-events"] });
-    },
-    onError: (err: any) => toast.error(err.message || "Failed to reject"),
   });
 
   const copy = (text: string) => {
@@ -247,10 +272,10 @@ const AdminBscReview = () => {
                     <Button
                       size="sm"
                       variant="default"
-                      disabled={approveMutation.isPending}
+                      disabled={actionMutation.isPending}
                       onClick={() => {
-                        if (confirm(`Approve and credit $${Number(ev.amount_usd).toFixed(2)} to ${ev.display_name}?`)) {
-                          approveMutation.mutate(ev.id);
+                        if (confirm(`Re-verify receipt on-chain, approve, and credit $${Number(ev.amount_usd).toFixed(2)} to ${ev.display_name}?`)) {
+                          actionMutation.mutate({ eventId: ev.id, action: "approve" });
                         }
                       }}
                     >
@@ -259,11 +284,11 @@ const AdminBscReview = () => {
                     <Button
                       size="sm"
                       variant="destructive"
-                      disabled={rejectMutation.isPending}
+                      disabled={actionMutation.isPending}
                       onClick={() => {
                         const reason = window.prompt("Reason for rejecting this deposit?");
                         if (!reason || !reason.trim()) return;
-                        rejectMutation.mutate({ eventId: ev.id, reason: reason.trim() });
+                        actionMutation.mutate({ eventId: ev.id, action: "reject", reason: reason.trim() });
                       }}
                     >
                       <XCircle className="w-4 h-4 mr-1" /> Reject
@@ -292,6 +317,59 @@ const AdminBscReview = () => {
                   </div>
                 )}
               </div>
+
+              {/* Audit history */}
+              {auditMap?.[ev.id]?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-[11px] font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                    Audit trail
+                  </div>
+                  <div className="space-y-2">
+                    {auditMap[ev.id].map((a: any) => {
+                      const v = a.details?.verification || {};
+                      const isApprove = a.action === "bsc_deposit_approve";
+                      return (
+                        <details key={a.id} className="text-xs rounded-md border border-border bg-muted/30 p-2">
+                          <summary className="cursor-pointer flex items-center gap-2 list-none">
+                            <Badge
+                              variant="outline"
+                              className={isApprove
+                                ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/20"
+                                : "bg-destructive/15 text-destructive border-destructive/20"}
+                            >
+                              {isApprove ? "Approved" : "Rejected"}
+                            </Badge>
+                            <span className="font-medium">{a.actor_name}</span>
+                            <span className="text-muted-foreground">
+                              {format(new Date(a.created_at), "MMM d, HH:mm:ss")}
+                            </span>
+                            <span className="text-muted-foreground ml-auto">click to expand</span>
+                          </summary>
+                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 font-mono">
+                            <div><span className="text-muted-foreground">Receipt status: </span>{v.receipt_status ?? "—"}</div>
+                            <div>
+                              <span className="text-muted-foreground">Receipt match: </span>
+                              <span className={v.receipt_match ? "text-emerald-500" : "text-destructive"}>
+                                {v.receipt_match ? "✓ verified" : "✗ mismatch"}
+                              </span>
+                            </div>
+                            <div><span className="text-muted-foreground">Confirmations: </span>{v.confirmations_observed} / {v.confirmations_required}</div>
+                            <div><span className="text-muted-foreground">Threshold: </span>${Number(v.threshold_usd ?? 0).toLocaleString()}</div>
+                            <div><span className="text-muted-foreground">Amount (expected): </span>${Number(v.expected?.amount_usd ?? 0).toFixed(2)}</div>
+                            <div className="truncate" title={v.expected?.recipient}><span className="text-muted-foreground">Recipient: </span>{v.expected?.recipient}</div>
+                            {v.rpc_error && (
+                              <div className="sm:col-span-2 text-destructive">RPC error: {String(v.rpc_error)}</div>
+                            )}
+                            {!isApprove && a.details?.reason && (
+                              <div className="sm:col-span-2"><span className="text-muted-foreground">Reason: </span>{a.details.reason}</div>
+                            )}
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
