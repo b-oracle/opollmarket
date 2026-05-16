@@ -826,8 +826,35 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       )}
                     </div>
 
-                    {/* Deposits are exclusively handled by Direct BSC deposit (NOWPayments deposits disabled) */}
-                    {isDeposit && (
+                    {/* Deposit method toggle: Direct BSC vs Fiat (NGN). NOWPayments crypto deposits disabled. */}
+                    {isDeposit && fiatEnabled && (
+                      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
+                        <button
+                          onClick={() => setPaymentMethod("bsc_direct")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            paymentMethod === "bsc_direct"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          Direct BSC
+                        </button>
+                        <button
+                          onClick={() => setPaymentMethod("fiat")}
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+                            paymentMethod === "fiat"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          <Banknote className="w-3.5 h-3.5" />
+                          Fiat (NAIRA)
+                        </button>
+                      </div>
+                    )}
+
+                    {isDeposit && paymentMethod === "bsc_direct" && (
                       <BscDepositPanel />
                     )}
 
@@ -1008,33 +1035,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       ))}
                     </div>
 
-                    {/* Payment method toggle (deposit only) */}
-                    {isDeposit && fiatEnabled && (
-                      <div className="flex gap-1 p-1 rounded-xl bg-muted/50 mb-4">
-                        <button
-                          onClick={() => setPaymentMethod("crypto")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                            paymentMethod === "crypto"
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Coins className="w-3.5 h-3.5" />
-                          Crypto
-                        </button>
-                        <button
-                          onClick={() => setPaymentMethod("fiat")}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                            paymentMethod === "fiat"
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <Banknote className="w-3.5 h-3.5" />
-                          Fiat (NAIRA)
-                        </button>
-                      </div>
-                    )}
+                    {/* Crypto/Fiat deposit toggle moved above with BSC option; NOWPayments crypto deposits disabled */}
 
                     {/* Withdrawal method toggle */}
                     {!isDeposit && fiatWithdrawalEnabled && (
