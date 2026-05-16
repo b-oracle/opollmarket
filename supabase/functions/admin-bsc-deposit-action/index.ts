@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const threshold = Number(thrRow?.value ?? 5000);
 
     // Re-verify on-chain receipt
-    const head = Number(BigInt(await rpc(RPC_URL, "eth_blockNumber", [])));
+    const head = Number(BigInt(await bscRpc("eth_blockNumber", [], { admin, alertSource: "admin-bsc-deposit-action" }) as string));
     const confirmations = Math.max(0, head - Number(ev.block_number));
     let verification: Record<string, unknown> = {
       tx_hash: ev.tx_hash,
