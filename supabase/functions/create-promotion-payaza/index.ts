@@ -217,6 +217,8 @@ Deno.serve(async (req) => {
       nowpayments_payment_id: transactionReference,
       side: `promotion_${items.join("_")}`,
       market_id,
+      expected_amount_ngn: ngnAmount,
+      exchange_rate_ngn: effectiveRate ?? configuredFallback,
     });
 
     // Create Payaza virtual account

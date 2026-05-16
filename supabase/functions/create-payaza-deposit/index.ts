@@ -165,6 +165,8 @@ Deno.serve(async (req) => {
       status: "pending",
       payment_provider: "payaza",
       nowpayments_payment_id: transactionReference,
+      expected_amount_ngn: ngnAmount,
+      exchange_rate_ngn: effectiveRate,
     });
 
     // ─── PAYAZA DYNAMIC VIRTUAL ACCOUNT API ───
