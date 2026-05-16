@@ -33,6 +33,11 @@ export default function BscDepositPanel() {
   const COOLDOWN_MS = 20_000;
   const [cooldownUntil, setCooldownUntil] = useState<number>(0);
   const [nowTs, setNowTs] = useState<number>(() => Date.now());
+  type RescanResult =
+    | { kind: "ok"; checked: number; credited: number; failed: number; stillPending: number; at: number }
+    | { kind: "error"; message: string; at: number };
+  const [rescanResult, setRescanResult] = useState<RescanResult | null>(null);
+  const [rescanStartedAt, setRescanStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (cooldownUntil <= Date.now()) return;
