@@ -33,16 +33,8 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const j = await r.json();
-  if (j.error) throw new Error(`${method}: ${j.error.message || JSON.stringify(j.error)}`);
-  return j.result;
-}
+// RPC calls go through bscRpc → automatic fallback rotation + alerting.
+
 
 type ReverifyOutcome =
   | "match"             // receipt still matches event exactly
