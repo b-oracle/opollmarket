@@ -400,6 +400,78 @@ export type Database = {
           },
         ]
       }
+      balance_ledger: {
+        Row: {
+          actor_id: string | null
+          after_bonus: number | null
+          after_insurance: number | null
+          after_main: number | null
+          before_bonus: number | null
+          before_insurance: number | null
+          before_main: number | null
+          correlation_id: string | null
+          created_at: string
+          delta_bonus: number
+          delta_gift: number
+          delta_insurance: number
+          delta_main: number
+          delta_rewards: number
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          reason: string | null
+          source: string | null
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          after_bonus?: number | null
+          after_insurance?: number | null
+          after_main?: number | null
+          before_bonus?: number | null
+          before_insurance?: number | null
+          before_main?: number | null
+          correlation_id?: string | null
+          created_at?: string
+          delta_bonus?: number
+          delta_gift?: number
+          delta_insurance?: number
+          delta_main?: number
+          delta_rewards?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          source?: string | null
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          after_bonus?: number | null
+          after_insurance?: number | null
+          after_main?: number | null
+          before_bonus?: number | null
+          before_insurance?: number | null
+          before_main?: number | null
+          correlation_id?: string | null
+          created_at?: string
+          delta_bonus?: number
+          delta_gift?: number
+          delta_insurance?: number
+          delta_main?: number
+          delta_rewards?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          source?: string | null
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       balances: {
         Row: {
           amount: number
@@ -5272,6 +5344,10 @@ export type Database = {
     }
     Functions: {
       _cron_edge_headers: { Args: never; Returns: Json }
+      _current_guc: {
+        Args: { _default?: string; _key: string }
+        Returns: string
+      }
       accept_dm_request: { Args: { _conversation_id: string }; Returns: Json }
       add_market_liquidity: {
         Args: { _amount: number; _market_id: string; _user_id: string }
@@ -5285,6 +5361,19 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      adjust_balance_logged: {
+        Args: {
+          _actor_id?: string
+          _bonus_delta?: number
+          _correlation_id?: string
+          _delta: number
+          _insurance_delta?: number
+          _reason?: string
+          _source?: string
+          _user_id: string
+        }
+        Returns: Json
       }
       adjust_platform_pool: { Args: { _delta: number }; Returns: undefined }
       admin_approve_bsc_deposit: {
