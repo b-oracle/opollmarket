@@ -42,6 +42,8 @@ export default function BscDepositPanel() {
     | { kind: "error"; message: string; at: number };
   const [rescanResult, setRescanResult] = useState<RescanResult | null>(null);
   const [rescanStartedAt, setRescanStartedAt] = useState<number | null>(null);
+  const [exportRange, setExportRange] = useState<DateRange | undefined>(undefined);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     if (cooldownUntil <= Date.now() && !rescanning) return;
