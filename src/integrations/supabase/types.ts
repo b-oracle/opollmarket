@@ -4046,6 +4046,8 @@ export type Database = {
           bonus_amount: number
           created_at: string
           description: string | null
+          exchange_rate_ngn: number | null
+          expected_amount_ngn: number | null
           gross_amount_usd: number | null
           id: string
           is_copy_trade: boolean
@@ -4072,6 +4074,8 @@ export type Database = {
           bonus_amount?: number
           created_at?: string
           description?: string | null
+          exchange_rate_ngn?: number | null
+          expected_amount_ngn?: number | null
           gross_amount_usd?: number | null
           id?: string
           is_copy_trade?: boolean
@@ -4098,6 +4102,8 @@ export type Database = {
           bonus_amount?: number
           created_at?: string
           description?: string | null
+          exchange_rate_ngn?: number | null
+          expected_amount_ngn?: number | null
           gross_amount_usd?: number | null
           id?: string
           is_copy_trade?: boolean
