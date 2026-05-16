@@ -522,19 +522,23 @@ Deno.serve(async (req) => {
       const creationFee = feeSettings?.market_creation_fee || 0;
       const totalCost = liquidity + creationFee;
 
-      // Check balance if totalCost > 0
+      // Atomically debit upfront to prevent concurrent-request double-spend.
+      // Row-locks balance and rejects if insufficient. Refunded below if downstream insert fails.
       if (totalCost > 0) {
-        const { data: bal } = await admin
-          .from("balances")
-          .select("amount")
-          .eq("user_id", userId)
-          .eq("currency", "USDT")
-          .maybeSingle();
-
-        if (!bal || bal.amount < totalCost) {
-          return err("Insufficient balance for initial liquidity and creation fee");
+        const { data: debitRes, error: debitErr } = await admin.rpc("debit_balance_atomic", {
+          _user_id: userId,
+          _main_deduct: totalCost,
+          _bonus_deduct: 0,
+        });
+        if (debitErr || !debitRes?.success) {
+          return err(debitRes?.error || "Insufficient balance for initial liquidity and creation fee", 402);
         }
       }
+      const refundOnFailure = async () => {
+        if (totalCost > 0) {
+          await admin.rpc("adjust_balance", { _user_id: userId, _delta: totalCost });
+        }
+      };
 
       // Run AI moderation
       try {
@@ -577,7 +581,10 @@ Deno.serve(async (req) => {
         .select("id, title, status, category, market_type, end_date, created_at")
         .single();
 
-      if (marketErr) return err("Failed to create market", 500);
+      if (marketErr) {
+        await refundOnFailure();
+        return err("Failed to create market", 500);
+      }
 
       // Insert options for multi markets
       if (marketType === "multi" && options?.length) {
@@ -590,9 +597,8 @@ Deno.serve(async (req) => {
         await admin.from("market_options").insert(optionRows);
       }
 
-      // FIX: Use correct RPC parameter names (_user_id, _delta)
+      // Funds already debited atomically above; just log the transactions.
       if (totalCost > 0) {
-        await admin.rpc("adjust_balance", { _user_id: userId, _delta: -totalCost });
         await admin.from("transactions").insert({
           user_id: userId,
           type: "buy",
@@ -601,7 +607,6 @@ Deno.serve(async (req) => {
           status: "confirmed",
           side: "initial_liquidity",
         });
-        // Log creation fee separately if applicable
         if (creationFee > 0) {
           await admin.from("transactions").insert({
             user_id: userId,

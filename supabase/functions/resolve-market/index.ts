@@ -553,9 +553,18 @@ async function handleResolve(
       if (copierProfit > 0) {
         commissionAmount = copierProfit * (earning.commission_percent / 100);
 
-        // Deduct commission from copier's balance
-        // Deduct commission from copier (atomic)
-        await adminClient.rpc("adjust_balance", { _user_id: earning.copier_user_id, _delta: -commissionAmount, _bonus_delta: 0, _insurance_delta: 0 });
+        // Atomically debit commission from copier; skip if insufficient funds to avoid phantom credit.
+        const { data: debitRes, error: debitErr } = await adminClient.rpc("debit_balance_atomic", {
+          _user_id: earning.copier_user_id,
+          _main_deduct: commissionAmount,
+          _bonus_deduct: 0,
+        });
+        if (debitErr || !debitRes?.success) {
+          console.warn(
+            `[resolve-market] Skipping copy-trade commission for copier ${earning.copier_user_id}: ${debitRes?.error || debitErr?.message}`,
+          );
+          continue;
+        }
 
         // Credit commission to trader (atomic)
         await adminClient.rpc("adjust_balance", { _user_id: earning.trader_user_id, _delta: commissionAmount, _bonus_delta: 0, _insurance_delta: 0 });
