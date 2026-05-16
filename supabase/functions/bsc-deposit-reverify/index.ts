@@ -127,11 +127,13 @@ Deno.serve(async (req) => {
 
       counts[outcome]++;
 
-      // Strike count: only "real" negative outcomes count toward auto-rejection.
-      // rpc_error is inconclusive; match resets the counter.
+      // Strike count: ONLY `mismatch` (clear evidence of forgery) counts toward
+      // auto-rejection. `tx_missing` / `tx_failed` can be caused by extended RPC
+      // outages returning null for valid txs — those stay flagged for human review.
+      // `rpc_error` is inconclusive; `match` resets the counter.
       const prev = Number(ev.reverify_count ?? 0);
-      const isNegative = outcome === "mismatch" || outcome === "tx_failed" || outcome === "tx_missing";
-      const newCount = outcome === "match" ? 0 : (outcome === "rpc_error" ? prev : prev + 1);
+      const isNegative = outcome === "mismatch";
+      const newCount = outcome === "match" ? 0 : (isNegative ? prev + 1 : prev);
 
       const details = {
         outcome,
