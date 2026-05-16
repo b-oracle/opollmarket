@@ -52,6 +52,8 @@ export default function BscDepositPanel() {
   const rescan = async () => {
     if (rescanning || cooldownActive) return;
     setRescanning(true);
+    setRescanStartedAt(Date.now());
+    setRescanResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("bsc-deposit-rescan", { body: {} });
       if (error || (data as any)?.error) {
@@ -59,8 +61,10 @@ export default function BscDepositPanel() {
         if (err === "cooldown") {
           const ms = (data as any)?.retry_after_ms || COOLDOWN_MS;
           setCooldownUntil(Date.now() + ms);
+          setRescanResult({ kind: "error", message: `Cooldown active — wait ${Math.ceil(ms / 1000)}s.`, at: Date.now() });
           toast.message(`Please wait ${Math.ceil(ms / 1000)}s before rescanning again.`);
         } else {
+          setRescanResult({ kind: "error", message: "Rescan failed. Try again shortly.", at: Date.now() });
           toast.error("Rescan failed. Try again shortly.");
         }
         return;
@@ -70,6 +74,7 @@ export default function BscDepositPanel() {
       const credited = d.credited ?? 0;
       const failed = d.failed ?? 0;
       const stillPending = d.still_pending ?? Math.max(0, checked - credited - failed);
+      setRescanResult({ kind: "ok", checked, credited, failed, stillPending, at: Date.now() });
       if (checked === 0) {
         toast.success("Rescan complete — no pending deposits to check.");
       } else {
@@ -84,9 +89,11 @@ export default function BscDepositPanel() {
       qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user?.id] });
       setCooldownUntil(Date.now() + COOLDOWN_MS);
     } catch {
+      setRescanResult({ kind: "error", message: "Rescan failed. Try again shortly.", at: Date.now() });
       toast.error("Rescan failed. Try again shortly.");
     } finally {
       setRescanning(false);
+      setRescanStartedAt(null);
     }
   };
 
