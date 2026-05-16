@@ -203,7 +203,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     if (open) {
       setTab(initialTab);
       setAmount("");
-      setPaymentMethod("crypto");
+      setPaymentMethod("bsc_direct");
       setWithdrawMethod("crypto");
       setWalletAddress("");
       setSelectedCrypto("usdtbsc");
