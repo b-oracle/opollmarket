@@ -19,7 +19,20 @@ const MAX_BLOCKS_PER_RUN = 500;   // ~25 min of BSC per tick
 const CHUNK_BLOCKS = 25;          // safer default — public BSC RPCs cap eth_getLogs aggressively
 const MIN_CHUNK_BLOCKS = 1;       // floor when halving on "limit exceeded"
 const MIN_USD = 1;                // ignore dust
-const MAX_AUTO_CREDIT_USD = Number(Deno.env.get("BSC_MAX_AUTO_CREDIT_USD") ?? "5000");
+const MAX_AUTO_CREDIT_USD_FALLBACK = Number(Deno.env.get("BSC_MAX_AUTO_CREDIT_USD") ?? "5000");
+
+async function loadMaxAutoCreditUsd(admin: any): Promise<number> {
+  try {
+    const { data } = await admin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "bsc_max_auto_credit_usd")
+      .maybeSingle();
+    const v = Number(data?.value);
+    if (Number.isFinite(v) && v > 0) return v;
+  } catch (_) { /* fallthrough */ }
+  return MAX_AUTO_CREDIT_USD_FALLBACK;
+}
 
 async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
   const r = await fetch(url, {
