@@ -15,8 +15,9 @@ const TOKENS: Record<string, { symbol: string; decimals: number }> = {
 };
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const CONFIRMATIONS_REQUIRED = 12;
-const MAX_BLOCKS_PER_RUN = 1500; // ~75 minutes of BSC at 3s blocks
-const MIN_USD = 1; // ignore dust
+const MAX_BLOCKS_PER_RUN = 300;   // cap per cron tick (~15 min of BSC)
+const CHUNK_BLOCKS = 50;          // safe for most BSC public RPCs
+const MIN_USD = 1;                // ignore dust
 
 async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
   const r = await fetch(url, {
