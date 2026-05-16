@@ -272,10 +272,10 @@ const AdminBscReview = () => {
                     <Button
                       size="sm"
                       variant="default"
-                      disabled={approveMutation.isPending}
+                      disabled={actionMutation.isPending}
                       onClick={() => {
-                        if (confirm(`Approve and credit $${Number(ev.amount_usd).toFixed(2)} to ${ev.display_name}?`)) {
-                          approveMutation.mutate(ev.id);
+                        if (confirm(`Re-verify receipt on-chain, approve, and credit $${Number(ev.amount_usd).toFixed(2)} to ${ev.display_name}?`)) {
+                          actionMutation.mutate({ eventId: ev.id, action: "approve" });
                         }
                       }}
                     >
@@ -284,11 +284,11 @@ const AdminBscReview = () => {
                     <Button
                       size="sm"
                       variant="destructive"
-                      disabled={rejectMutation.isPending}
+                      disabled={actionMutation.isPending}
                       onClick={() => {
                         const reason = window.prompt("Reason for rejecting this deposit?");
                         if (!reason || !reason.trim()) return;
-                        rejectMutation.mutate({ eventId: ev.id, reason: reason.trim() });
+                        actionMutation.mutate({ eventId: ev.id, action: "reject", reason: reason.trim() });
                       }}
                     >
                       <XCircle className="w-4 h-4 mr-1" /> Reject
