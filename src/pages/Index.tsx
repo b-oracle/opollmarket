@@ -26,6 +26,7 @@ import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
+import { supabase } from "@/integrations/supabase/client";
 
 
 const formatVolume = (v: number) => {
