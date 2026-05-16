@@ -28,6 +28,7 @@ export default function BscDepositPanel() {
   const qc = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<StatusFilter>("all");
+  const [search, setSearch] = useState("");
 
   // 1. Fetch / allocate this user's deposit address
   const {
