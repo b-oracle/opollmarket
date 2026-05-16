@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
       Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+    const MAX_AUTO_CREDIT_USD = await loadMaxAutoCreditUsd(admin);
 
     // 1. Current head
     const headHex = await rpc(RPC_URL, "eth_blockNumber", []);
