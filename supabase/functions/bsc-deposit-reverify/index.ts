@@ -235,23 +235,27 @@ Deno.serve(async (req) => {
             },
           });
           // Critical alert — humans should review what just got auto-rejected.
-          await admin.rpc("record_system_alert", {
-            _severity: "critical",
-            _source: "bsc-deposit-reverify",
-            _code: "bsc_deposit_auto_rejected",
-            _message: `Auto-rejected BSC deposit ${ev.id} ($${Number(ev.amount_usd).toFixed(2)} ${ev.token}) for user ${ev.user_id}.`,
-            _details: { event_id: ev.id, user_id: ev.user_id, tx_hash: ev.tx_hash, amount_usd: Number(ev.amount_usd), token: ev.token, verification: details },
-            _dedupe_minutes: 1,
-          }).then(() => {}).catch(() => {});
+          try {
+            await admin.rpc("record_system_alert", {
+              _severity: "critical",
+              _source: "bsc-deposit-reverify",
+              _code: "bsc_deposit_auto_rejected",
+              _message: `Auto-rejected BSC deposit ${ev.id} ($${Number(ev.amount_usd).toFixed(2)} ${ev.token}) for user ${ev.user_id}.`,
+              _details: { event_id: ev.id, user_id: ev.user_id, tx_hash: ev.tx_hash, amount_usd: Number(ev.amount_usd), token: ev.token, verification: details },
+              _dedupe_minutes: 1,
+            });
+          } catch (_) { /* swallow */ }
         } else {
           console.error("auto-reject failed:", ev.id, rejErr.message);
-          await admin.rpc("record_system_alert", {
-            _severity: "critical",
-            _source: "bsc-deposit-reverify",
-            _code: "bsc_deposit_auto_reject_failed",
-            _message: `Auto-reject RPC failed for event ${ev.id}: ${rejErr.message}`,
-            _details: { event_id: ev.id, error: rejErr.message },
-          }).then(() => {}).catch(() => {});
+          try {
+            await admin.rpc("record_system_alert", {
+              _severity: "critical",
+              _source: "bsc-deposit-reverify",
+              _code: "bsc_deposit_auto_reject_failed",
+              _message: `Auto-reject RPC failed for event ${ev.id}: ${rejErr.message}`,
+              _details: { event_id: ev.id, error: rejErr.message },
+            });
+          } catch (_) { /* swallow */ }
         }
       }
     }
