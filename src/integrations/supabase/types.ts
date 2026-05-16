@@ -4467,6 +4467,13 @@ export type Database = {
             foreignKeyName: "user_security_settings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "my_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_security_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4936,6 +4943,13 @@ export type Database = {
             foreignKeyName: "user_security_settings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "my_profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_security_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4947,6 +4961,134 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      market_boosts_public: {
+        Row: {
+          created_at: string | null
+          ends_at: string | null
+          id: string | null
+          market_id: string | null
+          starts_at: string | null
+          status: string | null
+          tier: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          ends_at?: string | null
+          id?: string | null
+          market_id?: string | null
+          starts_at?: string | null
+          status?: string | null
+          tier?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          ends_at?: string | null
+          id?: string | null
+          market_id?: string | null
+          starts_at?: string | null
+          status?: string | null
+          tier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_boosts_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      my_profile: {
+        Row: {
+          age: number | null
+          avatar_url: string | null
+          bio: string | null
+          block_reason: string | null
+          blocked_at: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          display_name: string | null
+          email: string | null
+          gender: string | null
+          id: string | null
+          interests: string[] | null
+          is_blocked: boolean | null
+          is_public: boolean | null
+          kyc_status: string | null
+          location: string | null
+          referred_by: string | null
+          social_tutorial_seen: boolean | null
+          twitter_avatar_url: string | null
+          twitter_id: string | null
+          twitter_linked_at: string | null
+          twitter_username: string | null
+          unlimited_markets: boolean | null
+          updated_at: string | null
+          username: string | null
+          verification_level: string | null
+          wallet_address: string | null
+        }
+        Insert: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          display_name?: string | null
+          email?: string | null
+          gender?: string | null
+          id?: string | null
+          interests?: string[] | null
+          is_blocked?: boolean | null
+          is_public?: boolean | null
+          kyc_status?: string | null
+          location?: string | null
+          referred_by?: string | null
+          social_tutorial_seen?: boolean | null
+          twitter_avatar_url?: string | null
+          twitter_id?: string | null
+          twitter_linked_at?: string | null
+          twitter_username?: string | null
+          unlimited_markets?: boolean | null
+          updated_at?: string | null
+          username?: string | null
+          verification_level?: string | null
+          wallet_address?: string | null
+        }
+        Update: {
+          age?: number | null
+          avatar_url?: string | null
+          bio?: string | null
+          block_reason?: string | null
+          blocked_at?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          display_name?: string | null
+          email?: string | null
+          gender?: string | null
+          id?: string | null
+          interests?: string[] | null
+          is_blocked?: boolean | null
+          is_public?: boolean | null
+          kyc_status?: string | null
+          location?: string | null
+          referred_by?: string | null
+          social_tutorial_seen?: boolean | null
+          twitter_avatar_url?: string | null
+          twitter_id?: string | null
+          twitter_linked_at?: string | null
+          twitter_username?: string | null
+          unlimited_markets?: boolean | null
+          updated_at?: string | null
+          username?: string | null
+          verification_level?: string | null
+          wallet_address?: string | null
+        }
+        Relationships: []
       }
       public_commission_settings: {
         Row: {
@@ -5467,6 +5609,10 @@ export type Database = {
         Returns: boolean
       }
       cancel_market_atomic: { Args: { _market_id: string }; Returns: Json }
+      check_admin_credit_target_cap: {
+        Args: { _amount: number; _target_id: string }
+        Returns: Json
+      }
       claim_market_for_resolution: {
         Args: { _market_id: string }
         Returns: Json
@@ -5740,6 +5886,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_page_view_count: { Args: { _path?: string }; Returns: number }
       get_platform_user_count: { Args: never; Returns: number }
       get_platform_volume: {
         Args: never

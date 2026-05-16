@@ -99,6 +99,24 @@ Deno.serve(async (req) => {
       }, 429);
     }
 
+    // Per-TARGET 24h cap (defense-in-depth: prevents a single user from being
+    // over-credited even if multiple admins act independently or one admin is
+    // compromised). Enforced via SECURITY DEFINER RPC so the cap can't be
+    // bypassed from any other code path.
+    {
+      const { data: targetCap } = await adminClient.rpc(
+        "check_admin_credit_target_cap",
+        { _target_id: targetUserId, _amount: amount },
+      );
+      if (targetCap && (targetCap as any).allowed === false) {
+        return json({
+          error: (targetCap as any).reason ?? "Per-target credit cap exceeded",
+          used: (targetCap as any).used,
+          cap: (targetCap as any).cap,
+        }, 429);
+      }
+    }
+
     // Verify the target user exists
     const { data: profile, error: profileErr } = await adminClient
       .from("profiles")
