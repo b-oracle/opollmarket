@@ -1,48 +1,43 @@
 ## Goal
 
-After a new user registers and lands on the app for their first authenticated session, show a stylish "$20 Welcome Bonus — Congratulations!" card with a confetti burst. Tapping the card navigates to the balance breakdown page (`/commissions`).
+Make commodity (Silver, Gold, Platinum, Palladium, Oil, etc.) and forex Up & Down markets behave as "closed" during their designated market-closed times — matching the schedule already defined in `src/lib/marketHours.ts` (Sun 5pm ET → Fri 5pm ET window; weekends closed). Crypto rounds stay 24/7.
 
-## Trigger logic
+## Scope
 
-Signup uses email verification, so the user won't be authenticated immediately after submitting the signup form. The cleanest trigger is **on first successful auth session** when the user has never seen the welcome card before.
+Three surfaces need to honour the closed window. Each piece is small.
 
-- Set a localStorage flag `welcome_bonus_shown:{userId}` once the card has been displayed.
-- On app mount, if the user is authenticated and the flag is missing, verify they actually received the signup bonus (query `balances.bonus_balance >= 20` or check that their account was created recently — within ~7 days). If so, show the modal and set the flag.
-- Also set a transient `pending_welcome_bonus = 1` localStorage key right after a successful signup form submission, so that the very first login after email verification reliably triggers it even if the balance query is slow.
+### 1. Spawner — stop creating new rounds during closed hours
 
-## New component
+File: `supabase/functions/crypto-round-spawner/index.ts`
 
-`src/components/WelcomeBonusModal.tsx` — built in the same visual language as `WinCelebrationModal.tsx` and `StreakMilestoneModal.tsx`:
+- Add a small helper `isAssetMarketOpen(asset)` that mirrors `marketHours.ts`:
+  - Crypto assets → always open.
+  - Commodity (`XAG`, `XAU`, `XPT`, `XPD`, `NG`, `COPPER`, `WTI`, `BRENT`) and forex (`EUR/USD`, etc.) → open Sun 17:00 ET → Fri 17:00 ET.
+- In the per-config loop (around line 292), if `!force && !isAssetMarketOpen(cfg.asset)`, `continue` (skip silently; no log spam, same pattern as the existing not-yet-ended skip).
+- Admin "Spawn Now" with `force=true` still bypasses, so ops can test.
 
-- Centered glass card, framer-motion spring entrance (scale + fade)
-- Large gift/sparkles icon in a glowing primary circle, animated pulse
-- Headline: "Congratulations!" 
-- Big "$20" amount with gradient text
-- Subtitle: "Welcome Bonus added to your balance"
-- Floating sparkle particles (reuse the star/particle pattern from `WinCelebrationModal`)
-- Primary CTA button "View Balance" → navigates to `/commissions` and closes
-- Secondary "Maybe later" text button to dismiss
-- Whole card is tappable (button wrapper) → navigates to `/commissions`
-- Calls `useConfetti().fireWinConfetti()` on mount for the celebration burst
-- Fires `hapticSuccess()` on open
+### 2. Home page — show "Market Closed" on commodity/forex Up & Down cards
 
-## Wiring
+File: `src/pages/Index.tsx` (around line 616, the `market.isCryptoRound` branch)
 
-- Add a `WelcomeBonusGate` mounted inside `App.tsx` (alongside other auth-gated overlays), or extend an existing top-level provider, that:
-  1. Reads `useAuth()` user.
-  2. On user change, checks `localStorage.getItem(\`welcome_bonus_shown:${user.id}\`)`.
-  3. If not shown, queries `balances` for the user; if `bonus_balance >= 20` and the row was created within the last 7 days (or `pending_welcome_bonus` flag is set), opens the modal.
-  4. On close/navigate, writes the flag and clears `pending_welcome_bonus`.
-- In `src/pages/Auth.tsx` signup success branch (line 237–240), add `localStorage.setItem("pending_welcome_bonus", "1")` before the toast/setMode.
+- Import `isMarketOpen` and `getAssetClass`.
+- For `isCryptoRound` markets where `getAssetClass(market.autoResolveAsset) !== "crypto"` and the market is closed, replace `<LiveCryptoRoundPercent />` with a small inline "Closed" pill (Moon icon + "Market Closed" text in muted/destructive tone). Crypto rounds render unchanged.
 
-## Files
+### 3. Up & Down market detail / trade interface
 
-- New: `src/components/WelcomeBonusModal.tsx`
-- New: `src/components/WelcomeBonusGate.tsx`
-- Edit: `src/App.tsx` — mount `<WelcomeBonusGate />` inside the authenticated layout tree
-- Edit: `src/pages/Auth.tsx` — set `pending_welcome_bonus` flag after successful signup
+The general `/quick-trade` page already uses `isMarketOpen` + `MarketClosedOverlay` + the disabled bet buttons in `QuickTradeBetControls`. Verify and (if missing) wire the same check into the per-market crypto-round trading view rendered from `/market/:id` for `isCryptoRound` markets, so silver rounds opened just before close don't accept new bets after the close boundary:
+
+- Locate the component that renders the bet buttons for an `isCryptoRound` market detail page (likely a `MarketDetail`/`CryptoRoundMarket` component — confirm during implementation).
+- Pass the asset symbol to `QuickTradeBetControls` (already supported via `asset` prop) so its existing `isMarketOpen(getAssetClass(asset))` check disables UP/DOWN buttons and shows the "Market Closed — Opens Sunday 5:00 PM ET" banner.
 
 ## Out of scope
 
-- No DB / backend / RPC changes. The $20 signup bonus is already credited by the existing `handle_new_user` trigger.
-- No changes to notification system or push.
+- No DB schema or RLS changes.
+- No new market_hours config table — single source of truth stays `src/lib/marketHours.ts` (frontend) and the mirrored helper in the spawner (backend).
+- No change to resolution logic — existing rounds spawned just before the close boundary still resolve normally against the last available price.
+
+## Files touched
+
+- `supabase/functions/crypto-round-spawner/index.ts` — add market-hours guard.
+- `src/pages/Index.tsx` — closed pill on commodity/forex Up & Down cards.
+- The crypto-round market detail trade component (path confirmed during implementation) — ensure `asset` is passed to `QuickTradeBetControls`.

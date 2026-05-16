@@ -128,6 +128,29 @@ const ASSET_IMAGES: Record<string, string> = {
   XAG: "https://dqtjuhqndncanfwgjwva.supabase.co/storage/v1/object/public/market-images/silver-updown.jpg",
 };
 
+// ─── Market hours (mirrors src/lib/marketHours.ts) ───────────────────────────
+// Commodities & forex: open Sun 17:00 ET → Fri 17:00 ET. Crypto: 24/7.
+const FOREX_ASSETS = new Set([
+  "EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "NZD/USD", "EUR/GBP",
+]);
+const COMMODITY_ASSETS = new Set([
+  "XAG", "XAU", "XPT", "XPD", "BRENT", "WTI", "NG", "COPPER",
+]);
+
+function isAssetMarketOpen(asset: string): boolean {
+  const a = asset.toUpperCase();
+  const isClosedSchedule = FOREX_ASSETS.has(a) || COMMODITY_ASSETS.has(a);
+  if (!isClosedSchedule) return true; // crypto = 24/7
+  const etStr = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+  const et = new Date(etStr);
+  const day = et.getDay(); // 0=Sun..6=Sat
+  const hour = et.getHours();
+  if (day === 6) return false;            // Saturday closed
+  if (day === 0) return hour >= 17;       // Sunday opens at 17:00 ET
+  if (day === 5) return hour < 17;        // Friday closes at 17:00 ET
+  return true;                            // Mon–Thu open
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -292,6 +315,12 @@ Deno.serve(async (req) => {
     for (const cfg of configs) {
       const asset = cfg.asset as string;
       const dur = cfg.duration_minutes as number;
+
+      // Skip commodity/forex spawns outside trading hours (Sun 17:00 → Fri 17:00 ET).
+      // Force=true (admin "Spawn Now") bypasses to allow ops testing.
+      if (!force && !isAssetMarketOpen(asset)) {
+        continue;
+      }
       // Crypto rounds always start at $0 liquidity — losers fund winners.
 
       // Latest round for this pair

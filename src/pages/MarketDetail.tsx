@@ -38,6 +38,9 @@ import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
+import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { getAssetClass } from "@/data/assetClasses";
+import { Moon } from "lucide-react";
 import CryptoRoundLiveCountdown from "@/components/quick-trade/CryptoRoundLiveCountdown";
 import ChartSkeleton from "@/components/ChartSkeleton";
 
@@ -494,6 +497,10 @@ const MarketDetail = () => {
     ? market.autoResolveDeadline
     : market?.endDate;
   const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || (effectiveEndDate && new Date(effectiveEndDate).getTime() < Date.now())));
+  // Crypto Up/Down rounds for commodities/forex are closed outside trading hours (Sun 5pm ET → Fri 5pm ET).
+  const roundAssetClass = market?.isCryptoRound && market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
+  const isRoundClosed = !!(market?.isCryptoRound && roundAssetClass !== "crypto" && !isMarketOpen(roundAssetClass));
+  const roundNextOpen = isRoundClosed ? getNextOpenTime(roundAssetClass) : "";
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
@@ -1050,6 +1057,11 @@ const MarketDetail = () => {
                     {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                     {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : (market?.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}
                   </div>
+                ) : isRoundClosed ? (
+                  <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 bg-muted text-muted-foreground border border-border">
+                    <span className="flex items-center gap-2"><Moon className="w-5 h-5" /> Market Closed</span>
+                    <span className="text-[11px] font-medium opacity-70">{roundNextOpen}</span>
+                  </div>
                 ) : (
                   <>
                     <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">{market?.isCryptoRound ? `Buy Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}</button>
@@ -1072,6 +1084,11 @@ const MarketDetail = () => {
                     {market?.status === "resolved" ? <CheckCircle2 className="w-5 h-5" /> : market?.status === "cancelled" ? <XCircle className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
                     {market?.status === "resolved" ? "Market Ended — Resolution Completed" : market?.status === "cancelled" ? "Market Cancelled" : (market?.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}
                   </div>
+            ) : isRoundClosed ? (
+              <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 bg-muted text-muted-foreground border border-border">
+                <span className="flex items-center gap-2"><Moon className="w-5 h-5" /> Market Closed</span>
+                <span className="text-[11px] font-medium opacity-70">{roundNextOpen}</span>
+              </div>
             ) : (
               <>
                 <button onClick={() => { setBetSide("yes"); setBetOpen(true); }} className="flex-1 min-w-0 btn-yes py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base tracking-wide transition-all active:scale-95">{market?.isCryptoRound ? `Buy Up ${yesPercent}¢` : `Buy Yes ${yesPercent}¢`}</button>

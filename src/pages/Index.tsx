@@ -18,7 +18,9 @@ import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import LiveCryptoRoundPercent from "@/components/LiveCryptoRoundPercent";
-import { Gem, ArrowLeftRight } from "lucide-react";
+import { Gem, ArrowLeftRight, Moon } from "lucide-react";
+import { isMarketOpen } from "@/lib/marketHours";
+import { getAssetClass } from "@/data/assetClasses";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 import BoostMarketModal from "@/components/BoostMarketModal";
@@ -613,14 +615,25 @@ const Index = () => {
                         </>
                       )}
                     </div>
-                    {market.isCryptoRound ? (
-                      <LiveCryptoRoundPercent
-                        asset={market.autoResolveAsset}
-                        openPrice={market.autoResolveTargetPrice}
-                        fallbackPercent={displayPercent}
-                        className="text-sm font-bold neon-yes shrink-0"
-                      />
-                    ) : (
+                    {market.isCryptoRound ? (() => {
+                      const aClass = market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
+                      const closed = aClass !== "crypto" && !isMarketOpen(aClass);
+                      if (closed) {
+                        return (
+                          <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-muted text-muted-foreground border border-border">
+                            <Moon className="w-3 h-3" /> Closed
+                          </span>
+                        );
+                      }
+                      return (
+                        <LiveCryptoRoundPercent
+                          asset={market.autoResolveAsset}
+                          openPrice={market.autoResolveTargetPrice}
+                          fallbackPercent={displayPercent}
+                          className="text-sm font-bold neon-yes shrink-0"
+                        />
+                      );
+                    })() : (
                       <span className="text-sm font-bold neon-yes shrink-0">{displayPercent}%</span>
                     )}
                   </div>
