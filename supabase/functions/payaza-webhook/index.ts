@@ -312,14 +312,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── STEP 1: Credit user balance ATOMICALLY ──
+    // ── STEP 1: Credit user balance ATOMICALLY (audited via balanceLogger) ──
     const depositAmount = Number(tx.amount);
-    const { error: balanceError } = await adminClient.rpc("adjust_balance", {
-      _user_id: tx.user_id,
-      _delta: depositAmount,
-      _bonus_delta: 0,
-      _insurance_delta: 0,
+    const creditResult = await adjustBalanceLogged(adminClient, {
+      userId: tx.user_id,
+      delta: depositAmount,
+      source: "payaza-webhook",
+      reason: `Payaza deposit credit ref=${reference}`,
+      correlationId: `payaza:${reference}`,
     });
+    const balanceError = creditResult.success ? null : { message: creditResult.error };
 
     if (balanceError) {
       console.error("CRITICAL: Failed to credit balance for Payaza deposit:", balanceError);
