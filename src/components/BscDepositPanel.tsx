@@ -65,7 +65,7 @@ export default function BscDepositPanel() {
     },
   });
 
-  // 3. Realtime subscription for instant updates
+  // 3. Realtime subscription for instant updates + status-change toasts
   useEffect(() => {
     if (!user) return;
     const ch = supabase
@@ -73,8 +73,32 @@ export default function BscDepositPanel() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "bsc_deposit_events", filter: `user_id=eq.${user.id}` },
-        () => {
+        (payload) => {
           qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user.id] });
+
+          // Only fire toast on status transitions (UPDATE) — skip initial INSERT (still pending)
+          if (payload.eventType === "UPDATE") {
+            const oldStatus = (payload.old as any)?.status;
+            const newStatus = (payload.new as any)?.status;
+            const amount = Number((payload.new as any)?.amount_usd || 0);
+            const token = (payload.new as any)?.token || "";
+            const txHash = (payload.new as any)?.tx_hash || "";
+            const short = txHash ? `${txHash.slice(0, 6)}…${txHash.slice(-4)}` : "";
+
+            if (oldStatus !== newStatus) {
+              if (newStatus === "credited") {
+                toast.success(`Deposit confirmed: +$${amount.toFixed(2)} ${token}`, {
+                  description: short ? `Tx ${short} credited to your balance.` : undefined,
+                  duration: 8000,
+                });
+              } else if (newStatus === "orphaned") {
+                toast.error(`Deposit failed: $${amount.toFixed(2)} ${token}`, {
+                  description: short ? `Tx ${short} was orphaned. Contact support if funds were sent.` : undefined,
+                  duration: 10000,
+                });
+              }
+            }
+          }
         },
       )
       .subscribe();
