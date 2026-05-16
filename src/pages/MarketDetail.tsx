@@ -494,6 +494,10 @@ const MarketDetail = () => {
     ? market.autoResolveDeadline
     : market?.endDate;
   const isEnded = !!(market && (market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || (effectiveEndDate && new Date(effectiveEndDate).getTime() < Date.now())));
+  // Crypto Up/Down rounds for commodities/forex are closed outside trading hours (Sun 5pm ET → Fri 5pm ET).
+  const roundAssetClass = market?.isCryptoRound && market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
+  const isRoundClosed = !!(market?.isCryptoRound && roundAssetClass !== "crypto" && !isMarketOpen(roundAssetClass));
+  const roundNextOpen = isRoundClosed ? getNextOpenTime(roundAssetClass) : "";
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
