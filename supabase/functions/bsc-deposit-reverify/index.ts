@@ -1,10 +1,14 @@
 // Automated re-verification job for BSC deposits in manual_review.
-// - Picks the N stalest manual_review events (NULL last_reverified_at first)
+// - Picks the N stalest manual_review events whose backoff window has elapsed
 // - Re-fetches eth_getTransactionReceipt and matches log_index/contract/recipient/amount_wei
 // - Records last_reverify_status + last_reverify_details on the event
-// - Writes an audit_logs entry (actor_id = NULL = system)
-// - Auto-rejects events whose receipt has gone missing/mutated after MAX_AUTO_REJECT_STRIKES
-//   consecutive mismatch checks (chain reorg, dropped tx, etc.)
+// - Tracks rpc_error / tx_missing / tx_failed counters SEPARATELY
+// - On rpc_error: schedules next_reverify_at with exponential backoff and never
+//   changes the final status of the deposit
+// - On tx_missing / tx_failed: counters are bumped for visibility, but final
+//   status stays manual_review (human decides) — only `mismatch` (clear forgery
+//   evidence) auto-rejects after MAX_AUTO_REJECT_STRIKES consecutive hits
+// - Writes an audit_logs entry (actor_id = NULL = system) for every check
 //
 // Designed to be called by pg_cron every few minutes. Idempotent and side-effect-light.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -17,7 +21,9 @@ const corsHeaders = {
 
 const CONFIRMATIONS_REQUIRED = 12;
 const BATCH_SIZE = 25;
-const MAX_AUTO_REJECT_STRIKES = 3; // consecutive failed re-verifications before auto-reject
+const MAX_AUTO_REJECT_STRIKES = 3; // consecutive `mismatch` checks before auto-reject
+// Exponential backoff for transient RPC errors (minutes). Capped at last value.
+const RPC_BACKOFF_MINUTES = [1, 5, 15, 30, 60];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -42,7 +48,13 @@ type ReverifyOutcome =
   | "mismatch"          // receipt exists but log doesn't match
   | "tx_failed"         // receipt.status != 0x1
   | "tx_missing"        // receipt is null (dropped/reorged)
-  | "rpc_error";        // RPC call failed — inconclusive, not a strike
+  | "rpc_error";        // RPC call failed — inconclusive, retried with backoff
+
+function nextBackoffIso(rpcErrorCount: number): string {
+  const idx = Math.min(rpcErrorCount, RPC_BACKOFF_MINUTES.length - 1);
+  const minutes = RPC_BACKOFF_MINUTES[idx];
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -58,15 +70,18 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Pull oldest-checked manual_review events first (NULL last_reverified_at sorts first)
+    // Pull manual_review events that are due (next_reverify_at NULL OR <= now),
+    // oldest-checked first (NULL last_reverified_at sorts first).
+    const nowIso = new Date().toISOString();
     const { data: events, error: selErr } = await admin
       .from("bsc_deposit_events")
       .select("*")
       .eq("status", "manual_review")
+      .or(`next_reverify_at.is.null,next_reverify_at.lte.${nowIso}`)
       .order("last_reverified_at", { ascending: true, nullsFirst: true })
       .limit(BATCH_SIZE);
     if (selErr) return json({ error: selErr.message }, 500);
-    if (!events?.length) return json({ ok: true, checked: 0, summary: "no_pending_review" });
+    if (!events?.length) return json({ ok: true, checked: 0, summary: "no_due_review" });
 
     // Threshold context (for audit trail)
     const { data: thrRow } = await admin
@@ -127,13 +142,27 @@ Deno.serve(async (req) => {
 
       counts[outcome]++;
 
-      // Strike count: ONLY `mismatch` (clear evidence of forgery) counts toward
-      // auto-rejection. `tx_missing` / `tx_failed` can be caused by extended RPC
-      // outages returning null for valid txs — those stay flagged for human review.
-      // `rpc_error` is inconclusive; `match` resets the counter.
-      const prev = Number(ev.reverify_count ?? 0);
-      const isNegative = outcome === "mismatch";
-      const newCount = outcome === "match" ? 0 : (isNegative ? prev + 1 : prev);
+      // ── Counter logic ─────────────────────────────────────────────────────
+      // - `mismatch` is the ONLY outcome that increments the auto-reject strike
+      //   counter (reverify_count). Three in a row → system_reject_bsc_deposit.
+      // - `tx_missing`, `tx_failed`, `rpc_error` each bump their own dedicated
+      //   counter for observability, but NEVER auto-change the final status.
+      // - `match` resets the strike counter (others stay sticky as evidence).
+      // - `rpc_error` also schedules a backoff window via next_reverify_at so
+      //   we stop hammering a flaky upstream.
+      const prevStrike = Number(ev.reverify_count ?? 0);
+      const prevRpcErr = Number(ev.rpc_error_count ?? 0);
+      const prevMissing = Number(ev.tx_missing_count ?? 0);
+      const prevFailed = Number(ev.tx_failed_count ?? 0);
+
+      const newStrike = outcome === "match" ? 0 : (outcome === "mismatch" ? prevStrike + 1 : prevStrike);
+      const newRpcErr = outcome === "rpc_error" ? prevRpcErr + 1 : (outcome === "match" ? 0 : prevRpcErr);
+      const newMissing = outcome === "tx_missing" ? prevMissing + 1 : prevMissing;
+      const newFailed = outcome === "tx_failed" ? prevFailed + 1 : prevFailed;
+
+      // Backoff: only RPC errors get a future next_reverify_at. Everything else
+      // clears the backoff so the next cron tick re-examines it normally.
+      const nextReverifyAt = outcome === "rpc_error" ? nextBackoffIso(newRpcErr) : null;
 
       const details = {
         outcome,
@@ -152,18 +181,30 @@ Deno.serve(async (req) => {
         observed,
         receipt_status: receiptStatus,
         rpc_error: rpcError,
-        strike_count: newCount,
+        counters: {
+          mismatch_strike: newStrike,
+          rpc_error: newRpcErr,
+          tx_missing: newMissing,
+          tx_failed: newFailed,
+        },
+        next_reverify_at: nextReverifyAt,
         checked_at: new Date().toISOString(),
       };
 
-      // Persist tracking on the event row
+      // Persist tracking on the event row. Final `status` is intentionally NOT
+      // touched here for tx_missing / tx_failed / rpc_error — only the
+      // auto-reject path below (mismatch × 3) ever changes status.
       await admin
         .from("bsc_deposit_events")
         .update({
           last_reverified_at: new Date().toISOString(),
           last_reverify_status: outcome,
           last_reverify_details: details,
-          reverify_count: newCount,
+          reverify_count: newStrike,
+          rpc_error_count: newRpcErr,
+          tx_missing_count: newMissing,
+          tx_failed_count: newFailed,
+          next_reverify_at: nextReverifyAt,
         })
         .eq("id", ev.id);
 
@@ -181,10 +222,9 @@ Deno.serve(async (req) => {
         },
       });
 
-      // Auto-reject if we've seen a real negative outcome MAX_AUTO_REJECT_STRIKES times in a row.
-      // This catches dropped/reorged/mutated receipts without ever touching balances.
-      if (isNegative && newCount >= MAX_AUTO_REJECT_STRIKES) {
-        const reason = `Auto-rejected by reverify job: ${outcome} confirmed across ${newCount} consecutive checks.`;
+      // Auto-reject ONLY on sustained `mismatch` — never on tx_missing/tx_failed/rpc_error.
+      if (outcome === "mismatch" && newStrike >= MAX_AUTO_REJECT_STRIKES) {
+        const reason = `Auto-rejected by reverify job: mismatch confirmed across ${newStrike} consecutive checks.`;
         const { error: rejErr } = await admin
           .rpc("system_reject_bsc_deposit", { _event_id: ev.id, _reason: reason });
         if (!rejErr) {
