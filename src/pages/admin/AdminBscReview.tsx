@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -13,6 +15,8 @@ import {
   XCircle,
   ExternalLink,
   Copy,
+  Settings2,
+  Save,
 } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -23,7 +27,45 @@ const statusColors: Record<string, string> = {
 
 const AdminBscReview = () => {
   const qc = useQueryClient();
+  const { isSuperAdmin } = useAuth();
   const [filter, setFilter] = useState<"manual_review" | "rejected" | "credited">("manual_review");
+  const [thresholdInput, setThresholdInput] = useState<string>("");
+
+  const { data: threshold } = useQuery({
+    queryKey: ["app-setting", "bsc_max_auto_credit_usd"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("app_settings" as any)
+        .select("value, updated_at")
+        .eq("key", "bsc_max_auto_credit_usd")
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  useEffect(() => {
+    if (threshold?.value != null) setThresholdInput(String(threshold.value));
+  }, [threshold?.value]);
+
+  const saveThreshold = useMutation({
+    mutationFn: async (newValue: number) => {
+      const { error } = await supabase
+        .from("app_settings" as any)
+        .update({
+          value: newValue as any,
+          updated_at: new Date().toISOString(),
+          updated_by: (await supabase.auth.getUser()).data.user?.id,
+        })
+        .eq("key", "bsc_max_auto_credit_usd");
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Auto-credit threshold updated. Takes effect on next poll (~30s).");
+      qc.invalidateQueries({ queryKey: ["app-setting", "bsc_max_auto_credit_usd"] });
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to save"),
+  });
 
   const { data: events, isLoading, refetch } = useQuery({
     queryKey: ["bsc-review-events", filter],
