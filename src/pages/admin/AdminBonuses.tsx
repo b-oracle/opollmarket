@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Gift, DollarSign, Users, Download, Search, UserPlus, Percent } from "lucide-react";
+import { Loader2, Gift, DollarSign, Users, Download, Search, UserPlus, Percent, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,13 @@ const PAGE_SIZE = 25;
 const fmtUsd = (n: number) =>
   `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+interface DuplicateRow {
+  user_id: string;
+  count: number;
+  total_amount: number;
+  user_name?: string;
+}
+
 const AdminBonuses = () => {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<BonusRow[]>([]);
@@ -48,6 +55,8 @@ const AdminBonuses = () => {
     new Set(["registration", "referral_signup", "referral_commission"])
   );
   const [search, setSearch] = useState("");
+  const [dupes, setDupes] = useState<DuplicateRow[] | null>(null);
+  const [dupesLoading, setDupesLoading] = useState(true);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -164,6 +173,56 @@ const AdminBonuses = () => {
     run();
   }, [range]);
 
+  // Integrity check: scan ALL registration_bonus rows (independent of range)
+  // and flag users with more than one — the unique partial index should keep this at 0.
+  const scanDuplicates = async () => {
+    setDupesLoading(true);
+    let all: any[] = [];
+    let p = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("transactions")
+        .select("user_id, amount, bonus_amount")
+        .eq("type", "registration_bonus")
+        .range(p * 1000, (p + 1) * 1000 - 1);
+      if (error || !data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < 1000) break;
+      p++;
+    }
+    const agg = new Map<string, { count: number; total: number }>();
+    all.forEach(r => {
+      const v = agg.get(r.user_id) ?? { count: 0, total: 0 };
+      v.count += 1;
+      v.total += Number(r.bonus_amount ?? r.amount ?? 0);
+      agg.set(r.user_id, v);
+    });
+    const dupeIds = Array.from(agg.entries()).filter(([, v]) => v.count > 1);
+    const nameMap = new Map<string, string>();
+    if (dupeIds.length > 0) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name, email")
+        .in("id", dupeIds.map(([id]) => id));
+      data?.forEach((p: any) =>
+        nameMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8))
+      );
+    }
+    setDupes(
+      dupeIds
+        .map(([user_id, v]) => ({
+          user_id,
+          count: v.count,
+          total_amount: v.total,
+          user_name: nameMap.get(user_id),
+        }))
+        .sort((a, b) => b.count - a.count)
+    );
+    setDupesLoading(false);
+  };
+
+  useEffect(() => { scanDuplicates(); }, []);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter(r => {
@@ -259,7 +318,66 @@ const AdminBonuses = () => {
         <StatCard icon={Percent}    label="Referral commission" value={fmtUsd(totals.referral_commission)} />
       </div>
 
-      {/* Filter chips */}
+      {/* Integrity check: unique registration_bonus per user */}
+      <div className={`rounded-lg border p-4 ${
+        dupesLoading
+          ? "bg-card"
+          : (dupes?.length ?? 0) === 0
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-red-500/40 bg-red-500/5"
+      }`}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            {dupesLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (dupes?.length ?? 0) === 0 ? (
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <ShieldAlert className="h-4 w-4 text-red-600" />
+            )}
+            <div className="text-sm font-medium">
+              Integrity: unique <code className="text-xs">registration_bonus</code> per user
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {dupesLoading
+                ? "Scanning…"
+                : (dupes?.length ?? 0) === 0
+                  ? "0 duplicates — index enforced ✓"
+                  : `${dupes?.length} user(s) with duplicate rows`}
+            </span>
+            <Button variant="outline" size="sm" onClick={scanDuplicates} disabled={dupesLoading}>
+              Rescan
+            </Button>
+          </div>
+        </div>
+        {!dupesLoading && (dupes?.length ?? 0) > 0 && (
+          <div className="mt-3 rounded border bg-background overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50 text-muted-foreground uppercase">
+                <tr>
+                  <th className="text-left p-2">User</th>
+                  <th className="text-left p-2 font-mono">ID</th>
+                  <th className="text-right p-2"># rows</th>
+                  <th className="text-right p-2">Total credited</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dupes!.map(d => (
+                  <tr key={d.user_id} className="border-t">
+                    <td className="p-2">{d.user_name ?? "—"}</td>
+                    <td className="p-2 font-mono text-muted-foreground">{d.user_id.slice(0, 8)}</td>
+                    <td className="p-2 text-right font-semibold text-red-600">{d.count}</td>
+                    <td className="p-2 text-right">{fmtUsd(d.total_amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         {(Object.keys(KIND_META) as BonusKind[]).map(k => {
           const m = KIND_META[k];
