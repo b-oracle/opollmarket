@@ -202,7 +202,18 @@ export default function BscDepositPanel() {
       <div>
         <div className="flex items-center justify-between mb-2 px-1">
           <p className="text-xs font-semibold text-muted-foreground">Deposit history</p>
-          <span className="text-[10px] text-muted-foreground">{events.length} total</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground">{events.length} total</span>
+            <button
+              onClick={rescan}
+              disabled={rescanning}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              aria-label="Rescan pending deposits"
+            >
+              <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
+              {rescanning ? "Rescanning…" : "Rescan"}
+            </button>
+          </div>
         </div>
 
         {/* Search by tx hash */}
