@@ -168,6 +168,9 @@ const AdminBscReview = () => {
         </Button>
       </div>
 
+      {/* RPC health + failover dashboard */}
+      <RpcHealthPanel />
+
       {/* Auto-credit threshold setting (super admin only) */}
       {isSuperAdmin && (
         <div className="border border-border bg-card rounded-xl p-4 mb-4">
