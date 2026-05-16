@@ -8,10 +8,11 @@
 //
 // Designed to be called by pg_cron every few minutes. Idempotent and side-effect-light.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { verifyCronSecret } from "../_shared/cronAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const CONFIRMATIONS_REQUIRED = 12;
@@ -45,6 +46,9 @@ type ReverifyOutcome =
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const auth = verifyCronSecret(req, { functionName: "bsc-deposit-reverify", corsHeaders });
+  if (!auth.ok) return auth.response!;
 
   try {
     const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
@@ -123,11 +127,13 @@ Deno.serve(async (req) => {
 
       counts[outcome]++;
 
-      // Strike count: only "real" negative outcomes count toward auto-rejection.
-      // rpc_error is inconclusive; match resets the counter.
+      // Strike count: ONLY `mismatch` (clear evidence of forgery) counts toward
+      // auto-rejection. `tx_missing` / `tx_failed` can be caused by extended RPC
+      // outages returning null for valid txs — those stay flagged for human review.
+      // `rpc_error` is inconclusive; `match` resets the counter.
       const prev = Number(ev.reverify_count ?? 0);
-      const isNegative = outcome === "mismatch" || outcome === "tx_failed" || outcome === "tx_missing";
-      const newCount = outcome === "match" ? 0 : (outcome === "rpc_error" ? prev : prev + 1);
+      const isNegative = outcome === "mismatch";
+      const newCount = outcome === "match" ? 0 : (isNegative ? prev + 1 : prev);
 
       const details = {
         outcome,
