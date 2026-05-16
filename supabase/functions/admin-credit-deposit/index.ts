@@ -52,9 +52,22 @@ Deno.serve(async (req) => {
     const targetUserId: string | undefined = body.user_id;
     const amount: number | undefined = body.amount;
     const description: string | undefined = body.description;
+    const idempotencyKey: string | undefined =
+      body.idempotency_key || req.headers.get("Idempotency-Key") || undefined;
 
     if (!targetUserId || typeof targetUserId !== "string") {
       return json({ error: "user_id is required" }, 400);
+    }
+    if (
+      !idempotencyKey ||
+      typeof idempotencyKey !== "string" ||
+      idempotencyKey.length < 8 ||
+      idempotencyKey.length > 200
+    ) {
+      return json({
+        error:
+          "idempotency_key is required (8-200 chars); supply via body.idempotency_key or Idempotency-Key header",
+      }, 400);
     }
     if (!amount || typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
       return json({ error: "amount must be a positive number" }, 400);
