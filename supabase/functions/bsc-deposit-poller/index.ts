@@ -16,7 +16,8 @@ const TOKENS: Record<string, { symbol: string; decimals: number }> = {
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const CONFIRMATIONS_REQUIRED = 12;
 const MAX_BLOCKS_PER_RUN = 500;   // ~25 min of BSC per tick
-const CHUNK_BLOCKS = 100;         // safe when filtering by recipient topic
+const CHUNK_BLOCKS = 25;          // safer default — public BSC RPCs cap eth_getLogs aggressively
+const MIN_CHUNK_BLOCKS = 1;       // floor when halving on "limit exceeded"
 const MIN_USD = 1;                // ignore dust
 
 async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
@@ -26,8 +27,47 @@ async function rpc(url: string, method: string, params: unknown[]): Promise<any>
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
   });
   const j = await r.json();
-  if (j.error) throw new Error(`${method} rpc error: ${JSON.stringify(j.error)}`);
+  if (j.error) {
+    const err: any = new Error(`${method} rpc error: ${JSON.stringify(j.error)}`);
+    err.code = j.error.code;
+    err.rpcMessage = j.error.message;
+    throw err;
+  }
   return j.result;
+}
+
+// eth_getLogs with adaptive halving on "limit exceeded" / response-size errors
+async function getLogsAdaptive(
+  rpcUrl: string,
+  fromBlock: number,
+  toBlock: number,
+  address: string[],
+  topics: any[],
+): Promise<any[]> {
+  const isLimit = (e: any) => {
+    if (!e) return false;
+    if (e.code === -32005 || e.code === -32602 || e.code === -32600) return true;
+    const m = String(e.rpcMessage || e.message || "").toLowerCase();
+    return m.includes("limit exceeded") || m.includes("response size") ||
+      m.includes("too many") || m.includes("range");
+  };
+  try {
+    return await rpc(rpcUrl, "eth_getLogs", [{
+      fromBlock: "0x" + fromBlock.toString(16),
+      toBlock: "0x" + toBlock.toString(16),
+      address,
+      topics,
+    }]);
+  } catch (e: any) {
+    const span = toBlock - fromBlock + 1;
+    if (isLimit(e) && span > MIN_CHUNK_BLOCKS) {
+      const mid = fromBlock + Math.floor(span / 2) - 1;
+      const left = await getLogsAdaptive(rpcUrl, fromBlock, mid, address, topics);
+      const right = await getLogsAdaptive(rpcUrl, mid + 1, toBlock, address, topics);
+      return left.concat(right);
+    }
+    throw e;
+  }
 }
 
 function hexToBigInt(h: string): bigint { return BigInt(h); }
@@ -96,12 +136,13 @@ Deno.serve(async (req) => {
         const end = Math.min(to, start + CHUNK_BLOCKS - 1);
         for (let ri = 0; ri < recipientTopics.length; ri += RECIP_CHUNK) {
           const recips = recipientTopics.slice(ri, ri + RECIP_CHUNK);
-          const chunk: any[] = await rpc(RPC_URL, "eth_getLogs", [{
-            fromBlock: "0x" + start.toString(16),
-            toBlock: "0x" + end.toString(16),
-            address: Object.keys(TOKENS),
-            topics: [TRANSFER_TOPIC, null, recips],
-          }]);
+          const chunk: any[] = await getLogsAdaptive(
+            RPC_URL,
+            start,
+            end,
+            Object.keys(TOKENS),
+            [TRANSFER_TOPIC, null, recips],
+          );
           logs.push(...chunk);
         }
       }
