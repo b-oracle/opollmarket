@@ -142,6 +142,65 @@ const AdminBscReview = () => {
         </Button>
       </div>
 
+      {/* Auto-credit threshold setting (super admin only) */}
+      {isSuperAdmin && (
+        <div className="border border-border bg-card rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Settings2 className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold">Auto-credit threshold</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            BSC deposits at or below this USD amount auto-credit after 12 confirmations.
+            Larger deposits land in this review queue. Changes take effect on the next poll (~30 seconds).
+          </p>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[180px]">
+              <label className="text-[11px] text-muted-foreground font-medium block mb-1">
+                Max auto-credit (USD)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <Input
+                  type="number"
+                  step="1"
+                  min="1"
+                  className="pl-7 font-mono"
+                  value={thresholdInput}
+                  onChange={(e) => setThresholdInput(e.target.value)}
+                  placeholder="5000"
+                />
+              </div>
+            </div>
+            <Button
+              size="sm"
+              disabled={
+                saveThreshold.isPending ||
+                !thresholdInput ||
+                Number(thresholdInput) <= 0 ||
+                Number(thresholdInput) === Number(threshold?.value)
+              }
+              onClick={() => {
+                const v = Number(thresholdInput);
+                if (!Number.isFinite(v) || v <= 0) {
+                  toast.error("Enter a positive number");
+                  return;
+                }
+                if (!confirm(`Set BSC auto-credit limit to $${v.toLocaleString()}?`)) return;
+                saveThreshold.mutate(v);
+              }}
+            >
+              {saveThreshold.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+              Save
+            </Button>
+            {threshold?.updated_at && (
+              <div className="text-[11px] text-muted-foreground">
+                Last updated {format(new Date(threshold.updated_at), "MMM d, HH:mm")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-1.5 mb-4">
         {(["manual_review", "rejected", "credited"] as const).map((f) => (
           <Button
