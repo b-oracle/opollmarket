@@ -214,10 +214,10 @@ Deno.serve(async (req) => {
     // Verify the provider-reported NGN amount matches before crediting USD.
     const { data: txMeta } = await adminClient
       .from("transactions")
-      .select("payment_metadata")
+      .select("expected_amount_ngn")
       .eq("id", tx.id)
       .maybeSingle();
-    const expectedNgn = Number((txMeta?.payment_metadata as any)?.amount_ngn);
+    const expectedNgn = Number((txMeta as any)?.expected_amount_ngn);
     const reportedNgn = reportedAmount != null ? Number(reportedAmount) : NaN;
 
     // Load admin-configurable deviation thresholds (same table nowpayments uses).
