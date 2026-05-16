@@ -63,7 +63,7 @@ const Index = () => {
   const { data: allMarkets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
   const { isFeatureEnabled } = useFeatureToggles();
-  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
+  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live" | "updown">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,6 +150,8 @@ const Index = () => {
       filtered = markets.filter((m) => m.createdAt >= oneDayAgo);
     } else if (filter === "live") {
       filtered = markets.filter((m) => m.autoResolve && ((m.sportType && m.sportMatchId) || m.autoResolveAsset || (m.twitterResourceId && m.twitterMetricType)));
+    } else if (filter === "updown") {
+      filtered = markets.filter((m) => m.isCryptoRound);
     }
     if (categoryFilter !== "All") {
       filtered = filtered.filter((m) => m.category === categoryFilter);
@@ -435,6 +437,7 @@ const Index = () => {
           {([
             { key: "all" as const, label: "All" },
             { key: "live" as const, label: "🔴 Live", count: liveCount },
+            { key: "updown" as const, label: "📈 Up & Down" },
             { key: "new" as const, label: "New", icon: true },
             { key: "boosted" as const, label: "⚡ Boosted" },
             { key: "trending" as const, label: "🔥 Trending" },

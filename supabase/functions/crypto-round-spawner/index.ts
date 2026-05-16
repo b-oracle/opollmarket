@@ -20,8 +20,52 @@ const BINANCE: Record<string, string> = {
   SOL: "SOLUSDT", XRP: "XRPUSDT",
 };
 
+// Twelve Data commodity symbol mapping (mirrors resolve-quick-round)
+const TWELVE_DATA_COMMODITY: Record<string, string> = {
+  XAG: "XAG/USD", XAU: "XAU/USD", XPT: "XPT/USD", XPD: "XPD/USD",
+};
+const METALS_DEV: Record<string, string> = {
+  XAG: "silver", XAU: "gold", XPT: "platinum", XPD: "palladium",
+};
+
+async function fetchCommodityPrice(asset: string): Promise<number | null> {
+  const a = asset.toUpperCase();
+  // Twelve Data primary
+  try {
+    const apiKey = Deno.env.get("TWELVE_DATA_API_KEY");
+    const sym = TWELVE_DATA_COMMODITY[a];
+    if (apiKey && sym) {
+      const r = await fetch(`https://api.twelvedata.com/price?symbol=${sym}&apikey=${apiKey}`);
+      if (r.ok) {
+        const d = await r.json();
+        if (!d.code && d.status !== "error") {
+          const p = parseFloat(d.price);
+          if (!isNaN(p)) return p;
+        }
+      }
+    }
+  } catch (_) { /* fall through */ }
+  // metals.dev fallback
+  try {
+    const metal = METALS_DEV[a];
+    if (metal) {
+      const r = await fetch(`https://api.metals.dev/v1/latest?api_key=demo&currency=USD&unit=toz`);
+      if (r.ok) {
+        const d = await r.json();
+        const p = d?.metals?.[metal];
+        if (typeof p === "number") return p;
+      }
+    }
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
 async function fetchPrice(asset: string): Promise<number | null> {
   const a = asset.toUpperCase();
+  // Commodity branch
+  if (TWELVE_DATA_COMMODITY[a]) {
+    return fetchCommodityPrice(a);
+  }
   // Binance first (faster, free, no key)
   try {
     const sym = BINANCE[a];
@@ -51,6 +95,7 @@ async function fetchPrice(asset: string): Promise<number | null> {
 // ─── Title formatting ────────────────────────────────────────────────────────
 const ASSET_NAME: Record<string, string> = {
   BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", BNB: "BNB", XRP: "XRP",
+  XAG: "Silver", XAU: "Gold", XPT: "Platinum", XPD: "Palladium",
 };
 
 function durationLabel(min: number): string {
@@ -66,16 +111,21 @@ function buildTitle(asset: string, durationMin: number): string {
 
 function buildDescription(asset: string, durationMin: number): string {
   const name = ASSET_NAME[asset] ?? asset;
-  return `This market resolves to "Yes" if ${name} (${asset}/USD) closes higher than or equal to its opening price after ${durationLabel(durationMin)}. Otherwise it resolves to "No". Resolution source: Binance spot price with CoinGecko fallback.`;
+  const isCommodity = !!TWELVE_DATA_COMMODITY[asset];
+  const source = isCommodity
+    ? "Twelve Data spot price with metals.dev fallback"
+    : "Binance spot price with CoinGecko fallback";
+  return `This market resolves to "Yes" if ${name} (${asset}/USD) closes higher than or equal to its opening price after ${durationLabel(durationMin)}. Otherwise it resolves to "No". Resolution source: ${source}.`;
 }
 
-// ─── Asset image URLs (use CoinGecko CDN) ────────────────────────────────────
+// ─── Asset image URLs ────────────────────────────────────────────────────────
 const ASSET_IMAGES: Record<string, string> = {
   BTC: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
   ETH: "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
   BNB: "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png",
   SOL: "https://assets.coingecko.com/coins/images/4128/large/solana.png",
   XRP: "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png",
+  XAG: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Silver_bullion_2_-_5000_grams.jpg/640px-Silver_bullion_2_-_5000_grams.jpg",
 };
 
 Deno.serve(async (req) => {
