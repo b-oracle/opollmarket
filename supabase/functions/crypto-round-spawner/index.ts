@@ -125,7 +125,7 @@ const ASSET_IMAGES: Record<string, string> = {
   BNB: "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png",
   SOL: "https://assets.coingecko.com/coins/images/4128/large/solana.png",
   XRP: "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png",
-  XAG: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Silver_bullion_2_-_5000_grams.jpg/640px-Silver_bullion_2_-_5000_grams.jpg",
+  XAG: "https://dqtjuhqndncanfwgjwva.supabase.co/storage/v1/object/public/market-images/silver-updown.jpg",
 };
 
 Deno.serve(async (req) => {
