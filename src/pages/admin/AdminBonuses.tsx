@@ -318,7 +318,66 @@ const AdminBonuses = () => {
         <StatCard icon={Percent}    label="Referral commission" value={fmtUsd(totals.referral_commission)} />
       </div>
 
-      {/* Filter chips */}
+      {/* Integrity check: unique registration_bonus per user */}
+      <div className={`rounded-lg border p-4 ${
+        dupesLoading
+          ? "bg-card"
+          : (dupes?.length ?? 0) === 0
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-red-500/40 bg-red-500/5"
+      }`}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            {dupesLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : (dupes?.length ?? 0) === 0 ? (
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            ) : (
+              <ShieldAlert className="h-4 w-4 text-red-600" />
+            )}
+            <div className="text-sm font-medium">
+              Integrity: unique <code className="text-xs">registration_bonus</code> per user
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {dupesLoading
+                ? "Scanning…"
+                : (dupes?.length ?? 0) === 0
+                  ? "0 duplicates — index enforced ✓"
+                  : `${dupes?.length} user(s) with duplicate rows`}
+            </span>
+            <Button variant="outline" size="sm" onClick={scanDuplicates} disabled={dupesLoading}>
+              Rescan
+            </Button>
+          </div>
+        </div>
+        {!dupesLoading && (dupes?.length ?? 0) > 0 && (
+          <div className="mt-3 rounded border bg-background overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/50 text-muted-foreground uppercase">
+                <tr>
+                  <th className="text-left p-2">User</th>
+                  <th className="text-left p-2 font-mono">ID</th>
+                  <th className="text-right p-2"># rows</th>
+                  <th className="text-right p-2">Total credited</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dupes!.map(d => (
+                  <tr key={d.user_id} className="border-t">
+                    <td className="p-2">{d.user_name ?? "—"}</td>
+                    <td className="p-2 font-mono text-muted-foreground">{d.user_id.slice(0, 8)}</td>
+                    <td className="p-2 text-right font-semibold text-red-600">{d.count}</td>
+                    <td className="p-2 text-right">{fmtUsd(d.total_amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-wrap items-center gap-2">
         {(Object.keys(KIND_META) as BonusKind[]).map(k => {
           const m = KIND_META[k];
