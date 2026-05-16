@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Gift, DollarSign, Users, Download, Search, UserPlus, Percent } from "lucide-react";
+import { Loader2, Gift, DollarSign, Users, Download, Search, UserPlus, Percent, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
