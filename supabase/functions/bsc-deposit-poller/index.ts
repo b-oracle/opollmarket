@@ -89,8 +89,7 @@ Deno.serve(async (req) => {
   if (!auth.ok) return auth.response!;
 
   try {
-    const RPC_URL = Deno.env.get("BSC_RPC_URL");
-    if (!RPC_URL) throw new Error("BSC_RPC_URL not configured");
+    if (!Deno.env.get("BSC_RPC_URL")) throw new Error("BSC_RPC_URL not configured");
     const admin = createClient(
       Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -143,7 +142,7 @@ Deno.serve(async (req) => {
         for (let ri = 0; ri < recipientTopics.length; ri += RECIP_CHUNK) {
           const recips = recipientTopics.slice(ri, ri + RECIP_CHUNK);
           const chunk: any[] = await getLogsAdaptive(
-            RPC_URL,
+            admin,
             start,
             end,
             Object.keys(TOKENS),
