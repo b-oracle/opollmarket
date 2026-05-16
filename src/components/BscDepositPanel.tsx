@@ -255,6 +255,15 @@ export default function BscDepositPanel() {
               <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
               {rescanning ? "Rescanning…" : "Rescan"}
             </button>
+            <button
+              onClick={exportCsv}
+              disabled={!events.length}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              aria-label="Export deposit history as CSV"
+            >
+              <Download className="w-3 h-3" />
+              CSV
+            </button>
           </div>
         </div>
 
