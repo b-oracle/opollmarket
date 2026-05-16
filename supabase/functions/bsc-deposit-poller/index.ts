@@ -2,6 +2,7 @@
 // Cron-only: requires x-cron-secret header.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { verifyCronSecret } from "../_shared/cronAuth.ts";
+import { bscRpc } from "../_shared/bscRpc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
