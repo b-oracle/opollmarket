@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       .select("last_scanned_block")
       .eq("id", 1)
       .maybeSingle();
-    let from = stateRow ? Number(stateRow.last_scanned_block) + 1 : head - 50; // bootstrap: last ~50 blocks
+    let from = stateRow ? Number(stateRow.last_scanned_block) + 1 : head - 5; // bootstrap: last 5 blocks
 
     // 3. Decide window (cap)
     const to = Math.min(head, from + MAX_BLOCKS_PER_RUN);
