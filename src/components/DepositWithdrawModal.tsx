@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import HoldToConfirmButton from "@/components/HoldToConfirmButton";
 import BottomSheet from "@/components/BottomSheet";
 import SecurityVerificationModal from "@/components/SecurityVerificationModal";
+import BscDepositPanel from "@/components/BscDepositPanel";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,10 +30,11 @@ import {
   Banknote,
   RefreshCw,
   Coins,
+  Zap,
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type PaymentMethod = "crypto" | "fiat";
+type PaymentMethod = "crypto" | "fiat" | "bsc_direct";
 type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "awaiting_fiat_transfer" | "success" | "partial_success" | "error";
 
 interface FiatTransferInfo {
@@ -824,6 +826,38 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       )}
                     </div>
 
+                    {/* Direct BSC deposit — bypasses payment processors */}
+                    {isDeposit && user && paymentMethod !== "bsc_direct" && (
+                      <button
+                        onClick={() => setPaymentMethod("bsc_direct")}
+                        className="w-full mb-4 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5 p-3 flex items-center gap-3 text-left hover:border-primary/60 transition-all active:scale-[0.98]"
+                      >
+                        <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold flex items-center gap-1.5">
+                            Direct BSC Deposit
+                            <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">No fees</span>
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">USDT / USDC on BNB Chain — auto-credited</p>
+                        </div>
+                      </button>
+                    )}
+
+                    {isDeposit && paymentMethod === "bsc_direct" && (
+                      <>
+                        <button
+                          onClick={() => setPaymentMethod("crypto")}
+                          className="mb-3 text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          ← Back to other deposit methods
+                        </button>
+                        <BscDepositPanel />
+                      </>
+                    )}
+
+                    {!(isDeposit && paymentMethod === "bsc_direct") && <>
                     {/* KYC gate for withdrawals */}
                     {!isDeposit && (kycStatus === "none" || kycStatus === "pending" || kycStatus === "rejected") && (
                       <div className="rounded-xl p-4 border border-amber-500/30 bg-amber-500/5 mb-5 space-y-3">
@@ -1276,6 +1310,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     >
                       {isDeposit ? "Continue" : "Review Withdrawal"}
                     </button>
+                    </>}
                   </motion.div>
                 )}
 
