@@ -55,6 +55,48 @@ export default function BscDepositPanel() {
     }
   };
 
+  const exportCsv = () => {
+    if (!events.length) {
+      toast.message("No deposits to export yet.");
+      return;
+    }
+    const statusLabel = (s: BscDepositEvent["status"]) =>
+      s === "credited" ? "Confirmed" : s === "orphaned" ? "Failed" : "Pending";
+    const escape = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = [
+      "Detected At (UTC)",
+      "Credited At (UTC)",
+      "Token",
+      "Amount (USD)",
+      "Status",
+      "Confirmations",
+      "Tx Hash",
+    ];
+    const rows = events.map((e) => [
+      new Date(e.detected_at).toISOString(),
+      e.credited_at ? new Date(e.credited_at).toISOString() : "",
+      e.token,
+      Number(e.amount_usd).toFixed(6),
+      statusLabel(e.status),
+      e.confirmations,
+      e.tx_hash,
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bsc-deposits-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${events.length} deposit${events.length === 1 ? "" : "s"} to CSV.`);
+  };
+
   // 1. Fetch / allocate this user's deposit address
   const {
     data: address,
