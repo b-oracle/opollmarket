@@ -57,17 +57,16 @@ export async function bscRpc(
       const result = await callOne(fallback, method, params);
       // Warn-level alert: primary degraded but we recovered via fallback.
       if (opts.admin && opts.alertSource) {
-        await opts.admin
-          .rpc("record_system_alert", {
+        try {
+          await opts.admin.rpc("record_system_alert", {
             _severity: "warning",
             _source: opts.alertSource,
             _code: "bsc_rpc_primary_failover",
             _message: `Primary BSC RPC failed, served via fallback: ${(primaryErr as Error).message}`,
             _details: { method, primary_error: (primaryErr as Error).message },
             _dedupe_minutes: 10,
-          })
-          .then(() => {})
-          .catch(() => {});
+          });
+        } catch (_) { /* swallow */ }
       }
       return result;
     } catch (fallbackErr) {
