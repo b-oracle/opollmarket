@@ -33,12 +33,17 @@ export default function BscDepositPanel() {
   const COOLDOWN_MS = 20_000;
   const [cooldownUntil, setCooldownUntil] = useState<number>(0);
   const [nowTs, setNowTs] = useState<number>(() => Date.now());
+  type RescanResult =
+    | { kind: "ok"; checked: number; credited: number; failed: number; stillPending: number; at: number }
+    | { kind: "error"; message: string; at: number };
+  const [rescanResult, setRescanResult] = useState<RescanResult | null>(null);
+  const [rescanStartedAt, setRescanStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
-    if (cooldownUntil <= Date.now()) return;
+    if (cooldownUntil <= Date.now() && !rescanning) return;
     const id = setInterval(() => setNowTs(Date.now()), 250);
     return () => clearInterval(id);
-  }, [cooldownUntil]);
+  }, [cooldownUntil, rescanning]);
 
   const cooldownRemainingMs = Math.max(0, cooldownUntil - nowTs);
   const cooldownActive = cooldownRemainingMs > 0;
@@ -47,6 +52,8 @@ export default function BscDepositPanel() {
   const rescan = async () => {
     if (rescanning || cooldownActive) return;
     setRescanning(true);
+    setRescanStartedAt(Date.now());
+    setRescanResult(null);
     try {
       const { data, error } = await supabase.functions.invoke("bsc-deposit-rescan", { body: {} });
       if (error || (data as any)?.error) {
@@ -54,8 +61,10 @@ export default function BscDepositPanel() {
         if (err === "cooldown") {
           const ms = (data as any)?.retry_after_ms || COOLDOWN_MS;
           setCooldownUntil(Date.now() + ms);
+          setRescanResult({ kind: "error", message: `Cooldown active — wait ${Math.ceil(ms / 1000)}s.`, at: Date.now() });
           toast.message(`Please wait ${Math.ceil(ms / 1000)}s before rescanning again.`);
         } else {
+          setRescanResult({ kind: "error", message: "Rescan failed. Try again shortly.", at: Date.now() });
           toast.error("Rescan failed. Try again shortly.");
         }
         return;
@@ -65,6 +74,7 @@ export default function BscDepositPanel() {
       const credited = d.credited ?? 0;
       const failed = d.failed ?? 0;
       const stillPending = d.still_pending ?? Math.max(0, checked - credited - failed);
+      setRescanResult({ kind: "ok", checked, credited, failed, stillPending, at: Date.now() });
       if (checked === 0) {
         toast.success("Rescan complete — no pending deposits to check.");
       } else {
@@ -79,9 +89,11 @@ export default function BscDepositPanel() {
       qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user?.id] });
       setCooldownUntil(Date.now() + COOLDOWN_MS);
     } catch {
+      setRescanResult({ kind: "error", message: "Rescan failed. Try again shortly.", at: Date.now() });
       toast.error("Rescan failed. Try again shortly.");
     } finally {
       setRescanning(false);
+      setRescanStartedAt(null);
     }
   };
 
@@ -297,6 +309,70 @@ export default function BscDepositPanel() {
             </button>
           </div>
         </div>
+
+        {/* Rescan progress / result banner */}
+        {(rescanning || rescanResult) && (
+          <div
+            className={`mx-1 mb-2 rounded-lg border px-2.5 py-2 text-[11px] flex items-center gap-2 ${
+              rescanning
+                ? "border-primary/30 bg-primary/5 text-foreground"
+                : rescanResult?.kind === "error"
+                ? "border-destructive/30 bg-destructive/10 text-destructive"
+                : "border-emerald-500/30 bg-emerald-500/10 text-foreground"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {rescanning ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                <span className="flex-1">
+                  Polling chain for pending deposits…
+                  {rescanStartedAt ? (
+                    <span className="text-muted-foreground ml-1 tabular-nums">
+                      {Math.max(0, Math.floor((nowTs - rescanStartedAt) / 1000))}s
+                    </span>
+                  ) : null}
+                </span>
+              </>
+            ) : rescanResult?.kind === "ok" ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="flex-1">
+                  {rescanResult.checked === 0 ? (
+                    "No pending deposits to re-check."
+                  ) : (
+                    <>
+                      <span className="font-semibold">{rescanResult.checked}</span> re-checked ·{" "}
+                      <span className="text-emerald-500 font-semibold">{rescanResult.credited}</span> confirmed ·{" "}
+                      <span className="text-destructive font-semibold">{rescanResult.failed}</span> failed ·{" "}
+                      <span className="text-muted-foreground font-semibold">{rescanResult.stillPending}</span> pending
+                    </>
+                  )}
+                </span>
+                <button
+                  onClick={() => setRescanResult(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </>
+            ) : rescanResult?.kind === "error" ? (
+              <>
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1">{rescanResult.message}</span>
+                <button
+                  onClick={() => setRescanResult(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </>
+            ) : null}
+          </div>
+        )}
 
         {/* Search by tx hash */}
         <div className="relative mb-2 px-1">
