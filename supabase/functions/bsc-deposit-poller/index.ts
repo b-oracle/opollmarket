@@ -235,9 +235,6 @@ Deno.serve(async (req) => {
     const credited = await updateConfirmationsAndCredit(admin, head);
 
     return jsonOk({ scanned: to - from + 1, from, to, head, detected: inserts.length, credited });
-    } finally {
-      // Always release the advisory lock, even if the run errored.
-      try { await admin.rpc("release_bsc_poller_lock"); } catch (_) { /* noop */ }
     }
   } catch (e) {
     console.error("bsc-deposit-poller error:", e);
