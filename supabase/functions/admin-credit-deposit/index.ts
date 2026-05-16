@@ -97,16 +97,19 @@ Deno.serve(async (req) => {
       return json({ error: "User not found" }, 404);
     }
 
-    // Credit the user's main balance (validated payload)
-    const { error: balError } = await callRpc(adminClient, "adjust_balance", {
-      _user_id: targetUserId,
-      _delta: amount,
-      _bonus_delta: 0,
-      _insurance_delta: 0,
+    // Credit the user's main balance (audited via balanceLogger)
+    const correlationId = `admin-credit:${user.id}:${Date.now()}`;
+    const balResult = await adjustBalanceLogged(adminClient, {
+      userId: targetUserId,
+      delta: amount,
+      source: "admin-credit-deposit",
+      reason: description,
+      correlationId,
+      actorId: user.id,
     });
-    if (balError) {
-      console.error("Failed to credit balance:", balError);
-      return json({ error: "Balance credit failed" }, 500);
+    if (!balResult.success) {
+      console.error("Failed to credit balance:", balResult.error);
+      return json({ error: "Balance credit failed", correlation_id: balResult.correlation_id }, 500);
     }
 
     // Create a confirmed deposit transaction for the audit trail
