@@ -95,6 +95,7 @@ async function fetchPrice(asset: string): Promise<number | null> {
 // ─── Title formatting ────────────────────────────────────────────────────────
 const ASSET_NAME: Record<string, string> = {
   BTC: "Bitcoin", ETH: "Ethereum", SOL: "Solana", BNB: "BNB", XRP: "XRP",
+  XAG: "Silver", XAU: "Gold", XPT: "Platinum", XPD: "Palladium",
 };
 
 function durationLabel(min: number): string {
