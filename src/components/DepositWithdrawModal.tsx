@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 
 type Tab = "deposit" | "withdraw";
-type PaymentMethod = "crypto" | "fiat";
+type PaymentMethod = "crypto" | "fiat" | "bsc_direct";
 type FlowStep = "input" | "confirm" | "executing" | "awaiting_payment" | "awaiting_fiat" | "awaiting_fiat_transfer" | "success" | "partial_success" | "error";
 
 interface FiatTransferInfo {
