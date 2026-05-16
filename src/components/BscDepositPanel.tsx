@@ -148,50 +148,144 @@ export default function BscDepositPanel() {
         </div>
       </div>
 
-      {/* Activity */}
+      {/* History */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-2 px-1">Recent deposits</p>
-        {events.length === 0 ? (
-          <div className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl">
-            Waiting for an incoming transfer…
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {events.map((ev) => (
-              <motion.div
-                key={ev.id}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-border bg-card p-3 text-xs"
+        <div className="flex items-center justify-between mb-2 px-1">
+          <p className="text-xs font-semibold text-muted-foreground">Deposit history</p>
+          <span className="text-[10px] text-muted-foreground">{events.length} total</span>
+        </div>
+
+        {/* Status filter pills */}
+        <div className="flex gap-1.5 mb-2 px-1 overflow-x-auto no-scrollbar">
+          {([
+            { key: "all", label: "All" },
+            { key: "pending", label: "Pending" },
+            { key: "confirmed", label: "Confirmed" },
+            { key: "failed", label: "Failed" },
+          ] as { key: StatusFilter; label: string }[]).map((p) => {
+            const count =
+              p.key === "all" ? events.length :
+              p.key === "pending" ? events.filter((e) => e.status === "detected").length :
+              p.key === "confirmed" ? events.filter((e) => e.status === "credited").length :
+              events.filter((e) => e.status === "orphaned").length;
+            const active = filter === p.key;
+            return (
+              <button
+                key={p.key}
+                onClick={() => setFilter(p.key)}
+                className={`shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border transition ${
+                  active
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-muted/30 text-muted-foreground border-border hover:bg-muted/60"
+                }`}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {ev.status === "credited" ? (
-                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                    )}
-                    <span className="font-semibold">${Number(ev.amount_usd).toFixed(2)} {ev.token}</span>
-                  </div>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                    ev.status === "credited" ? "text-emerald-500" : "text-primary"
-                  }`}>
-                    {ev.status === "credited"
-                      ? "Credited"
-                      : `${Math.min(ev.confirmations, CONFIRMATIONS_REQUIRED)}/${CONFIRMATIONS_REQUIRED} confirmations`}
-                  </span>
-                </div>
-                <a
-                  href={`https://bscscan.com/tx/${ev.tx_hash}`}
-                  target="_blank" rel="noreferrer"
-                  className="block mt-1 font-mono text-[10px] text-muted-foreground truncate hover:text-primary"
-                >
-                  {ev.tx_hash}
-                </a>
-              </motion.div>
-            ))}
+                {p.label} <span className="opacity-70">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {eventsLoading ? (
+          <div className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl flex items-center justify-center gap-2">
+            <Loader2 className="w-3 h-3 animate-spin" /> Loading history…
           </div>
-        )}
+        ) : (() => {
+          const filtered = events.filter((e) =>
+            filter === "all" ? true :
+            filter === "pending" ? e.status === "detected" :
+            filter === "confirmed" ? e.status === "credited" :
+            e.status === "orphaned"
+          );
+          if (filtered.length === 0) {
+            return (
+              <div className="text-xs text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl">
+                {filter === "all"
+                  ? "Waiting for an incoming transfer…"
+                  : `No ${filter} deposits.`}
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {filtered.map((ev) => {
+                const isPending = ev.status === "detected";
+                const isConfirmed = ev.status === "credited";
+                const isFailed = ev.status === "orphaned";
+                const progressPct = Math.min(100, (ev.confirmations / CONFIRMATIONS_REQUIRED) * 100);
+                return (
+                  <motion.div
+                    key={ev.id}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`rounded-xl border bg-card p-3 text-xs ${
+                      isConfirmed ? "border-emerald-500/30" :
+                      isFailed ? "border-destructive/30" :
+                      "border-primary/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isConfirmed && <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
+                        {isPending && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
+                        {isFailed && <XCircle className="w-4 h-4 text-destructive shrink-0" />}
+                        <span className="font-semibold truncate">
+                          ${Number(ev.amount_usd).toFixed(2)} {ev.token}
+                        </span>
+                      </div>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                        isConfirmed ? "text-emerald-500" :
+                        isFailed ? "text-destructive" :
+                        "text-primary"
+                      }`}>
+                        {isConfirmed ? "Confirmed" : isFailed ? "Failed" : "Pending"}
+                      </span>
+                    </div>
+
+                    {/* Confirmation progress bar (pending only) */}
+                    {isPending && (
+                      <div className="mt-2">
+                        <div className="h-1 w-full bg-muted/50 rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-primary"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPct}%` }}
+                            transition={{ duration: 0.6 }}
+                          />
+                        </div>
+                        <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {Math.min(ev.confirmations, CONFIRMATIONS_REQUIRED)}/{CONFIRMATIONS_REQUIRED} confirmations
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Failure reason */}
+                    {isFailed && (
+                      <p className="mt-1.5 text-[10px] text-destructive/90">
+                        Orphaned by chain reorg or duplicate. Contact support with the tx hash if funds were sent.
+                      </p>
+                    )}
+
+                    {/* Meta row */}
+                    <div className="mt-2 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                      <span>
+                        {formatDistanceToNow(new Date(ev.detected_at), { addSuffix: true })}
+                      </span>
+                      <a
+                        href={`https://bscscan.com/tx/${ev.tx_hash}`}
+                        target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1 hover:text-primary font-mono"
+                      >
+                        {ev.tx_hash.slice(0, 8)}…{ev.tx_hash.slice(-6)}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
