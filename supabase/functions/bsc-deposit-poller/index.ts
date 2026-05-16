@@ -239,6 +239,21 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("bsc-deposit-poller error:", e);
+    // Best-effort alert (a fresh admin client — outer one may not be in scope here).
+    try {
+      const admin2 = createClient(
+        Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await admin2.rpc("record_system_alert", {
+        _severity: "warning",
+        _source: "bsc-deposit-poller",
+        _code: "poller_run_failed",
+        _message: `Poller tick errored: ${(e as Error).message}`,
+        _details: { error: (e as Error).message },
+        _dedupe_minutes: 5,
+      });
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
