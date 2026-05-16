@@ -615,14 +615,25 @@ const Index = () => {
                         </>
                       )}
                     </div>
-                    {market.isCryptoRound ? (
-                      <LiveCryptoRoundPercent
-                        asset={market.autoResolveAsset}
-                        openPrice={market.autoResolveTargetPrice}
-                        fallbackPercent={displayPercent}
-                        className="text-sm font-bold neon-yes shrink-0"
-                      />
-                    ) : (
+                    {market.isCryptoRound ? (() => {
+                      const aClass = market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
+                      const closed = aClass !== "crypto" && !isMarketOpen(aClass);
+                      if (closed) {
+                        return (
+                          <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-muted text-muted-foreground border border-border">
+                            <Moon className="w-3 h-3" /> Closed
+                          </span>
+                        );
+                      }
+                      return (
+                        <LiveCryptoRoundPercent
+                          asset={market.autoResolveAsset}
+                          openPrice={market.autoResolveTargetPrice}
+                          fallbackPercent={displayPercent}
+                          className="text-sm font-bold neon-yes shrink-0"
+                        />
+                      );
+                    })() : (
                       <span className="text-sm font-bold neon-yes shrink-0">{displayPercent}%</span>
                     )}
                   </div>
