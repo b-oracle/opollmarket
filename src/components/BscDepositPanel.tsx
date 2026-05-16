@@ -310,6 +310,70 @@ export default function BscDepositPanel() {
           </div>
         </div>
 
+        {/* Rescan progress / result banner */}
+        {(rescanning || rescanResult) && (
+          <div
+            className={`mx-1 mb-2 rounded-lg border px-2.5 py-2 text-[11px] flex items-center gap-2 ${
+              rescanning
+                ? "border-primary/30 bg-primary/5 text-foreground"
+                : rescanResult?.kind === "error"
+                ? "border-destructive/30 bg-destructive/10 text-destructive"
+                : "border-emerald-500/30 bg-emerald-500/10 text-foreground"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {rescanning ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                <span className="flex-1">
+                  Polling chain for pending deposits…
+                  {rescanStartedAt ? (
+                    <span className="text-muted-foreground ml-1 tabular-nums">
+                      {Math.max(0, Math.floor((nowTs - rescanStartedAt) / 1000))}s
+                    </span>
+                  ) : null}
+                </span>
+              </>
+            ) : rescanResult?.kind === "ok" ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="flex-1">
+                  {rescanResult.checked === 0 ? (
+                    "No pending deposits to re-check."
+                  ) : (
+                    <>
+                      <span className="font-semibold">{rescanResult.checked}</span> re-checked ·{" "}
+                      <span className="text-emerald-500 font-semibold">{rescanResult.credited}</span> confirmed ·{" "}
+                      <span className="text-destructive font-semibold">{rescanResult.failed}</span> failed ·{" "}
+                      <span className="text-muted-foreground font-semibold">{rescanResult.stillPending}</span> pending
+                    </>
+                  )}
+                </span>
+                <button
+                  onClick={() => setRescanResult(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </>
+            ) : rescanResult?.kind === "error" ? (
+              <>
+                <XCircle className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex-1">{rescanResult.message}</span>
+                <button
+                  onClick={() => setRescanResult(null)}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Dismiss"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </>
+            ) : null}
+          </div>
+        )}
+
         {/* Search by tx hash */}
         <div className="relative mb-2 px-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
