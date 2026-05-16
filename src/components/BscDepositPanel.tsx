@@ -236,6 +236,16 @@ export default function BscDepositPanel() {
                   description: short ? `Tx ${short} was orphaned. Contact support if funds were sent.` : undefined,
                   duration: 10000,
                 });
+              } else if (newStatus === "manual_review") {
+                toast.message(`Deposit under review: $${amount.toFixed(2)} ${token}`, {
+                  description: "Above auto-credit threshold — our team will review shortly.",
+                  duration: 8000,
+                });
+              } else if (newStatus === "rejected") {
+                toast.error(`Deposit rejected: $${amount.toFixed(2)} ${token}`, {
+                  description: short ? `Tx ${short} was rejected after review. Contact support.` : undefined,
+                  duration: 10000,
+                });
               }
             }
           }
