@@ -16,7 +16,15 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function probe(url: string): Promise<{ ok: boolean; block: number | null; latency_ms: number; error: string | null }> {
+// Truncate any upstream-controlled string before returning it to the admin UI.
+const safeErr = (s: unknown): string => {
+  const str = typeof s === "string" ? s : (s as Error)?.message ?? String(s);
+  return str.length > 200 ? str.slice(0, 200) + "…" : str;
+};
+
+type ProbeResult = { ok: boolean; block: number | null; latency_ms: number; error: string | null };
+
+async function probe(url: string): Promise<ProbeResult> {
   const t0 = Date.now();
   try {
     const r = await fetch(url, {
@@ -27,12 +35,17 @@ async function probe(url: string): Promise<{ ok: boolean; block: number | null; 
     });
     const latency_ms = Date.now() - t0;
     const j = await r.json();
-    if (j.error) return { ok: false, block: null, latency_ms, error: j.error.message || JSON.stringify(j.error) };
+    if (j.error) return { ok: false, block: null, latency_ms, error: safeErr(j.error.message || JSON.stringify(j.error)) };
     return { ok: true, block: Number(BigInt(j.result)), latency_ms, error: null };
   } catch (e) {
-    return { ok: false, block: null, latency_ms: Date.now() - t0, error: (e as Error).message };
+    return { ok: false, block: null, latency_ms: Date.now() - t0, error: safeErr(e) };
   }
 }
+
+// In-memory cache shared across requests in the same isolate. Caps quota burn
+// when multiple admin tabs or a stuck refresh loop hammer the panel.
+const CACHE_TTL_MS = 10_000;
+let cached: { at: number; body: Record<string, unknown> } | null = null;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -59,25 +72,33 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden" }, 403);
     }
 
+    // Serve cached probe if fresh — avoids burning provider quota when multiple
+    // admin tabs or refresh loops poll concurrently. Auth/role check is always
+    // re-run above; only the upstream probe is cached.
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      return json({ ...cached.body, cached: true });
+    }
+
     const primaryUrl = Deno.env.get("BSC_RPC_URL") || null;
     const fallbackUrl = Deno.env.get("BSC_RPC_URL_FALLBACK") || null;
 
     const [primary, fallback] = await Promise.all([
-      primaryUrl ? probe(primaryUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL not configured" }),
-      fallbackUrl ? probe(fallbackUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL_FALLBACK not configured" }),
+      primaryUrl ? probe(primaryUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL not configured" } as ProbeResult),
+      fallbackUrl ? probe(fallbackUrl) : Promise.resolve({ ok: false, block: null, latency_ms: 0, error: "BSC_RPC_URL_FALLBACK not configured" } as ProbeResult),
     ]);
 
-    // Block drift between endpoints (helps spot a stale provider)
     const drift = primary.block != null && fallback.block != null
       ? Math.abs(primary.block - fallback.block) : null;
 
-    return json({
+    const body = {
       checked_at: new Date().toISOString(),
       primary: { configured: !!primaryUrl, ...primary },
       fallback: { configured: !!fallbackUrl, ...fallback },
       block_drift: drift,
-    });
+    };
+    cached = { at: Date.now(), body };
+    return json(body);
   } catch (e) {
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: (e as Error).message?.slice(0, 200) ?? "internal error" }, 500);
   }
 });

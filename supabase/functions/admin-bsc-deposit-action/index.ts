@@ -4,6 +4,7 @@
 // - Calls approve / reject RPC under service role
 // - Writes a structured audit_logs entry with exact verification inputs
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { bscRpc, getBscRpcUrls } from "../_shared/bscRpc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,17 +20,6 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const j = await r.json();
-  if (j.error) throw new Error(`${method}: ${j.error.message || JSON.stringify(j.error)}`);
-  return j.result;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -37,8 +27,7 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
     const ANON_KEY = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const RPC_URL = Deno.env.get("BSC_RPC_URL");
-    if (!RPC_URL) return json({ error: "Server not configured" }, 500);
+    try { getBscRpcUrls(); } catch { return json({ error: "Server not configured" }, 500); }
 
     // Auth caller
     const authHeader = req.headers.get("Authorization") || "";
@@ -91,7 +80,7 @@ Deno.serve(async (req) => {
     const threshold = Number(thrRow?.value ?? 5000);
 
     // Re-verify on-chain receipt
-    const head = Number(BigInt(await rpc(RPC_URL, "eth_blockNumber", [])));
+    const head = Number(BigInt(await bscRpc("eth_blockNumber", [], { admin, alertSource: "admin-bsc-deposit-action" }) as string));
     const confirmations = Math.max(0, head - Number(ev.block_number));
     let verification: Record<string, unknown> = {
       tx_hash: ev.tx_hash,
@@ -113,7 +102,7 @@ Deno.serve(async (req) => {
     };
 
     try {
-      const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [ev.tx_hash]);
+      const receipt: any = await bscRpc("eth_getTransactionReceipt", [ev.tx_hash], { admin, alertSource: "admin-bsc-deposit-action" });
       verification.receipt_status = receipt?.status ?? null;
       if (receipt?.status === "0x1") {
         const log = (receipt.logs || []).find((l: any) =>
