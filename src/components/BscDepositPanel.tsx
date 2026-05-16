@@ -103,9 +103,25 @@ export default function BscDepositPanel() {
     }
   };
 
-  const exportCsv = () => {
+  const exportCsv = (range?: DateRange) => {
     if (!events.length) {
       toast.message("No deposits to export yet.");
+      return;
+    }
+    // Inclusive range: start at 00:00, end at 23:59:59.999 of selected day
+    const fromTs = range?.from ? new Date(range.from).setHours(0, 0, 0, 0) : null;
+    const toTs = range?.to
+      ? new Date(range.to).setHours(23, 59, 59, 999)
+      : range?.from
+      ? new Date(range.from).setHours(23, 59, 59, 999)
+      : null;
+    const filtered = events.filter((e) => {
+      if (fromTs == null) return true;
+      const t = new Date(e.detected_at).getTime();
+      return t >= fromTs && (toTs == null || t <= toTs);
+    });
+    if (!filtered.length) {
+      toast.message("No deposits in that date range.");
       return;
     }
     const statusLabel = (s: BscDepositEvent["status"]) =>
@@ -123,7 +139,7 @@ export default function BscDepositPanel() {
       "Confirmations",
       "Tx Hash",
     ];
-    const rows = events.map((e) => [
+    const rows = filtered.map((e) => [
       new Date(e.detected_at).toISOString(),
       e.credited_at ? new Date(e.credited_at).toISOString() : "",
       e.token,
@@ -137,12 +153,15 @@ export default function BscDepositPanel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `bsc-deposits-${new Date().toISOString().slice(0, 10)}.csv`;
+    const suffix = range?.from
+      ? `${format(range.from, "yyyy-MM-dd")}_to_${format(range.to ?? range.from, "yyyy-MM-dd")}`
+      : new Date().toISOString().slice(0, 10);
+    a.download = `bsc-deposits-${suffix}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${events.length} deposit${events.length === 1 ? "" : "s"} to CSV.`);
+    toast.success(`Exported ${filtered.length} deposit${filtered.length === 1 ? "" : "s"} to CSV.`);
   };
 
   // 1. Fetch / allocate this user's deposit address
