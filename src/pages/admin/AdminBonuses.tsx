@@ -339,7 +339,7 @@ const AdminBonuses = () => {
             <span>
               {filtered.length} bonuses · {totals.uniqueUsers} unique users
             </span>
-            <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <AdminPagination page={page} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
           </div>
         </>
       )}
