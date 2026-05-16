@@ -498,14 +498,16 @@ export default function BscDepositPanel() {
           {([
             { key: "all", label: "All" },
             { key: "pending", label: "Pending" },
+            { key: "review", label: "Review" },
             { key: "confirmed", label: "Confirmed" },
             { key: "failed", label: "Failed" },
           ] as { key: StatusFilter; label: string }[]).map((p) => {
             const count =
               p.key === "all" ? events.length :
               p.key === "pending" ? events.filter((e) => e.status === "detected").length :
+              p.key === "review" ? events.filter((e) => e.status === "manual_review").length :
               p.key === "confirmed" ? events.filter((e) => e.status === "credited").length :
-              events.filter((e) => e.status === "orphaned").length;
+              events.filter((e) => e.status === "orphaned" || e.status === "rejected").length;
             const active = filter === p.key;
             return (
               <button
