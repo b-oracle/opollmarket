@@ -96,6 +96,7 @@ const AdminContracts = lazy(() => import("./pages/admin/AdminContracts"));
 const AdminModeration = lazy(() => import("./pages/admin/AdminModeration"));
 const AdminAuditLog = lazy(() => import("./pages/admin/AdminAuditLog"));
 const AdminDeposits = lazy(() => import("./pages/admin/AdminDeposits"));
+const AdminBscReview = lazy(() => import("./pages/admin/AdminBscReview"));
 const AdminReconciliation = lazy(() => import("./pages/admin/AdminReconciliation"));
 const AdminQuickTrade = lazy(() => import("./pages/admin/AdminQuickTrade"));
 const AdminPredictions = lazy(() => import("./pages/admin/AdminPredictions"));
