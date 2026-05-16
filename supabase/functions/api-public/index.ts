@@ -522,8 +522,23 @@ Deno.serve(async (req) => {
       const creationFee = feeSettings?.market_creation_fee || 0;
       const totalCost = liquidity + creationFee;
 
-      // Note: atomic debit happens AFTER market insert to avoid double-debit race;
-      // a pre-check here is best-effort only and intentionally omitted.
+      // Atomically debit upfront to prevent concurrent-request double-spend.
+      // Row-locks balance and rejects if insufficient. Refunded below if downstream insert fails.
+      if (totalCost > 0) {
+        const { data: debitRes, error: debitErr } = await admin.rpc("debit_balance_atomic", {
+          _user_id: userId,
+          _main_deduct: totalCost,
+          _bonus_deduct: 0,
+        });
+        if (debitErr || !debitRes?.success) {
+          return err(debitRes?.error || "Insufficient balance for initial liquidity and creation fee", 402);
+        }
+      }
+      const refundOnFailure = async () => {
+        if (totalCost > 0) {
+          await admin.rpc("adjust_balance", { _user_id: userId, _delta: totalCost });
+        }
+      };
 
       // Run AI moderation
       try {
