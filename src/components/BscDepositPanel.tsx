@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw } from "lucide-react";
+import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw, Download } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +53,48 @@ export default function BscDepositPanel() {
     } finally {
       setRescanning(false);
     }
+  };
+
+  const exportCsv = () => {
+    if (!events.length) {
+      toast.message("No deposits to export yet.");
+      return;
+    }
+    const statusLabel = (s: BscDepositEvent["status"]) =>
+      s === "credited" ? "Confirmed" : s === "orphaned" ? "Failed" : "Pending";
+    const escape = (v: unknown) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = [
+      "Detected At (UTC)",
+      "Credited At (UTC)",
+      "Token",
+      "Amount (USD)",
+      "Status",
+      "Confirmations",
+      "Tx Hash",
+    ];
+    const rows = events.map((e) => [
+      new Date(e.detected_at).toISOString(),
+      e.credited_at ? new Date(e.credited_at).toISOString() : "",
+      e.token,
+      Number(e.amount_usd).toFixed(6),
+      statusLabel(e.status),
+      e.confirmations,
+      e.tx_hash,
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map(escape).join(",")).join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bsc-deposits-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${events.length} deposit${events.length === 1 ? "" : "s"} to CSV.`);
   };
 
   // 1. Fetch / allocate this user's deposit address
@@ -212,6 +254,15 @@ export default function BscDepositPanel() {
             >
               <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
               {rescanning ? "Rescanning…" : "Rescan"}
+            </button>
+            <button
+              onClick={exportCsv}
+              disabled={!events.length}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
+              aria-label="Export deposit history as CSV"
+            >
+              <Download className="w-3 h-3" />
+              CSV
             </button>
           </div>
         </div>
