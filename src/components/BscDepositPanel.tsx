@@ -30,17 +30,31 @@ export default function BscDepositPanel() {
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
   const [rescanning, setRescanning] = useState(false);
+  const COOLDOWN_MS = 20_000;
+  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
+  const [nowTs, setNowTs] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => setNowTs(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const cooldownRemainingMs = Math.max(0, cooldownUntil - nowTs);
+  const cooldownActive = cooldownRemainingMs > 0;
+  const cooldownSecs = Math.ceil(cooldownRemainingMs / 1000);
 
   const rescan = async () => {
-    if (rescanning) return;
+    if (rescanning || cooldownActive) return;
     setRescanning(true);
     try {
       const { data, error } = await supabase.functions.invoke("bsc-deposit-rescan", { body: {} });
       if (error || (data as any)?.error) {
         const err = (data as any)?.error || error?.message;
         if (err === "cooldown") {
-          const secs = Math.ceil(((data as any)?.retry_after_ms || 0) / 1000);
-          toast.message(`Please wait ${secs}s before rescanning again.`);
+          const ms = (data as any)?.retry_after_ms || COOLDOWN_MS;
+          setCooldownUntil(Date.now() + ms);
+          toast.message(`Please wait ${Math.ceil(ms / 1000)}s before rescanning again.`);
         } else {
           toast.error("Rescan failed. Try again shortly.");
         }
@@ -63,6 +77,7 @@ export default function BscDepositPanel() {
         toast.success(`Rescan complete — ${parts.join(" · ")}`);
       }
       qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user?.id] });
+      setCooldownUntil(Date.now() + COOLDOWN_MS);
     } catch {
       toast.error("Rescan failed. Try again shortly.");
     } finally {
@@ -263,12 +278,13 @@ export default function BscDepositPanel() {
             <span className="text-[10px] text-muted-foreground">{events.length} total</span>
             <button
               onClick={rescan}
-              disabled={rescanning}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              aria-label="Rescan pending deposits"
+              disabled={rescanning || cooldownActive}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition tabular-nums"
+              aria-label={cooldownActive ? `Rescan available in ${cooldownSecs}s` : "Rescan pending deposits"}
+              title={cooldownActive ? `Available in ${cooldownSecs}s` : undefined}
             >
               <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
-              {rescanning ? "Rescanning…" : "Rescan"}
+              {rescanning ? "Rescanning…" : cooldownActive ? `Wait ${cooldownSecs}s` : "Rescan"}
             </button>
             <button
               onClick={exportCsv}
