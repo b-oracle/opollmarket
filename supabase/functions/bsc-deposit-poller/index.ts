@@ -83,13 +83,18 @@ Deno.serve(async (req) => {
     const addrMap = new Map<string, string>();
     for (const r of addrRows || []) addrMap.set((r.address as string).toLowerCase(), r.user_id as string);
 
-    // 5. Fetch Transfer logs in [from, to] for both tokens
-    const logs: any[] = await rpc(RPC_URL, "eth_getLogs", [{
-      fromBlock: "0x" + from.toString(16),
-      toBlock: "0x" + to.toString(16),
-      address: Object.keys(TOKENS),
-      topics: [TRANSFER_TOPIC],
-    }]);
+    // 5. Fetch Transfer logs in [from, to] for both tokens, chunked to respect RPC limits
+    const logs: any[] = [];
+    for (let start = from; start <= to; start += CHUNK_BLOCKS) {
+      const end = Math.min(to, start + CHUNK_BLOCKS - 1);
+      const chunk: any[] = await rpc(RPC_URL, "eth_getLogs", [{
+        fromBlock: "0x" + start.toString(16),
+        toBlock: "0x" + end.toString(16),
+        address: Object.keys(TOKENS),
+        topics: [TRANSFER_TOPIC],
+      }]);
+      logs.push(...chunk);
+    }
 
     // 6. Filter logs where `to` is one of our addresses
     const inserts: any[] = [];
