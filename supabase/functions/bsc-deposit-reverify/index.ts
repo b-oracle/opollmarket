@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
 
     let head: number;
     try {
-      head = Number(BigInt(await rpc(RPC_URL, "eth_blockNumber", [])));
+      head = Number(BigInt(await bscRpc("eth_blockNumber", [], { admin, alertSource: "bsc-deposit-reverify" }) as string));
     } catch (e) {
       return json({ error: `head fetch failed: ${(e as Error).message}` }, 502);
     }
