@@ -63,7 +63,7 @@ const Index = () => {
   const { data: allMarkets = [], isLoading, isError, refetch } = useMarkets();
   const { boostedMarketIds, boostDetails, loading: boostsLoading } = useActiveBoosts();
   const { isFeatureEnabled } = useFeatureToggles();
-  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live">("all");
+  const [filter, setFilter] = useState<"trending" | "boosted" | "new" | "all" | "live" | "updown">("all");
   const [boostModalMarket, setBoostModalMarket] = useState<{ id: string; title: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
