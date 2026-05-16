@@ -617,17 +617,30 @@ export default function BscDepositPanel() {
                       </div>
                     )}
 
-                    {/* Under review notice */}
-                    {isReview && (
-                      <div className="mt-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-2 space-y-1">
-                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
-                          Above auto-credit threshold — manual review in progress.
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          On-chain transfer is confirmed and safe. Our team verifies large deposits before crediting; this typically completes within a few hours.
-                        </p>
-                      </div>
-                    )}
+                    {/* Under review notice — distinguish smurfing guard vs. threshold review */}
+                    {isReview && (() => {
+                      const reason = ev.review_reason ?? "";
+                      const isSmurfing = reason.toLowerCase().startsWith("smurfing guard");
+                      return (
+                        <div className="mt-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-2 space-y-1">
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                            {isSmurfing
+                              ? "Flagged by 24h velocity guard — manual review in progress."
+                              : "Above auto-credit threshold — manual review in progress."}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {isSmurfing
+                              ? "Your on-chain transfer is confirmed and safe. This deposit on its own was within the auto-credit limit, but your combined deposits over the last 24 hours crossed it — our team will verify and credit it shortly (typically within a few hours)."
+                              : "On-chain transfer is confirmed and safe. Our team verifies large deposits before crediting; this typically completes within a few hours."}
+                          </p>
+                          {reason && (
+                            <p className="text-[10px] text-muted-foreground/80 font-mono pt-1 border-t border-amber-500/10">
+                              Review reason: {reason}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Rejected reason */}
                     {isRejected && (
