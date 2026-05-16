@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw, Download, Calendar as CalendarIcon } from "lucide-react";
+import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw, Download, Calendar as CalendarIcon, ShieldAlert, Ban } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,12 +20,14 @@ interface BscDepositEvent {
   tx_hash: string;
   amount_usd: number;
   confirmations: number;
-  status: "detected" | "credited" | "orphaned";
+  status: "detected" | "credited" | "orphaned" | "manual_review" | "rejected";
   detected_at: string;
   credited_at: string | null;
+  review_reason: string | null;
+  reviewed_at: string | null;
 }
 
-type StatusFilter = "all" | "pending" | "confirmed" | "failed";
+type StatusFilter = "all" | "pending" | "review" | "confirmed" | "failed";
 
 export default function BscDepositPanel() {
   const { user } = useAuth();
@@ -125,7 +127,11 @@ export default function BscDepositPanel() {
       return;
     }
     const statusLabel = (s: BscDepositEvent["status"]) =>
-      s === "credited" ? "Confirmed" : s === "orphaned" ? "Failed" : "Pending";
+      s === "credited" ? "Confirmed" :
+      s === "orphaned" ? "Failed" :
+      s === "manual_review" ? "Under Review" :
+      s === "rejected" ? "Rejected" :
+      "Pending";
     const escape = (v: unknown) => {
       const s = String(v ?? "");
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -190,7 +196,7 @@ export default function BscDepositPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bsc_deposit_events")
-        .select("id, token, tx_hash, amount_usd, confirmations, status, detected_at, credited_at")
+        .select("id, token, tx_hash, amount_usd, confirmations, status, detected_at, credited_at, review_reason, reviewed_at")
         .eq("user_id", user!.id)
         .order("detected_at", { ascending: false })
         .limit(100);
@@ -228,6 +234,16 @@ export default function BscDepositPanel() {
               } else if (newStatus === "orphaned") {
                 toast.error(`Deposit failed: $${amount.toFixed(2)} ${token}`, {
                   description: short ? `Tx ${short} was orphaned. Contact support if funds were sent.` : undefined,
+                  duration: 10000,
+                });
+              } else if (newStatus === "manual_review") {
+                toast.message(`Deposit under review: $${amount.toFixed(2)} ${token}`, {
+                  description: "Above auto-credit threshold — our team will review shortly.",
+                  duration: 8000,
+                });
+              } else if (newStatus === "rejected") {
+                toast.error(`Deposit rejected: $${amount.toFixed(2)} ${token}`, {
+                  description: short ? `Tx ${short} was rejected after review. Contact support.` : undefined,
                   duration: 10000,
                 });
               }
@@ -482,14 +498,16 @@ export default function BscDepositPanel() {
           {([
             { key: "all", label: "All" },
             { key: "pending", label: "Pending" },
+            { key: "review", label: "Review" },
             { key: "confirmed", label: "Confirmed" },
             { key: "failed", label: "Failed" },
           ] as { key: StatusFilter; label: string }[]).map((p) => {
             const count =
               p.key === "all" ? events.length :
               p.key === "pending" ? events.filter((e) => e.status === "detected").length :
+              p.key === "review" ? events.filter((e) => e.status === "manual_review").length :
               p.key === "confirmed" ? events.filter((e) => e.status === "credited").length :
-              events.filter((e) => e.status === "orphaned").length;
+              events.filter((e) => e.status === "orphaned" || e.status === "rejected").length;
             const active = filter === p.key;
             return (
               <button
@@ -517,8 +535,9 @@ export default function BscDepositPanel() {
             const statusOk =
               filter === "all" ? true :
               filter === "pending" ? e.status === "detected" :
+              filter === "review" ? e.status === "manual_review" :
               filter === "confirmed" ? e.status === "credited" :
-              e.status === "orphaned";
+              (e.status === "orphaned" || e.status === "rejected");
             const searchOk = q ? e.tx_hash.toLowerCase().includes(q) : true;
             return statusOk && searchOk;
           });
@@ -538,7 +557,10 @@ export default function BscDepositPanel() {
               {filtered.map((ev) => {
                 const isPending = ev.status === "detected";
                 const isConfirmed = ev.status === "credited";
-                const isFailed = ev.status === "orphaned";
+                const isOrphaned = ev.status === "orphaned";
+                const isReview = ev.status === "manual_review";
+                const isRejected = ev.status === "rejected";
+                const isFailed = isOrphaned || isRejected;
                 const progressPct = Math.min(100, (ev.confirmations / CONFIRMATIONS_REQUIRED) * 100);
                 return (
                   <motion.div
@@ -548,6 +570,7 @@ export default function BscDepositPanel() {
                     className={`rounded-xl border bg-card p-3 text-xs ${
                       isConfirmed ? "border-emerald-500/30" :
                       isFailed ? "border-destructive/30" :
+                      isReview ? "border-amber-500/40" :
                       "border-primary/30"
                     }`}
                   >
@@ -555,7 +578,9 @@ export default function BscDepositPanel() {
                       <div className="flex items-center gap-2 min-w-0">
                         {isConfirmed && <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />}
                         {isPending && <Loader2 className="w-4 h-4 animate-spin text-primary shrink-0" />}
-                        {isFailed && <XCircle className="w-4 h-4 text-destructive shrink-0" />}
+                        {isOrphaned && <XCircle className="w-4 h-4 text-destructive shrink-0" />}
+                        {isReview && <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />}
+                        {isRejected && <Ban className="w-4 h-4 text-destructive shrink-0" />}
                         <span className="font-semibold truncate">
                           ${Number(ev.amount_usd).toFixed(2)} {ev.token}
                         </span>
@@ -563,9 +588,14 @@ export default function BscDepositPanel() {
                       <span className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                         isConfirmed ? "text-emerald-500" :
                         isFailed ? "text-destructive" :
+                        isReview ? "text-amber-500" :
                         "text-primary"
                       }`}>
-                        {isConfirmed ? "Confirmed" : isFailed ? "Failed" : "Pending"}
+                        {isConfirmed ? "Confirmed" :
+                         isRejected ? "Rejected" :
+                         isOrphaned ? "Failed" :
+                         isReview ? "Under Review" :
+                         "Pending"}
                       </span>
                     </div>
 
@@ -587,8 +617,37 @@ export default function BscDepositPanel() {
                       </div>
                     )}
 
-                    {/* Failure reason */}
-                    {isFailed && (
+                    {/* Under review notice */}
+                    {isReview && (
+                      <div className="mt-2 rounded-lg bg-amber-500/5 border border-amber-500/20 p-2 space-y-1">
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">
+                          Above auto-credit threshold — manual review in progress.
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          On-chain transfer is confirmed and safe. Our team verifies large deposits before crediting; this typically completes within a few hours.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Rejected reason */}
+                    {isRejected && (
+                      <div className="mt-2 rounded-lg bg-destructive/5 border border-destructive/20 p-2 space-y-1">
+                        <p className="text-[10px] text-destructive font-semibold">
+                          Rejected after review{ev.reviewed_at ? ` · ${formatDistanceToNow(new Date(ev.reviewed_at), { addSuffix: true })}` : ""}.
+                        </p>
+                        {ev.review_reason && (
+                          <p className="text-[10px] text-muted-foreground">
+                            Reason: {ev.review_reason}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground">
+                          Contact support with the tx hash if you believe this is a mistake.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Orphaned reason */}
+                    {isOrphaned && (
                       <p className="mt-1.5 text-[10px] text-destructive/90">
                         Orphaned by chain reorg or duplicate. Contact support with the tx hash if funds were sent.
                       </p>
