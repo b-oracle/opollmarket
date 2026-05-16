@@ -494,14 +494,18 @@ export type Database = {
           last_reverify_details: Json | null
           last_reverify_status: string | null
           log_index: number
+          next_reverify_at: string | null
           reverify_count: number
           review_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          rpc_error_count: number
           status: string
           token: string
           token_contract: string
+          tx_failed_count: number
           tx_hash: string
+          tx_missing_count: number
           user_id: string
         }
         Insert: {
@@ -519,14 +523,18 @@ export type Database = {
           last_reverify_details?: Json | null
           last_reverify_status?: string | null
           log_index: number
+          next_reverify_at?: string | null
           reverify_count?: number
           review_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          rpc_error_count?: number
           status?: string
           token: string
           token_contract: string
+          tx_failed_count?: number
           tx_hash: string
+          tx_missing_count?: number
           user_id: string
         }
         Update: {
@@ -544,14 +552,18 @@ export type Database = {
           last_reverify_details?: Json | null
           last_reverify_status?: string | null
           log_index?: number
+          next_reverify_at?: string | null
           reverify_count?: number
           review_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          rpc_error_count?: number
           status?: string
           token?: string
           token_contract?: string
+          tx_failed_count?: number
           tx_hash?: string
+          tx_missing_count?: number
           user_id?: string
         }
         Relationships: [
