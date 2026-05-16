@@ -19,6 +19,7 @@ const MAX_BLOCKS_PER_RUN = 500;   // ~25 min of BSC per tick
 const CHUNK_BLOCKS = 25;          // safer default — public BSC RPCs cap eth_getLogs aggressively
 const MIN_CHUNK_BLOCKS = 1;       // floor when halving on "limit exceeded"
 const MIN_USD = 1;                // ignore dust
+const MAX_AUTO_CREDIT_USD = Number(Deno.env.get("BSC_MAX_AUTO_CREDIT_USD") ?? "5000");
 
 async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
   const r = await fetch(url, {
@@ -151,6 +152,8 @@ Deno.serve(async (req) => {
     // 6. Filter logs where `to` is one of our addresses
     const inserts: any[] = [];
     for (const log of logs) {
+      // Skip logs from reorged blocks
+      if (log.removed === true) continue;
       const to_addr = topicToAddress(log.topics[2]);
       const user_id = addrMap.get(to_addr);
       if (!user_id) continue;
@@ -170,7 +173,8 @@ Deno.serve(async (req) => {
         amount_wei: BigInt(log.data).toString(),
         amount_usd: amountUsd,
         confirmations: Math.max(0, head - Number(hexToBigInt(log.blockNumber))),
-        status: "detected",
+        // Large deposits go to manual review, not auto-credit
+        status: amountUsd > MAX_AUTO_CREDIT_USD ? "manual_review" : "detected",
       });
     }
 
