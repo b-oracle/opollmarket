@@ -35,25 +35,10 @@ async function loadMaxAutoCreditUsd(admin: any): Promise<number> {
   return MAX_AUTO_CREDIT_USD_FALLBACK;
 }
 
-async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const j = await r.json();
-  if (j.error) {
-    const err: any = new Error(`${method} rpc error: ${JSON.stringify(j.error)}`);
-    err.code = j.error.code;
-    err.rpcMessage = j.error.message;
-    throw err;
-  }
-  return j.result;
-}
-
-// eth_getLogs with adaptive halving on "limit exceeded" / response-size errors
+// eth_getLogs with adaptive halving on "limit exceeded" / response-size errors.
+// All RPC calls go through bscRpc → automatic primary→fallback failover + alerting.
 async function getLogsAdaptive(
-  rpcUrl: string,
+  admin: any,
   fromBlock: number,
   toBlock: number,
   address: string[],
@@ -62,23 +47,23 @@ async function getLogsAdaptive(
   const isLimit = (e: any) => {
     if (!e) return false;
     if (e.code === -32005 || e.code === -32602 || e.code === -32600) return true;
-    const m = String(e.rpcMessage || e.message || "").toLowerCase();
+    const m = String(e.rpcMessage || e.message || e.primaryError?.message || e.fallbackError?.message || "").toLowerCase();
     return m.includes("limit exceeded") || m.includes("response size") ||
       m.includes("too many") || m.includes("range");
   };
   try {
-    return await rpc(rpcUrl, "eth_getLogs", [{
+    return await bscRpc("eth_getLogs", [{
       fromBlock: "0x" + fromBlock.toString(16),
       toBlock: "0x" + toBlock.toString(16),
       address,
       topics,
-    }]);
+    }], { admin, alertSource: "bsc-deposit-poller" }) as any[];
   } catch (e: any) {
     const span = toBlock - fromBlock + 1;
     if (isLimit(e) && span > MIN_CHUNK_BLOCKS) {
       const mid = fromBlock + Math.floor(span / 2) - 1;
-      const left = await getLogsAdaptive(rpcUrl, fromBlock, mid, address, topics);
-      const right = await getLogsAdaptive(rpcUrl, mid + 1, toBlock, address, topics);
+      const left = await getLogsAdaptive(admin, fromBlock, mid, address, topics);
+      const right = await getLogsAdaptive(admin, mid + 1, toBlock, address, topics);
       return left.concat(right);
     }
     throw e;
@@ -104,8 +89,7 @@ Deno.serve(async (req) => {
   if (!auth.ok) return auth.response!;
 
   try {
-    const RPC_URL = Deno.env.get("BSC_RPC_URL");
-    if (!RPC_URL) throw new Error("BSC_RPC_URL not configured");
+    if (!Deno.env.get("BSC_RPC_URL")) throw new Error("BSC_RPC_URL not configured");
     const admin = createClient(
       Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -158,7 +142,7 @@ Deno.serve(async (req) => {
         for (let ri = 0; ri < recipientTopics.length; ri += RECIP_CHUNK) {
           const recips = recipientTopics.slice(ri, ri + RECIP_CHUNK);
           const chunk: any[] = await getLogsAdaptive(
-            RPC_URL,
+            admin,
             start,
             end,
             Object.keys(TOKENS),
