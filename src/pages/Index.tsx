@@ -433,7 +433,7 @@ const Index = () => {
         </div>
 
         {/* Filter tabs */}
-        <div className="flex gap-1.5 p-1 rounded-xl bg-muted/50 mb-4">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar p-1 rounded-xl bg-muted/50 mb-4">
           {([
             { key: "all" as const, label: "All" },
             { key: "live" as const, label: "🔴 Live", count: liveCount },
@@ -445,7 +445,7 @@ const Index = () => {
             <button
               key={tab.key}
               onClick={() => setFilter(tab.key)}
-              className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1 ${
+              className={`flex-shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
                 filter === tab.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
               }`}
             >
