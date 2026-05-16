@@ -490,7 +490,11 @@ export type Database = {
           detected_at: string
           from_address: string
           id: string
+          last_reverified_at: string | null
+          last_reverify_details: Json | null
+          last_reverify_status: string | null
           log_index: number
+          reverify_count: number
           review_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -511,7 +515,11 @@ export type Database = {
           detected_at?: string
           from_address: string
           id?: string
+          last_reverified_at?: string | null
+          last_reverify_details?: Json | null
+          last_reverify_status?: string | null
           log_index: number
+          reverify_count?: number
           review_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -532,7 +540,11 @@ export type Database = {
           detected_at?: string
           from_address?: string
           id?: string
+          last_reverified_at?: string | null
+          last_reverify_details?: Json | null
+          last_reverify_status?: string | null
           log_index?: number
+          reverify_count?: number
           review_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -5874,6 +5886,10 @@ export type Database = {
       start_dm_conversation: {
         Args: { _other_user_id: string }
         Returns: string
+      }
+      system_reject_bsc_deposit: {
+        Args: { _event_id: string; _reason: string }
+        Returns: undefined
       }
       toggle_message_reaction: {
         Args: { _emoji: string; _message_id: string; _table: string }
