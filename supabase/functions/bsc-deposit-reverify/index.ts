@@ -58,8 +58,7 @@ Deno.serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const RPC_URL = Deno.env.get("BSC_RPC_URL");
-    if (!RPC_URL) return json({ error: "Server not configured" }, 500);
+    if (!Deno.env.get("BSC_RPC_URL")) return json({ error: "Server not configured" }, 500);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
