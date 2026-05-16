@@ -136,12 +136,13 @@ Deno.serve(async (req) => {
         const end = Math.min(to, start + CHUNK_BLOCKS - 1);
         for (let ri = 0; ri < recipientTopics.length; ri += RECIP_CHUNK) {
           const recips = recipientTopics.slice(ri, ri + RECIP_CHUNK);
-          const chunk: any[] = await rpc(RPC_URL, "eth_getLogs", [{
-            fromBlock: "0x" + start.toString(16),
-            toBlock: "0x" + end.toString(16),
-            address: Object.keys(TOKENS),
-            topics: [TRANSFER_TOPIC, null, recips],
-          }]);
+          const chunk: any[] = await getLogsAdaptive(
+            RPC_URL,
+            start,
+            end,
+            Object.keys(TOKENS),
+            [TRANSFER_TOPIC, null, recips],
+          );
           logs.push(...chunk);
         }
       }
