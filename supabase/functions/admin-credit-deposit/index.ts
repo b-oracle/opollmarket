@@ -34,13 +34,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Require admin, super_admin, or support role
-    const [{ data: isAdmin }, { data: isSuperAdmin }, { data: isSupport }] = await Promise.all([
+    // Restrict to admin/super_admin. `support` is explicitly excluded —
+    // direct balance crediting is not a support function.
+    const [{ data: isAdmin }, { data: isSuperAdmin }] = await Promise.all([
       adminClient.rpc("has_role", { _user_id: user.id, _role: "admin" }),
       adminClient.rpc("has_role", { _user_id: user.id, _role: "super_admin" }),
-      adminClient.rpc("has_role", { _user_id: user.id, _role: "support" }),
     ]);
-    if (!isAdmin && !isSuperAdmin && !isSupport) return json({ error: "Forbidden" }, 403);
+    if (!isAdmin && !isSuperAdmin) return json({ error: "Forbidden" }, 403);
+
+    // Per-request and 24h caps, scaled by privilege level.
+    const PER_REQUEST_CAP = isSuperAdmin ? 100_000 : 10_000;
+    const DAILY_CAP = isSuperAdmin ? 500_000 : 50_000;
 
     // Parse & validate input
     const body = await req.json();
@@ -51,11 +55,34 @@ Deno.serve(async (req) => {
     if (!targetUserId || typeof targetUserId !== "string") {
       return json({ error: "user_id is required" }, 400);
     }
-    if (!amount || typeof amount !== "number" || amount <= 0) {
+    if (!amount || typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
       return json({ error: "amount must be a positive number" }, 400);
     }
-    if (amount > 100_000) {
-      return json({ error: "Amount exceeds maximum allowed ($100,000)" }, 400);
+    if (amount > PER_REQUEST_CAP) {
+      return json({
+        error: `Amount exceeds per-request cap ($${PER_REQUEST_CAP.toLocaleString()}). Ask a super_admin for larger credits.`,
+      }, 400);
+    }
+    if (!description || typeof description !== "string" || description.trim().length < 5) {
+      return json({ error: "description is required (min 5 chars) for audit trail" }, 400);
+    }
+
+    // 24h rolling cap per actor — sum prior admin_credit_deposit audit entries.
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentLogs } = await adminClient
+      .from("audit_logs")
+      .select("details")
+      .eq("actor_id", user.id)
+      .eq("action", "admin_credit_deposit")
+      .gte("created_at", since);
+    const used24h = (recentLogs || []).reduce(
+      (sum, row: any) => sum + (Number(row?.details?.amount) || 0),
+      0,
+    );
+    if (used24h + amount > DAILY_CAP) {
+      return json({
+        error: `24h credit cap exceeded: used $${used24h.toLocaleString()} of $${DAILY_CAP.toLocaleString()}. Requested $${amount.toLocaleString()} would exceed cap.`,
+      }, 429);
     }
 
     // Verify the target user exists
