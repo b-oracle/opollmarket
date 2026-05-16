@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X } from "lucide-react";
+import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +29,31 @@ export default function BscDepositPanel() {
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
+  const [rescanning, setRescanning] = useState(false);
+
+  const rescan = async () => {
+    if (rescanning) return;
+    setRescanning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("bsc-deposit-rescan", { body: {} });
+      if (error || (data as any)?.error) {
+        const err = (data as any)?.error || error?.message;
+        if (err === "cooldown") {
+          const secs = Math.ceil(((data as any)?.retry_after_ms || 0) / 1000);
+          toast.message(`Please wait ${secs}s before rescanning again.`);
+        } else {
+          toast.error("Rescan failed. Try again shortly.");
+        }
+        return;
+      }
+      toast.success("Rescan complete — confirmations refreshed.");
+      qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user?.id] });
+    } catch {
+      toast.error("Rescan failed. Try again shortly.");
+    } finally {
+      setRescanning(false);
+    }
+  };
 
   // 1. Fetch / allocate this user's deposit address
   const {
@@ -177,7 +202,18 @@ export default function BscDepositPanel() {
       <div>
         <div className="flex items-center justify-between mb-2 px-1">
           <p className="text-xs font-semibold text-muted-foreground">Deposit history</p>
-          <span className="text-[10px] text-muted-foreground">{events.length} total</span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-muted-foreground">{events.length} total</span>
+            <button
+              onClick={rescan}
+              disabled={rescanning}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              aria-label="Rescan pending deposits"
+            >
+              <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
+              {rescanning ? "Rescanning…" : "Rescan"}
+            </button>
+          </div>
         </div>
 
         {/* Search by tx hash */}
