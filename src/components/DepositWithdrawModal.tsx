@@ -826,35 +826,9 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                       )}
                     </div>
 
-                    {/* Direct BSC deposit — bypasses payment processors */}
-                    {isDeposit && user && paymentMethod !== "bsc_direct" && (
-                      <button
-                        onClick={() => setPaymentMethod("bsc_direct")}
-                        className="w-full mb-4 rounded-xl border border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5 p-3 flex items-center gap-3 text-left hover:border-primary/60 transition-all active:scale-[0.98]"
-                      >
-                        <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                          <Zap className="w-4 h-4 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold flex items-center gap-1.5">
-                            Direct BSC Deposit
-                            <span className="text-[9px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">No fees</span>
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">USDT / USDC on BNB Chain — auto-credited</p>
-                        </div>
-                      </button>
-                    )}
-
-                    {isDeposit && paymentMethod === "bsc_direct" && (
-                      <>
-                        <button
-                          onClick={() => setPaymentMethod("crypto")}
-                          className="mb-3 text-[11px] text-muted-foreground hover:text-foreground"
-                        >
-                          ← Back to other deposit methods
-                        </button>
-                        <BscDepositPanel />
-                      </>
+                    {/* Deposits are exclusively handled by Direct BSC deposit (NOWPayments deposits disabled) */}
+                    {isDeposit && (
+                      <BscDepositPanel />
                     )}
 
                     {!(isDeposit && paymentMethod === "bsc_direct") && <>
