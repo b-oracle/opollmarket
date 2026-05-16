@@ -437,6 +437,7 @@ const Index = () => {
           {([
             { key: "all" as const, label: "All" },
             { key: "live" as const, label: "🔴 Live", count: liveCount },
+            { key: "updown" as const, label: "📈 Up & Down" },
             { key: "new" as const, label: "New", icon: true },
             { key: "boosted" as const, label: "⚡ Boosted" },
             { key: "trending" as const, label: "🔥 Trending" },
