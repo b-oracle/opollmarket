@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
       still_pending: stillPending,
       updated,
       credited,
+      flagged_for_review: flaggedReview,
       failed,
       head,
     });
