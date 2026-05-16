@@ -111,16 +111,21 @@ function buildTitle(asset: string, durationMin: number): string {
 
 function buildDescription(asset: string, durationMin: number): string {
   const name = ASSET_NAME[asset] ?? asset;
-  return `This market resolves to "Yes" if ${name} (${asset}/USD) closes higher than or equal to its opening price after ${durationLabel(durationMin)}. Otherwise it resolves to "No". Resolution source: Binance spot price with CoinGecko fallback.`;
+  const isCommodity = !!TWELVE_DATA_COMMODITY[asset];
+  const source = isCommodity
+    ? "Twelve Data spot price with metals.dev fallback"
+    : "Binance spot price with CoinGecko fallback";
+  return `This market resolves to "Yes" if ${name} (${asset}/USD) closes higher than or equal to its opening price after ${durationLabel(durationMin)}. Otherwise it resolves to "No". Resolution source: ${source}.`;
 }
 
-// ─── Asset image URLs (use CoinGecko CDN) ────────────────────────────────────
+// ─── Asset image URLs ────────────────────────────────────────────────────────
 const ASSET_IMAGES: Record<string, string> = {
   BTC: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png",
   ETH: "https://assets.coingecko.com/coins/images/279/large/ethereum.png",
   BNB: "https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png",
   SOL: "https://assets.coingecko.com/coins/images/4128/large/solana.png",
   XRP: "https://assets.coingecko.com/coins/images/44/large/xrp-symbol-white-128.png",
+  XAG: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Silver_bullion_2_-_5000_grams.jpg/640px-Silver_bullion_2_-_5000_grams.jpg",
 };
 
 Deno.serve(async (req) => {
