@@ -467,6 +467,9 @@ export type Database = {
           from_address: string
           id: string
           log_index: number
+          review_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
           token: string
           token_contract: string
@@ -485,6 +488,9 @@ export type Database = {
           from_address: string
           id?: string
           log_index: number
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           token: string
           token_contract: string
@@ -503,6 +509,9 @@ export type Database = {
           from_address?: string
           id?: string
           log_index?: number
+          review_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
           token?: string
           token_contract?: string
@@ -5201,6 +5210,10 @@ export type Database = {
           id: string
           username: string
         }[]
+      }
+      admin_reject_bsc_deposit: {
+        Args: { _event_id: string; _reason: string }
+        Returns: undefined
       }
       admin_search_profiles: {
         Args: { _limit?: number; _offset?: number; _term?: string }

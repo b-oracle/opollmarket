@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { to: "/admin/transactions", label: "Transactions", icon: Receipt, roles: ["super_admin", "admin"] },
   { to: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, roles: ["super_admin", "admin"] },
   { to: "/admin/deposits", label: "Deposits", icon: ArrowDownToLine, roles: ["super_admin", "admin", "support"] },
+  { to: "/admin/bsc-review", label: "BSC Deposit Review", icon: ShieldAlert, roles: ["super_admin", "admin"] },
   { to: "/admin/reconciliation", label: "Reconciliation", icon: Scale, roles: ["super_admin", "admin"] },
   { to: "/admin/webhook-logs", label: "Webhook Logs", icon: History, roles: ["super_admin", "admin"] },
   { to: "/admin/webhook-events", label: "Webhook Retries", icon: RotateCcw, roles: ["super_admin", "admin"] },
