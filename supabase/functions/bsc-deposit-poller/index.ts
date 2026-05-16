@@ -204,15 +204,44 @@ Deno.serve(async (req) => {
 async function updateConfirmationsAndCredit(admin: any, head: number): Promise<number> {
   const { data: pending } = await admin
     .from("bsc_deposit_events")
-    .select("id, block_number")
+    .select("id, block_number, tx_hash, log_index, address, amount_wei, token_contract")
     .eq("status", "detected")
     .limit(500);
   if (!pending || !pending.length) return 0;
 
+  const RPC_URL = Deno.env.get("BSC_RPC_URL")!;
   let creditedCount = 0;
   for (const row of pending) {
     const confirmations = Math.max(0, head - Number(row.block_number));
     if (confirmations >= CONFIRMATIONS_REQUIRED) {
+      // Re-verify the on-chain receipt before crediting.
+      // Guards against: chain reorgs, poisoned RPC responses, indexer bugs.
+      let verified = false;
+      try {
+        const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [row.tx_hash]);
+        if (!receipt || receipt.status !== "0x1") {
+          console.warn("receipt missing or failed", row.tx_hash);
+        } else {
+          const matching = (receipt.logs || []).find((l: any) =>
+            Number(BigInt(l.logIndex)) === Number(row.log_index) &&
+            String(l.address).toLowerCase() === String(row.token_contract).toLowerCase() &&
+            topicToAddress(l.topics?.[2] ?? "") === String(row.address).toLowerCase() &&
+            BigInt(l.data) === BigInt(row.amount_wei),
+          );
+          verified = !!matching;
+        }
+      } catch (e) {
+        console.error("receipt verify error", row.id, (e as Error).message);
+      }
+
+      if (!verified) {
+        // Flip to manual_review so an admin can inspect rather than auto-credit.
+        await admin.from("bsc_deposit_events")
+          .update({ status: "manual_review" })
+          .eq("id", row.id);
+        continue;
+      }
+
       const { error } = await admin.rpc("credit_bsc_deposit", { _event_id: row.id });
       if (error) console.error("credit_bsc_deposit failed", row.id, error.message);
       else creditedCount++;
