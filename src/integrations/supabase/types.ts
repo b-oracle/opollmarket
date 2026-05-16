@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_action_idempotency: {
+        Row: {
+          action: string
+          actor_id: string
+          created_at: string
+          idempotency_key: string
+          request_hash: string | null
+          response: Json | null
+          target_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          created_at?: string
+          idempotency_key: string
+          request_hash?: string | null
+          response?: Json | null
+          target_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          created_at?: string
+          idempotency_key?: string
+          request_hash?: string | null
+          response?: Json | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       admin_notification_broadcasts: {
         Row: {
           created_at: string

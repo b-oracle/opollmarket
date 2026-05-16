@@ -52,9 +52,22 @@ Deno.serve(async (req) => {
     const targetUserId: string | undefined = body.user_id;
     const amount: number | undefined = body.amount;
     const description: string | undefined = body.description;
+    const idempotencyKey: string | undefined =
+      body.idempotency_key || req.headers.get("Idempotency-Key") || undefined;
 
     if (!targetUserId || typeof targetUserId !== "string") {
       return json({ error: "user_id is required" }, 400);
+    }
+    if (
+      !idempotencyKey ||
+      typeof idempotencyKey !== "string" ||
+      idempotencyKey.length < 8 ||
+      idempotencyKey.length > 200
+    ) {
+      return json({
+        error:
+          "idempotency_key is required (8-200 chars); supply via body.idempotency_key or Idempotency-Key header",
+      }, 400);
     }
     if (!amount || typeof amount !== "number" || !Number.isFinite(amount) || amount <= 0) {
       return json({ error: "amount must be a positive number" }, 400);
@@ -97,8 +110,48 @@ Deno.serve(async (req) => {
       return json({ error: "User not found" }, 404);
     }
 
+    // Idempotency reservation — atomic INSERT on (action, idempotency_key) PK.
+    // If the key already exists, return the prior response and DO NOT credit again.
+    const requestHash = `${targetUserId}:${amount}`;
+    const { error: idemErr } = await adminClient
+      .from("admin_action_idempotency")
+      .insert({
+        action: "admin_credit_deposit",
+        idempotency_key: idempotencyKey,
+        actor_id: user.id,
+        target_id: targetUserId,
+        request_hash: requestHash,
+      });
+
+    if (idemErr) {
+      // Duplicate key — replay. Look up the prior record and return its response.
+      const { data: existing } = await adminClient
+        .from("admin_action_idempotency")
+        .select("response, request_hash, actor_id")
+        .eq("action", "admin_credit_deposit")
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+
+      if (!existing) {
+        // Insert failed for a non-duplicate reason
+        console.error("Idempotency insert failed:", idemErr);
+        return json({ error: "Idempotency check failed" }, 500);
+      }
+      // Reject if the same key is reused with different parameters (collision/abuse).
+      if (existing.request_hash && existing.request_hash !== requestHash) {
+        return json({
+          error: "idempotency_key reused with different parameters",
+        }, 409);
+      }
+      if (existing.response) {
+        return json({ ...(existing.response as Record<string, unknown>), replayed: true });
+      }
+      // Reservation exists but no response cached yet — a concurrent request is in-flight.
+      return json({ error: "Duplicate request in progress", replayed: true }, 409);
+    }
+
     // Credit the user's main balance (audited via balanceLogger)
-    const correlationId = `admin-credit:${user.id}:${Date.now()}`;
+    const correlationId = `admin-credit:${user.id}:${idempotencyKey}`;
     const balResult = await adjustBalanceLogged(adminClient, {
       userId: targetUserId,
       delta: amount,
@@ -109,6 +162,12 @@ Deno.serve(async (req) => {
     });
     if (!balResult.success) {
       console.error("Failed to credit balance:", balResult.error);
+      // Release the idempotency reservation so the admin can retry safely.
+      await adminClient
+        .from("admin_action_idempotency")
+        .delete()
+        .eq("action", "admin_credit_deposit")
+        .eq("idempotency_key", idempotencyKey);
       return json({ error: "Balance credit failed", correlation_id: balResult.correlation_id }, 500);
     }
 
@@ -258,12 +317,23 @@ Deno.serve(async (req) => {
       `Admin ${user.id} credited $${amount.toFixed(2)} to user ${targetUserId} (${profile.display_name})`,
     );
 
-    return json({
+    const responsePayload = {
       success: true,
       transaction_id: tx?.id || null,
       credited_amount: amount,
       user_id: targetUserId,
-    });
+      correlation_id: correlationId,
+      idempotency_key: idempotencyKey,
+    };
+
+    // Cache the response on the idempotency row so replays return the same result.
+    await adminClient
+      .from("admin_action_idempotency")
+      .update({ response: responsePayload })
+      .eq("action", "admin_credit_deposit")
+      .eq("idempotency_key", idempotencyKey);
+
+    return json(responsePayload);
   } catch (err) {
     if (err instanceof RpcContractError) {
       console.error("admin-credit-deposit contract error:", err.message);
