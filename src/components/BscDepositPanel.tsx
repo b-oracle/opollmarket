@@ -196,7 +196,7 @@ export default function BscDepositPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bsc_deposit_events")
-        .select("id, token, tx_hash, amount_usd, confirmations, status, detected_at, credited_at")
+        .select("id, token, tx_hash, amount_usd, confirmations, status, detected_at, credited_at, review_reason, reviewed_at")
         .eq("user_id", user!.id)
         .order("detected_at", { ascending: false })
         .limit(100);
