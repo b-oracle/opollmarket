@@ -323,15 +323,72 @@ export default function BscDepositPanel() {
               <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
               {rescanning ? "Rescanning…" : cooldownActive ? `Wait ${cooldownSecs}s` : "Rescan"}
             </button>
-            <button
-              onClick={exportCsv}
-              disabled={!events.length}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              aria-label="Export deposit history as CSV"
-            >
-              <Download className="w-3 h-3" />
-              CSV
-            </button>
+            <Popover open={exportOpen} onOpenChange={setExportOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  disabled={!events.length}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  aria-label="Export deposit history as CSV"
+                >
+                  <Download className="w-3 h-3" />
+                  CSV
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3 space-y-3" align="end">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold">Export deposits</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {exportRange?.from
+                      ? exportRange.to
+                        ? `${format(exportRange.from, "MMM d, yyyy")} – ${format(exportRange.to, "MMM d, yyyy")}`
+                        : `${format(exportRange.from, "MMM d, yyyy")} – pick end date`
+                      : "Pick a date range, or leave blank for all."}
+                  </p>
+                </div>
+                <Calendar
+                  mode="range"
+                  selected={exportRange}
+                  onSelect={setExportRange}
+                  numberOfMonths={1}
+                  disabled={(d) => d > new Date()}
+                  initialFocus
+                  className={cn("p-0 pointer-events-auto")}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExportRange(undefined)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                  >
+                    Clear
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportCsv(undefined);
+                        setExportOpen(false);
+                      }}
+                      className="px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70"
+                    >
+                      All time
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportCsv(exportRange);
+                        setExportOpen(false);
+                      }}
+                      disabled={!exportRange?.from}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-3 h-3" />
+                      Export
+                    </button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
