@@ -46,7 +46,22 @@ export default function BscDepositPanel() {
         }
         return;
       }
-      toast.success("Rescan complete — confirmations refreshed.");
+      const d = (data as any) || {};
+      const checked = d.checked ?? d.pending ?? 0;
+      const credited = d.credited ?? 0;
+      const failed = d.failed ?? 0;
+      const stillPending = d.still_pending ?? Math.max(0, checked - credited - failed);
+      if (checked === 0) {
+        toast.success("Rescan complete — no pending deposits to check.");
+      } else {
+        const parts = [
+          `${checked} re-checked`,
+          `${credited} confirmed`,
+          `${failed} failed`,
+          `${stillPending} still pending`,
+        ];
+        toast.success(`Rescan complete — ${parts.join(" · ")}`);
+      }
       qc.invalidateQueries({ queryKey: ["bsc-deposit-events", user?.id] });
     } catch {
       toast.error("Rescan failed. Try again shortly.");

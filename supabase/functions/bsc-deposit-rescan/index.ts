@@ -83,25 +83,33 @@ Deno.serve(async (req) => {
     // 3. Update confirmations / credit eligible
     let updated = 0;
     let credited = 0;
+    let failed = 0;
+    let stillPending = 0;
     for (const row of pending) {
       const confirmations = Math.max(0, head - Number(row.block_number));
       if (confirmations >= CONFIRMATIONS_REQUIRED) {
         const { error } = await admin.rpc("credit_bsc_deposit", { _event_id: row.id });
-        if (!error) credited++;
+        if (error) failed++;
+        else credited++;
       } else {
         const { error } = await admin
           .from("bsc_deposit_events")
           .update({ confirmations })
           .eq("id", row.id);
-        if (!error) updated++;
+        if (error) failed++;
+        else updated++;
+        stillPending++;
       }
     }
 
     return json({
       ok: true,
+      checked: pending.length,
       pending: pending.length,
+      still_pending: stillPending,
       updated,
       credited,
+      failed,
       head,
     });
   } catch (e) {
