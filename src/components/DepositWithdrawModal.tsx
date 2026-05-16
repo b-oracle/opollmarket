@@ -1310,6 +1310,7 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
                     >
                       {isDeposit ? "Continue" : "Review Withdrawal"}
                     </button>
+                    </>}
                   </motion.div>
                 )}
 
