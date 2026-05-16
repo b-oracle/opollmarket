@@ -118,7 +118,7 @@ Deno.serve(async (req) => {
 
     {
     // 1. Current head
-    const headHex = await rpc(RPC_URL, "eth_blockNumber", []);
+    const headHex = await bscRpc("eth_blockNumber", [], { admin, alertSource: "bsc-deposit-poller" }) as string;
     const head = Number(hexToBigInt(headHex));
 
     // 2. Last scanned block
