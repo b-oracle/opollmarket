@@ -2,6 +2,7 @@
 // Cron-only: requires x-cron-secret header.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { verifyCronSecret } from "../_shared/cronAuth.ts";
+import { bscRpc } from "../_shared/bscRpc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,7 +118,7 @@ Deno.serve(async (req) => {
 
     {
     // 1. Current head
-    const headHex = await rpc(RPC_URL, "eth_blockNumber", []);
+    const headHex = await bscRpc("eth_blockNumber", [], { admin, alertSource: "bsc-deposit-poller" }) as string;
     const head = Number(hexToBigInt(headHex));
 
     // 2. Last scanned block
@@ -238,6 +239,21 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error("bsc-deposit-poller error:", e);
+    // Best-effort alert (a fresh admin client — outer one may not be in scope here).
+    try {
+      const admin2 = createClient(
+        Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      );
+      await admin2.rpc("record_system_alert", {
+        _severity: "warning",
+        _source: "bsc-deposit-poller",
+        _code: "poller_run_failed",
+        _message: `Poller tick errored: ${(e as Error).message}`,
+        _details: { error: (e as Error).message },
+        _dedupe_minutes: 5,
+      });
+    } catch (_) { /* swallow */ }
     return new Response(JSON.stringify({ error: (e as Error).message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -252,7 +268,6 @@ async function updateConfirmationsAndCredit(admin: any, head: number): Promise<n
     .limit(500);
   if (!pending || !pending.length) return 0;
 
-  const RPC_URL = Deno.env.get("BSC_RPC_URL")!;
   let creditedCount = 0;
   for (const row of pending) {
     const confirmations = Math.max(0, head - Number(row.block_number));
@@ -261,7 +276,7 @@ async function updateConfirmationsAndCredit(admin: any, head: number): Promise<n
       // Guards against: chain reorgs, poisoned RPC responses, indexer bugs.
       let verified = false;
       try {
-        const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [row.tx_hash]);
+        const receipt = await bscRpc("eth_getTransactionReceipt", [row.tx_hash], { admin, alertSource: "bsc-deposit-poller" }) as any;
         if (!receipt || receipt.status !== "0x1") {
           console.warn("receipt missing or failed", row.tx_hash);
         } else {

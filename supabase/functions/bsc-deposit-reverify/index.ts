@@ -13,6 +13,7 @@
 // Designed to be called by pg_cron every few minutes. Idempotent and side-effect-light.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { verifyCronSecret } from "../_shared/cronAuth.ts";
+import { bscRpc } from "../_shared/bscRpc.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,16 +33,8 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function rpc(url: string, method: string, params: unknown[]): Promise<any> {
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-  });
-  const j = await r.json();
-  if (j.error) throw new Error(`${method}: ${j.error.message || JSON.stringify(j.error)}`);
-  return j.result;
-}
+// RPC calls go through bscRpc → automatic fallback rotation + alerting.
+
 
 type ReverifyOutcome =
   | "match"             // receipt still matches event exactly
@@ -65,8 +58,7 @@ Deno.serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const RPC_URL = Deno.env.get("BSC_RPC_URL");
-    if (!RPC_URL) return json({ error: "Server not configured" }, 500);
+    if (!Deno.env.get("BSC_RPC_URL")) return json({ error: "Server not configured" }, 500);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -93,7 +85,7 @@ Deno.serve(async (req) => {
 
     let head: number;
     try {
-      head = Number(BigInt(await rpc(RPC_URL, "eth_blockNumber", [])));
+      head = Number(BigInt(await bscRpc("eth_blockNumber", [], { admin, alertSource: "bsc-deposit-reverify" }) as string));
     } catch (e) {
       return json({ error: `head fetch failed: ${(e as Error).message}` }, 502);
     }
@@ -108,7 +100,7 @@ Deno.serve(async (req) => {
       const confirmations = Math.max(0, head - Number(ev.block_number));
 
       try {
-        const receipt = await rpc(RPC_URL, "eth_getTransactionReceipt", [ev.tx_hash]);
+        const receipt = await bscRpc("eth_getTransactionReceipt", [ev.tx_hash], { admin, alertSource: "bsc-deposit-reverify" }) as any;
         if (!receipt) {
           outcome = "tx_missing";
         } else {
@@ -242,8 +234,28 @@ Deno.serve(async (req) => {
               verification: details,
             },
           });
+          // Critical alert — humans should review what just got auto-rejected.
+          try {
+            await admin.rpc("record_system_alert", {
+              _severity: "critical",
+              _source: "bsc-deposit-reverify",
+              _code: "bsc_deposit_auto_rejected",
+              _message: `Auto-rejected BSC deposit ${ev.id} ($${Number(ev.amount_usd).toFixed(2)} ${ev.token}) for user ${ev.user_id}.`,
+              _details: { event_id: ev.id, user_id: ev.user_id, tx_hash: ev.tx_hash, amount_usd: Number(ev.amount_usd), token: ev.token, verification: details },
+              _dedupe_minutes: 1,
+            });
+          } catch (_) { /* swallow */ }
         } else {
           console.error("auto-reject failed:", ev.id, rejErr.message);
+          try {
+            await admin.rpc("record_system_alert", {
+              _severity: "critical",
+              _source: "bsc-deposit-reverify",
+              _code: "bsc_deposit_auto_reject_failed",
+              _message: `Auto-reject RPC failed for event ${ev.id}: ${rejErr.message}`,
+              _details: { event_id: ev.id, error: rejErr.message },
+            });
+          } catch (_) { /* swallow */ }
         }
       }
     }
