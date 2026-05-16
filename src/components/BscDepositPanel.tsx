@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw, Download } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink, Search, X, RefreshCw, Download, Calendar as CalendarIcon } from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const CONFIRMATIONS_REQUIRED = 12;
@@ -38,6 +42,8 @@ export default function BscDepositPanel() {
     | { kind: "error"; message: string; at: number };
   const [rescanResult, setRescanResult] = useState<RescanResult | null>(null);
   const [rescanStartedAt, setRescanStartedAt] = useState<number | null>(null);
+  const [exportRange, setExportRange] = useState<DateRange | undefined>(undefined);
+  const [exportOpen, setExportOpen] = useState(false);
 
   useEffect(() => {
     if (cooldownUntil <= Date.now() && !rescanning) return;
@@ -97,9 +103,25 @@ export default function BscDepositPanel() {
     }
   };
 
-  const exportCsv = () => {
+  const exportCsv = (range?: DateRange) => {
     if (!events.length) {
       toast.message("No deposits to export yet.");
+      return;
+    }
+    // Inclusive range: start at 00:00, end at 23:59:59.999 of selected day
+    const fromTs = range?.from ? new Date(range.from).setHours(0, 0, 0, 0) : null;
+    const toTs = range?.to
+      ? new Date(range.to).setHours(23, 59, 59, 999)
+      : range?.from
+      ? new Date(range.from).setHours(23, 59, 59, 999)
+      : null;
+    const filtered = events.filter((e) => {
+      if (fromTs == null) return true;
+      const t = new Date(e.detected_at).getTime();
+      return t >= fromTs && (toTs == null || t <= toTs);
+    });
+    if (!filtered.length) {
+      toast.message("No deposits in that date range.");
       return;
     }
     const statusLabel = (s: BscDepositEvent["status"]) =>
@@ -117,7 +139,7 @@ export default function BscDepositPanel() {
       "Confirmations",
       "Tx Hash",
     ];
-    const rows = events.map((e) => [
+    const rows = filtered.map((e) => [
       new Date(e.detected_at).toISOString(),
       e.credited_at ? new Date(e.credited_at).toISOString() : "",
       e.token,
@@ -131,12 +153,15 @@ export default function BscDepositPanel() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `bsc-deposits-${new Date().toISOString().slice(0, 10)}.csv`;
+    const suffix = range?.from
+      ? `${format(range.from, "yyyy-MM-dd")}_to_${format(range.to ?? range.from, "yyyy-MM-dd")}`
+      : new Date().toISOString().slice(0, 10);
+    a.download = `bsc-deposits-${suffix}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast.success(`Exported ${events.length} deposit${events.length === 1 ? "" : "s"} to CSV.`);
+    toast.success(`Exported ${filtered.length} deposit${filtered.length === 1 ? "" : "s"} to CSV.`);
   };
 
   // 1. Fetch / allocate this user's deposit address
@@ -298,15 +323,72 @@ export default function BscDepositPanel() {
               <RefreshCw className={`w-3 h-3 ${rescanning ? "animate-spin" : ""}`} />
               {rescanning ? "Rescanning…" : cooldownActive ? `Wait ${cooldownSecs}s` : "Rescan"}
             </button>
-            <button
-              onClick={exportCsv}
-              disabled={!events.length}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
-              aria-label="Export deposit history as CSV"
-            >
-              <Download className="w-3 h-3" />
-              CSV
-            </button>
+            <Popover open={exportOpen} onOpenChange={setExportOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  disabled={!events.length}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  aria-label="Export deposit history as CSV"
+                >
+                  <Download className="w-3 h-3" />
+                  CSV
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-3 space-y-3" align="end">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold">Export deposits</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {exportRange?.from
+                      ? exportRange.to
+                        ? `${format(exportRange.from, "MMM d, yyyy")} – ${format(exportRange.to, "MMM d, yyyy")}`
+                        : `${format(exportRange.from, "MMM d, yyyy")} – pick end date`
+                      : "Pick a date range, or leave blank for all."}
+                  </p>
+                </div>
+                <Calendar
+                  mode="range"
+                  selected={exportRange}
+                  onSelect={setExportRange}
+                  numberOfMonths={1}
+                  disabled={(d) => d > new Date()}
+                  initialFocus
+                  className={cn("p-0 pointer-events-auto")}
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExportRange(undefined)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2"
+                  >
+                    Clear
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportCsv(undefined);
+                        setExportOpen(false);
+                      }}
+                      className="px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-muted/40 text-foreground border border-border hover:bg-muted/70"
+                    >
+                      All time
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        exportCsv(exportRange);
+                        setExportOpen(false);
+                      }}
+                      disabled={!exportRange?.from}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <Download className="w-3 h-3" />
+                      Export
+                    </button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
