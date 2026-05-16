@@ -20,12 +20,14 @@ interface BscDepositEvent {
   tx_hash: string;
   amount_usd: number;
   confirmations: number;
-  status: "detected" | "credited" | "orphaned";
+  status: "detected" | "credited" | "orphaned" | "manual_review" | "rejected";
   detected_at: string;
   credited_at: string | null;
+  review_reason: string | null;
+  reviewed_at: string | null;
 }
 
-type StatusFilter = "all" | "pending" | "confirmed" | "failed";
+type StatusFilter = "all" | "pending" | "review" | "confirmed" | "failed";
 
 export default function BscDepositPanel() {
   const { user } = useAuth();
