@@ -71,8 +71,8 @@ export async function bscRpc(
       return result;
     } catch (fallbackErr) {
       if (opts.admin && opts.alertSource) {
-        await opts.admin
-          .rpc("record_system_alert", {
+        try {
+          await opts.admin.rpc("record_system_alert", {
             _severity: "critical",
             _source: opts.alertSource,
             _code: "bsc_rpc_total_failure",
@@ -83,9 +83,8 @@ export async function bscRpc(
               fallback_error: (fallbackErr as Error).message,
             },
             _dedupe_minutes: 5,
-          })
-          .then(() => {})
-          .catch(() => {});
+          });
+        } catch (_) { /* swallow */ }
       }
       // deno-lint-ignore no-explicit-any
       const wrapped: any = new Error(
