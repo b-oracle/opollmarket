@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles } from "lucide-react";
+import { Copy, Check, Loader2, ShieldCheck, AlertTriangle, Sparkles, XCircle, Clock, ExternalLink } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
