@@ -26,6 +26,7 @@ import { useBatchCounts } from "@/hooks/useBatchCounts";
 import useAnalytics from "@/hooks/useAnalytics";
 import { useQuery } from "@tanstack/react-query";
 import { createStatelessReadClient } from "@/lib/statelessSupabase";
+import { supabase } from "@/integrations/supabase/client";
 
 
 const formatVolume = (v: number) => {
@@ -98,13 +99,21 @@ const Index = () => {
   });
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
 
-  // Capture referral param and redirect to signup (only if not already logged in)
+  // Capture referral param and redirect to signup (only if not already logged in).
+  // Resolve username -> UUID up front so OAuth/email signups both attribute correctly.
   useEffect(() => {
-    if (authLoading) return; // Wait for auth to resolve before deciding
+    if (authLoading) return;
     const ref = searchParams.get("ref");
     if (ref && !user) {
-      localStorage.setItem("referral_id", ref);
-      navigate(`/auth?ref=${encodeURIComponent(ref)}`, { replace: true });
+      (async () => {
+        try {
+          const { data: referrerId } = await supabase.rpc("get_user_id_by_username", {
+            _username: ref.trim(),
+          });
+          if (referrerId) localStorage.setItem("referral_id", referrerId as string);
+        } catch { /* ignore — trigger fallback also handles usernames */ }
+        navigate(`/auth?ref=${encodeURIComponent(ref)}`, { replace: true });
+      })();
     }
   }, [searchParams, navigate, user, authLoading]);
 
