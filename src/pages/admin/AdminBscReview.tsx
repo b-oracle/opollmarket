@@ -317,6 +317,59 @@ const AdminBscReview = () => {
                   </div>
                 )}
               </div>
+
+              {/* Audit history */}
+              {auditMap?.[ev.id]?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-[11px] font-semibold text-muted-foreground mb-2 uppercase tracking-wide">
+                    Audit trail
+                  </div>
+                  <div className="space-y-2">
+                    {auditMap[ev.id].map((a: any) => {
+                      const v = a.details?.verification || {};
+                      const isApprove = a.action === "bsc_deposit_approve";
+                      return (
+                        <details key={a.id} className="text-xs rounded-md border border-border bg-muted/30 p-2">
+                          <summary className="cursor-pointer flex items-center gap-2 list-none">
+                            <Badge
+                              variant="outline"
+                              className={isApprove
+                                ? "bg-emerald-500/15 text-emerald-500 border-emerald-500/20"
+                                : "bg-destructive/15 text-destructive border-destructive/20"}
+                            >
+                              {isApprove ? "Approved" : "Rejected"}
+                            </Badge>
+                            <span className="font-medium">{a.actor_name}</span>
+                            <span className="text-muted-foreground">
+                              {format(new Date(a.created_at), "MMM d, HH:mm:ss")}
+                            </span>
+                            <span className="text-muted-foreground ml-auto">click to expand</span>
+                          </summary>
+                          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 font-mono">
+                            <div><span className="text-muted-foreground">Receipt status: </span>{v.receipt_status ?? "—"}</div>
+                            <div>
+                              <span className="text-muted-foreground">Receipt match: </span>
+                              <span className={v.receipt_match ? "text-emerald-500" : "text-destructive"}>
+                                {v.receipt_match ? "✓ verified" : "✗ mismatch"}
+                              </span>
+                            </div>
+                            <div><span className="text-muted-foreground">Confirmations: </span>{v.confirmations_observed} / {v.confirmations_required}</div>
+                            <div><span className="text-muted-foreground">Threshold: </span>${Number(v.threshold_usd ?? 0).toLocaleString()}</div>
+                            <div><span className="text-muted-foreground">Amount (expected): </span>${Number(v.expected?.amount_usd ?? 0).toFixed(2)}</div>
+                            <div className="truncate" title={v.expected?.recipient}><span className="text-muted-foreground">Recipient: </span>{v.expected?.recipient}</div>
+                            {v.rpc_error && (
+                              <div className="sm:col-span-2 text-destructive">RPC error: {String(v.rpc_error)}</div>
+                            )}
+                            {!isApprove && a.details?.reason && (
+                              <div className="sm:col-span-2"><span className="text-muted-foreground">Reason: </span>{a.details.reason}</div>
+                            )}
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
