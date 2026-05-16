@@ -3,6 +3,7 @@ import { logWebhookEvent } from "../_shared/webhookLog.ts";
 import { safeEqual, validatePayazaPayload } from "../_shared/webhookValidation.ts";
 import { errorResponse } from "../_shared/errors.ts";
 import { sendNotificationEmail } from "../_shared/notificationEmail.ts";
+import { adjustBalanceLogged } from "../_shared/balanceLogger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
