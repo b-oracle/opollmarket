@@ -18,6 +18,7 @@ import {
   Settings2,
   Save,
 } from "lucide-react";
+import RpcHealthPanel from "@/components/admin/RpcHealthPanel";
 
 const statusColors: Record<string, string> = {
   manual_review: "bg-amber-500/15 text-amber-500 border-amber-500/20",
@@ -166,6 +167,9 @@ const AdminBscReview = () => {
           <RefreshCw className={`w-4 h-4 mr-1 ${isLoading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
+
+      {/* RPC health + failover dashboard */}
+      <RpcHealthPanel />
 
       {/* Auto-credit threshold setting (super admin only) */}
       {isSuperAdmin && (
