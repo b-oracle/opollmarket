@@ -162,6 +162,12 @@ Deno.serve(async (req) => {
     });
     if (!balResult.success) {
       console.error("Failed to credit balance:", balResult.error);
+      // Release the idempotency reservation so the admin can retry safely.
+      await adminClient
+        .from("admin_action_idempotency")
+        .delete()
+        .eq("action", "admin_credit_deposit")
+        .eq("idempotency_key", idempotencyKey);
       return json({ error: "Balance credit failed", correlation_id: balResult.correlation_id }, 500);
     }
 
