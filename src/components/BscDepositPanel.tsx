@@ -535,8 +535,9 @@ export default function BscDepositPanel() {
             const statusOk =
               filter === "all" ? true :
               filter === "pending" ? e.status === "detected" :
+              filter === "review" ? e.status === "manual_review" :
               filter === "confirmed" ? e.status === "credited" :
-              e.status === "orphaned";
+              (e.status === "orphaned" || e.status === "rejected");
             const searchOk = q ? e.tx_hash.toLowerCase().includes(q) : true;
             return statusOk && searchOk;
           });
