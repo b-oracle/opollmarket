@@ -38,7 +38,7 @@ import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
-import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { isMarketOpen, getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
 import { getAssetClass } from "@/data/assetClasses";
 import { Moon } from "lucide-react";
 import CryptoRoundLiveCountdown from "@/components/quick-trade/CryptoRoundLiveCountdown";
