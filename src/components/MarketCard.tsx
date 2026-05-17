@@ -231,7 +231,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
-  }, [isMulti, swiping, dragX]);
+  }, [isMulti, swiping, dragX, isEnded, isMarketClosed]);
 
   const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
   const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
