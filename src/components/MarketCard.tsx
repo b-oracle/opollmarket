@@ -769,6 +769,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         onClose={() => setCommentsOpen(false)}
         marketId={market.id}
         marketTitle={market.title}
+        disabled={isMarketClosed}
+        disabledLabel="Comments are disabled while the market is closed"
       />
       <ShareModal
         open={shareOpen}
