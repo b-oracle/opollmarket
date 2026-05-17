@@ -226,7 +226,7 @@ const InlineCommentItem = ({
   );
 };
 
-const InlineComments = ({ marketId }: { marketId: string }) => {
+const InlineComments = ({ marketId, disabled = false, disabledLabel = "Comments are disabled while the market is closed" }: { marketId: string; disabled?: boolean; disabledLabel?: string }) => {
   const { user, displayName: authDisplayName } = useAuth();
   const [comments, setComments] = useState<DbComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -281,6 +281,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || submitting) return;
+    if (disabled) { toast.error(disabledLabel); return; }
     if (!user) {
       toast.error("Sign in to comment", {
         action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
@@ -376,6 +377,11 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
     <div className="glass rounded-xl p-4 mb-6">
       <h3 className="text-sm font-semibold mb-3">💬 Discussion ({totalComments})</h3>
       <div className="mb-4">
+        {disabled ? (
+          <div className="text-center text-xs font-semibold text-muted-foreground bg-muted/40 border border-border rounded-lg py-2 px-3">
+            {disabledLabel}
+          </div>
+        ) : (<>
         {replyTo && (
           <div className="flex items-center justify-between mb-1.5 px-1">
             <span className="text-[10px] text-primary">Replying to @{replyTo.author}</span>
@@ -392,6 +398,7 @@ const InlineComments = ({ marketId }: { marketId: string }) => {
             {submitting ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Send className="w-3.5 h-3.5 text-primary-foreground" />}
           </button>
         </div>
+        </>)}
       </div>
       {loading ? (
         <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 text-primary animate-spin" /></div>
@@ -1044,7 +1051,7 @@ const MarketDetail = () => {
 
         <CreatorCard creatorName={market.creatorName} creatorUserId={market.creatorAddress} />
 
-        <InlineComments marketId={market.id} />
+        <InlineComments marketId={market.id} disabled={isRoundClosed} disabledLabel="Comments are disabled while the market is closed" />
 
         {/* Anchor for detecting comments section + inline buttons when scrolled down */}
         <div ref={commentsEndRef}>

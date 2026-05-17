@@ -29,6 +29,9 @@ import { hapticLight, hapticMedium, hapticSuccess } from "@/lib/haptics";
 import CryptoRoundCountdown from "@/components/CryptoRoundCountdown";
 import DeadlineCountdown from "@/components/DeadlineCountdown";
 import OddsSparkline from "@/components/OddsSparkline";
+import { isMarketOpen } from "@/lib/marketHours";
+import { getAssetClass } from "@/data/assetClasses";
+import { Moon } from "lucide-react";
 
 interface MarketCardProps {
   market: Market;
@@ -83,6 +86,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     ? market.autoResolveDeadline
     : market.endDate;
   const isEnded = market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(effectiveEnd).getTime() < Date.now();
+  // Forex/commodity Up&Down rounds: lock predictions + comments during the weekend close.
+  const cardAssetClass = market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
+  const isMarketClosed = !!(market.isCryptoRound && cardAssetClass !== "crypto" && !isMarketOpen(cardAssetClass));
 
   // Real hooks for like, bookmark, comments
   const { user } = useAuth();
@@ -202,6 +208,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       if (triggered) {
         if (isEnded) {
           toast.info("This market has ended and is no longer available for predictions");
+        } else if (isMarketClosed) {
+          toast.info("Market is closed. Trading reopens Sunday 5:00 PM ET.");
         } else {
           const side = dx > 0 ? "yes" : "no";
           void hapticMedium();
@@ -223,7 +231,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
     };
-  }, [isMulti, swiping, dragX]);
+  }, [isMulti, swiping, dragX, isEnded, isMarketClosed]);
 
   const swipeProgress = Math.min(Math.abs(dragX) / SWIPE_THRESHOLD, 1);
   const swipeSide = dragX > 0 ? "yes" : dragX < 0 ? "no" : null;
@@ -271,7 +279,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   };
 
   const actionIconSizeClass = "w-[clamp(2rem,4vh,2.75rem)] h-[clamp(2rem,4vh,2.75rem)]";
-  const actionRailBottomClass = isMulti || isEnded ? "bottom-3" : "bottom-[5.8rem] sm:bottom-[6.2rem]";
+  const actionRailBottomClass = isMulti || isEnded || isMarketClosed ? "bottom-3" : "bottom-[5.8rem] sm:bottom-[6.2rem]";
 
   return (
     <>
@@ -636,6 +644,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   market.status === "resolved" ? "text-primary" : market.status === "cancelled" ? "text-destructive" : "text-muted-foreground"
                 }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : (market.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}</span>
               </div>
+            ) : isMarketClosed ? (
+              <div className="w-full text-center py-3 rounded-xl border bg-muted/50 border-border/50 flex flex-col items-center justify-center gap-0.5">
+                <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Moon className="w-4 h-4" /> Market Closed</span>
+                <span className="text-[10px] text-muted-foreground/70">Trading reopens Sunday 5:00 PM ET</span>
+              </div>
             ) : (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -756,6 +769,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
         onClose={() => setCommentsOpen(false)}
         marketId={market.id}
         marketTitle={market.title}
+        disabled={isMarketClosed}
+        disabledLabel="Comments are disabled while the market is closed"
       />
       <ShareModal
         open={shareOpen}
