@@ -279,7 +279,7 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
   };
 
   const actionIconSizeClass = "w-[clamp(2rem,4vh,2.75rem)] h-[clamp(2rem,4vh,2.75rem)]";
-  const actionRailBottomClass = isMulti || isEnded ? "bottom-3" : "bottom-[5.8rem] sm:bottom-[6.2rem]";
+  const actionRailBottomClass = isMulti || isEnded || isMarketClosed ? "bottom-3" : "bottom-[5.8rem] sm:bottom-[6.2rem]";
 
   return (
     <>
