@@ -1051,7 +1051,7 @@ const MarketDetail = () => {
 
         <CreatorCard creatorName={market.creatorName} creatorUserId={market.creatorAddress} />
 
-        <InlineComments marketId={market.id} />
+        <InlineComments marketId={market.id} disabled={isRoundClosed} disabledLabel="Comments are disabled while the market is closed" />
 
         {/* Anchor for detecting comments section + inline buttons when scrolled down */}
         <div ref={commentsEndRef}>
