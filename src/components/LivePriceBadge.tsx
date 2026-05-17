@@ -33,6 +33,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
   const cls = getAssetClass(asset);
   const marketOpen = isMarketOpen(cls);
   const nextOpen = !marketOpen ? getNextOpenTime(cls) : "";
+  const openCountdown = useMarketOpenCountdown(cls);
 
   // Gate progress toasts: only users with an open position in this market
   // should see "X% toward target" / "hit the target" alerts.
