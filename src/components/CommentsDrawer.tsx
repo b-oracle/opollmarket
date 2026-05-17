@@ -529,6 +529,11 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle, disabled = false
 
               {/* Input */}
               <div className="border-t border-border/30 px-4 py-3" style={{ paddingBottom: "max(0.75rem, var(--safe-bottom))" }}>
+                {disabled ? (
+                  <div className="text-center text-xs font-semibold text-muted-foreground bg-muted/40 border border-border rounded-lg py-2 px-3">
+                    {disabledLabel}
+                  </div>
+                ) : (<>
                 {replyTo && (
                   <div className="flex items-center justify-between mb-2 px-1">
                     <span className="text-[10px] text-primary">
