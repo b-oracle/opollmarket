@@ -226,7 +226,7 @@ const InlineCommentItem = ({
   );
 };
 
-const InlineComments = ({ marketId }: { marketId: string }) => {
+const InlineComments = ({ marketId, disabled = false, disabledLabel = "Comments are disabled while the market is closed" }: { marketId: string; disabled?: boolean; disabledLabel?: string }) => {
   const { user, displayName: authDisplayName } = useAuth();
   const [comments, setComments] = useState<DbComment[]>([]);
   const [loading, setLoading] = useState(true);
