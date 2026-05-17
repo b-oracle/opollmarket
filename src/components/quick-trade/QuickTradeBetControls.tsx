@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUp, ArrowDown, Loader2, Moon, AlertTriangle, DollarSign, TrendingUp, TrendingDown, Clock } from "lucide-react";
-import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { isMarketOpen, getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
 import { getAssetClass } from "@/data/assetClasses";
 import { hapticLight } from "@/lib/haptics";
 import AnimatedNumber from "@/components/AnimatedNumber";
