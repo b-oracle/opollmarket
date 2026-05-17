@@ -208,6 +208,8 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
       if (triggered) {
         if (isEnded) {
           toast.info("This market has ended and is no longer available for predictions");
+        } else if (isMarketClosed) {
+          toast.info("Market is closed. Trading reopens Sunday 5:00 PM ET.");
         } else {
           const side = dx > 0 ? "yes" : "no";
           void hapticMedium();
