@@ -337,6 +337,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle, disabled = false
   const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || submitting) return;
+    if (disabled) { toast.error(disabledLabel); return; }
     if (!user) {
       toast.error("Sign in to comment", {
         action: { label: "Sign In", onClick: () => window.location.href = "/auth" },
