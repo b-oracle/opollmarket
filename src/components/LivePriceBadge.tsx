@@ -172,9 +172,10 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
       }`}
     >
       {!marketOpen && (
-        <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-muted/40 text-muted-foreground text-[9px] font-semibold">
+        <div className="flex flex-wrap items-center justify-center gap-1 px-2 py-0.5 bg-muted/40 text-muted-foreground text-[9px] font-semibold">
           <Moon className="w-2.5 h-2.5" />
-          Market Closed · {nextOpen}
+          <span>Market Closed ·</span>
+          <NextOpenTimeLabel assetClass={cls} />
           {openCountdown && <span className="tabular-nums font-bold text-foreground">· {openCountdown}</span>}
         </div>
       )}
