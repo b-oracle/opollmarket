@@ -582,6 +582,7 @@ const CommentsDrawer = ({ open, onClose, marketId, marketTitle, disabled = false
                     )}
                   </button>
                 </div>
+                </>)}
               </div>
             </div>
     </BottomSheet>
