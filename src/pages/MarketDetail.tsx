@@ -377,6 +377,11 @@ const InlineComments = ({ marketId, disabled = false, disabledLabel = "Comments 
     <div className="glass rounded-xl p-4 mb-6">
       <h3 className="text-sm font-semibold mb-3">💬 Discussion ({totalComments})</h3>
       <div className="mb-4">
+        {disabled ? (
+          <div className="text-center text-xs font-semibold text-muted-foreground bg-muted/40 border border-border rounded-lg py-2 px-3">
+            {disabledLabel}
+          </div>
+        ) : (<>
         {replyTo && (
           <div className="flex items-center justify-between mb-1.5 px-1">
             <span className="text-[10px] text-primary">Replying to @{replyTo.author}</span>
@@ -393,6 +398,7 @@ const InlineComments = ({ marketId, disabled = false, disabledLabel = "Comments 
             {submitting ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Send className="w-3.5 h-3.5 text-primary-foreground" />}
           </button>
         </div>
+        </>)}
       </div>
       {loading ? (
         <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 text-primary animate-spin" /></div>
