@@ -509,7 +509,6 @@ const MarketDetail = () => {
   const roundAssetClass = market?.isCryptoRound && market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
   const isRoundClosed = !!(market?.isCryptoRound && roundAssetClass !== "crypto" && !isMarketOpen(roundAssetClass));
   const roundOpenCountdown = useMarketOpenCountdown(roundAssetClass);
-  const roundOpenCountdown = useMarketOpenCountdown(roundAssetClass);
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
 
