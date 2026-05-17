@@ -1,46 +1,10 @@
-import { useState, useEffect } from "react";
 import { Moon } from "lucide-react";
-import { getNextOpenTime } from "@/lib/marketHours";
+import { getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
 
 /** Countdown + "Market Closed" overlay for non-crypto assets */
 export default function MarketClosedOverlay({ assetClass }: { assetClass: string }) {
   const nextOpen = getNextOpenTime(assetClass);
-
-  const [countdown, setCountdown] = useState("");
-  useEffect(() => {
-    const calc = () => {
-      const now = new Date();
-      const etStr = now.toLocaleString("en-US", { timeZone: "America/New_York" });
-      const et = new Date(etStr);
-      const day = et.getDay(); // 0=Sun..6=Sat
-      const hour = et.getHours();
-
-      // Next open is Sunday 17:00 ET
-      let daysUntil: number;
-      if (day === 0) {
-        // Sunday: if before 17:00, opens today; if after, next Sunday
-        daysUntil = hour < 17 ? 0 : 7;
-      } else {
-        // Mon-Sat: next Sunday
-        daysUntil = 7 - day;
-      }
-
-      const target = new Date(et);
-      target.setDate(target.getDate() + daysUntil);
-      target.setHours(17, 0, 0, 0);
-
-      const diff = target.getTime() - et.getTime();
-      if (diff <= 0) return "Opening soon...";
-
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      return `${h}h ${m}m ${s}s`;
-    };
-    setCountdown(calc());
-    const interval = setInterval(() => setCountdown(calc()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const countdown = useMarketOpenCountdown(assetClass);
 
   return (
     <div className="relative h-[220px] overflow-hidden rounded-lg bg-muted/10 border border-destructive/30">
