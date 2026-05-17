@@ -697,7 +697,7 @@ const Index = () => {
       {/* Always-visible legal links (crawlable by Google verification) */}
       <nav
         aria-label="Legal"
-        className="lg:hidden border-t border-border bg-background/95 px-4 py-4 pb-24 mt-4"
+        className="lg:hidden border-t border-border bg-background/95 px-4 pt-3 pb-6 mt-1"
       >
         <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
           <li>
