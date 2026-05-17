@@ -4,7 +4,7 @@ import { toast } from "sonner";
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
-import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { isMarketOpen, getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
