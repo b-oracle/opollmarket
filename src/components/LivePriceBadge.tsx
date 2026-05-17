@@ -4,7 +4,7 @@ import { toast } from "sonner";
 const loadConfetti = () => import("canvas-confetti").then(m => m.default);
 import { getAssetClass } from "@/data/assetClasses";
 import { fetchAssetPrice } from "@/lib/cryptoPriceProvider";
-import { isMarketOpen, getNextOpenTime } from "@/lib/marketHours";
+import { isMarketOpen, getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
   const cls = getAssetClass(asset);
   const marketOpen = isMarketOpen(cls);
   const nextOpen = !marketOpen ? getNextOpenTime(cls) : "";
+  const openCountdown = useMarketOpenCountdown(cls);
 
   // Gate progress toasts: only users with an open position in this market
   // should see "X% toward target" / "hit the target" alerts.
@@ -174,6 +175,7 @@ const LivePriceBadge = React.forwardRef<HTMLDivElement, LivePriceBadgeProps>(({ 
         <div className="flex items-center justify-center gap-1 px-2 py-0.5 bg-muted/40 text-muted-foreground text-[9px] font-semibold">
           <Moon className="w-2.5 h-2.5" />
           Market Closed · {nextOpen}
+          {openCountdown && <span className="tabular-nums font-bold text-foreground">· {openCountdown}</span>}
         </div>
       )}
       {marketOpen && proximityTier === "imminent" && !conditionMet && (
