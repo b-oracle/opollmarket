@@ -76,6 +76,9 @@ export default function QuickTradeBetControls({
           <div className="text-center">
             <p className="text-xs font-semibold text-muted-foreground">Market Closed</p>
             <p className="text-[10px] text-muted-foreground/70">{nextOpen}</p>
+            {openCountdown && (
+              <p className="text-[10px] font-bold tabular-nums text-foreground mt-0.5">Opens in {openCountdown}</p>
+            )}
           </div>
         </div>
       )}
