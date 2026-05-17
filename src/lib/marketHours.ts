@@ -2,6 +2,7 @@
 // Forex: Sunday 5:00 PM ET – Friday 5:00 PM ET
 // Commodities: same window for simplicity
 // Crypto: 24/7
+import { useEffect, useState } from "react";
 
 type AssetClassType = "crypto" | "forex" | "commodity";
 
