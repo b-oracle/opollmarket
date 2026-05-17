@@ -29,6 +29,9 @@ import { hapticLight, hapticMedium, hapticSuccess } from "@/lib/haptics";
 import CryptoRoundCountdown from "@/components/CryptoRoundCountdown";
 import DeadlineCountdown from "@/components/DeadlineCountdown";
 import OddsSparkline from "@/components/OddsSparkline";
+import { isMarketOpen } from "@/lib/marketHours";
+import { getAssetClass } from "@/data/assetClasses";
+import { Moon } from "lucide-react";
 
 interface MarketCardProps {
   market: Market;
