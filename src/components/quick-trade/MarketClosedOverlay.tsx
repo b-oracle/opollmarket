@@ -1,9 +1,9 @@
 import { Moon } from "lucide-react";
-import { getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
+import { useMarketOpenCountdown } from "@/lib/marketHours";
+import NextOpenTimeLabel from "@/components/NextOpenTimeLabel";
 
 /** Countdown + "Market Closed" overlay for non-crypto assets */
 export default function MarketClosedOverlay({ assetClass }: { assetClass: string }) {
-  const nextOpen = getNextOpenTime(assetClass);
   const countdown = useMarketOpenCountdown(assetClass);
 
   return (
