@@ -644,6 +644,11 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
                   market.status === "resolved" ? "text-primary" : market.status === "cancelled" ? "text-destructive" : "text-muted-foreground"
                 }`}>{market.status === "resolved" ? "Market Ended — Resolution Completed" : market.status === "cancelled" ? "Market Cancelled" : (market.isCryptoRound ? "Resolving… new round starting soon" : "Market Ended — Awaiting Resolution")}</span>
               </div>
+            ) : isMarketClosed ? (
+              <div className="w-full text-center py-3 rounded-xl border bg-muted/50 border-border/50 flex flex-col items-center justify-center gap-0.5">
+                <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground"><Moon className="w-4 h-4" /> Market Closed</span>
+                <span className="text-[10px] text-muted-foreground/70">Trading reopens Sunday 5:00 PM ET</span>
+              </div>
             ) : (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
