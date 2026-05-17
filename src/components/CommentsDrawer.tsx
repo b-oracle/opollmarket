@@ -30,6 +30,9 @@ interface CommentsDrawerProps {
   onClose: () => void;
   marketId: string;
   marketTitle: string;
+  /** When true, hides the composer and blocks posting (e.g. market closed). */
+  disabled?: boolean;
+  disabledLabel?: string;
 }
 
 const formatTimeAgo = (dateStr: string) => {
