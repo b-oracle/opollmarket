@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowUp, ArrowDown, Loader2, Moon, AlertTriangle, DollarSign, TrendingUp, TrendingDown, Clock } from "lucide-react";
-import { isMarketOpen, getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
+import { isMarketOpen, useMarketOpenCountdown } from "@/lib/marketHours";
+import NextOpenTimeLabel from "@/components/NextOpenTimeLabel";
 import { getAssetClass } from "@/data/assetClasses";
 import { hapticLight } from "@/lib/haptics";
 import AnimatedNumber from "@/components/AnimatedNumber";
@@ -42,7 +43,6 @@ export default function QuickTradeBetControls({
 }: QuickTradeBetControlsProps) {
   const assetClass = asset ? getAssetClass(asset) : "crypto";
   const marketOpen = isMarketOpen(assetClass);
-  const nextOpen = !marketOpen ? getNextOpenTime(assetClass) : "";
   const openCountdown = useMarketOpenCountdown(assetClass);
   const [confirmSide, setConfirmSide] = useState<"up" | "down" | null>(null);
 
@@ -75,7 +75,7 @@ export default function QuickTradeBetControls({
           <Moon className="w-4 h-4 text-muted-foreground" />
           <div className="text-center">
             <p className="text-xs font-semibold text-muted-foreground">Market Closed</p>
-            <p className="text-[10px] text-muted-foreground/70">{nextOpen}</p>
+            <NextOpenTimeLabel assetClass={assetClass} className="text-[10px] text-muted-foreground/70 justify-center" />
             {openCountdown && (
               <p className="text-[10px] font-bold tabular-nums text-foreground mt-0.5">Opens in {openCountdown}</p>
             )}

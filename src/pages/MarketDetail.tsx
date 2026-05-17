@@ -38,7 +38,8 @@ import MarketStreamControls from "@/components/MarketStreamControls";
 import MarketStreamPlayer from "@/components/MarketStreamPlayer";
 import CryptoRoundLiveChart from "@/components/CryptoRoundLiveChart";
 import CryptoRoundStatusTimeline from "@/components/CryptoRoundStatusTimeline";
-import { isMarketOpen, getNextOpenTime, useMarketOpenCountdown } from "@/lib/marketHours";
+import { isMarketOpen, useMarketOpenCountdown } from "@/lib/marketHours";
+import NextOpenTimeLabel from "@/components/NextOpenTimeLabel";
 import { getAssetClass } from "@/data/assetClasses";
 import { Moon } from "lucide-react";
 import CryptoRoundLiveCountdown from "@/components/quick-trade/CryptoRoundLiveCountdown";
@@ -507,7 +508,6 @@ const MarketDetail = () => {
   // Crypto Up/Down rounds for commodities/forex are closed outside trading hours (Sun 5pm ET → Fri 5pm ET).
   const roundAssetClass = market?.isCryptoRound && market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
   const isRoundClosed = !!(market?.isCryptoRound && roundAssetClass !== "crypto" && !isMarketOpen(roundAssetClass));
-  const roundNextOpen = isRoundClosed ? getNextOpenTime(roundAssetClass) : "";
   const roundOpenCountdown = useMarketOpenCountdown(roundAssetClass);
 
   useEffect(() => { if (id) track("page_view", { page: "market_detail", marketId: id }); }, [id]);
@@ -1068,7 +1068,7 @@ const MarketDetail = () => {
                 ) : isRoundClosed ? (
                   <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 bg-muted text-muted-foreground border border-border">
                     <span className="flex items-center gap-2"><Moon className="w-5 h-5" /> Market Closed</span>
-                    <span className="text-[11px] font-medium opacity-70">{roundNextOpen}</span>
+                    <NextOpenTimeLabel assetClass={roundAssetClass} className="text-[11px] font-medium opacity-70" />
                     {roundOpenCountdown && (
                       <span className="text-[11px] font-bold tabular-nums text-foreground">Opens in {roundOpenCountdown}</span>
                     )}
@@ -1098,7 +1098,7 @@ const MarketDetail = () => {
             ) : isRoundClosed ? (
               <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 bg-muted text-muted-foreground border border-border">
                 <span className="flex items-center gap-2"><Moon className="w-5 h-5" /> Market Closed</span>
-                <span className="text-[11px] font-medium opacity-70">{roundNextOpen}</span>
+                <NextOpenTimeLabel assetClass={roundAssetClass} className="text-[11px] font-medium opacity-70" />
                 {roundOpenCountdown && (
                   <span className="text-[11px] font-bold tabular-nums text-foreground">Opens in {roundOpenCountdown}</span>
                 )}
