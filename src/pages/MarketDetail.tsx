@@ -1068,7 +1068,7 @@ const MarketDetail = () => {
                 ) : isRoundClosed ? (
                   <div className="flex-1 text-center py-3.5 sm:py-4 rounded-xl font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 bg-muted text-muted-foreground border border-border">
                     <span className="flex items-center gap-2"><Moon className="w-5 h-5" /> Market Closed</span>
-                    <span className="text-[11px] font-medium opacity-70">{roundNextOpen}</span>
+                    <NextOpenTimeLabel assetClass={roundAssetClass} className="text-[11px] font-medium opacity-70" />
                     {roundOpenCountdown && (
                       <span className="text-[11px] font-bold tabular-nums text-foreground">Opens in {roundOpenCountdown}</span>
                     )}
