@@ -250,7 +250,7 @@ const CommentItem = ({
   );
 };
 
-const CommentsDrawer = ({ open, onClose, marketId, marketTitle }: CommentsDrawerProps) => {
+const CommentsDrawer = ({ open, onClose, marketId, marketTitle, disabled = false, disabledLabel = "Comments are disabled while the market is closed" }: CommentsDrawerProps) => {
   
   const { user, displayName } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
