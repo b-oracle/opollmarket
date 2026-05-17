@@ -86,6 +86,9 @@ const MarketCard = ({ market, isActive, isBoosted = false, boostEndsAt, boostTie
     ? market.autoResolveDeadline
     : market.endDate;
   const isEnded = market.status === "ended" || market.status === "resolved" || market.status === "cancelled" || new Date(effectiveEnd).getTime() < Date.now();
+  // Forex/commodity Up&Down rounds: lock predictions + comments during the weekend close.
+  const cardAssetClass = market.autoResolveAsset ? getAssetClass(market.autoResolveAsset) : "crypto";
+  const isMarketClosed = !!(market.isCryptoRound && cardAssetClass !== "crypto" && !isMarketOpen(cardAssetClass));
 
   // Real hooks for like, bookmark, comments
   const { user } = useAuth();
