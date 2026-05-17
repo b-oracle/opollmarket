@@ -43,6 +43,7 @@ export default function QuickTradeBetControls({
   const assetClass = asset ? getAssetClass(asset) : "crypto";
   const marketOpen = isMarketOpen(assetClass);
   const nextOpen = !marketOpen ? getNextOpenTime(assetClass) : "";
+  const openCountdown = useMarketOpenCountdown(assetClass);
   const [confirmSide, setConfirmSide] = useState<"up" | "down" | null>(null);
 
   const handleConfirmTrade = () => {
