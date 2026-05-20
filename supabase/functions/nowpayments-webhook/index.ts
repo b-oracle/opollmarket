@@ -277,10 +277,19 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   if (cls.status === "overpayment") {
     const excess = cls.excess;
 
-    // SAFETY CAP: refuse to auto-credit massive overpayments. Mark as wrong_asset
-    // for admin review when the surplus is unreasonably large (likely a misconfigured
-    // payment or attack). Threshold: excess > min(requested * 5, $5000).
-    const overpayCap = Math.min(Number(requestedAmount) * 5, 5000);
+    // SAFETY CAP: refuse to auto-credit massive overpayments. Aligned with the
+    // BSC per-tx auto-credit ceiling so a single deposit can never auto-credit
+    // more than that USD value via the overpayment path.
+    const maxAutoCredit = await (async () => {
+      try {
+        const { data } = await supabase.from("app_settings").select("value").eq("key", "bsc_max_auto_credit_usd").maybeSingle();
+        const v = Number(data?.value);
+        return Number.isFinite(v) && v > 0 ? v : 5000;
+      } catch { return 5000; }
+    })();
+    // Excess capped at min(requested * 2, maxAutoCredit) — at most 2x the invoice
+    // OR the global per-deposit ceiling, whichever is smaller.
+    const overpayCap = Math.min(Number(requestedAmount) * 2, maxAutoCredit);
     if (excess > overpayCap) {
       console.warn(`OVERPAYMENT EXCEEDS SAFETY CAP: requested=$${requestedAmount} received=$${netReceived} excess=$${excess} cap=$${overpayCap} — routing to admin review`);
       if (matchedTx) {
