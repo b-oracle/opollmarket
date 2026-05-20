@@ -216,6 +216,55 @@ const BscReconciliation = () => {
     }
   };
 
+  const loadSweepJobs = async () => {
+    setSweepLoading(true);
+    try {
+      let q = supabase
+        .from("bsc_sweep_jobs")
+        .select("id,user_id,address,token,amount_usd,amount_wei,status,treasury_address,gas_tx_hash,sweep_tx_hash,attempts,last_error,created_at,confirmed_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (sweepStatusFilter !== "all") q = q.eq("status", sweepStatusFilter);
+      const { data, error } = await q;
+      if (error) throw error;
+      setSweepJobs((data as SweepJob[]) ?? []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load sweep jobs");
+    } finally {
+      setSweepLoading(false);
+    }
+  };
+
+  const triggerSweep = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-bsc-sweep-action", {
+        body: { action: "trigger" },
+      });
+      if (error) throw error;
+      const r = (data as any)?.runner ?? {};
+      toast.success(`Sweep tick: discovered ${r.discovered ?? 0}, processed ${r.processed ?? 0}`);
+      loadSweepJobs();
+    } catch (err: any) {
+      toast.error(err.message || "Trigger failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const retryJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("admin-bsc-sweep-action", {
+        body: { action: "retry", job_id: jobId },
+      });
+      if (error) throw error;
+      toast.success("Job re-queued");
+      loadSweepJobs();
+    } catch (err: any) {
+      toast.error(err.message || "Retry failed");
+    }
+  };
+
   useEffect(() => {
     loadSummary();
   }, []);
@@ -229,6 +278,11 @@ const BscReconciliation = () => {
     if (tab === "recon" && reconRows.length === 0 && !reconLoading) loadReconciliation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  useEffect(() => {
+    if (tab === "sweeps") loadSweepJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sweepStatusFilter]);
 
   const onSearchKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
