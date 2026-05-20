@@ -703,6 +703,21 @@ export type Database = {
         }
         Relationships: []
       }
+      bsc_rescan_cooldowns: {
+        Row: {
+          last_rescan_at: string
+          user_id: string
+        }
+        Insert: {
+          last_rescan_at?: string
+          user_id: string
+        }
+        Update: {
+          last_rescan_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bsc_sweep_jobs: {
         Row: {
           address: string

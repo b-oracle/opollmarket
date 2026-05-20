@@ -423,6 +423,7 @@ Deno.serve(async (req) => {
     const isCron = !!cronHeader && !!expectedCron && cronHeader === expectedCron;
 
 
+    let adminActorId: string | null = null;
     if (!isCron) {
       const authHeader = req.headers.get("Authorization") ?? "";
       if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
@@ -434,9 +435,35 @@ Deno.serve(async (req) => {
       const tmpAdmin = createClient(SUPABASE_URL, SR);
       const { data: roles } = await tmpAdmin.from("user_roles").select("role").eq("user_id", userData.user.id);
       const roleSet = new Set((roles || []).map((r: any) => r.role));
-      if (!roleSet.has("admin") && !roleSet.has("super_admin")) {
-        return json({ error: "Forbidden" }, 403);
+      // Restricted to super_admin only: manual sweep pacing controls treasury flow.
+      if (!roleSet.has("super_admin")) {
+        return json({ error: "Forbidden — super_admin only" }, 403);
       }
+      adminActorId = userData.user.id;
+
+      // Per-actor 60s cooldown (DB-enforced via audit_logs lookup)
+      const sinceIso = new Date(Date.now() - 60_000).toISOString();
+      const { data: recent } = await tmpAdmin
+        .from("audit_logs")
+        .select("id")
+        .eq("actor_id", adminActorId)
+        .eq("action", "settings_updated")
+        .eq("target_type", "bsc_sweep_runner")
+        .gte("created_at", sinceIso)
+        .limit(1);
+      if (recent && recent.length > 0) {
+        return json({ error: "cooldown — wait 60s between manual sweep triggers" }, 429);
+      }
+
+      // Audit the manual trigger
+      try {
+        await tmpAdmin.from("audit_logs").insert({
+          actor_id: adminActorId,
+          action: "settings_updated",
+          target_type: "bsc_sweep_runner",
+          details: { trigger: "manual_sweep", at: new Date().toISOString() },
+        });
+      } catch (_) { /* non-fatal */ }
     }
 
     const admin = createClient(SUPABASE_URL, SR);

@@ -10,8 +10,7 @@ const corsHeaders = {
 };
 
 const CONFIRMATIONS_REQUIRED = 12;
-const COOLDOWN_MS = 20_000; // 20s per-user soft throttle
-const lastRescanByUser = new Map<string, number>();
+const COOLDOWN_MS = 20_000; // 20s per-user soft throttle (DB-backed, isolate-safe)
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -52,16 +51,24 @@ Deno.serve(async (req) => {
     if (userErr || !userData?.user) return json({ error: "Unauthorized" }, 401);
     const userId = userData.user.id;
 
-    // Per-user cooldown
-    const last = lastRescanByUser.get(userId) || 0;
-    const now = Date.now();
-    const remaining = COOLDOWN_MS - (now - last);
-    if (remaining > 0) {
-      return json({ error: "cooldown", retry_after_ms: remaining }, 429);
-    }
-    lastRescanByUser.set(userId, now);
-
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // Per-user cooldown — persisted in DB so it works across edge isolates.
+    const { data: cooldownRow } = await admin
+      .from("bsc_rescan_cooldowns")
+      .select("last_rescan_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (cooldownRow?.last_rescan_at) {
+      const last = new Date(cooldownRow.last_rescan_at).getTime();
+      const remaining = COOLDOWN_MS - (Date.now() - last);
+      if (remaining > 0) {
+        return json({ error: "cooldown", retry_after_ms: remaining }, 429);
+      }
+    }
+    await admin
+      .from("bsc_rescan_cooldowns")
+      .upsert({ user_id: userId, last_rescan_at: new Date().toISOString() });
 
     // 1. Load this user's pending deposits only
     const { data: pending, error: pendingErr } = await admin

@@ -154,7 +154,9 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   const paymentIdStr = String(payment_id);
 
   const parts = orderId.split("_");
-  if (parts.length < 3 || parts[0] !== "deposit") {
+  // Format: deposit_<uuid>_<timestamp>. UUIDs contain no underscores, so parts[1] is safe.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (parts.length < 3 || parts[0] !== "deposit" || !UUID_RE.test(parts[1])) {
     console.error("Invalid deposit order_id format:", orderId);
     return;
   }
@@ -175,31 +177,50 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   }
 
   // 2. Atomically claim the transaction (prevents concurrent webhook replays)
-  const { data: claimedRows } = await supabase.rpc("claim_webhook_deposit", {
+  const { data: claimedRows, error: claimErr } = await supabase.rpc("claim_webhook_deposit", {
     _payment_id: paymentIdStr,
     _provider: "nowpayments",
   });
+  if (claimErr) throw new Error(`claim_webhook_deposit failed: ${claimErr.message}`);
 
   let matchedTx = claimedRows?.[0] || null;
 
-  // Fallback: try matching by user + pending status (for txns without payment_id yet)
+  // Fallback: match by user + pending status + AMOUNT (avoids cross-attaching
+  // an unrelated pending tx when multiple are open without a payment_id).
   if (!matchedTx) {
-    // First try to set the payment_id + provider on a matching pending tx, then claim it
-    await supabase
-      .from("transactions")
-      .update({ nowpayments_payment_id: paymentIdStr, payment_provider: "nowpayments" })
-      .eq("user_id", userId)
-      .eq("type", "deposit")
-      .in("status", ["pending", "expired"])
-      .is("nowpayments_payment_id", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
+    const requested = Number(price_amount) || 0;
+    if (requested > 0) {
+      const lo = requested - 0.01;
+      const hi = requested + 0.01;
+      const { data: candidates, error: candErr } = await supabase
+        .from("transactions")
+        .select("id, amount")
+        .eq("user_id", userId)
+        .eq("type", "deposit")
+        .in("status", ["pending", "expired"])
+        .is("nowpayments_payment_id", null)
+        .gte("amount", lo)
+        .lte("amount", hi)
+        .order("created_at", { ascending: false })
+        .limit(2);
+      if (candErr) throw new Error(`fallback select failed: ${candErr.message}`);
+      // Require exactly one candidate at this amount; refuse ambiguous.
+      if (candidates && candidates.length === 1) {
+        await supabase
+          .from("transactions")
+          .update({ nowpayments_payment_id: paymentIdStr, payment_provider: "nowpayments" })
+          .eq("id", candidates[0].id);
 
-    const { data: retryRows } = await supabase.rpc("claim_webhook_deposit", {
-      _payment_id: paymentIdStr,
-      _provider: "nowpayments",
-    });
-    matchedTx = retryRows?.[0] || null;
+        const { data: retryRows, error: retryErr } = await supabase.rpc("claim_webhook_deposit", {
+          _payment_id: paymentIdStr,
+          _provider: "nowpayments",
+        });
+        if (retryErr) throw new Error(`claim_webhook_deposit retry failed: ${retryErr.message}`);
+        matchedTx = retryRows?.[0] || null;
+      } else if (candidates && candidates.length > 1) {
+        console.warn(`Ambiguous fallback for ${paymentIdStr}: ${candidates.length} pending txns at $${requested} — skipping match`);
+      }
+    }
   }
 
   // price_amount = the USD amount the user requested to deposit.
@@ -256,10 +277,19 @@ async function handleDeposit(supabase: any, payload: Record<string, unknown>, or
   if (cls.status === "overpayment") {
     const excess = cls.excess;
 
-    // SAFETY CAP: refuse to auto-credit massive overpayments. Mark as wrong_asset
-    // for admin review when the surplus is unreasonably large (likely a misconfigured
-    // payment or attack). Threshold: excess > min(requested * 5, $5000).
-    const overpayCap = Math.min(Number(requestedAmount) * 5, 5000);
+    // SAFETY CAP: refuse to auto-credit massive overpayments. Aligned with the
+    // BSC per-tx auto-credit ceiling so a single deposit can never auto-credit
+    // more than that USD value via the overpayment path.
+    const maxAutoCredit = await (async () => {
+      try {
+        const { data } = await supabase.from("app_settings").select("value").eq("key", "bsc_max_auto_credit_usd").maybeSingle();
+        const v = Number(data?.value);
+        return Number.isFinite(v) && v > 0 ? v : 5000;
+      } catch { return 5000; }
+    })();
+    // Excess capped at min(requested * 2, maxAutoCredit) — at most 2x the invoice
+    // OR the global per-deposit ceiling, whichever is smaller.
+    const overpayCap = Math.min(Number(requestedAmount) * 2, maxAutoCredit);
     if (excess > overpayCap) {
       console.warn(`OVERPAYMENT EXCEEDS SAFETY CAP: requested=$${requestedAmount} received=$${netReceived} excess=$${excess} cap=$${overpayCap} — routing to admin review`);
       if (matchedTx) {
@@ -986,6 +1016,11 @@ Deno.serve(async (req) => {
         error: err,
       });
     } catch { /* swallow */ }
-    return new Response("OK", { status: 200, headers: corsHeaders });
+    // Return 5xx so NOWPayments retries — silently 200'ing here would permanently
+    // drop a real deposit on any transient DB/RPC failure.
+    return new Response(
+      JSON.stringify({ error: "internal_error", message: (err as Error)?.message ?? "unknown" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
