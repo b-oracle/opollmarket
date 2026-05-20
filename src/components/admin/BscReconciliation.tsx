@@ -392,6 +392,14 @@ const BscReconciliation = () => {
         >
           Reconciliation {totalIssues > 0 && <span className="ml-1 text-yellow-500">({totalIssues})</span>}
         </button>
+        <button
+          onClick={() => setTab("sweeps")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${
+            tab === "sweeps" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Wallet className="w-3 h-3" /> Sweeps
+        </button>
       </div>
 
       {tab === "events" && (
