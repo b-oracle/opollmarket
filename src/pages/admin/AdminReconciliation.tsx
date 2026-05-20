@@ -21,8 +21,10 @@ const AdminReconciliation = () => {
       <NpReconciliation />
       <PayazaReconciliation />
       <FlutterwaveReconciliation />
+      <BscReconciliation />
     </div>
   );
 };
+
 
 export default AdminReconciliation;
