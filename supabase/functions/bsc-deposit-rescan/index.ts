@@ -10,8 +10,7 @@ const corsHeaders = {
 };
 
 const CONFIRMATIONS_REQUIRED = 12;
-const COOLDOWN_MS = 20_000; // 20s per-user soft throttle
-const lastRescanByUser = new Map<string, number>();
+const COOLDOWN_MS = 20_000; // 20s per-user soft throttle (DB-backed, isolate-safe)
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
