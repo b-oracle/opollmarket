@@ -227,7 +227,7 @@ const BscReconciliation = () => {
       if (sweepStatusFilter !== "all") q = q.eq("status", sweepStatusFilter);
       const { data, error } = await q;
       if (error) throw error;
-      setSweepJobs((data as SweepJob[]) ?? []);
+      setSweepJobs(((data as unknown) as SweepJob[]) ?? []);
     } catch (err: any) {
       toast.error(err.message || "Failed to load sweep jobs");
     } finally {
