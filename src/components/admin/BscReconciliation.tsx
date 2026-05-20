@@ -44,6 +44,25 @@ interface Summary {
   failed_count: number;
 }
 
+type SweepStatus = "queued" | "gas_funded" | "swept" | "confirmed" | "failed";
+
+interface SweepJob {
+  id: string;
+  user_id: string;
+  address: string;
+  token: string;
+  amount_usd: number;
+  amount_wei: string;
+  status: SweepStatus;
+  treasury_address: string | null;
+  gas_tx_hash: string | null;
+  sweep_tx_hash: string | null;
+  attempts: number;
+  last_error: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+}
+
 const STATUS_OPTIONS: { value: Status | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "detected", label: "Pending" },
