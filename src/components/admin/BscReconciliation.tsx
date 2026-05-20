@@ -8,6 +8,9 @@ import {
   ExternalLink,
   Search,
   RefreshCw,
+  Wallet,
+  Play,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +44,25 @@ interface Summary {
   failed_count: number;
 }
 
+type SweepStatus = "queued" | "gas_funded" | "swept" | "confirmed" | "failed";
+
+interface SweepJob {
+  id: string;
+  user_id: string;
+  address: string;
+  token: string;
+  amount_usd: number;
+  amount_wei: string;
+  status: SweepStatus;
+  treasury_address: string | null;
+  gas_tx_hash: string | null;
+  sweep_tx_hash: string | null;
+  attempts: number;
+  last_error: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+}
+
 const STATUS_OPTIONS: { value: Status | "all"; label: string }[] = [
   { value: "all", label: "All" },
   { value: "detected", label: "Pending" },
@@ -59,7 +81,7 @@ const BscReconciliation = () => {
   const [tokenFilter, setTokenFilter] = useState<"all" | "USDT" | "USDC">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [tab, setTab] = useState<"events" | "recon">("events");
+  const [tab, setTab] = useState<"events" | "recon" | "sweeps">("events");
   const [reconRows, setReconRows] = useState<
     {
       event: BscEvent;
@@ -69,6 +91,10 @@ const BscReconciliation = () => {
     }[]
   >([]);
   const [reconLoading, setReconLoading] = useState(false);
+  const [sweepJobs, setSweepJobs] = useState<SweepJob[]>([]);
+  const [sweepLoading, setSweepLoading] = useState(false);
+  const [sweepStatusFilter, setSweepStatusFilter] = useState<SweepStatus | "all">("all");
+  const [running, setRunning] = useState(false);
 
   const fmt = (v: number) => `$${(v ?? 0).toFixed(2)}`;
 
@@ -190,6 +216,55 @@ const BscReconciliation = () => {
     }
   };
 
+  const loadSweepJobs = async () => {
+    setSweepLoading(true);
+    try {
+      let q = supabase
+        .from("bsc_sweep_jobs")
+        .select("id,user_id,address,token,amount_usd,amount_wei,status,treasury_address,gas_tx_hash,sweep_tx_hash,attempts,last_error,created_at,confirmed_at")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (sweepStatusFilter !== "all") q = q.eq("status", sweepStatusFilter);
+      const { data, error } = await q;
+      if (error) throw error;
+      setSweepJobs(((data as unknown) as SweepJob[]) ?? []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load sweep jobs");
+    } finally {
+      setSweepLoading(false);
+    }
+  };
+
+  const triggerSweep = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-bsc-sweep-action", {
+        body: { action: "trigger" },
+      });
+      if (error) throw error;
+      const r = (data as any)?.runner ?? {};
+      toast.success(`Sweep tick: discovered ${r.discovered ?? 0}, processed ${r.processed ?? 0}`);
+      loadSweepJobs();
+    } catch (err: any) {
+      toast.error(err.message || "Trigger failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const retryJob = async (jobId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("admin-bsc-sweep-action", {
+        body: { action: "retry", job_id: jobId },
+      });
+      if (error) throw error;
+      toast.success("Job re-queued");
+      loadSweepJobs();
+    } catch (err: any) {
+      toast.error(err.message || "Retry failed");
+    }
+  };
+
   useEffect(() => {
     loadSummary();
   }, []);
@@ -203,6 +278,11 @@ const BscReconciliation = () => {
     if (tab === "recon" && reconRows.length === 0 && !reconLoading) loadReconciliation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  useEffect(() => {
+    if (tab === "sweeps") loadSweepJobs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, sweepStatusFilter]);
 
   const onSearchKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -311,6 +391,14 @@ const BscReconciliation = () => {
           }`}
         >
           Reconciliation {totalIssues > 0 && <span className="ml-1 text-yellow-500">({totalIssues})</span>}
+        </button>
+        <button
+          onClick={() => setTab("sweeps")}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1 ${
+            tab === "sweeps" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Wallet className="w-3 h-3" /> Sweeps
         </button>
       </div>
 
@@ -527,6 +615,128 @@ const BscReconciliation = () => {
             </table>
           </div>
         </div>
+      )}
+
+      {tab === "sweeps" && (
+        <>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <select
+              value={sweepStatusFilter}
+              onChange={(e) => setSweepStatusFilter(e.target.value as any)}
+              className="px-2 py-1 rounded-md text-xs bg-muted border border-border"
+            >
+              <option value="all">All statuses</option>
+              <option value="queued">Queued</option>
+              <option value="gas_funded">Gas funded</option>
+              <option value="swept">Swept (awaiting confs)</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="failed">Failed</option>
+            </select>
+            <button
+              onClick={triggerSweep}
+              disabled={running}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+              Run sweep now
+            </button>
+            <button
+              onClick={loadSweepJobs}
+              disabled={sweepLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary text-secondary-foreground text-xs font-semibold hover:bg-secondary/80 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {sweepLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              Refresh
+            </button>
+            <span className="text-[10px] text-muted-foreground ml-auto">
+              Sweeps move stablecoins from per-user deposit addresses to the main treasury.
+            </span>
+          </div>
+
+          <div className="border border-border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
+                  <tr className="border-b border-border text-left text-muted-foreground">
+                    <th className="p-2">Created</th>
+                    <th className="p-2">Address</th>
+                    <th className="p-2">Token</th>
+                    <th className="p-2 text-right">Amount</th>
+                    <th className="p-2">Status</th>
+                    <th className="p-2">Gas tx</th>
+                    <th className="p-2">Sweep tx</th>
+                    <th className="p-2 text-right">Tries</th>
+                    <th className="p-2">Last error</th>
+                    <th className="p-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sweepLoading && (
+                    <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin inline" />
+                    </td></tr>
+                  )}
+                  {!sweepLoading && sweepJobs.map((j) => (
+                    <tr key={j.id} className="border-b border-border/50">
+                      <td className="p-2 text-muted-foreground whitespace-nowrap">
+                        {new Date(j.created_at).toLocaleString("en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </td>
+                      <td className="p-2 font-mono">
+                        <a href={`https://bscscan.com/address/${j.address}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                          {j.address.slice(0, 6)}…{j.address.slice(-4)}
+                        </a>
+                      </td>
+                      <td className="p-2 font-medium">{j.token}</td>
+                      <td className="p-2 text-right font-bold">{fmt(Number(j.amount_usd))}</td>
+                      <td className="p-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                          j.status === "confirmed" ? "bg-green-500/10 text-green-500" :
+                          j.status === "failed" ? "bg-destructive/10 text-destructive" :
+                          j.status === "swept" ? "bg-blue-500/10 text-blue-500" :
+                          j.status === "gas_funded" ? "bg-yellow-500/10 text-yellow-500" :
+                          "bg-muted text-muted-foreground"
+                        }`}>{j.status}</span>
+                      </td>
+                      <td className="p-2">
+                        {j.gas_tx_hash ? (
+                          <a href={`https://bscscan.com/tx/${j.gas_tx_hash}`} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 font-mono">
+                            {j.gas_tx_hash.slice(0, 8)}…<ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="p-2">
+                        {j.sweep_tx_hash ? (
+                          <a href={`https://bscscan.com/tx/${j.sweep_tx_hash}`} target="_blank" rel="noreferrer" className="text-primary hover:underline inline-flex items-center gap-1 font-mono">
+                            {j.sweep_tx_hash.slice(0, 8)}…<ExternalLink className="w-3 h-3" />
+                          </a>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="p-2 text-right text-muted-foreground">{j.attempts}</td>
+                      <td className="p-2 text-destructive max-w-[200px] truncate" title={j.last_error || ""}>
+                        {j.last_error || ""}
+                      </td>
+                      <td className="p-2">
+                        {j.status === "failed" && (
+                          <button
+                            onClick={() => retryJob(j.id)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-[10px] font-semibold hover:bg-secondary/80"
+                          >
+                            <RotateCcw className="w-3 h-3" /> Retry
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {!sweepLoading && sweepJobs.length === 0 && (
+                    <tr><td colSpan={10} className="p-4 text-center text-muted-foreground">
+                      No sweep jobs match this filter. Click "Run sweep now" to discover candidates.
+                    </td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

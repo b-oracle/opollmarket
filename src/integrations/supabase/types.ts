@@ -703,6 +703,75 @@ export type Database = {
         }
         Relationships: []
       }
+      bsc_sweep_jobs: {
+        Row: {
+          address: string
+          amount_usd: number
+          amount_wei: number
+          attempts: number
+          confirmed_at: string | null
+          created_at: string
+          gas_funded_at: string | null
+          gas_tx_hash: string | null
+          hd_index: number
+          id: string
+          last_error: string | null
+          next_attempt_at: string
+          status: string
+          sweep_tx_hash: string | null
+          swept_at: string | null
+          token: string
+          token_contract: string
+          treasury_address: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          amount_usd?: number
+          amount_wei?: number
+          attempts?: number
+          confirmed_at?: string | null
+          created_at?: string
+          gas_funded_at?: string | null
+          gas_tx_hash?: string | null
+          hd_index: number
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          status?: string
+          sweep_tx_hash?: string | null
+          swept_at?: string | null
+          token: string
+          token_contract: string
+          treasury_address?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          amount_usd?: number
+          amount_wei?: number
+          attempts?: number
+          confirmed_at?: string | null
+          created_at?: string
+          gas_funded_at?: string | null
+          gas_tx_hash?: string | null
+          hd_index?: number
+          id?: string
+          last_error?: string | null
+          next_attempt_at?: string
+          status?: string
+          sweep_tx_hash?: string | null
+          swept_at?: string | null
+          token?: string
+          token_contract?: string
+          treasury_address?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
