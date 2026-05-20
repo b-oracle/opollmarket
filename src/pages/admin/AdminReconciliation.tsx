@@ -1,7 +1,9 @@
 import NpReconciliation from "@/components/admin/NpReconciliation";
 import PayazaReconciliation from "@/components/admin/PayazaReconciliation";
 import FlutterwaveReconciliation from "@/components/admin/FlutterwaveReconciliation";
+import BscReconciliation from "@/components/admin/BscReconciliation";
 import { Scale } from "lucide-react";
+
 
 const AdminReconciliation = () => {
   return (
@@ -19,8 +21,10 @@ const AdminReconciliation = () => {
       <NpReconciliation />
       <PayazaReconciliation />
       <FlutterwaveReconciliation />
+      <BscReconciliation />
     </div>
   );
 };
+
 
 export default AdminReconciliation;
