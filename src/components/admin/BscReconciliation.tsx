@@ -62,7 +62,7 @@ const BscReconciliation = () => {
   const [tokenFilter, setTokenFilter] = useState<"all" | "USDT" | "USDC">("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [tab, setTab] = useState<"events" | "recon">("events");
+  const [tab, setTab] = useState<"events" | "recon" | "sweeps">("events");
   const [reconRows, setReconRows] = useState<
     {
       event: BscEvent;
@@ -72,6 +72,10 @@ const BscReconciliation = () => {
     }[]
   >([]);
   const [reconLoading, setReconLoading] = useState(false);
+  const [sweepJobs, setSweepJobs] = useState<SweepJob[]>([]);
+  const [sweepLoading, setSweepLoading] = useState(false);
+  const [sweepStatusFilter, setSweepStatusFilter] = useState<SweepStatus | "all">("all");
+  const [running, setRunning] = useState(false);
 
   const fmt = (v: number) => `$${(v ?? 0).toFixed(2)}`;
 
