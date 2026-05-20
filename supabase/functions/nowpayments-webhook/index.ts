@@ -1016,6 +1016,11 @@ Deno.serve(async (req) => {
         error: err,
       });
     } catch { /* swallow */ }
-    return new Response("OK", { status: 200, headers: corsHeaders });
+    // Return 5xx so NOWPayments retries — silently 200'ing here would permanently
+    // drop a real deposit on any transient DB/RPC failure.
+    return new Response(
+      JSON.stringify({ error: "internal_error", message: (err as Error)?.message ?? "unknown" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
