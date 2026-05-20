@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.adjust_balance(uuid, numeric, numeric, numeric) TO authenticated;
