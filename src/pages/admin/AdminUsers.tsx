@@ -166,6 +166,8 @@ const AdminUsers = () => {
     const { error } = await supabase.rpc("adjust_balance", {
       _user_id: balanceModal.userId,
       _delta: amount,
+      _bonus_delta: 0,
+      _insurance_delta: 0,
     });
 
     if (error) {
