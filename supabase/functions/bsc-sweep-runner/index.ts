@@ -383,14 +383,45 @@ Deno.serve(async (req) => {
     if (!gasPk) return json({ error: "BSC_GAS_STATION_PRIVATE_KEY not configured" }, 500);
     try { getBscRpcUrls(); } catch { return json({ error: "BSC_RPC_URL not configured" }, 500); }
 
+    const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
+    const SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const ANON = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // CRITICAL SAFETY GUARD: refuse to run if the treasury address is itself a
+    // known user deposit address. This prevents the catastrophic feedback loop
+    // where a misconfigured BSC_TREASURY_ADDRESS == a deposit address causes
+    // every sweep to credit the user again (sweep → poller detects inbound →
+    // credit → sweep → …).
+    {
+      const adminCheck = createClient(SUPABASE_URL, SR);
+      const { data: collision } = await adminCheck
+        .from("bsc_deposit_addresses")
+        .select("user_id")
+        .eq("address", treasury)
+        .maybeSingle();
+      if (collision) {
+        try {
+          await adminCheck.rpc("record_system_alert", {
+            _severity: "critical",
+            _source: "bsc-sweep-runner",
+            _code: "treasury_address_collision",
+            _message: `BSC_TREASURY_ADDRESS (${treasury}) is registered as a user deposit address — sweep halted. Update the secret to the real treasury wallet.`,
+            _details: { treasury, colliding_user_id: collision.user_id },
+            _dedupe_minutes: 60,
+          });
+        } catch (_) { /* swallow */ }
+        return json({
+          error: "BSC_TREASURY_ADDRESS collides with a user deposit address — refusing to sweep. Update the secret.",
+          treasury,
+        }, 500);
+      }
+    }
+
     // Auth: cron secret OR admin Bearer token
     const cronHeader = req.headers.get("x-cron-secret");
     const expectedCron = Deno.env.get("CRON_SECRET");
     const isCron = !!cronHeader && !!expectedCron && cronHeader === expectedCron;
 
-    const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL") || Deno.env.get("SUPABASE_URL")!;
-    const SR = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const ANON = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!;
 
     if (!isCron) {
       const authHeader = req.headers.get("Authorization") ?? "";

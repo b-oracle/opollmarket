@@ -164,12 +164,24 @@ Deno.serve(async (req) => {
       // Skip logs from reorged blocks
       if (log.removed === true) continue;
       const to_addr = topicToAddress(log.topics[2]);
+      const from_addr = topicToAddress(log.topics[1]);
       const user_id = addrMap.get(to_addr);
       if (!user_id) continue;
+      // Guard: self-transfers (from == to) are never real user deposits. This
+      // protects against a misconfigured BSC_TREASURY_ADDRESS that points at a
+      // user's own deposit address, which would otherwise create an infinite
+      // credit→sweep→credit loop.
+      if (from_addr === to_addr) continue;
+      // Guard: if the sender is itself a known deposit address in our pool
+      // (i.e. another user's deposit address OR the same user's), this is an
+      // internal movement (sweep / mis-routed treasury), not a real inbound
+      // deposit. Skip to prevent double-crediting.
+      if (addrMap.has(from_addr)) continue;
       const tokenInfo = TOKENS[(log.address as string).toLowerCase()];
       if (!tokenInfo) continue;
       const amountUsd = wei18ToUsd(log.data);
       if (amountUsd < MIN_USD) continue;
+
 
       // Lazy-load this user's last-24h credited+pending+in-review total
       if (!userBaseline.has(user_id)) {
