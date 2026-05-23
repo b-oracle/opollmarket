@@ -361,9 +361,22 @@ const FAQ = () => {
     setIsStreaming(false);
   };
 
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqSections.flatMap((s) =>
+      s.items.map((it) => ({
+        "@type": "Question",
+        name: it.question,
+        acceptedAnswer: { "@type": "Answer", text: it.answer },
+      }))
+    ),
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
-      <SEOHead title="FAQ – OPollMarket" description="Frequently asked questions about OPollMarket — deposits, withdrawals, market creation, boosts, Telegram & WhatsApp integration, and more." path="/faq" />
+      <SEOHead title="FAQ" description="Frequently asked questions about OPollMarket — deposits, withdrawals, market creation, boosts, Telegram & WhatsApp integration, and more." path="/faq" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border" style={{ paddingTop: 'var(--safe-top)' }}>
         <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-muted transition">
