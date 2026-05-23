@@ -85,7 +85,7 @@ const Welcome = () => {
         paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
       }}
     >
-      <SEOHead title="Welcome to OPOLL" description="Predict, trade, and socialize on the world's most fun prediction market." />
+      <SEOHead title="Welcome to OPollmarket" description="Predict, trade, and socialize on the world's most fun prediction market." />
 
       {/* Skip */}
       <div className="flex justify-end px-4 pt-2">

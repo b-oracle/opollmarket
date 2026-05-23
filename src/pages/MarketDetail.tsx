@@ -595,7 +595,7 @@ const MarketDetail = () => {
     image: ogImageUrl || market.imageUrl || undefined,
     mainEntityOfPage: `https://opoll.org/market/${id}`,
     datePublished: (market as any).createdAt || (market as any).created_at || undefined,
-    publisher: { "@type": "Organization", name: "OPOLL", url: "https://opoll.org" },
+    publisher: { "@type": "Organization", name: "OPollmarket", url: "https://opoll.org" },
   } : null;
 
   return (

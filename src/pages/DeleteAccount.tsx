@@ -55,7 +55,7 @@ const DeleteAccount = () => {
 
   return (
     <>
-      <SEOHead title="Delete Account — OPOLL" description="Request permanent deletion of your OPOLL account and associated data." />
+      <SEOHead title="Delete Account — OPollmarket" description="Request permanent deletion of your OPollmarket account and associated data." />
       <div className="min-h-screen pt-[calc(var(--safe-top)+4rem)] pb-24 px-4 max-w-xl mx-auto">
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground mb-4 hover:text-foreground">
           <ArrowLeft className="w-4 h-4" /> Back

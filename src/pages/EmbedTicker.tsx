@@ -53,7 +53,7 @@ const EmbedTicker = () => {
       {/* Branding */}
       <div className="absolute right-3 flex items-center gap-1 opacity-40">
         <TrendingUp className="w-3 h-3 text-blue-400" />
-        <span className="text-[9px] text-gray-500 font-medium">OPOLL</span>
+        <span className="text-[9px] text-gray-500 font-medium">OPollmarket</span>
       </div>
 
       <style>{`

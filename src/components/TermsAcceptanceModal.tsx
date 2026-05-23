@@ -76,12 +76,12 @@ const TermsAcceptanceModal = ({ open, onAccept, onClose }: TermsAcceptanceModalP
           )}
 
           <div className="p-3 rounded-xl bg-muted/50 border border-border text-xs text-muted-foreground space-y-2 max-h-40 overflow-y-auto">
-            <p>By placing predictions on OPOLL, you acknowledge and agree that:</p>
+            <p>By placing predictions on OPollmarket, you acknowledge and agree that:</p>
             <ul className="list-disc pl-4 space-y-1">
               <li>Prediction markets involve financial risk. Only use funds you can afford to lose.</li>
               <li>Market outcomes are resolved based on the stated resolution source.</li>
               <li>Fees are deducted from each trade as displayed at the time of purchase.</li>
-              <li>OPOLL is not liable for any losses incurred through market participation.</li>
+              <li>OPollmarket is not liable for any losses incurred through market participation.</li>
             </ul>
           </div>
 

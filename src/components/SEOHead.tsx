@@ -55,7 +55,7 @@ const SEOHead = ({
     setMeta("property", "og:image", image);
     setMeta("property", "og:url", canonicalUrl);
     setMeta("property", "og:type", type);
-    setMeta("property", "og:site_name", "OPOLL");
+    setMeta("property", "og:site_name", "OPollmarket");
 
     // Twitter
     setMeta("name", "twitter:title", fullTitle);

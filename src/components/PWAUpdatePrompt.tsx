@@ -20,7 +20,7 @@ const PWAUpdatePrompt = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold">Update Available</p>
-              <p className="text-xs text-muted-foreground">A new version of OPOLL is ready.</p>
+              <p className="text-xs text-muted-foreground">A new version of OPollmarket is ready.</p>
             </div>
             <button
               onClick={update}

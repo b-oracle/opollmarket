@@ -59,8 +59,8 @@ const Developers = () => {
   return (
     <div className="min-h-screen bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
       <SEOHead
-        title="Developer Docs — OPOLL API & SDK"
-        description="Integrate OPOLL prediction markets into your app with our REST API, JavaScript SDK, embeddable widgets, and WordPress plugin."
+        title="Developer Docs — OPollmarket API & SDK"
+        description="Integrate OPollmarket prediction markets into your app with our REST API, JavaScript SDK, embeddable widgets, and WordPress plugin."
       />
       <TopBar />
 
@@ -75,7 +75,7 @@ const Developers = () => {
               <h1 className="text-lg sm:text-2xl font-black tracking-tight truncate">Developer Documentation</h1>
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 shrink-0">API v1.0</span>
             </div>
-            <p className="text-xs sm:text-sm text-muted-foreground truncate">Integrate OPOLL prediction markets into your platform</p>
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">Integrate OPollmarket prediction markets into your platform</p>
           </div>
         </div>
 
@@ -98,7 +98,7 @@ const Developers = () => {
           <Section icon={Zap} title="Quick Start" id="quickstart">
             <p className="text-foreground font-medium">Get up and running in 3 steps:</p>
             <ol className="list-decimal list-inside space-y-2 pl-1">
-              <li><strong>Get an API key</strong> — Contact the OPOLL team or request one from the admin panel.</li>
+              <li><strong>Get an API key</strong> — Contact the OPollmarket team or request one from the admin panel.</li>
               <li><strong>Include the SDK</strong> — Add one script tag to your page.</li>
               <li><strong>Fetch markets</strong> — Call the API or use the SDK to list and display markets.</li>
             </ol>
@@ -106,7 +106,7 @@ const Developers = () => {
               label="Minimal example"
               code={`<script src="${API_BASE}/sdk-js"></script>
 <script>
-  const opoll = new OPOLL({ apiKey: 'YOUR_API_KEY' });
+  const opoll = new OPollmarket({ apiKey: 'YOUR_API_KEY' });
   opoll.getMarkets({ limit: 5 }).then(({ markets }) => {
     markets.forEach(m => console.log(m.title, m.yes_price));
   });
@@ -307,7 +307,7 @@ const Developers = () => {
             />
             <CopyBlock
               label="Initialize"
-              code={`const opoll = new OPOLL({ apiKey: 'YOUR_API_KEY' });`}
+              code={`const opoll = new OPollmarket({ apiKey: 'YOUR_API_KEY' });`}
             />
 
             <div className="space-y-3">
@@ -332,7 +332,7 @@ const Developers = () => {
 
             <CopyBlock
               label="Full example"
-              code={`const opoll = new OPOLL({ apiKey: 'opoll_abc123...' });
+              code={`const opoll = new OPollmarket({ apiKey: 'opoll_abc123...' });
 
 // List crypto markets
 const { markets } = await opoll.getMarkets({ category: 'crypto', limit: 10 });
@@ -429,7 +429,7 @@ console.log('Trade placed:', result);`}
             />
 
             <h3 className="text-sm font-semibold text-foreground mt-4">Signature Verification</h3>
-            <p>Every webhook includes an <code className="text-foreground bg-muted px-1.5 py-0.5 rounded text-xs">X-OPOLL-Signature</code> header containing an HMAC-SHA256 signature of the payload, signed with your webhook secret.</p>
+            <p>Every webhook includes an <code className="text-foreground bg-muted px-1.5 py-0.5 rounded text-xs">X-OPollmarket-Signature</code> header containing an HMAC-SHA256 signature of the payload, signed with your webhook secret.</p>
             <CopyBlock
               label="Verify in Node.js"
               code={`const crypto = require('crypto');
@@ -445,8 +445,8 @@ function verifyWebhook(payload, signature, secret) {
 
             <h3 className="text-sm font-semibold text-foreground mt-4">Headers</h3>
             <div className="bg-card border border-border rounded-xl p-3 space-y-1 text-xs">
-              <p><code className="text-primary">X-OPOLL-Event</code> — The event type (e.g., <code>market.resolved</code>)</p>
-              <p><code className="text-primary">X-OPOLL-Signature</code> — HMAC-SHA256 signature: <code>sha256=&lt;hex&gt;</code></p>
+              <p><code className="text-primary">X-OPollmarket-Event</code> — The event type (e.g., <code>market.resolved</code>)</p>
+              <p><code className="text-primary">X-OPollmarket-Signature</code> — HMAC-SHA256 signature: <code>sha256=&lt;hex&gt;</code></p>
               <p><code className="text-primary">Content-Type</code> — <code>application/json</code></p>
             </div>
 
@@ -477,7 +477,7 @@ function verifyWebhook(payload, signature, secret) {
             <p>Customize the appearance of embedded widgets to match your brand. Configure these settings in your API key management panel.</p>
             <div className="bg-card border border-border rounded-xl divide-y divide-border overflow-hidden">
               {[
-                { field: "Brand Name", desc: "Replaces 'OPOLL' branding in embed widgets" },
+                { field: "Brand Name", desc: "Replaces 'OPollmarket' branding in embed widgets" },
                 { field: "Brand Logo URL", desc: "Custom logo displayed in the embed header" },
                 { field: "Primary Color", desc: "Accent color for buttons, progress bars, and highlights" },
                 { field: "Dark Background", desc: "Background color for the embed container" },

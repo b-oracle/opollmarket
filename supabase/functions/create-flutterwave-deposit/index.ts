@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
         amount: ngnAmount,
         currency: "NGN",
         email: email,
-        narration: `Deposit $${amount} USD to OPOLL`,
+        narration: `Deposit $${amount} USD to OPollmarket`,
         is_permanent: false,
       }),
     });
@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
         flw_ref: chargeData.data?.flw_ref || null,
         bank_name: auth.transfer_bank || "Bank",
         account_number: auth.transfer_account || "",
-        account_name: auth.transfer_note || "Flutterwave / OPOLL",
+        account_name: auth.transfer_note || "Flutterwave / OPollmarket",
         amount_ngn: auth.transfer_amount || ngnAmount,
         amount_usd: amount,
         exchange_rate: effectiveRate,

@@ -60,8 +60,8 @@ export async function deliverWebhook(p: DeliverParams): Promise<DeliverResult> {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-OPOLL-Event": p.eventType,
-          "X-OPOLL-Signature": signature,
+          "X-OPollmarket-Event": p.eventType,
+          "X-OPollmarket-Signature": signature,
         },
         body: bodyStr,
       }),
