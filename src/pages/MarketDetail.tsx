@@ -587,9 +587,21 @@ const MarketDetail = () => {
   const selectedOptionLabel = selectedOptionObj?.label ?? null;
   const selectedOptionColor = selectedOptionIdx >= 0 ? optionColors[selectedOptionIdx % optionColors.length] : undefined;
 
+  const marketJsonLd = market ? {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: market.title,
+    description: market.description,
+    image: ogImageUrl || market.imageUrl || undefined,
+    mainEntityOfPage: `https://opoll.org/market/${id}`,
+    datePublished: (market as any).createdAt || (market as any).created_at || undefined,
+    publisher: { "@type": "Organization", name: "OPOLL", url: "https://opoll.org" },
+  } : null;
+
   return (
     <div ref={pageRef} className="h-dvh bg-background overflow-y-auto overscroll-contain" style={{ paddingBottom: 'calc(8rem + var(--safe-bottom))' }}>
       {market && <SEOHead title={market.title} description={market.description} path={`/market/${id}`} image={ogImageUrl} type="article" />}
+      {marketJsonLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(marketJsonLd) }} />}
       <div className="sticky top-0 z-20 glass-strong" style={{ paddingTop: 'var(--safe-top)' }}>
         <div className="flex items-center justify-between h-14 px-4 max-w-lg md:max-w-4xl mx-auto">
           <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass flex items-center justify-center"><ArrowLeft className="w-5 h-5" /></button>
