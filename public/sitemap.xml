@@ -6,6 +6,11 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://opoll.org/welcome</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://opoll.org/feed</loc>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
@@ -19,6 +24,11 @@
     <loc>https://opoll.org/rankings</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://opoll.org/portfolio</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://opoll.org/faq</loc>
@@ -44,5 +54,10 @@
     <loc>https://opoll.org/data-use</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://opoll.org/child-safety</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
   </url>
 </urlset>

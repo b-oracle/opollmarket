@@ -6,6 +6,7 @@ Disallow: /reset-password
 Disallow: /auth
 
 Sitemap: https://opoll.org/sitemap.xml
+Sitemap: https://opoll.org/sitemap-markets.xml
 
 User-agent: Googlebot
 Allow: /

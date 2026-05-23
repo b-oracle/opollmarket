@@ -1,0 +1,23 @@
+# OPoll Market
+
+> The world's first social prediction market platform. Trade on real-world events across crypto, sports, politics and culture — available on web, Telegram and WhatsApp.
+
+OPoll Market lets users create and trade prediction markets, follow other traders, copy-trade winners, and earn from accurate forecasts. Markets settle against verifiable real-world outcomes and use an AMM-style pricing model.
+
+## Pages
+
+- [Home](/): Discover trending prediction markets and start trading.
+- [Welcome](/welcome): Introduction to OPoll Market for new visitors.
+- [Feed](/feed): Live social feed of market activity and predictions.
+- [Create Market](/create): Create your own prediction market on any real-world event.
+- [Rankings](/rankings): Leaderboard of top traders by PnL and volume.
+- [FAQ](/faq): Frequently asked questions about deposits, markets, fees and verification.
+- [Disclaimer](/disclaimer): Risk disclosures and legal notices.
+- [Privacy](/privacy): Privacy policy.
+- [Terms](/terms): Terms of service.
+- [Data Use](/data-use): How user data is collected and processed.
+- [Child Safety](/child-safety): Child safety standards.
+
+## Optional
+
+- [Developers](/developers): Public API and SDK documentation for partners.
