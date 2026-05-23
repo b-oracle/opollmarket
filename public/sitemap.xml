@@ -60,9 +60,4 @@
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
-  <url>
-    <loc>https://opoll.org/sitemap-markets.xml</loc>
-    <changefreq>hourly</changefreq>
-    <priority>0.9</priority>
-  </url>
 </urlset>
