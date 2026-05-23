@@ -516,7 +516,7 @@ const AdminApiKeys = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div>
                         <label className="text-[10px] text-muted-foreground">Brand Name</label>
-                        <Input defaultValue={k.brand_name || ""} placeholder="OPOLL" className="h-8 text-xs" onBlur={e => updateField(k.id, "brand_name", e.target.value || null)} />
+                        <Input defaultValue={k.brand_name || ""} placeholder="OPollmarket" className="h-8 text-xs" onBlur={e => updateField(k.id, "brand_name", e.target.value || null)} />
                       </div>
                       <div>
                         <label className="text-[10px] text-muted-foreground">Brand Logo URL</label>
@@ -573,7 +573,7 @@ const AdminApiKeys = () => {
           <pre className="bg-muted/50 p-3 rounded-lg overflow-x-auto text-[11px]">
 {`<script src="https://dqtjuhqndncanfwgjwva.supabase.co/functions/v1/sdk-js"></script>
 <script>
-  const opoll = new OPOLL({ apiKey: 'YOUR_API_KEY' });
+  const opoll = new OPollmarket({ apiKey: 'YOUR_API_KEY' });
   const { markets } = await opoll.getMarkets({ category: 'crypto', limit: 10 });
   opoll.embedMarket('MARKET_ID', '#widget-container');
 </script>`}
@@ -587,8 +587,8 @@ const AdminApiKeys = () => {
           <p><strong>Webhook Events:</strong></p>
           <div className="bg-muted/50 p-3 rounded-lg text-[11px] space-y-1">
             <p>• <code>market.resolved</code> — Market resolved with winner</p>
-            <p>• Header <code>X-OPOLL-Event</code> contains event type</p>
-            <p>• Signed with HMAC-SHA256 via <code>X-OPOLL-Signature</code></p>
+            <p>• Header <code>X-OPollmarket-Event</code> contains event type</p>
+            <p>• Signed with HMAC-SHA256 via <code>X-OPollmarket-Signature</code></p>
           </div>
         </div>
       </div>

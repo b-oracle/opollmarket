@@ -8,7 +8,7 @@ const corsHeaders = {
 // FIX: Use relative URL derived at runtime instead of hardcoded project ref
 const SDK_JS = `
 /**
- * OPOLL JavaScript SDK v1.1.0
+ * OPollmarket JavaScript SDK v1.1.0
  * https://opoll.org
  */
 (function(global) {
@@ -16,14 +16,14 @@ const SDK_JS = `
 
   var DEFAULT_BASE = 'https://opoll.org/api';
 
-  function OPOLL(options) {
-    if (!options || !options.apiKey) throw new Error('OPOLL: apiKey is required');
+  function OPollmarket(options) {
+    if (!options || !options.apiKey) throw new Error('OPollmarket: apiKey is required');
     this.apiKey = options.apiKey;
     this.userToken = null;
     this.baseUrl = options.baseUrl || DEFAULT_BASE;
   }
 
-  OPOLL.prototype._request = function(action, params, method, body) {
+  OPollmarket.prototype._request = function(action, params, method, body) {
     method = method || 'GET';
     var url = this.baseUrl + '?action=' + encodeURIComponent(action);
     if (params) {
@@ -51,52 +51,52 @@ const SDK_JS = `
   };
 
   // Set user auth token (obtained from your own auth flow)
-  OPOLL.prototype.setUserToken = function(token) {
+  OPollmarket.prototype.setUserToken = function(token) {
     this.userToken = token;
   };
 
   // List markets
-  OPOLL.prototype.getMarkets = function(params) {
+  OPollmarket.prototype.getMarkets = function(params) {
     return this._request('markets', params);
   };
 
   // Get single market
-  OPOLL.prototype.getMarket = function(id) {
+  OPollmarket.prototype.getMarket = function(id) {
     return this._request('market', { id: id });
   };
 
   // Get authenticated user's balance (no longer accepts userId param)
-  OPOLL.prototype.getBalance = function() {
+  OPollmarket.prototype.getBalance = function() {
     return this._request('balance');
   };
 
   // Get authenticated user's positions (no longer accepts userId param)
-  OPOLL.prototype.getPositions = function() {
+  OPollmarket.prototype.getPositions = function() {
     return this._request('positions');
   };
 
   // Place a bet (requires user token)
-  OPOLL.prototype.placeBet = function(data) {
+  OPollmarket.prototype.placeBet = function(data) {
     return this._request('place-bet', null, 'POST', data);
   };
 
   // Create a user account
-  OPOLL.prototype.createUser = function(data) {
+  OPollmarket.prototype.createUser = function(data) {
     return this._request('create-user', null, 'POST', data);
   };
 
   // Initiate deposit (requires user token)
-  OPOLL.prototype.deposit = function(data) {
+  OPollmarket.prototype.deposit = function(data) {
     return this._request('deposit', null, 'POST', data);
   };
 
   // Create a market (requires user token)
-  OPOLL.prototype.createMarket = function(data) {
+  OPollmarket.prototype.createMarket = function(data) {
     return this._request('create-market', null, 'POST', data);
   };
 
   // Embed helper - renders a market widget in a target element
-  OPOLL.prototype.embedMarket = function(marketId, targetElement) {
+  OPollmarket.prototype.embedMarket = function(marketId, targetElement) {
     var iframe = document.createElement('iframe');
     iframe.src = 'https://opoll.org/embed/market/' + marketId;
     iframe.style.width = '100%';
@@ -116,9 +116,9 @@ const SDK_JS = `
 
   // Export
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = OPOLL;
+    module.exports = OPollmarket;
   } else {
-    global.OPOLL = OPOLL;
+    global.OPollmarket = OPollmarket;
   }
 })(typeof window !== 'undefined' ? window : this);
 `;

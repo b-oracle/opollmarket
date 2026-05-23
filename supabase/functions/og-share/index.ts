@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="OPOLL" />
+  <meta property="og:site_name" content="OPollmarket" />
   <meta property="og:title" content="${escapeHtml(pageTitle)}" />
   <meta property="og:description" content="${escapeHtml(pageDesc)}" />
   <meta property="og:image" content="${escapeHtml(ogImageUrl)}" />

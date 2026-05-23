@@ -52,7 +52,7 @@ const AppSplash = () => {
           {/* Logo */}
           <motion.img
             src="/logo.png"
-            alt="OPOLL"
+            alt="OPollmarket"
             className="relative h-24 w-24 object-contain drop-shadow-[0_0_24px_hsl(var(--primary)/0.6)]"
             initial={{ opacity: 0, scale: 0.7 }}
             animate={{ opacity: 1, scale: [0.7, 1.05, 1] }}

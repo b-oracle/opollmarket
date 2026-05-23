@@ -78,7 +78,7 @@ const InstallAppModal = ({ open, onClose }: InstallAppModalProps) => {
                   </motion.div>
                   <h3 className="text-lg font-bold mb-1">App Installed!</h3>
                   <p className="text-sm text-muted-foreground text-center">
-                    You can now access OPOLL directly from your home screen.
+                    You can now access OPollmarket directly from your home screen.
                   </p>
                 </motion.div>
               ) : (
@@ -94,7 +94,7 @@ const InstallAppModal = ({ open, onClose }: InstallAppModalProps) => {
                       <Smartphone className="w-10 h-10 text-primary" />
                     </motion.div>
                     <p className="text-sm text-muted-foreground text-center max-w-[280px]">
-                      Install OPOLL for the best experience — faster, smoother, and always one tap away.
+                      Install OPollmarket for the best experience — faster, smoother, and always one tap away.
                     </p>
                   </div>
 

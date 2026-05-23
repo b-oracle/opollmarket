@@ -725,7 +725,7 @@ const Index = () => {
           </li>
         </ul>
         <p className="text-center text-[10px] text-muted-foreground mt-3">
-          © {new Date().getFullYear()} OPOLL. All rights reserved.
+          © {new Date().getFullYear()} OPollmarket. All rights reserved.
         </p>
       </nav>
 

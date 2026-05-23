@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         price_currency: "usd",
         pay_currency: pay_currency || "usdtbsc",
         order_id: orderId,
-        order_description: `Deposit $${amount} to OPOLL`,
+        order_description: `Deposit $${amount} to OPollmarket`,
         ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
       }),
     });

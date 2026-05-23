@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["opoll-favicon.png", "logo.png", "icon-512.png", "robots.txt"],
       manifest: {
-        name: "OPOLL — Social Prediction Market",
-        short_name: "OPOLL",
+        name: "OPollmarket — Social Prediction Market",
+        short_name: "OPollmarket",
         description: "TikTok for predictions. Swipe, predict, and earn on real-world events.",
         theme_color: "#000000",
         background_color: "#000000",

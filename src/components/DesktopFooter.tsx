@@ -27,7 +27,7 @@ const DesktopFooter = () => {
           {/* Brand */}
           <div>
             <div className="flex items-center mb-3">
-              <img src={logoLight} alt="OPOLL" className="h-7 object-contain" />
+              <img src={logoLight} alt="OPollmarket" className="h-7 object-contain" />
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-[240px]">
               Predict the future, earn from it. The social prediction market platform.
@@ -131,7 +131,7 @@ const DesktopFooter = () => {
         {/* Bottom bar */}
         <div className="pt-6 border-t border-border flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground">
-            © {new Date().getFullYear()} OPOLL. All rights reserved.
+            © {new Date().getFullYear()} OPollmarket. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <a href="/terms" className="text-[11px] text-muted-foreground hover:text-primary transition-colors">

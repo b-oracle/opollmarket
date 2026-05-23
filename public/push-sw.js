@@ -10,7 +10,7 @@ try {
 }
 
 self.addEventListener("push", (event) => {
-  let data = { title: "OPOLL", body: "You have a new notification", url: "/" };
+  let data = { title: "OPollmarket", body: "You have a new notification", url: "/" };
 
   try {
     if (event.data) {

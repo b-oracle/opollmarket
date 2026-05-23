@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     if (existingProfile) {
       await adminClient.from("twitter_auth_sessions").delete().eq("id", session.id);
-      return redirectWithError(redirectUrl, "This X account is already linked to another OPOLL account");
+      return redirectWithError(redirectUrl, "This X account is already linked to another OPollmarket account");
     }
 
     // Store tokens

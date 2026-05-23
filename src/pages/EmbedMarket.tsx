@@ -203,7 +203,7 @@ const EmbedMarket = () => {
         {brand.logoUrl ? (
           <img src={brand.logoUrl} alt={brand.name} className="h-3" />
         ) : (
-          <img src={logoDark} alt="OPOLL" className="h-3" />
+          <img src={logoDark} alt="OPollmarket" className="h-3" />
         )}
         <span className="text-[9px] text-gray-500">Powered by {brand.name}</span>
       </div>

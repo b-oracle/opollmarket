@@ -7,11 +7,11 @@ const corsHeaders = {
 
 const WP_PLUGIN = `<?php
 /**
- * Plugin Name: OPOLL Market Embed
+ * Plugin Name: OPollmarket Market Embed
  * Plugin URI: https://opoll.org
- * Description: Embed OPOLL prediction markets on your WordPress site using shortcodes.
+ * Description: Embed OPollmarket prediction markets on your WordPress site using shortcodes.
  * Version: 1.0.0
- * Author: OPOLL
+ * Author: OPollmarket
  * License: MIT
  */
 
@@ -27,7 +27,7 @@ function opoll_market_shortcode($atts) {
     ), $atts, 'opoll');
 
     if (empty($atts['market'])) {
-        return '<p style="color:#888;">OPOLL: Please provide a market ID. Usage: [opoll market="your-market-id"]</p>';
+        return '<p style="color:#888;">OPollmarket: Please provide a market ID. Usage: [opoll market="your-market-id"]</p>';
     }
 
     $market_id = sanitize_text_field($atts['market']);
@@ -36,7 +36,7 @@ function opoll_market_shortcode($atts) {
     $theme = sanitize_text_field($atts['theme']);
 
     return sprintf(
-        '<iframe src="https://opoll.org/embed/market/%s?theme=%s" width="%s" height="%dpx" frameborder="0" style="border-radius:12px;max-width:100%%;" loading="lazy" title="OPOLL Market"></iframe>',
+        '<iframe src="https://opoll.org/embed/market/%s?theme=%s" width="%s" height="%dpx" frameborder="0" style="border-radius:12px;max-width:100%%;" loading="lazy" title="OPollmarket Market"></iframe>',
         esc_attr($market_id),
         esc_attr($theme),
         esc_attr($width),
@@ -58,7 +58,7 @@ function opoll_ticker_shortcode($atts) {
     $limit = intval($atts['limit']);
 
     return sprintf(
-        '<iframe src="https://opoll.org/embed/ticker?limit=%d" width="%s" height="%dpx" frameborder="0" style="border-radius:8px;max-width:100%%;" loading="lazy" title="OPOLL Ticker"></iframe>',
+        '<iframe src="https://opoll.org/embed/ticker?limit=%d" width="%s" height="%dpx" frameborder="0" style="border-radius:8px;max-width:100%%;" loading="lazy" title="OPollmarket Ticker"></iframe>',
         $limit,
         esc_attr($width),
         $height
@@ -77,7 +77,7 @@ function opoll_sdk_shortcode($atts) {
     if (!empty($atts['api_key'])) {
         $api_key = sanitize_text_field($atts['api_key']);
         $output .= sprintf(
-            '<script>window.opoll = new OPOLL({ apiKey: "%s" });</script>',
+            '<script>window.opoll = new OPollmarket({ apiKey: "%s" });</script>',
             esc_js($api_key)
         );
     }
@@ -88,14 +88,14 @@ add_shortcode('opoll_sdk', 'opoll_sdk_shortcode');
 
 // Admin settings page
 function opoll_admin_menu() {
-    add_options_page('OPOLL Settings', 'OPOLL Embed', 'manage_options', 'opoll-settings', 'opoll_settings_page');
+    add_options_page('OPollmarket Settings', 'OPollmarket Embed', 'manage_options', 'opoll-settings', 'opoll_settings_page');
 }
 add_action('admin_menu', 'opoll_admin_menu');
 
 function opoll_settings_page() {
     ?>
     <div class="wrap">
-        <h1>OPOLL Market Embed</h1>
+        <h1>OPollmarket Market Embed</h1>
         <h2>Shortcodes</h2>
         <table class="form-table">
             <tr><th>Market Embed</th><td><code>[opoll market="MARKET_ID"]</code><br><small>Options: width, height, theme (dark/light)</small></td></tr>

@@ -16,7 +16,7 @@ createAppKit({
   projectId,
   networks: [bsc as any],
   metadata: {
-    name: 'OPOLL',
+    name: 'OPollmarket',
     description: 'Social Prediction Market',
     url: 'https://opoll.org',
     icons: ['https://opoll.org/logo.png'],
