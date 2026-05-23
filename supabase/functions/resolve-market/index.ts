@@ -236,31 +236,34 @@ async function handleResolve(
 
   const isOneSided = losingPositions.length === 0 || winningPositions.length === 0;
 
-  // Get admin fee percent for one-sided winner refund
-  let adminFeePercent = 2;
-  if (isOneSided && winningPositions.length > 0) {
-    const { data: feeSettings } = await adminClient
-      .from("commission_settings")
-      .select("admin_fee_percent")
-      .limit(1)
-      .single();
-    adminFeePercent = feeSettings?.admin_fee_percent ?? 2;
-  }
-
   // Pay out winners
   let totalPaidOut = 0;
   let payoutPerShare = 1; // default $1/share — hoisted so copy-trade logic can access it
+  let oneSidedRefundTotal = 0; // for audit log
 
   if (winningPositions.length === 0) {
     // ONE-SIDED: Everyone lost — platform profit, no refund
     console.log("resolve-market: One-sided loss — all positions lose, platform profit");
   } else if (isOneSided && losingPositions.length === 0) {
-    // ONE-SIDED: Everyone won — return capital minus admin fee
-    console.log("resolve-market: One-sided win — returning capital minus", adminFeePercent, "% admin fee");
+    // ONE-SIDED WIN: Refund the GROSS stake from each user's confirmed buys.
+    // Policy: the 10% prediction fee taken at buy-time is non-refundable, but
+    // we do NOT additionally charge the admin fee on top (that would double-
+    // charge the user since `shares * avg_price` is already net of the entry
+    // fee). Sum each winner's confirmed buy `amount`s for this side and
+    // refund that exact gross total.
+    console.log("resolve-market: One-sided win — refunding gross stake (10% prediction fee retained, no extra admin fee)");
     for (const pos of winningPositions) {
-      const capital = pos.shares * pos.avg_price;
-      const fee = capital * (adminFeePercent / 100);
-      const payout = capital - fee;
+      const { data: userBuys } = await adminClient
+        .from("transactions")
+        .select("amount")
+        .eq("market_id", market_id)
+        .eq("user_id", pos.user_id)
+        .eq("side", pos.side)
+        .eq("type", "buy")
+        .eq("status", "confirmed");
+
+      const grossStake = (userBuys ?? []).reduce((s, b) => s + Number(b.amount || 0), 0);
+      const payout = Math.round(grossStake * 100) / 100;
 
       if (payout <= 0) continue;
 
@@ -270,7 +273,7 @@ async function handleResolve(
         user_id: pos.user_id,
         market_id: market_id,
         option_id: pos.option_id,
-        type: "payout",
+        type: "one_sided_refund",
         amount: payout,
         side: pos.side,
         shares: pos.shares,
@@ -279,6 +282,7 @@ async function handleResolve(
       });
 
       totalPaidOut += payout;
+      oneSidedRefundTotal += payout;
 
       await sendNotificationEmail({
         admin: adminClient,
@@ -291,8 +295,8 @@ async function handleResolve(
           marketId: market_id,
           outcomeLabel: sideToLabel(winning_side),
           payoutAmount: payout,
-          stake: Math.round(pos.shares * pos.avg_price * 100) / 100,
-          profit: Math.round((payout - pos.shares * pos.avg_price) * 100) / 100,
+          stake: payout,
+          profit: 0,
           shares: pos.shares,
           avgPrice: pos.avg_price,
         },
@@ -451,12 +455,18 @@ async function handleResolve(
 
   console.log("resolve-market: Success, winners:", winningPositions.length, "losers:", losingPositions.length, "one-sided:", isOneSided, "paid:", totalPaidOut);
 
-  // ── Return initial liquidity to creator (minus exit fee) ──
-  // Only refund if the liquidity was actually paid (verified), not admin-simulated
-  if (market.initial_liquidity > 0 && market.liquidity_verified) {
+  // ── Return initial liquidity to creator (minus 5% liquidity return fee) ──
+  // Policy: refund any market with `initial_liquidity > 0` regardless of the
+  // `liquidity_verified` flag. The flag was previously used as a proxy for
+  // "was actually paid" but was unreliable (many markets ended up with the
+  // flag false even after the creator funded liquidity), causing silent
+  // forfeitures. The only non-refundable portion is the 5% liquidity return
+  // fee per platform policy.
+  let liquidityRefundPaid = 0;
+  let liquidityFeeRetained = 0;
+  if (Number(market.initial_liquidity) > 0) {
     const creatorUserId = market.creator_wallet;
 
-    // Get exit fee from commission_settings
     const { data: settings } = await adminClient
       .from("commission_settings")
       .select("liquidity_return_fee_percent")
@@ -464,10 +474,10 @@ async function handleResolve(
       .single();
 
     const liquidityReturnFeePercent = Number((settings as any)?.liquidity_return_fee_percent) || 5;
-    const feeAmount = market.initial_liquidity * (liquidityReturnFeePercent / 100);
-    const liquidityRefund = market.initial_liquidity - feeAmount;
+    const feeAmount = Math.round(Number(market.initial_liquidity) * (liquidityReturnFeePercent / 100) * 100) / 100;
+    const liquidityRefund = Math.round((Number(market.initial_liquidity) - feeAmount) * 100) / 100;
 
-    if (liquidityRefund > 0) {
+    if (liquidityRefund > 0 && creatorUserId) {
       await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: liquidityRefund, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
@@ -479,17 +489,45 @@ async function handleResolve(
         status: "confirmed",
       });
 
-      // Notify creator
       await adminClient.from("notifications").insert({
         user_id: creatorUserId,
         title: "Liquidity Returned 💰",
-        message: `Your $${market.initial_liquidity.toFixed(2)} initial liquidity for "${market.title}" has been returned ($${liquidityRefund.toFixed(2)} after ${liquidityReturnFeePercent}% liquidity return fee).`,
+        message: `Your $${Number(market.initial_liquidity).toFixed(2)} initial liquidity for "${market.title}" has been returned ($${liquidityRefund.toFixed(2)} after ${liquidityReturnFeePercent}% liquidity return fee).`,
         type: "refund",
         market_id: market_id,
       });
 
+      liquidityRefundPaid = liquidityRefund;
+      liquidityFeeRetained = feeAmount;
       console.log("resolve-market: Returned liquidity to creator:", liquidityRefund, "fee:", feeAmount);
     }
+  }
+
+  // ── Audit log: capture full breakdown for every resolution ──
+  try {
+    await adminClient.from("audit_logs").insert({
+      actor_id: userId,
+      action: "market_resolved",
+      target_id: market_id,
+      target_type: "market",
+      details: {
+        market_title: market.title,
+        resolved_side: winning_side || null,
+        winning_option_id: winning_option_id || null,
+        is_one_sided: isOneSided,
+        winners_count: winningPositions.length,
+        losers_count: losingPositions.length,
+        total_paid_out: Math.round(totalPaidOut * 100) / 100,
+        one_sided_refund_total: Math.round(oneSidedRefundTotal * 100) / 100,
+        initial_liquidity: Number(market.initial_liquidity) || 0,
+        liquidity_refund_paid: liquidityRefundPaid,
+        liquidity_fee_retained: liquidityFeeRetained,
+        liquidity_verified: !!market.liquidity_verified,
+        forced: !!force,
+      },
+    });
+  } catch (auditErr) {
+    console.warn("resolve-market: audit log insert failed (non-critical)", auditErr);
   }
 
   // Auto-post to official X account
