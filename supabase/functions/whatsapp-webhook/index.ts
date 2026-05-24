@@ -9,6 +9,40 @@ const corsHeaders = {
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/twilio";
 const APP_URL = "https://opoll.org";
 
+// ── Twilio signature verification ──
+async function verifyTwilioSignature(req: Request): Promise<boolean> {
+  const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+  if (!authToken) return false;
+
+  const sig = req.headers.get("X-Twilio-Signature");
+  if (!sig) return false;
+
+  const url = req.url;
+
+  // Parse form body (application/x-www-form-urlencoded)
+  const bodyText = await req.clone().text();
+  const params = new URLSearchParams(bodyText);
+  const keys = Array.from(params.keys()).sort();
+
+  let data = url;
+  for (const k of keys) {
+    data += k;
+    data += params.get(k);
+  }
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(authToken),
+    { name: "HMAC", hash: "SHA-1" },
+    false,
+    ["sign"]
+  );
+  const sigBuf = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
+  const computed = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
+  return computed === sig;
+}
+
 // ── Helpers ──
 
 function escapeHtml(text: string): string {
@@ -189,6 +223,14 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ ok: true, message: "WhatsApp bot webhook is active" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  if (req.method === "POST") {
+    const validSig = await verifyTwilioSignature(req);
+    if (!validSig) {
+      console.error("Twilio signature verification failed");
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
   }
 
   const supabase = createClient(
