@@ -5646,6 +5646,16 @@ export type Database = {
           username: string
         }[]
       }
+      admin_record_transaction: {
+        Args: {
+          _amount: number
+          _description?: string
+          _status?: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
+      }
       admin_reject_bsc_deposit: {
         Args: { _event_id: string; _reason: string }
         Returns: undefined
