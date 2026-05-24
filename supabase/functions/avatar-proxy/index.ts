@@ -103,6 +103,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!isAllowedHostname(parsed.hostname)) {
+      return new Response(JSON.stringify({ error: "URL not allowed" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (isPrivateIP(parsed.hostname)) {
+      return new Response(JSON.stringify({ error: "URL not allowed" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const imgResponse = await fetch(url, {
       headers: { "Accept": "image/*" },
       signal: AbortSignal.timeout(10000),
