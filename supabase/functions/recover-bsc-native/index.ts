@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
         status: "confirmed",
         gross_amount_usd: creditedUsd,
         net_amount_usd: creditedUsd,
-        notes: `BNB recovery (manual). Original tx: ${txHash}. BNB amount: ${bnbAmount} @ $${bnbPriceUsd}. Sweep tx: ${sentHash}`,
+        description: `BNB recovery (manual). Original tx: ${txHash}. BNB amount: ${bnbAmount} @ $${bnbPriceUsd}. Sweep tx: ${sentHash}`,
       });
 
       await admin.from("notifications").insert({
