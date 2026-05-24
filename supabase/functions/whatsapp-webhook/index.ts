@@ -225,6 +225,14 @@ Deno.serve(async (req) => {
     });
   }
 
+  if (req.method === "POST") {
+    const validSig = await verifyTwilioSignature(req);
+    if (!validSig) {
+      console.error("Twilio signature verification failed");
+      return new Response("Forbidden", { status: 403, headers: corsHeaders });
+    }
+  }
+
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
