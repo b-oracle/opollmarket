@@ -1,4 +1,30 @@
 import { getErrorMessage } from "../_shared/errors.ts";
+
+const ALLOWED_HOSTS = [
+  "supabase.co",
+  "supabase.in",
+  "gravatar.com",
+  "googleusercontent.com",
+  "twimg.com",
+  "twitter.com",
+  "x.com",
+  "cdninstagram.com",
+  "fbcdn.net",
+  "pinimg.com",
+  "githubusercontent.com",
+  "github.com",
+];
+
+function isAllowedHostname(hostname: string): boolean {
+  return ALLOWED_HOSTS.some((h) => hostname === h || hostname.endsWith(`.${h}`));
+}
+
+function isPrivateIP(ip: string): boolean {
+  // block loopback, link-local, multicast, private ranges
+  return /^(127\.|10\.|192\.168\.|169\.254\.|0\.|255\.|::1|fc00:|fe80:)/i.test(ip) ||
+    /^(172\.(1[6-9]|2[0-9]|3[01])\.)/i.test(ip);
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":

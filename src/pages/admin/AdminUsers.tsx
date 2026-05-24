@@ -173,11 +173,11 @@ const AdminUsers = () => {
     if (error) {
       toast.error("Failed to update balance");
     } else {
-      await supabase.from("transactions").insert({
-        user_id: balanceModal.userId,
-        type: amount > 0 ? "deposit" : "withdrawal",
-        amount: Math.abs(amount),
-        status: "confirmed",
+      await supabase.rpc("admin_record_transaction", {
+        _user_id: balanceModal.userId,
+        _type: amount > 0 ? "deposit" : "withdrawal",
+        _amount: Math.abs(amount),
+        _status: "confirmed",
       });
       logAuditEvent({
         action: "balance_adjusted",
