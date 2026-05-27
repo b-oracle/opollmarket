@@ -559,6 +559,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_link_tokens: {
+        Row: {
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          display_name: string | null
+          expires_at: string
+          kind: string
+          telegram_chat_id: number | null
+          telegram_username: string | null
+          token: string
+          whatsapp_phone: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string
+          kind: string
+          telegram_chat_id?: number | null
+          telegram_username?: string | null
+          token: string
+          whatsapp_phone?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          display_name?: string | null
+          expires_at?: string
+          kind?: string
+          telegram_chat_id?: number | null
+          telegram_username?: string | null
+          token?: string
+          whatsapp_phone?: string | null
+        }
+        Relationships: []
+      }
       bsc_deposit_addresses: {
         Row: {
           address: string
