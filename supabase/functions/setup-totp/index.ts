@@ -160,12 +160,55 @@ Deno.serve(async (req) => {
     }
 
     if (action === "disable") {
+      // Require current TOTP code OR PIN to disable 2FA — prevents stolen-session bypass
+      const { data: settings } = await adminClient
+        .from("user_security_settings")
+        .select("totp_secret, totp_enabled, pin_enabled, pin_hash")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!settings?.totp_enabled || !settings?.totp_secret) {
+        return new Response(JSON.stringify({ error: "2FA is not enabled" }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+
+      let verified = false;
+
+      // Try TOTP code first
+      if (code && /^\d{6}$/.test(code)) {
+        const totp = new TOTP({
+          issuer: "oPoll",
+          label: user.email || "user",
+          algorithm: "SHA1",
+          digits: 6,
+          period: 30,
+          secret: settings.totp_secret,
+        });
+        if (totp.validate({ token: code, window: 1 }) !== null) verified = true;
+      }
+
+      // Fallback to PIN
+      if (!verified && verify_pin && /^\d{6}$/.test(verify_pin) && settings.pin_enabled && settings.pin_hash) {
+        if (bcrypt.compareSync(verify_pin, settings.pin_hash)) verified = true;
+      }
+
+      if (!verified) {
+        return new Response(JSON.stringify({
+          error: "Current 2FA code or PIN required to disable 2FA",
+          require_verification: true,
+        }), {
+          status: 400, headers: corsHeaders,
+        });
+      }
+
       await adminClient
         .from("user_security_settings")
         .update({
           totp_secret: null,
           totp_enabled: false,
           require_totp_withdrawal: false,
+          require_totp_login: false,
           updated_at: new Date().toISOString(),
         })
         .eq("user_id", user.id);
