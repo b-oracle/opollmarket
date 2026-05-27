@@ -457,7 +457,7 @@ const PendingReferrals = ({ range }: { range: number }) => {
 
       let q = supabase
         .from("profiles")
-        .select("id, display_name, email, referred_by, created_at")
+        .select("id, display_name, referred_by, created_at")
         .not("referred_by", "is", null)
         .order("created_at", { ascending: false })
         .limit(500);

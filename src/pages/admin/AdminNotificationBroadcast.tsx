@@ -78,12 +78,8 @@ const AdminNotificationBroadcast = () => {
   const searchUsers = async (term: string) => {
     if (term.length < 2) { setUserResults([]); return; }
     setSearchLoading(true);
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, display_name, email")
-      .or(`display_name.ilike.%${term}%,email.ilike.%${term}%`)
-      .limit(10);
-    setUserResults((data as any) || []);
+    const { data } = await supabase.rpc("admin_search_profiles", { _q: term });
+    setUserResults(((data as any[]) || []).slice(0, 10) as any);
     setSearchLoading(false);
   };
 

@@ -66,11 +66,8 @@ const AdminDeposits = () => {
       // If searching by email, resolve user IDs first
       let emailUserIds: string[] | null = null;
       if (trimmed && !isValidUUID(trimmed)) {
-        const { data: matchedProfiles } = await supabase
-          .from("profiles")
-          .select("id")
-          .or(`email.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`);
-        emailUserIds = (matchedProfiles || []).map((p) => p.id);
+        const { data: matchedProfiles } = await supabase.rpc("admin_search_profiles", { _q: trimmed });
+        emailUserIds = ((matchedProfiles as any[]) || []).map((p: any) => p.id);
       }
 
       let query = supabase

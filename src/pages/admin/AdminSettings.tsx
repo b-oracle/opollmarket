@@ -196,7 +196,7 @@ const AdminSettings = () => {
       const { data } = await supabase
         .from("profiles")
         .select("id, display_name, username, avatar_url")
-        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%,email.ilike.%${q}%`)
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%`)
         .limit(8);
       if (!cancelled) {
         setCallTestResults((data || []) as any);
@@ -254,7 +254,7 @@ const AdminSettings = () => {
       const { data } = await supabase
         .from("profiles")
         .select("id, display_name, username, avatar_url")
-        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%,email.ilike.%${q}%`)
+        .or(`display_name.ilike.%${q}%,username.ilike.%${q}%`)
         .limit(8);
       if (!cancelled) {
         setPushTestResults((data || []) as any);
