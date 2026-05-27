@@ -30,6 +30,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = await verifyInternalOrAdmin(req, { functionName: "whatsapp-send", corsHeaders });
+  if (!auth.ok) return auth.response!;
+
+
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
     return new Response(JSON.stringify({ error: "LOVABLE_API_KEY not configured" }), {
