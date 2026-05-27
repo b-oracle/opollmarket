@@ -370,6 +370,7 @@ Deno.serve(async (req) => {
             const label = `${meta.asset} ${durLabel(meta.duration_minutes as number)}`;
             await Promise.all(uniqueIds.map((uid) =>
               adminClient.functions.invoke("send-push", {
+                headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
                 body: {
                   user_id: uid,
                   title: `⏳ ${label} round resolving`,
