@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
     // Relay to Telegram
     try {
       await adminClient.functions.invoke("telegram-notify", {
+        headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
         body: {
           user_id: recipientId,
           title: "Gift Received! 🎁",
