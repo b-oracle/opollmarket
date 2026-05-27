@@ -201,7 +201,7 @@ const Create = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const { balance, totalBalance, isLoading: balanceLoading } = useUserBalance();
+  const { balance, bonusBalance, totalBalance, isLoading: balanceLoading } = useUserBalance();
 
   // Gate thresholds & settings from DB
   const [minTokenBalance, setMinTokenBalance] = useState(10_000_000);
@@ -1746,6 +1746,14 @@ const Create = () => {
               </AlertDialogTitle>
               <AlertDialogDescription className="space-y-2">
                 <p>You will be charged <strong className="text-foreground">${marketCreationFee}</strong> for market creation. This fee will be held in escrow immediately.</p>
+                <p>
+                  Paid from your <strong className="text-foreground">bonus balance first</strong>
+                  {` ($${Math.min(bonusBalance, marketCreationFee).toFixed(2)} of $${bonusBalance.toFixed(2)} bonus`}
+                  {bonusBalance < marketCreationFee
+                    ? `; remaining $${(marketCreationFee - bonusBalance).toFixed(2)} from main balance)`
+                    : `)`}
+                  .
+                </p>
                 <p>The fee is <strong className="text-foreground">non-refundable</strong> and your funds will be locked until you complete your market creation.</p>
                 <p>Do you still want to proceed?</p>
               </AlertDialogDescription>
@@ -1790,7 +1798,7 @@ const Create = () => {
             <div className="mt-3 p-3 rounded-xl bg-accent/10 border border-accent/30">
               <p className="text-xs font-medium text-accent-foreground">
                 ⚠️ You've reached your free market limit ({activeMarketCount}/{verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}).
-                A creation fee of ${marketCreationFee} applies for additional markets.
+                A ${marketCreationFee} fee applies for additional markets — paid from your bonus balance first, then main balance.
               </p>
             </div>
           )}
