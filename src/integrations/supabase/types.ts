@@ -1358,24 +1358,30 @@ export type Database = {
       creation_fee_escrows: {
         Row: {
           amount: number
+          bonus_amount: number
           created_at: string
           id: string
+          main_amount: number
           released_at: string | null
           status: string
           user_id: string
         }
         Insert: {
           amount: number
+          bonus_amount?: number
           created_at?: string
           id?: string
+          main_amount?: number
           released_at?: string | null
           status?: string
           user_id: string
         }
         Update: {
           amount?: number
+          bonus_amount?: number
           created_at?: string
           id?: string
+          main_amount?: number
           released_at?: string | null
           status?: string
           user_id?: string
