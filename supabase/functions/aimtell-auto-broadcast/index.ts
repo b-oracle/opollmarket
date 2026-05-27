@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
 
     // Fire the push via aimtell-push
     const { error: invokeError } = await supabase.functions.invoke("aimtell-push", {
+      headers: internalAuthHeader(),
       body: {
         title,
         body,
