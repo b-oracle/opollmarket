@@ -62,11 +62,11 @@ const AdminAuditLog = () => {
       // Resolve actor IDs from search term
       let searchActorIds: string[] | null = null;
       if (trimmed) {
-        const { data: matchedProfiles } = await supabase
-          .from("profiles")
-          .select("id")
-          .or(`email.ilike.%${trimmed}%,display_name.ilike.%${trimmed}%`);
-        searchActorIds = (matchedProfiles || []).map((p) => p.id);
+        const { data: matchedProfiles } = await supabase.rpc(
+          "admin_search_profiles",
+          { _q: trimmed }
+        );
+        searchActorIds = ((matchedProfiles as any[]) || []).map((p: any) => p.id);
       }
 
       let query = supabase
