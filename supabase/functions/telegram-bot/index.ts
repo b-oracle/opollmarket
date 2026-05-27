@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
     if (text === "/start") {
       await handleStart(token, chatId);
     } else if (text === "/link") {
-      await handleLinkStart(token, chatId);
+      await handleLinkStart(token, supabase, chatId, username);
     } else if (text.startsWith("/link ")) {
       await handleLinkLegacy(token, supabase, chatId, text, username, message.message_id);
     } else if (text === "/markets") {
@@ -916,7 +916,7 @@ async function handleCallback(
     await handleHelp(token, chatId);
     return;
   } else if (data === "cmd_link") {
-    await handleLinkStart(token, chatId);
+    await handleLinkStart(token, supabase, chatId, callback.from?.username || null);
     return;
   } else if (data === "cmd_markets") {
     await handleMarkets(token, supabase, chatId);
