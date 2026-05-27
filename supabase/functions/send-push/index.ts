@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getErrorMessage } from "../_shared/errors.ts";
+import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
 // Web Push requires signing with VAPID keys
@@ -141,6 +142,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const auth = await verifyInternalOrAdmin(req, { functionName: "send-push", corsHeaders });
+  if (!auth.ok) return auth.response!;
 
   try {
     const { user_id, title, body, url, is_call, call_id } = await req.json();

@@ -1,14 +1,18 @@
 import { getErrorMessage } from "../_shared/errors.ts";
+import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-internal-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const auth = await verifyInternalOrAdmin(req, { functionName: "aimtell-push", corsHeaders });
+  if (!auth.ok) return auth.response!;
 
   try {
     const AIMTELL_API_KEY_RAW = Deno.env.get("AIMTELL_API_KEY");

@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-internal-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -25,6 +26,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Auth: allow internal secret, admin JWT, the broadcast creator, or the space host.
+    const auth = await verifyInternalOrAdmin(req, {
+      functionName: "send-space-broadcast",
+      corsHeaders,
+      allowUser: async (userId) => {
+        const [{ data: bcast }, { data: spaceRow }] = await Promise.all([
+          supabase.from("space_broadcasts").select("user_id").eq("id", broadcast_id).maybeSingle(),
+          supabase.from("spaces").select("host_id").eq("id", space_id).maybeSingle(),
+        ]);
+        return (!!bcast && bcast.user_id === userId) ||
+               (!!spaceRow && spaceRow.host_id === userId);
+      },
+    });
+    if (!auth.ok) return auth.response!;
+
+    // Idempotency guard.
+    const { data: bcastRow } = await supabase
+      .from("space_broadcasts")
+      .select("status")
+      .eq("id", broadcast_id)
+      .maybeSingle();
+    if (bcastRow?.status === "sent") {
+      return new Response(JSON.stringify({ skipped: true, reason: "already_sent" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get space title
     const { data: space } = await supabase
