@@ -1,9 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-internal-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -25,6 +26,33 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Auth: allow internal secret, admin JWT, or the user who created the broadcast.
+    const auth = await verifyInternalOrAdmin(req, {
+      functionName: "send-market-broadcast",
+      corsHeaders,
+      allowUser: async (userId) => {
+        const { data: bcast } = await supabase
+          .from("market_broadcasts")
+          .select("user_id, status")
+          .eq("id", broadcast_id)
+          .maybeSingle();
+        return !!bcast && bcast.user_id === userId;
+      },
+    });
+    if (!auth.ok) return auth.response!;
+
+    // Idempotency: never re-send a broadcast already marked 'sent'.
+    const { data: bcastRow } = await supabase
+      .from("market_broadcasts")
+      .select("status")
+      .eq("id", broadcast_id)
+      .maybeSingle();
+    if (bcastRow?.status === "sent") {
+      return new Response(JSON.stringify({ skipped: true, reason: "already_sent" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get market title
     const { data: market } = await supabase
