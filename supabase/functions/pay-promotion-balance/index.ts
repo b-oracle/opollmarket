@@ -257,6 +257,7 @@ Deno.serve(async (req) => {
         // Trigger broadcast sending
         try {
           await adminClient.functions.invoke("send-market-broadcast", {
+            headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
             body: { broadcast_id: broadcast.id, market_id },
           });
           await adminClient
