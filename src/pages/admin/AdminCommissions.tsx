@@ -78,11 +78,10 @@ const AdminCommissions = () => {
       // Fetch creator profiles
       const creatorUserIds = [...new Set((txns || []).filter(t => !ids.has(t.user_id)).map(t => t.user_id))];
       if (creatorUserIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, display_name, email")
-          .in("id", creatorUserIds);
-        setProfileMap(new Map((profiles || []).map((p) => [p.id, p.display_name || p.email || p.id.slice(0, 8)])));
+        const { data: profiles } = await supabase.rpc("admin_get_user_emails", {
+          _user_ids: creatorUserIds,
+        });
+        setProfileMap(new Map(((profiles as any[]) || []).map((p: any) => [p.id, p.display_name || p.email || p.id.slice(0, 8)])));
       }
 
       setLoading(false);
