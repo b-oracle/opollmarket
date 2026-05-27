@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       // 2. Push
       try {
         await admin.functions.invoke("send-push", {
+          headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
           body: {
             user_id: submission.user_id,
             title,
