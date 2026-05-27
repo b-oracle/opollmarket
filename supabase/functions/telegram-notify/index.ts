@@ -38,6 +38,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = await verifyInternalOrAdmin(req, { functionName: "telegram-notify", corsHeaders });
+  if (!auth.ok) return auth.response!;
+
+
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!token) {
     return new Response(JSON.stringify({ error: "Bot token not configured" }), {
