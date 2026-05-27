@@ -48,6 +48,7 @@ Deno.serve(async (req) => {
       try {
         // Call aimtell-push edge function
         const { error: invokeError } = await supabase.functions.invoke("aimtell-push", {
+          headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
           body: {
             title: push.title,
             body: push.body,
