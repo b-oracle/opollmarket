@@ -3,10 +3,11 @@
 //   FCM_SERVICE_ACCOUNT_JSON — full service account JSON from Firebase Console
 //   FCM_PROJECT_ID           — Firebase project ID (e.g. "opollmarket-e7a92")
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
 // ---- Diagnostics helpers -------------------------------------------------
