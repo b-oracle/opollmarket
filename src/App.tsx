@@ -74,6 +74,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const LinkBot = lazy(() => import("./pages/LinkBot"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const BusinessLayout = lazy(() => import("./pages/business/BusinessLayout"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
@@ -571,7 +572,8 @@ const App = () => {
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
-                        <Route path="/unsubscribe" element={<Unsubscribe />} />
+                       <Route path="/unsubscribe" element={<Unsubscribe />} />
+                       <Route path="/link-bot" element={<LinkBot />} />
                         <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
                         <Route path="/commissions" element={<Commissions />} />

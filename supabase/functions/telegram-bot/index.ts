@@ -412,222 +412,102 @@ async function handleStats(
   }
 }
 
-// Step 1: User types /link — bot asks for email
-async function handleLinkStart(token: string, chatId: number) {
+// Mint a short-lived link token and send the user a deep link to opoll.org.
+// Replaces the old email+password-over-chat flow.
+async function handleLinkStart(
+  token: string,
+  supabase: any,
+  chatId: number,
+  username: string | null,
+) {
+  // Drop any stale interactive session so we never accept a message as a password.
+  await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+
+  const linkToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  const { error } = await supabase.from("bot_link_tokens").insert({
+    token: linkToken,
+    kind: "telegram",
+    telegram_chat_id: chatId,
+    telegram_username: username,
+  });
+  if (error) {
+    console.error("bot_link_tokens insert failed", error);
+    await tg(token, "sendMessage", {
+      chat_id: chatId,
+      text: "❌ Couldn't start linking right now. Please try again in a moment.",
+    });
+    return;
+  }
+
+  const url = `${APP_URL}/link-bot?token=${linkToken}&kind=telegram`;
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
       "🔗 <b>Link Your Account</b>\n" +
       "━━━━━━━━━━━━━━━━━━━━\n\n" +
-      "Please enter your <b>email address</b>:\n\n" +
-      "<i>Type /cancel to abort</i>",
+      "Tap the secure button below and sign in to OPoll in your browser to finish linking.\n\n" +
+      "🔒 We never ask for your password in chat.\n" +
+      "⏰ Link expires in 10 minutes.",
     parse_mode: "HTML",
+    reply_markup: {
+      inline_keyboard: [[{ text: "🔐 Open secure link", url }]],
+    },
   });
 }
 
-// Handle the interactive linking session (email → password steps)
+// Kept as a hook for non-link sessions (qt_custom, mkt_custom, faq).
+// Account linking no longer accepts email/password via chat.
 async function handleLinkSession(
   token: string,
   supabase: any,
   chatId: number,
-  text: string,
-  username: string | null,
-  messageId: number
+  _text: string,
+  _username: string | null,
+  _messageId: number,
 ): Promise<boolean> {
-  // Check if there's a pending session (waiting for password)
   const { data: session } = await supabase
     .from("telegram_link_sessions")
     .select("email, created_at")
     .eq("chat_id", chatId)
     .single();
-
-  if (session) {
-    // Skip sessions used for custom amounts or FAQ — let their handlers process
-    if (session.email.startsWith("qt_custom:") || session.email.startsWith("mkt_custom:") || session.email.startsWith("faq:")) {
-      return false;
-    }
-
-    // This is the password step — delete the password message immediately
-    try {
-      await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
-    } catch {
-      // Bot may not have delete permission
-    }
-
-    // Check session expiry (5 min)
-    const sessionAge = Date.now() - new Date(session.created_at).getTime();
-    if (sessionAge > 5 * 60 * 1000) {
-      await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
-      await tg(token, "sendMessage", {
-        chat_id: chatId,
-        text: "⏰ Session expired. Please type /link to start again.",
-      });
-      return true;
-    }
-
-    const password = text;
-    const email = session.email;
-
-    // Clean up session immediately
-    await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
-
-    // Authenticate
-    await completeLink(token, supabase, chatId, email, password, username);
-    return true;
+  if (!session) return false;
+  // Only allow non-credential sessions through; reject any legacy linking session.
+  if (
+    session.email.startsWith("qt_custom:") ||
+    session.email.startsWith("mkt_custom:") ||
+    session.email.startsWith("faq:")
+  ) {
+    return false;
   }
-
-  // Check if this looks like an email (step 1 of linking after /link command)
-  // We detect this by checking if user recently sent /link
-  // Simple heuristic: if text contains @ and looks like email, start session
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (emailRegex.test(text)) {
-    // Could be email for linking — store session and ask for password
-    await supabase
-      .from("telegram_link_sessions")
-      .upsert(
-        { chat_id: chatId, email: text, created_at: new Date().toISOString() },
-        { onConflict: "chat_id" }
-      );
-
-    // Delete the email message for privacy too
-    try {
-      await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
-    } catch {
-      // Best effort
-    }
-
-    await tg(token, "sendMessage", {
-      chat_id: chatId,
-      text:
-        "✉️ Email received!\n\n" +
-        "Now enter your <b>password</b>:\n\n" +
-        "🔒 <i>Your message will be deleted immediately for security.</i>\n\n" +
-        "<i>Type /cancel to abort</i>",
-      parse_mode: "HTML",
-    });
-    return true;
-  }
-
-  return false;
+  // Any other lingering session is a leftover from the old password flow — clear it.
+  await supabase.from("telegram_link_sessions").delete().eq("chat_id", chatId);
+  await tg(token, "sendMessage", {
+    chat_id: chatId,
+    text: "🔒 Linking now uses a secure browser flow. Type /link to get a fresh link.",
+  });
+  return true;
 }
 
-// Legacy support: /link email password (still works but warns user)
+// Legacy `/link email password` is no longer supported.
 async function handleLinkLegacy(
   token: string,
-  supabase: any,
+  _supabase: any,
   chatId: number,
-  text: string,
-  username: string | null,
-  messageId: number
+  _text: string,
+  _username: string | null,
+  messageId: number,
 ) {
-  const parts = text.split(" ");
-  if (parts.length < 3) {
-    await tg(token, "sendMessage", {
-      chat_id: chatId,
-      text: "💡 Just type /link and follow the secure prompts instead!",
-    });
-    return;
-  }
-
-  // Delete the message containing credentials immediately
-  try {
-    await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId });
-  } catch {
-    // Best effort
-  }
-
-  const email = parts[1];
-  const password = parts.slice(2).join(" ");
-  await completeLink(token, supabase, chatId, email, password, username);
-}
-
-// Shared authentication + linking logic
-async function completeLink(
-  token: string,
-  supabase: any,
-  chatId: number,
-  email: string,
-  password: string,
-  username: string | null
-) {
-  const authClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!
-  );
-
-  const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (signInError || !signInData.user) {
-    await tg(token, "sendMessage", {
-      chat_id: chatId,
-      text: "❌ Invalid email or password. Please type /link to try again.",
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: "🔗 Try Again", callback_data: "cmd_link" }],
-        ],
-      },
-    });
-    return;
-  }
-
-  const userId = signInData.user.id;
-  await authClient.auth.signOut();
-
-  const { error: upsertError } = await supabase
-    .from("telegram_users")
-    .upsert(
-      {
-        user_id: userId,
-        telegram_chat_id: chatId,
-        telegram_username: username,
-        linked_at: new Date().toISOString(),
-      },
-      { onConflict: "telegram_chat_id" }
-    );
-
-  if (upsertError) {
-    console.error("Upsert error:", upsertError);
-    await tg(token, "sendMessage", {
-      chat_id: chatId,
-      text: "❌ Failed to link account. Please try again.",
-    });
-    return;
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("display_name")
-    .eq("id", userId)
-    .single();
-
-  const name = profile?.display_name || email.split("@")[0];
-
+  // Delete the message so any included credentials don't linger in chat history.
+  try { await tg(token, "deleteMessage", { chat_id: chatId, message_id: messageId }); } catch { /* best effort */ }
   await tg(token, "sendMessage", {
     chat_id: chatId,
     text:
-      `✅ <b>Account linked successfully!</b>\n` +
-      `━━━━━━━━━━━━━━━━━━━━\n\n` +
-      `Welcome, <b>${escapeHtml(name)}</b>! 👋\n\n` +
-      `🔒 Your credentials were not stored and messages were deleted.\n\n` +
-      `You're all set! Here's what you can do:`,
-    parse_mode: "HTML",
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: "🔮 Markets", callback_data: "cmd_markets" },
-          { text: "📊 Portfolio", callback_data: "cmd_portfolio" },
-        ],
-        [
-          { text: "💰 Balance", callback_data: "cmd_balance" },
-          { text: "⚡ Quick Trade", callback_data: "cmd_quicktrade" },
-        ],
-      ],
-    },
+      "🔒 For your safety we no longer accept passwords in chat.\n\n" +
+      "Type /link and tap the secure button to finish linking in your browser.",
   });
 }
+
+
 
 async function handleUnlink(
   token: string,
