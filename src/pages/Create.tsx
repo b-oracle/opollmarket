@@ -1746,6 +1746,14 @@ const Create = () => {
               </AlertDialogTitle>
               <AlertDialogDescription className="space-y-2">
                 <p>You will be charged <strong className="text-foreground">${marketCreationFee}</strong> for market creation. This fee will be held in escrow immediately.</p>
+                <p>
+                  Paid from your <strong className="text-foreground">bonus balance first</strong>
+                  {` ($${Math.min(bonusBalance, marketCreationFee).toFixed(2)} of $${bonusBalance.toFixed(2)} bonus`}
+                  {bonusBalance < marketCreationFee
+                    ? `; remaining $${(marketCreationFee - bonusBalance).toFixed(2)} from main balance)`
+                    : `)`}
+                  .
+                </p>
                 <p>The fee is <strong className="text-foreground">non-refundable</strong> and your funds will be locked until you complete your market creation.</p>
                 <p>Do you still want to proceed?</p>
               </AlertDialogDescription>
