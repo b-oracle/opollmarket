@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
     // Fire push notification (best-effort)
     try {
       await adminClient.functions.invoke("send-push", {
+        headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
         body: {
           user_id: submission.user_id,
           title: notifTitle,

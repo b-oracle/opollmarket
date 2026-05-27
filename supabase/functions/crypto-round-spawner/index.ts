@@ -467,6 +467,7 @@ Deno.serve(async (req) => {
             const label = `${asset} ${dur >= 1440 ? Math.round(dur/1440)+"d" : dur >= 60 ? Math.round(dur/60)+"h" : dur+"m"}`;
             await Promise.all(uniqueIds.map((uid) =>
               admin.functions.invoke("send-push", {
+                headers: { "x-internal-secret": Deno.env.get("INTERNAL_FUNCTION_SECRET") ?? "" },
                 body: {
                   user_id: uid,
                   title: `🚀 New ${label} round live`,

@@ -1,14 +1,19 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
 };
 
 type Event = "created" | "reply" | "closed";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const auth = await verifyInternalOrAdmin(req, { functionName: "notify-support-ticket-event", corsHeaders });
+  if (!auth.ok) return auth.response!;
+
 
   try {
     const { ticket_id, event, message_preview } = (await req.json()) as {
