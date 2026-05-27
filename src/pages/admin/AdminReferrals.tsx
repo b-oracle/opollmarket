@@ -140,12 +140,11 @@ const AdminReferrals = () => {
         const batchSize = 100;
         for (let i = 0; i < userIds.length; i += batchSize) {
           const batch = userIds.slice(i, i + batchSize);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, display_name, email")
-            .in("id", batch);
+          const { data: profiles } = await supabase.rpc("admin_get_user_emails", {
+            _user_ids: batch,
+          });
           if (profiles) {
-            profiles.forEach(p => profileMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
+            (profiles as any[]).forEach((p: any) => profileMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
           }
         }
       }
