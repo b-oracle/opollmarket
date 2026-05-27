@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
     if (text === "start" || text === "hi" || text === "hello" || text === "menu") {
       await handleStart(from);
     } else if (text === "link") {
-      await handleLinkStart(from);
+      await handleLinkStart(supabase, from, profileName);
     } else if (text === "balance") {
       await handleBalance(supabase, from);
     } else if (text === "portfolio") {
@@ -361,39 +361,47 @@ async function handleHelp(phone: string) {
   );
 }
 
-async function handleLinkStart(phone: string) {
+async function handleLinkStart(supabase: any, phone: string, profileName: string) {
+  // Drop any stale session so a leftover state can't accept a message as a password.
+  await clearSession(supabase, phone);
+
+  const linkToken = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().replace(/-/g, "");
+  const { error } = await supabase.from("bot_link_tokens").insert({
+    token: linkToken,
+    kind: "whatsapp",
+    whatsapp_phone: phone,
+    display_name: profileName || null,
+  });
+  if (error) {
+    console.error("bot_link_tokens insert failed", error);
+    await sendWA(phone, "❌ Couldn't start linking right now. Please try again in a moment.");
+    return;
+  }
+
+  const url = `${APP_URL}/link-bot?token=${linkToken}&kind=whatsapp`;
   await sendWA(phone,
     "🔗 *Link Your Account*\n" +
     "━━━━━━━━━━━━━━━━━━━━\n\n" +
-    "Please enter your *email address*:\n\n" +
-    "_Type cancel to abort_"
+    "Tap the secure link below and sign in to OPoll in your browser to finish linking:\n\n" +
+    url + "\n\n" +
+    "🔒 We never ask for your password in chat.\n" +
+    "⏰ Link expires in 10 minutes."
   );
-  // Session state will be detected by email pattern
 }
 
-async function handleSessionInput(supabase: any, phone: string, text: string, profileName: string): Promise<boolean> {
+async function handleSessionInput(supabase: any, phone: string, text: string, _profileName: string): Promise<boolean> {
   const session = await getSession(supabase, phone);
+  if (!session) return false;
 
-  // Check for pending password
-  if (session?.state === "link_password") {
-    const email = session.data?.email;
-    if (!email) { await clearSession(supabase, phone); return false; }
-
-    // Check expiry
-    const age = Date.now() - new Date(session.created_at).getTime();
-    if (age > 5 * 60 * 1000) {
-      await clearSession(supabase, phone);
-      await sendWA(phone, "⏰ Session expired. Type *link* to start again.");
-      return true;
-    }
-
+  // Legacy password-based linking sessions are no longer accepted — clear and inform.
+  if (session.state === "link_password" || session.state === "link_email") {
     await clearSession(supabase, phone);
-    await completeLink(supabase, phone, email, text, profileName);
+    await sendWA(phone, "🔒 Linking now uses a secure browser flow. Type *link* to get a fresh link.");
     return true;
   }
 
-  // Check for FAQ session
-  if (session?.state === "faq") {
+  // FAQ session
+  if (session.state === "faq") {
     const age = Date.now() - new Date(session.created_at).getTime();
     if (age > 10 * 60 * 1000) {
       await clearSession(supabase, phone);
@@ -404,8 +412,8 @@ async function handleSessionInput(supabase: any, phone: string, text: string, pr
     return true;
   }
 
-  // Check for QT custom amount
-  if (session?.state === "qt_custom") {
+  // QT custom amount
+  if (session.state === "qt_custom") {
     const asset = session.data?.asset;
     if (!asset) { await clearSession(supabase, phone); return false; }
     await clearSession(supabase, phone);
@@ -424,8 +432,8 @@ async function handleSessionInput(supabase: any, phone: string, text: string, pr
     return true;
   }
 
-  // Check for market custom amount
-  if (session?.state === "mkt_custom") {
+  // Market custom amount
+  if (session.state === "mkt_custom") {
     const marketId = session.data?.marketId;
     if (!marketId) { await clearSession(supabase, phone); return false; }
     await clearSession(supabase, phone);
@@ -443,66 +451,9 @@ async function handleSessionInput(supabase: any, phone: string, text: string, pr
     return true;
   }
 
-  // Email detection for linking
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (emailRegex.test(text.trim())) {
-    await setSession(supabase, phone, "link_password", { email: text.trim() });
-    await sendWA(phone,
-      "✉️ Email received!\n\n" +
-      "Now enter your *password*:\n\n" +
-      "🔒 _Your message is only processed by our server and not stored._\n\n" +
-      "_Type cancel to abort_"
-    );
-    return true;
-  }
-
   return false;
 }
 
-async function completeLink(supabase: any, phone: string, email: string, password: string, profileName: string) {
-  const authClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY")!,
-  );
-
-  const { data: signInData, error: signInError } = await authClient.auth.signInWithPassword({ email, password });
-
-  if (signInError || !signInData.user) {
-    await sendWA(phone, "❌ Invalid email or password. Type *link* to try again.");
-    return;
-  }
-
-  const userId = signInData.user.id;
-  await authClient.auth.signOut();
-
-  const { error: upsertError } = await supabase
-    .from("whatsapp_users")
-    .upsert(
-      { user_id: userId, whatsapp_phone: phone, display_name: profileName || null, linked_at: new Date().toISOString() },
-      { onConflict: "whatsapp_phone" },
-    );
-
-  if (upsertError) {
-    console.error("WhatsApp link upsert error:", upsertError);
-    await sendWA(phone, "❌ Failed to link account. Please try again.");
-    return;
-  }
-
-  const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
-  const name = profile?.display_name || email.split("@")[0];
-
-  await sendWA(phone,
-    `✅ *Account linked successfully!*\n` +
-    `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `Welcome, *${name}*! 👋\n\n` +
-    `🔒 Your credentials were not stored.\n\n` +
-    `You're all set! Try:\n` +
-    `• *balance* — Check your balance\n` +
-    `• *markets* — Browse markets\n` +
-    `• *quicktrade* — Predict prices\n` +
-    `• *portfolio* — Your positions`
-  );
-}
 
 async function handleUnlink(supabase: any, phone: string) {
   await supabase.from("whatsapp_users").delete().eq("whatsapp_phone", phone);
