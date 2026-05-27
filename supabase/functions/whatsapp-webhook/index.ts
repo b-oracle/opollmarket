@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
     if (text === "start" || text === "hi" || text === "hello" || text === "menu") {
       await handleStart(from);
     } else if (text === "link") {
-      await handleLinkStart(from);
+      await handleLinkStart(supabase, from, profileName);
     } else if (text === "balance") {
       await handleBalance(supabase, from);
     } else if (text === "portfolio") {
