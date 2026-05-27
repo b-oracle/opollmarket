@@ -143,6 +143,9 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const auth = await verifyInternalOrAdmin(req, { functionName: "send-push", corsHeaders });
+  if (!auth.ok) return auth.response!;
+
   try {
     const { user_id, title, body, url, is_call, call_id } = await req.json();
 
