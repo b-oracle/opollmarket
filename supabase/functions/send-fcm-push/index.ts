@@ -235,6 +235,9 @@ async function sendVoipApns(opts: {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const auth = await verifyInternalOrAdmin(req, { functionName: "send-fcm-push", corsHeaders });
+  if (!auth.ok) return auth.response!;
+
   try {
     const payload = await req.json();
     const { user_id, title, body, data, is_call, call_id, url, test } = payload;
