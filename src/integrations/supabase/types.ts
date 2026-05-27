@@ -5646,6 +5646,14 @@ export type Database = {
           username: string
         }[]
       }
+      admin_get_user_emails: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          display_name: string
+          email: string
+          id: string
+        }[]
+      }
       admin_record_transaction: {
         Args: {
           _amount: number
@@ -5660,13 +5668,22 @@ export type Database = {
         Args: { _event_id: string; _reason: string }
         Returns: undefined
       }
-      admin_search_profiles: {
-        Args: { _limit?: number; _offset?: number; _term?: string }
-        Returns: {
-          rows: Json
-          total_count: number
-        }[]
-      }
+      admin_search_profiles:
+        | {
+            Args: { _q: string }
+            Returns: {
+              display_name: string
+              email: string
+              id: string
+            }[]
+          }
+        | {
+            Args: { _limit?: number; _offset?: number; _term?: string }
+            Returns: {
+              rows: Json
+              total_count: number
+            }[]
+          }
       admin_update_profile: {
         Args: {
           _block_reason?: string
