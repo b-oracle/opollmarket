@@ -488,7 +488,7 @@ const PendingReferrals = ({ range }: { range: number }) => {
         .filter(r => !rewardedSet.has(r.id))
         .map(r => ({
           id: r.id,
-          name: r.display_name || r.email || r.id.slice(0, 8),
+          name: r.display_name || r.id.slice(0, 8),
           referrer: referrerMap.get(r.referred_by!) || r.referred_by!.slice(0, 8),
           created_at: r.created_at,
         }));
