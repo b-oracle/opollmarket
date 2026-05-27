@@ -1798,7 +1798,7 @@ const Create = () => {
             <div className="mt-3 p-3 rounded-xl bg-accent/10 border border-accent/30">
               <p className="text-xs font-medium text-accent-foreground">
                 ⚠️ You've reached your free market limit ({activeMarketCount}/{verificationLevel === "gold" ? goldMaxFreeMarkets : blueMaxFreeMarkets}).
-                A creation fee of ${marketCreationFee} applies for additional markets.
+                A ${marketCreationFee} fee applies for additional markets — paid from your bonus balance first, then main balance.
               </p>
             </div>
           )}
