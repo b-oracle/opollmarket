@@ -657,12 +657,10 @@ const Profile = () => {
     queryKey: ["profile", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase
-        .from("profiles")
-        .select("wallet_address, avatar_url, display_name, username, is_public, bio, verification_level, age, date_of_birth, gender, location, interests")
-        .eq("id", user.id)
-        .single();
-      return data;
+      // Sensitive PII (age, date_of_birth, gender, location, email) is no longer
+      // directly selectable on profiles — use the owner-scoped RPC instead.
+      const { data } = await supabase.rpc("get_my_full_profile").maybeSingle();
+      return data as any;
     },
     enabled: !!user,
   });
