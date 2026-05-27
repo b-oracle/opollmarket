@@ -74,6 +74,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
+const LinkBot = lazy(() => import("./pages/LinkBot"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const BusinessLayout = lazy(() => import("./pages/business/BusinessLayout"));
 const BusinessDashboard = lazy(() => import("./pages/business/BusinessDashboard"));
