@@ -572,7 +572,8 @@ const App = () => {
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
-                        <Route path="/unsubscribe" element={<Unsubscribe />} />
+                       <Route path="/unsubscribe" element={<Unsubscribe />} />
+                       <Route path="/link-bot" element={<LinkBot />} />
                         <Route path="/setup-security" element={<SetupSecurity />} />
                         <Route path="/referrals" element={<FeatureGate featureKey="referrals"><Referrals /></FeatureGate>} />
                         <Route path="/commissions" element={<Commissions />} />
