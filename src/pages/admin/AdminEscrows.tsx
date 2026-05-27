@@ -55,11 +55,10 @@ const AdminEscrows = () => {
 
     let profiles: Record<string, { display_name: string; email: string }> = {};
     if (userIds.length) {
-      const { data: pData } = await supabase
-        .from("profiles")
-        .select("id, display_name, email")
-        .in("id", userIds);
-      (pData || []).forEach((p: any) => { profiles[p.id] = p; });
+      const { data: pData } = await supabase.rpc("admin_get_user_emails", {
+        _user_ids: userIds,
+      });
+      ((pData as any[]) || []).forEach((p: any) => { profiles[p.id] = p; });
     }
 
     setEscrows(rows.map((r: any) => ({

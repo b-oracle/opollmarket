@@ -128,11 +128,10 @@ const AdminBonuses = () => {
       const profileMap = new Map<string, string>();
       const idList = Array.from(ids);
       for (let i = 0; i < idList.length; i += 100) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("id, display_name, email")
-          .in("id", idList.slice(i, i + 100));
-        data?.forEach((p: any) =>
+        const { data } = await supabase.rpc("admin_get_user_emails", {
+          _user_ids: idList.slice(i, i + 100),
+        });
+        (data as any[] | null)?.forEach((p: any) =>
           profileMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8))
         );
       }
@@ -200,11 +199,10 @@ const AdminBonuses = () => {
     const dupeIds = Array.from(agg.entries()).filter(([, v]) => v.count > 1);
     const nameMap = new Map<string, string>();
     if (dupeIds.length > 0) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, display_name, email")
-        .in("id", dupeIds.map(([id]) => id));
-      data?.forEach((p: any) =>
+      const { data } = await supabase.rpc("admin_get_user_emails", {
+        _user_ids: dupeIds.map(([id]) => id),
+      });
+      (data as any[] | null)?.forEach((p: any) =>
         nameMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8))
       );
     }

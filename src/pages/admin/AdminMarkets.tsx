@@ -265,12 +265,11 @@ const AdminMarkets = () => {
       // Resolve moderator names
       const modIds = [...new Set(data.filter(m => m.moderator_id).map(m => m.moderator_id!))];
       if (modIds.length > 0) {
-        const { data: modProfiles } = await supabase
-          .from("profiles")
-          .select("id, display_name, email")
-          .in("id", modIds);
+        const { data: modProfiles } = await supabase.rpc("admin_get_user_emails", {
+          _user_ids: modIds,
+        });
         const map = new Map<string, string>();
-        modProfiles?.forEach(p => map.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
+        ((modProfiles as any[]) || []).forEach((p: any) => map.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
         setModeratorNameMap(map);
       }
     }

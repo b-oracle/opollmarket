@@ -140,12 +140,11 @@ const AdminReferrals = () => {
         const batchSize = 100;
         for (let i = 0; i < userIds.length; i += batchSize) {
           const batch = userIds.slice(i, i + batchSize);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, display_name, email")
-            .in("id", batch);
+          const { data: profiles } = await supabase.rpc("admin_get_user_emails", {
+            _user_ids: batch,
+          });
           if (profiles) {
-            profiles.forEach(p => profileMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
+            (profiles as any[]).forEach((p: any) => profileMap.set(p.id, p.display_name || p.email || p.id.slice(0, 8)));
           }
         }
       }
@@ -458,7 +457,7 @@ const PendingReferrals = ({ range }: { range: number }) => {
 
       let q = supabase
         .from("profiles")
-        .select("id, display_name, email, referred_by, created_at")
+        .select("id, display_name, referred_by, created_at")
         .not("referred_by", "is", null)
         .order("created_at", { ascending: false })
         .limit(500);
@@ -489,7 +488,7 @@ const PendingReferrals = ({ range }: { range: number }) => {
         .filter(r => !rewardedSet.has(r.id))
         .map(r => ({
           id: r.id,
-          name: r.display_name || r.email || r.id.slice(0, 8),
+          name: r.display_name || r.id.slice(0, 8),
           referrer: referrerMap.get(r.referred_by!) || r.referred_by!.slice(0, 8),
           created_at: r.created_at,
         }));
