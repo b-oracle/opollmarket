@@ -220,6 +220,42 @@ function determineWinningOption(
   return null;
 }
 
+async function returnCreatorLiquidity(adminClient: any, market: any) {
+  if (!market.initial_liquidity || Number(market.initial_liquidity) <= 0) return;
+  const creatorUserId = market.creator_wallet;
+  if (!creatorUserId) return;
+
+  const { data: settings } = await adminClient
+    .from("commission_settings")
+    .select("liquidity_return_fee_percent")
+    .limit(1)
+    .single();
+
+  const feePercent = Number(settings?.liquidity_return_fee_percent ?? 5);
+  const refund = Math.round((Number(market.initial_liquidity) * (1 - feePercent / 100)) * 100) / 100;
+  if (refund <= 0) return;
+
+  const { data: existing } = await adminClient
+    .from("transactions")
+    .select("id")
+    .eq("market_id", market.id)
+    .eq("user_id", creatorUserId)
+    .eq("side", "liquidity_return")
+    .eq("status", "confirmed")
+    .limit(1);
+  if (existing && existing.length > 0) return;
+
+  await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: refund, _bonus_delta: 0, _insurance_delta: 0 });
+  await adminClient.from("transactions").insert({
+    user_id: creatorUserId,
+    market_id: market.id,
+    type: "refund",
+    amount: refund,
+    side: "liquidity_return",
+    status: "confirmed",
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -247,7 +283,7 @@ Deno.serve(async (req) => {
       .select("*")
       .eq("auto_resolve", true)
       .eq("category", "Sports")
-      .in("status", ["active", "ended"])
+      .in("status", ["active", "ended", "resolving"])
       .not("sport_type", "is", null)
       .not("sport_match_id", "is", null);
 
