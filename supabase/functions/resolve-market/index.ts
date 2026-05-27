@@ -158,9 +158,10 @@ async function handleResolve(
     });
   }
 
-  // Update market status
+  // Store the winning outcome first, but do not mark resolved until all credits are written.
+  // claim_market_for_resolution moves the market into `resolving` so users/admins do not
+  // see a completed settlement while payouts are still being processed.
   const updateData: Record<string, unknown> = {
-    status: "resolved",
     resolved_side: winning_side || null,
     winning_option_id: winning_option_id || null,
   };
@@ -502,6 +503,12 @@ async function handleResolve(
       console.log("resolve-market: Returned liquidity to creator:", liquidityRefund, "fee:", feeAmount);
     }
   }
+
+  await adminClient
+    .from("markets")
+    .update({ status: "resolved", updated_at: new Date().toISOString() })
+    .eq("id", market_id)
+    .eq("status", "resolving");
 
   // ── Audit log: capture full breakdown for every resolution ──
   try {
