@@ -2286,10 +2286,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       if (uploadErr) throw uploadErr;
 
       // Bucket is private — store the storage path; playback re-signs on demand
-      await supabase.from("spaces").update({
-        is_recorded: true,
-        recording_url: fileName,
-      } as any).eq("id", spaceId);
+      // Bucket is private — store the storage path; playback re-signs on demand
+      const { error: updErr2 } = await supabase.rpc("host_set_space_recording" as any, {
+        _space_id: spaceId,
+        _recording_url: fileName,
+      });
+      if (updErr2) throw updErr2;
 
       toast.success("Recording saved ✅");
       setRecording(false);
