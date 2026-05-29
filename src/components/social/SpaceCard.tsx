@@ -189,31 +189,6 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
         audioRef.current = null;
         setIsPlaying(false);
       }
-      // Remove recording fields from the space
-      await supabase
-        .from("spaces")
-        .update({ is_recorded: false, recording_url: null } as any)
-        .eq("id", space.id);
-      queryClient.invalidateQueries({ queryKey: ["spaces"] });
-      toast.success("Recording deleted");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete");
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleDeleteRecording = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user || user.id !== space.host_id) return;
-    setDeleting(true);
-    try {
-      // Stop playback
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-        setIsPlaying(false);
-      }
       const { error } = await supabase.rpc("host_clear_space_recording" as any, {
         _space_id: space.id,
       });
