@@ -111,11 +111,11 @@ const DepositWithdrawModal = ({ open, onClose, initialTab = "deposit", resumePay
     queryKey: ["kyc_status_modal", user?.id],
     queryFn: async () => {
       if (!user) return "none";
+      // Read via my_profile view — base `profiles` SELECT is restricted by hardening.
       const { data } = await supabase
-        .from("profiles")
+        .from("my_profile" as any)
         .select("kyc_status")
-        .eq("id", user.id)
-        .single();
+        .maybeSingle();
       return (data as any)?.kyc_status || "none";
     },
     enabled: !!user && open,
