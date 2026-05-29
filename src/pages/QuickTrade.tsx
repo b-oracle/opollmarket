@@ -974,17 +974,18 @@ export default function QuickTrade() {
 
     const now = new Date();
     const locksAt = new Date(now.getTime() + (requestDuration - LOCK_BUFFER) * 1000);
-    const { data: newRound } = await supabase
-      .from("quick_rounds")
-      .insert({
-        asset: requestAsset,
-        duration_seconds: requestDuration,
-        open_price: freshPrice,
-        status: "open",
-        locks_at: locksAt.toISOString(),
-      })
-      .select()
-      .single();
+    const { data: newRound, error: createErr } = await supabase
+      .rpc("create_quick_round", {
+        _asset: requestAsset,
+        _duration_seconds: requestDuration,
+        _open_price: freshPrice,
+        _locks_at: locksAt.toISOString(),
+      });
+
+    if (createErr) {
+      console.error("create_quick_round failed:", createErr);
+      return;
+    }
 
     if (newRound && isCurrentRoundRequest()) {
       setActiveRound(newRound as unknown as Round);
