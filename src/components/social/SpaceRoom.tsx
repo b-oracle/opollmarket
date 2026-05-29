@@ -143,15 +143,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === displayTitle) { setEditingTitle(false); return; }
     setSavingTitle(true);
-    const { error } = await supabase
-      .from("spaces" as any)
-      .update({ title: trimmed } as any)
-      .eq("id", spaceId);
-    if (error) { toast.error("Failed to update title"); }
+    const { error } = await supabase.rpc("host_update_space_title" as any, {
+      _space_id: spaceId,
+      _new_title: trimmed,
+    });
+    if (error) { toast.error(error.message || "Failed to update title"); }
     else { setDisplayTitle(trimmed); queryClient.invalidateQueries({ queryKey: ["spaces"] }); }
     setSavingTitle(false);
     setEditingTitle(false);
   };
+
   const roomRef = useRef<Room | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -2232,11 +2233,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           .from("space-recordings")
           .upload(fileName, blob, { contentType: recMime });
         if (uploadErr) throw uploadErr;
-        // Bucket is private — store the storage path; playback re-signs on demand
-        await supabase.from("spaces").update({
-          is_recorded: true,
-          recording_url: fileName,
-        } as any).eq("id", spaceId);
+        const { error: updErr } = await supabase.rpc("host_set_space_recording" as any, {
+          _space_id: spaceId,
+          _recording_url: fileName,
+        });
+        if (updErr) throw updErr;
+
         toast.success("Recording saved ✅");
         setRecording(false);
         setRecordingLoading(false);
@@ -2284,10 +2286,12 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       if (uploadErr) throw uploadErr;
 
       // Bucket is private — store the storage path; playback re-signs on demand
-      await supabase.from("spaces").update({
-        is_recorded: true,
-        recording_url: fileName,
-      } as any).eq("id", spaceId);
+      // Bucket is private — store the storage path; playback re-signs on demand
+      const { error: updErr2 } = await supabase.rpc("host_set_space_recording" as any, {
+        _space_id: spaceId,
+        _recording_url: fileName,
+      });
+      if (updErr2) throw updErr2;
 
       toast.success("Recording saved ✅");
       setRecording(false);
