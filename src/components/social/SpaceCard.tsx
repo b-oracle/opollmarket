@@ -473,11 +473,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
               <button
                 onClick={async (e) => {
                   e.stopPropagation();
-                  const { error } = await supabase
-                    .from("spaces" as any)
-                    .update({ status: "live", started_at: new Date().toISOString() })
-                    .eq("id", space.id);
-                  if (error) { toast.error("Failed"); return; }
+                  const { error } = await supabase.rpc("host_go_live_scheduled_space" as any, {
+                    _space_id: space.id,
+                  });
+                  if (error) { toast.error(error.message || "Failed to go live"); return; }
                   queryClient.invalidateQueries({ queryKey: ["spaces"] });
                   toast.success("Space is now live! 🎙️");
                 }}
