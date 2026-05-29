@@ -6251,6 +6251,10 @@ export type Database = {
         Args: { _space_id: string }
         Returns: undefined
       }
+      host_go_live_scheduled_space: {
+        Args: { _space_id: string }
+        Returns: undefined
+      }
       host_set_space_recording: {
         Args: { _recording_url: string; _space_id: string }
         Returns: undefined
