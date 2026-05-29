@@ -143,15 +143,16 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === displayTitle) { setEditingTitle(false); return; }
     setSavingTitle(true);
-    const { error } = await supabase
-      .from("spaces" as any)
-      .update({ title: trimmed } as any)
-      .eq("id", spaceId);
-    if (error) { toast.error("Failed to update title"); }
+    const { error } = await supabase.rpc("host_update_space_title" as any, {
+      _space_id: spaceId,
+      _new_title: trimmed,
+    });
+    if (error) { toast.error(error.message || "Failed to update title"); }
     else { setDisplayTitle(trimmed); queryClient.invalidateQueries({ queryKey: ["spaces"] }); }
     setSavingTitle(false);
     setEditingTitle(false);
   };
+
   const roomRef = useRef<Room | null>(null);
   const audioElementsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const chatEndRef = useRef<HTMLDivElement>(null);
