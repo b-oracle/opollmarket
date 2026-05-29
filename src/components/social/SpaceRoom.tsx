@@ -2153,20 +2153,40 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
       const destination = ctx.createMediaStreamDestination();
       recordingDestRef.current = destination;
 
-      // Mix local mic if unmuted
-      room.localParticipant.audioTrackPublications.forEach((pub) => {
-        if (pub.track?.mediaStream) {
-          const src = ctx.createMediaStreamSource(pub.track.mediaStream);
+      // Always-on inaudible tone so MediaRecorder reliably emits chunks
+      // even when nobody is currently speaking.
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.0001; // effectively silent
+        osc.frequency.value = 20;
+        osc.connect(gain).connect(destination);
+        osc.start();
+      } catch {}
+
+      const connectTrack = (mst: MediaStreamTrack | undefined | null) => {
+        if (!mst) return;
+        try {
+          const stream = new MediaStream([mst]);
+          const src = ctx.createMediaStreamSource(stream);
           src.connect(destination);
+        } catch (e) {
+          console.warn("[recording] failed to connect track", e);
         }
+      };
+
+      // Mix local mic
+      room.localParticipant.audioTrackPublications.forEach((pub: any) => {
+        connectTrack(pub.track?.mediaStreamTrack);
       });
 
-      // Mix all remote audio
-      audioElementsRef.current.forEach((el) => {
-        if (el.srcObject instanceof MediaStream) {
-          const src = ctx.createMediaStreamSource(el.srcObject);
-          src.connect(destination);
-        }
+      // Mix all remote audio (use the underlying mediaStreamTrack, not the
+      // <audio> element's srcObject, which is muted by some browsers when
+      // not actually playing through speakers).
+      room.remoteParticipants.forEach((p: any) => {
+        p.audioTrackPublications.forEach((pub: any) => {
+          connectTrack(pub.track?.mediaStreamTrack);
+        });
       });
 
       recordedChunksRef.current = [];
