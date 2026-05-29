@@ -263,8 +263,16 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const cronCheck = verifyCronSecret(req, { functionName: "resolve-quick-round", corsHeaders });
-  if (!cronCheck.ok) return cronCheck.response!;
+  const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
+  const isClientDeduct = body.action === "deduct" && body.amount;
+  const requestedRoundId = typeof body.roundId === "string" ? body.roundId : null;
+
+  // Cron scans must still use the cron secret, but Quick Trade clients need to
+  // trigger a single due round resolution and authenticated balance deduction.
+  if (!isClientDeduct && !requestedRoundId) {
+    const cronCheck = verifyCronSecret(req, { functionName: "resolve-quick-round", corsHeaders });
+    if (!cronCheck.ok) return cronCheck.response!;
+  }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -273,7 +281,6 @@ Deno.serve(async (req) => {
   try {
     // Handle balance deduction for placing bets
     if (req.method === "POST") {
-      const body = await req.json().catch(() => ({}));
       if (body.action === "deduct" && body.amount) {
         // SECURITY: Verify the caller's JWT to get the real user ID
         const authHeader = req.headers.get("Authorization");
@@ -347,12 +354,18 @@ Deno.serve(async (req) => {
 
     // 1. Find rounds that are past their deadline and still open/locked
     const deadline = new Date();
-    const { data: rounds, error: fetchErr } = await supabase
+    let roundsQuery = supabase
       .from("quick_rounds")
       .select("*")
       .in("status", ["open", "locked"])
       .lte("locks_at", deadline.toISOString())
       .order("created_at", { ascending: true });
+
+    if (requestedRoundId) {
+      roundsQuery = roundsQuery.eq("id", requestedRoundId).limit(1);
+    }
+
+    const { data: rounds, error: fetchErr } = await roundsQuery;
 
     if (fetchErr) throw fetchErr;
     if (!rounds || rounds.length === 0) {
