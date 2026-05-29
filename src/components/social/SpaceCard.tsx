@@ -227,7 +227,33 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     }
   };
 
+  const { data: hasReminder = false } = useQuery({
+    queryKey: ["space-reminder", space.id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count } = await supabase
+        .from("space_reminders" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("space_id", space.id)
+        .eq("user_id", user.id);
+      return (count || 0) > 0;
+    },
+    enabled: !!user && space.status === "scheduled",
+  });
+
+  const handleToggleReminder = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) { toast.error("Sign in to set reminders"); return; }
+    setTogglingReminder(true);
+    try {
+      if (hasReminder) {
+        await supabase
+          .from("space_reminders" as any)
+          .delete()
+          .eq("space_id", space.id)
           .eq("user_id", user.id);
+        toast.success("Reminder removed");
+
         toast.success("Reminder removed");
       } else {
         await supabase.from("space_reminders" as any).insert({
