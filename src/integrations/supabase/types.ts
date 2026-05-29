@@ -6217,6 +6217,22 @@ export type Database = {
         Args: { _amount: number; _user_id: string }
         Returns: Json
       }
+      host_cancel_scheduled_space: {
+        Args: { _space_id: string }
+        Returns: number
+      }
+      host_clear_space_recording: {
+        Args: { _space_id: string }
+        Returns: undefined
+      }
+      host_set_space_recording: {
+        Args: { _recording_url: string; _space_id: string }
+        Returns: undefined
+      }
+      host_update_space_title: {
+        Args: { _new_title: string; _space_id: string }
+        Returns: undefined
+      }
       increment_bc400_pool: { Args: { _amount: number }; Returns: undefined }
       is_mutual_follow: {
         Args: { user_a: string; user_b: string }
