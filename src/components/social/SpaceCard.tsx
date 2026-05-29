@@ -70,11 +70,11 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     const trimmed = editTitleValue.trim();
     if (!trimmed || trimmed === space.title) { setEditingTitle(false); return; }
     setSavingTitle(true);
-    const { error } = await supabase
-      .from("spaces" as any)
-      .update({ title: trimmed } as any)
-      .eq("id", space.id);
-    if (error) { toast.error("Failed to update title"); }
+    const { error } = await supabase.rpc("host_update_space_title" as any, {
+      _space_id: space.id,
+      _new_title: trimmed,
+    });
+    if (error) { toast.error(error.message || "Failed to update title"); }
     else { queryClient.invalidateQueries({ queryKey: ["spaces"] }); toast.success("Title updated"); }
     setSavingTitle(false);
     setEditingTitle(false);
@@ -86,36 +86,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
     if (!confirm("Cancel this scheduled space? Users with reminders will be notified.")) return;
     setCancelling(true);
     try {
-      // Get reminder users before deleting
-      const { data: reminders } = await supabase
-        .from("space_reminders" as any)
-        .select("user_id")
-        .eq("space_id", space.id);
-
-      // Update space status
-      await supabase
-        .from("spaces" as any)
-        .update({ status: "cancelled" } as any)
-        .eq("id", space.id);
-
-      // Delete reminders
-      await supabase
-        .from("space_reminders" as any)
-        .delete()
-        .eq("space_id", space.id);
-
-      // Notify reminded users
-      if (reminders && reminders.length > 0) {
-        const notifications = (reminders as any[]).map((r: any) => ({
-          user_id: r.user_id,
-          title: "Space Cancelled ❌",
-          message: `"${space.title}" has been cancelled by the host.`,
-          type: "info",
-          market_id: space.id,
-        }));
-        await supabase.from("notifications").insert(notifications);
-      }
-
+      const { error } = await supabase.rpc("host_cancel_scheduled_space" as any, {
+        _space_id: space.id,
+      });
+      if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["spaces"] });
       toast.success("Space cancelled");
     } catch (err: any) {
@@ -124,6 +98,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       setCancelling(false);
     }
   };
+
   const isRecorded = space.status === "ended" && space.is_recorded && space.recording_url;
 
   // Clean up audio on unmount
