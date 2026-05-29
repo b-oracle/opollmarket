@@ -5842,6 +5842,32 @@ export type Database = {
         Args: { _draft_id?: string; _market_data: Json; _options?: string[] }
         Returns: Json
       }
+      create_quick_round: {
+        Args: {
+          _asset: string
+          _duration_seconds: number
+          _locks_at: string
+          _open_price: number
+        }
+        Returns: {
+          asset: string
+          close_price: number | null
+          created_at: string
+          duration_seconds: number
+          id: string
+          locks_at: string
+          open_price: number | null
+          resolved_at: string | null
+          result: string | null
+          status: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "quick_rounds"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       credit_bsc_deposit: { Args: { _event_id: string }; Returns: string }
       db_now: { Args: never; Returns: string }
       debit_balance_atomic: {
