@@ -2239,7 +2239,6 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         });
         if (updErr) throw updErr;
 
-        } as any).eq("id", spaceId);
         toast.success("Recording saved ✅");
         setRecording(false);
         setRecordingLoading(false);
