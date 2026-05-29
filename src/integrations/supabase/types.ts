@@ -5837,6 +5837,16 @@ export type Database = {
         Returns: Json
       }
       cleanup_webhook_event_ledger: { Args: never; Returns: undefined }
+      cohost_can_update_space: {
+        Args: {
+          _new_cohosts: string[]
+          _new_host: string
+          _new_status: string
+          _new_title: string
+          _space_id: string
+        }
+        Returns: boolean
+      }
       count_visible_live_spaces: { Args: { _user_id: string }; Returns: number }
       create_market_atomic: {
         Args: { _draft_id?: string; _market_data: Json; _options?: string[] }
