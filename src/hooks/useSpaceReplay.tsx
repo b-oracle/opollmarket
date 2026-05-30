@@ -94,9 +94,10 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const audio = new Audio();
-    audio.crossOrigin = "anonymous";
-    audio.preload = "metadata";
-    audio.src = playable;
+    // NOTE: do NOT set crossOrigin="anonymous" — Supabase signed URLs do not
+    // always respond with matching CORS headers, which makes the audio element
+    // silently hang at readyState=0 (the symptom: tap play, nothing happens).
+    audio.preload = "auto";
     audioRef.current = audio;
 
     const onTime = () => {
@@ -109,23 +110,31 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
       }
     };
     const onMeta = () => {
-      if (isFinite(audio.duration)) {
+      if (isFinite(audio.duration) && audio.duration > 0) {
         setState(prev => ({ ...prev, duration: audio.duration }));
       }
     };
     const onEnd = () => {
       setState(prev => ({ ...prev, isPlaying: false, progress: 100 }));
     };
+    const onPlay = () => setState(prev => ({ ...prev, isPlaying: true }));
+    const onPause = () => setState(prev => ({ ...prev, isPlaying: false }));
     const onErr = () => {
       const code = audio.error?.code;
-      console.error("[useSpaceReplay] playback error", code, audio.error?.message);
+      console.error("[useSpaceReplay] playback error", code, audio.error?.message, playable);
       toast.error(code === 4 ? "Recording format not supported on this browser" : "Failed to load recording");
     };
 
+    // Attach listeners BEFORE setting src so we don't miss loadedmetadata
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("durationchange", onMeta);
     audio.addEventListener("ended", onEnd);
+    audio.addEventListener("play", onPlay);
+    audio.addEventListener("pause", onPause);
     audio.addEventListener("error", onErr);
+    audio.src = playable;
+    audio.load();
 
     setState({
       space,
@@ -167,10 +176,15 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
     if (!audio) return;
     if (state.isPlaying) {
       audio.pause();
-      setState(prev => ({ ...prev, isPlaying: false }));
     } else {
-      audio.play().catch(() => {});
-      setState(prev => ({ ...prev, isPlaying: true }));
+      const p = audio.play();
+      if (p && typeof p.catch === "function") {
+        p.catch((err) => {
+          console.error("[useSpaceReplay] play() rejected", err?.name, err?.message);
+          toast.error("Tap play again — browser blocked autoplay");
+          setState(prev => ({ ...prev, isPlaying: false }));
+        });
+      }
     }
   }, [state.isPlaying]);
 
