@@ -176,10 +176,15 @@ export const SpaceReplayProvider = ({ children }: { children: ReactNode }) => {
     if (!audio) return;
     if (state.isPlaying) {
       audio.pause();
-      setState(prev => ({ ...prev, isPlaying: false }));
     } else {
-      audio.play().catch(() => {});
-      setState(prev => ({ ...prev, isPlaying: true }));
+      const p = audio.play();
+      if (p && typeof p.catch === "function") {
+        p.catch((err) => {
+          console.error("[useSpaceReplay] play() rejected", err?.name, err?.message);
+          toast.error("Tap play again — browser blocked autoplay");
+          setState(prev => ({ ...prev, isPlaying: false }));
+        });
+      }
     }
   }, [state.isPlaying]);
 
