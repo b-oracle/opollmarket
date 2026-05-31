@@ -2241,8 +2241,8 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           setRecordingLoading(false);
           return;
         }
-        if (blob.size > 50 * 1024 * 1024) {
-          toast.error("Recording exceeds 50MB limit. Try a shorter session.");
+        if (blob.size > 500 * 1024 * 1024) {
+          toast.error("Recording exceeds 500MB limit. Try a shorter session.");
           setRecording(false);
           setRecordingLoading(false);
           return;
@@ -2288,10 +2288,10 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
         return;
       }
 
-      // Cap at 50 MB
-      const MAX_RECORDING_BYTES = 50 * 1024 * 1024;
+      // Cap at 500 MB
+      const MAX_RECORDING_BYTES = 500 * 1024 * 1024;
       if (blob.size > MAX_RECORDING_BYTES) {
-        toast.error("Recording exceeds 50MB limit. Try a shorter session.");
+        toast.error("Recording exceeds 500MB limit. Try a shorter session.");
         setRecording(false);
         setRecordingLoading(false);
         return;
