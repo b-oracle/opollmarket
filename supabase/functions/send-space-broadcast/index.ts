@@ -90,6 +90,8 @@ Deno.serve(async (req) => {
       type: "broadcast",
     }));
 
+    let delivered = 0;
+    let lastError: unknown = null;
     for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
       const batch = notifications.slice(i, i + BATCH_SIZE);
       const { error: insertError } = await supabase
@@ -97,8 +99,77 @@ Deno.serve(async (req) => {
         .insert(batch);
 
       if (insertError) {
+        lastError = insertError;
         console.error(`Batch ${i} insert error:`, insertError);
+      } else {
+        delivered += batch.length;
       }
+    }
+
+    // If nothing was delivered, refund the user and mark broadcast as failed.
+    if (delivered === 0) {
+      console.error(
+        `Broadcast ${broadcast_id} delivered 0 notifications — refunding.`,
+        lastError,
+      );
+
+      const { data: bc } = await supabase
+        .from("space_broadcasts")
+        .select("user_id, amount, bonus_amount, status")
+        .eq("id", broadcast_id)
+        .maybeSingle();
+
+      if (bc && bc.status !== "refunded") {
+        const amount = Number(bc.amount) || 0;
+        const bonusAmount = Number(bc.bonus_amount) || 0;
+        const mainRefund = Math.max(0, amount - bonusAmount);
+
+        const { error: refundErr } = await supabase.rpc(
+          "adjust_balance_logged",
+          {
+            _user_id: bc.user_id,
+            _delta: mainRefund,
+            _bonus_delta: bonusAmount,
+            _insurance_delta: 0,
+            _correlation_id: `space_broadcast_refund:${broadcast_id}`,
+            _source: "space_broadcast_refund",
+            _reason: "Broadcast delivered 0 notifications — automatic refund",
+            _actor_id: null,
+          },
+        );
+
+        if (refundErr) {
+          console.error("Refund RPC failed:", refundErr);
+          await supabase
+            .from("space_broadcasts")
+            .update({ status: "failed" })
+            .eq("id", broadcast_id);
+          return new Response(
+            JSON.stringify({
+              error: "Broadcast failed and refund could not be processed automatically. Support has been notified.",
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        await supabase
+          .from("space_broadcasts")
+          .update({ status: "refunded" })
+          .eq("id", broadcast_id);
+
+        // Notify the broadcast owner
+        await supabase.from("notifications").insert({
+          user_id: bc.user_id,
+          title: "Broadcast refunded",
+          message: `Your space broadcast couldn't be delivered. $${amount.toFixed(2)} has been refunded to your balance.`,
+          type: "system",
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ refunded: true, recipients: 0 }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     // Update broadcast status to sent
@@ -107,12 +178,15 @@ Deno.serve(async (req) => {
       .update({ status: "sent" })
       .eq("id", broadcast_id);
 
-    console.log(`Space broadcast sent to ${users.length} users for space ${space_id}`);
+    console.log(
+      `Space broadcast ${broadcast_id} delivered to ${delivered}/${users.length} users for space ${space_id}`,
+    );
 
     return new Response(
-      JSON.stringify({ success: true, recipients: users.length }),
+      JSON.stringify({ success: true, recipients: delivered, attempted: users.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
   } catch (err) {
     console.error("send-space-broadcast error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
