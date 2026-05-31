@@ -79,12 +79,14 @@ Deno.serve(async (req) => {
 
     // Batch insert notifications for all users
     const BATCH_SIZE = 500;
+    // NOTE: notifications.market_id has a FK to markets; spaces are NOT markets,
+    // so we must omit market_id here. Deep-link routing uses the type field.
     const notifications = users.map((u) => ({
       user_id: u.id,
       title: isLive ? "🎙️ Space is Live!" : "📢 Space Alert",
       message: isLive
-        ? `Join now: "${spaceTitle}" (space:${space_id})`
-        : `Check out this upcoming space: "${spaceTitle}" (space:${space_id})`,
+        ? `Join now: "${spaceTitle}"`
+        : `Check out this upcoming space: "${spaceTitle}"`,
       type: "broadcast",
     }));
 
