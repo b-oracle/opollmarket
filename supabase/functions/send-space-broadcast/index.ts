@@ -83,10 +83,9 @@ Deno.serve(async (req) => {
       user_id: u.id,
       title: isLive ? "🎙️ Space is Live!" : "📢 Space Alert",
       message: isLive
-        ? `Join now: "${spaceTitle}"`
-        : `Check out this upcoming space: "${spaceTitle}"`,
+        ? `Join now: "${spaceTitle}" (space:${space_id})`
+        : `Check out this upcoming space: "${spaceTitle}" (space:${space_id})`,
       type: "broadcast",
-      market_id: space_id,
     }));
 
     for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
