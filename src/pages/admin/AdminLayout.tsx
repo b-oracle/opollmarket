@@ -162,23 +162,38 @@ const AdminLayout = () => {
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {filteredNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`
-              }
-            >
-              <item.icon className="w-4 h-4" />
-              {item.label}
-            </NavLink>
-          ))}
+          {filteredNavItems.map((item) => {
+            const isKyc = item.to === "/admin/kyc";
+            const showKycBadge = isKyc && pendingKycCount > 0;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`
+                }
+              >
+                <span className="relative">
+                  <item.icon className="w-4 h-4" />
+                  {showKycBadge && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                  )}
+                </span>
+                <span className="flex-1">{item.label}</span>
+                {showKycBadge && (
+                  <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1 animate-pulse">
+                    {pendingKycCount > 99 ? "99+" : pendingKycCount}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
+
         </nav>
         <div className="p-3 border-t border-border space-y-1">
           <button
