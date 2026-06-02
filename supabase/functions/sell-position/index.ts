@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     // 3. Fetch market
     const { data: market, error: mktError } = await supabase
       .from("markets")
-      .select("id, status, yes_price, no_price, volume, liquidity, market_type")
+      .select("id, status, yes_price, no_price, volume, liquidity, market_type, end_date")
       .eq("id", position.market_id)
       .single();
 
@@ -89,6 +89,19 @@ Deno.serve(async (req) => {
         status: 400, headers: corsHeaders,
       });
     }
+
+    // Lock selling within the final hour before market close
+    const SELL_LOCK_MS = 60 * 60 * 1000;
+    if (market.end_date) {
+      const msToEnd = new Date(market.end_date).getTime() - Date.now();
+      if (msToEnd > 0 && msToEnd <= SELL_LOCK_MS) {
+        return new Response(
+          JSON.stringify({ error: "Selling is locked within the final hour before market close. Hold until resolution." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
 
     const isMulti = market.market_type === "multi" || market.market_type === "range";
 

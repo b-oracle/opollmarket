@@ -1,35 +1,27 @@
 ## Goal
-Let bonus balance cover the **market creation fee** (and only that fee) in every creation path. Liquidity, AI generation, boost, broadcast, and auto-resolve fees stay strictly on the main balance.
-
-## Current state
-- `finalize_market_creation_atomic` already deducts bonus first, but against the **combined** `_fee_amount` (creation + auto-resolve + boost + broadcast). That over-permits bonus usage.
-- `hold_creation_fee_escrow` (used by the "No NFT/BC400" bypass path) deducts only from main balance — bonus is ignored.
-- Verified users who exceed their free-market limit already get routed through `feeBypass = true` (no escrow), so server-side fee logic applies; they just need the same bonus-first behavior end-to-end.
+Prevent users from selling their position once a market is within 1 hour of its `end_date`. They'll need to hold until resolution.
 
 ## Changes
 
-### 1. Migration (single file)
-- **`creation_fee_escrows`**: add `bonus_amount numeric NOT NULL DEFAULT 0` and `main_amount numeric NOT NULL DEFAULT 0` so refunds can return funds to the correct buckets. Backfill existing `held` rows: `main_amount = amount`, `bonus_amount = 0`.
-- **`hold_creation_fee_escrow(_user_id, _amount)`**: lock balance row, take `bonus = LEAST(bonus_balance, _amount)`, `main = _amount - bonus`; fail with "Insufficient balance" if `main > balances.amount`. Deduct both, insert escrow with `amount`, `bonus_amount`, `main_amount`. Keep existing audit transaction.
-- **`release_creation_fee_escrow(_escrow_id, _action)`**:
-  - `refund`: credit `bonus_amount` back to `bonus_balance` and `main_amount` back to `amount`; log a single refund transaction.
-  - `used`: unchanged ledger entry; platform_pool credit unchanged.
-- **`finalize_market_creation_atomic`**: change bonus-coverage line to use only `_market_creation_fee_amount` instead of `_fee_amount`. Main deduction becomes `liquidity + (creation_fee - bonus_for_creation_fee) + auto_resolve_fee + boost + broadcast`. Return values keep `deducted_main` / `deducted_bonus`.
-- When releasing a `held` escrow inside `finalize_market_creation_atomic`, skip the standalone bonus/main calculation for the creation fee (the escrow already split it) — keep the existing escrow branch behavior, just rely on the escrow row's `bonus_amount` / `main_amount` for auditing (no balance changes here).
+### 1. Server-side guard (authoritative)
+**`supabase/functions/sell-position/index.ts`**
+- Include `end_date` in the `markets` select.
+- After the `status !== "active"` check, add:
+  - If `end_date` exists and `new Date(end_date).getTime() - Date.now() <= 60 * 60 * 1000` → return `400` with error `"Selling is locked within the final hour before market close. Hold until resolution."`
+- This is the source of truth — any client bypass still fails.
 
-### 2. Frontend (`src/pages/Create.tsx`)
-- Update the fee-confirmation UI text to: "Paid from your bonus balance first ($X available), remainder from main balance."
-- Keep `totalBalance` check (main + bonus) for the `handleFeeBypass` gate — already correct.
-- For the verified-user-over-limit path (`exceededFreeLimit && feeBypass`), add a small note: "You've used all free markets; this market's $X fee will be paid from your bonus balance first, then main."
-- No change to AI-generation, boost, broadcast, liquidity flows — they already charge main.
+### 2. UI affordance
+**`src/pages/Portfolio.tsx`**
+- Add a helper `isSellLocked(endDate)` → true when within 1h of end.
+- Where the Sell button is rendered for each active position:
+  - Disable the button when `isSellLocked(pos.endDate)` is true.
+  - Show a small label like "Locked · closes soon" (using muted-foreground / destructive token) under or in place of the action.
+- In `openSell`, early-return with a toast `"Selling is locked in the final hour before close."` as a defensive fallback.
 
-### 3. Memory
-- Refresh `mem://constraints/bonus-balance-usage` to reflect that bonus covers **only**: prediction fees, market creation fee (escrow + non-escrow paths), AI generation. Never liquidity, boost, broadcast, auto-resolve, or wagers.
+### 3. Scope notes
+- Only affects manual sells. Limit-order matching, resolution payouts, and refunds are untouched.
+- Threshold is a single constant `SELL_LOCK_MS = 60 * 60 * 1000` in both the edge function and the page, so it can be tuned later.
 
 ## Out of scope
-- No new UI screens; no admin tooling changes (`AdminEscrows` keeps working — it just shows the same `amount`).
-- No changes to the AI generation cost flow, withdrawal blocker, or referral bonus logic.
-
-## Verification
-- Read updated SQL functions back; confirm bonus is only applied to creation fee.
-- Manually walk through 4 cases mentally: (a) non-verified with enough bonus → escrow fully from bonus; (b) non-verified with partial bonus → split; (c) verified over-limit with bonus → finalize splits; (d) verified under-limit → no fee charged.
+- No DB migration; the rule is purely a time check against existing `markets.end_date`.
+- No change to UpDown/crypto rounds (they don't go through sell-position).
