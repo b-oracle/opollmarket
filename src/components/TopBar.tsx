@@ -19,12 +19,13 @@ const AdminBadgeButton = ({ isAdminRoute, onClick, userId, label }: { isAdminRou
   const { data: pendingCount = 0 } = useQuery({
     queryKey: ["admin-pending-count", userId],
     queryFn: async () => {
-      const [withdrawals, markets, moderation] = await Promise.all([
+      const [withdrawals, markets, moderation, kyc] = await Promise.all([
         supabase.from("transactions").select("id", { count: "exact", head: true }).eq("type", "withdrawal").eq("status", "pending"),
         supabase.from("markets").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("moderation_logs").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("kyc_submissions" as any).select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
-      return (withdrawals.count || 0) + (markets.count || 0) + (moderation.count || 0);
+      return (withdrawals.count || 0) + (markets.count || 0) + (moderation.count || 0) + (kyc.count || 0);
     },
     refetchInterval: 30_000,
     staleTime: 15_000,
