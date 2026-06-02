@@ -90,7 +90,22 @@ const AdminLayout = () => {
     return item.roles.includes(userRole);
   });
 
+  const { data: pendingKycCount = 0 } = useQuery({
+    queryKey: ["admin-pending-kyc-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("kyc_submissions" as any)
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count || 0;
+    },
+    enabled: !!user && hasAdminAccess,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  });
+
   const roleBadge = isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : isModerator ? "Moderator" : "Support";
+
 
   if (loading || (user && !rolesLoaded)) {
     return (
