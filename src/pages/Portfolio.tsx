@@ -426,9 +426,14 @@ const Portfolio = () => {
 
   const openSell = (pos: EnrichedPosition, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isSellLocked(pos.endDate)) {
+      toast.error("Selling is locked in the final hour before close. Hold until resolution.");
+      return;
+    }
     setSellTarget(pos);
     setSellStep("confirm");
   };
+
 
   const closeSell = () => {
     setSellTarget(null);
