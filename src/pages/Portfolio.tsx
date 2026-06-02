@@ -1002,14 +1002,25 @@ const Portfolio = () => {
                           <Share2 className="w-3 h-3" /> Share
                         </button>
                         {pos.status === "active" && (
-                          <button
-                            onClick={(e) => openSell(pos, e)}
-                            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
-                          >
-                            <LogOut className="w-3 h-3" />
-                            Sell
-                          </button>
+                          isSellLocked(pos.endDate) ? (
+                            <span
+                              title="Selling is locked in the final hour before close"
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-muted/40 border border-border text-muted-foreground text-[10px] font-bold uppercase tracking-wider cursor-not-allowed"
+                            >
+                              <Clock className="w-3 h-3" />
+                              Locked
+                            </span>
+                          ) : (
+                            <button
+                              onClick={(e) => openSell(pos, e)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-[10px] font-bold uppercase tracking-wider hover:bg-destructive/20 transition-all active:scale-95"
+                            >
+                              <LogOut className="w-3 h-3" />
+                              Sell
+                            </button>
+                          )
                         )}
+
                       </div>
                     </div>
                   </motion.div>
