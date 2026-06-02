@@ -416,6 +416,14 @@ const Portfolio = () => {
     return `${days}d`;
   };
 
+  const SELL_LOCK_MS = 60 * 60 * 1000;
+  const isSellLocked = (endDate: string) => {
+    if (!endDate) return false;
+    const diff = new Date(endDate).getTime() - Date.now();
+    return diff > 0 && diff <= SELL_LOCK_MS;
+  };
+
+
   const openSell = (pos: EnrichedPosition, e: React.MouseEvent) => {
     e.stopPropagation();
     setSellTarget(pos);
