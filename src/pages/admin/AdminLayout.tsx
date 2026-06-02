@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet, NavLink, useLocation, useOutletContext } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, ShoppingBag, MessageSquare, Users, LogOut, Loader2,
   ArrowLeft, PlusCircle, Receipt, Settings, Coins, Menu, X, ArrowUpFromLine, Zap, BarChart3, Rocket, FileCode2, ShieldAlert, Eye, History, ArrowDownToLine, UserCheck, TrendingUp, Presentation, Scale, Gift, Phone, Bell, ClipboardCheck, HelpCircle, Lock, Megaphone, RotateCcw,
 } from "lucide-react";
+
 
 type NavItem = {
   to: string;
