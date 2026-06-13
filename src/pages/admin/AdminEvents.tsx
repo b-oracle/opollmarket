@@ -26,6 +26,7 @@ const AdminEvents = () => {
   const [newEndDate, setNewEndDate] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [marketSearch, setMarketSearch] = useState("");
+  const [selectedMarketIds, setSelectedMarketIds] = useState<Set<string>>(new Set());
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
