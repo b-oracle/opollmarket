@@ -20,10 +20,35 @@ const AdminEvents = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [newImage, setNewImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newCategory, setNewCategory] = useState("");
   const [newEndDate, setNewEndDate] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [marketSearch, setMarketSearch] = useState("");
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("Not authenticated");
+      const compressed = await compressImage(file, "market-banner");
+      const ext = compressed.type === "image/webp" ? "webp" : compressed.type === "image/jpeg" ? "jpg" : "webp";
+      const fileName = `${currentUser.id}/event-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("market-images")
+        .upload(fileName, compressed, { contentType: compressed.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data: pubData } = supabase.storage.from("market-images").getPublicUrl(fileName);
+      setNewImage(pubData.publicUrl);
+      toast.success("Image uploaded");
+    } catch (e: any) {
+      toast.error("Upload failed: " + (e.message || "Unknown error"));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
 
   const { data: events = [] } = useQuery({
     queryKey: ["admin-events"],
