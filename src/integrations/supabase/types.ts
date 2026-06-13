@@ -2144,6 +2144,96 @@ export type Database = {
           },
         ]
       }
+      market_event_members: {
+        Row: {
+          color: string | null
+          created_at: string
+          display_label: string | null
+          event_id: string
+          icon_url: string | null
+          id: string
+          market_id: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          display_label?: string | null
+          event_id: string
+          icon_url?: string | null
+          id?: string
+          market_id: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          display_label?: string | null
+          event_id?: string
+          icon_url?: string | null
+          id?: string
+          market_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_event_members_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "market_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_event_members_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: true
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_events: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+          volume: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+          volume?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          volume?: number
+        }
+        Relationships: []
+      }
       market_likes: {
         Row: {
           created_at: string
