@@ -16,6 +16,7 @@ import React, { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
+import HomeEventsAndPromos from "@/components/HomeEventsAndPromos";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import LiveCryptoRoundPercent from "@/components/LiveCryptoRoundPercent";
 import { Gem, ArrowLeftRight, Moon } from "lucide-react";
@@ -135,6 +136,23 @@ const Index = () => {
     markets.filter((m) => m.category === "Forex").slice(0, 8),
     [markets]
   );
+
+  // Map of market_id -> { slug, title } for inline event-group chips on cards
+  const { data: eventMemberMap = new Map() } = useQuery({
+    queryKey: ["home-event-member-map"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("market_event_members" as any)
+        .select("market_id, event:market_events!inner(slug, title, status)")
+        .eq("event.status", "active");
+      const m = new Map<string, { slug: string; title: string }>();
+      (data || []).forEach((r: any) => {
+        if (r.event?.slug) m.set(r.market_id, { slug: r.event.slug, title: r.event.title });
+      });
+      return m;
+    },
+    staleTime: 60_000,
+  });
 
   const categories = useMemo(() => {
     const cats = new Set(markets.map((m) => m.category));
@@ -376,6 +394,8 @@ const Index = () => {
         >
           🔥 Start Swiping
         </motion.button>
+
+        <HomeEventsAndPromos />
 
         <BoostedCarousel
           markets={boostedMarkets}
