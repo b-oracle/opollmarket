@@ -154,6 +154,26 @@ const AdminEvents = () => {
     onError: (e: any) => toast.error(e.message || "Failed to add"),
   });
 
+  const bulkAddMembers = useMutation({
+    mutationFn: async (marketIds: string[]) => {
+      if (!selectedEventId || marketIds.length === 0) return;
+      const base = members.length;
+      const rows = marketIds.map((mid, i) => ({
+        event_id: selectedEventId,
+        market_id: mid,
+        sort_order: base + i,
+      }));
+      const { error } = await supabase.from("market_event_members" as any).insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_d, marketIds) => {
+      toast.success(`Added ${marketIds.length} market${marketIds.length === 1 ? "" : "s"}`);
+      setSelectedMarketIds(new Set());
+      qc.invalidateQueries({ queryKey: ["admin-event-members", selectedEventId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to add"),
+  });
+
   const updateMember = useMutation({
     mutationFn: async ({ id, patch }: { id: string; patch: any }) => {
       const { error } = await supabase
