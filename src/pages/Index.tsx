@@ -16,6 +16,7 @@ import React, { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import BoostCountdown from "@/components/BoostCountdown";
 import BoostedCarousel from "@/components/BoostedCarousel";
 import CategoryCarousel from "@/components/CategoryCarousel";
+import HomeEventsAndPromos from "@/components/HomeEventsAndPromos";
 import LivePriceBadge from "@/components/LivePriceBadge";
 import LiveCryptoRoundPercent from "@/components/LiveCryptoRoundPercent";
 import { Gem, ArrowLeftRight, Moon } from "lucide-react";
@@ -135,6 +136,23 @@ const Index = () => {
     markets.filter((m) => m.category === "Forex").slice(0, 8),
     [markets]
   );
+
+  // Map of market_id -> { slug, title } for inline event-group chips on cards
+  const { data: eventMemberMap = new Map() } = useQuery({
+    queryKey: ["home-event-member-map"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("market_event_members" as any)
+        .select("market_id, event:market_events!inner(slug, title, status)")
+        .eq("event.status", "active");
+      const m = new Map<string, { slug: string; title: string }>();
+      (data || []).forEach((r: any) => {
+        if (r.event?.slug) m.set(r.market_id, { slug: r.event.slug, title: r.event.title });
+      });
+      return m;
+    },
+    staleTime: 60_000,
+  });
 
   const categories = useMemo(() => {
     const cats = new Set(markets.map((m) => m.category));
@@ -377,6 +395,8 @@ const Index = () => {
           🔥 Start Swiping
         </motion.button>
 
+        <HomeEventsAndPromos />
+
         <BoostedCarousel
           markets={boostedMarkets}
           boostDetails={boostDetails}
@@ -421,6 +441,12 @@ const Index = () => {
 
         {/* Category filter */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4">
+          <button
+            onClick={() => navigate("/events")}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1"
+          >
+            <Crown className="w-3 h-3" /> Events
+          </button>
           {categories.map((cat) => (
             <button
               key={cat}
@@ -580,6 +606,19 @@ const Index = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">{market.category}</span>
+                    {(() => {
+                      const ev = (eventMemberMap as Map<string, { slug: string; title: string }>).get(market.id);
+                      if (!ev) return null;
+                      return (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/event/${ev.slug}`); }}
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary truncate max-w-[140px] flex items-center gap-0.5 hover:bg-primary/20"
+                          title={`Part of: ${ev.title}`}
+                        >
+                          <Crown className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">{ev.title}</span>
+                        </button>
+                      );
+                    })()}
                     {isBoosted && boost && user?.id === market.creatorAddress && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />}
                     {!isBoosted && market.trending && (
                       <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Zap className="w-3 h-3" /> Trending</span>

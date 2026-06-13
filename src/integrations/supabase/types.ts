@@ -3021,6 +3021,66 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_banners: {
+        Row: {
+          active: boolean
+          clicks: number
+          created_at: string
+          created_by: string | null
+          cta_text: string | null
+          ends_at: string | null
+          id: string
+          image_url: string | null
+          impressions: number
+          kind: string
+          sort_order: number
+          starts_at: string
+          subtitle: string | null
+          target_id: string
+          target_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          clicks?: number
+          created_at?: string
+          created_by?: string | null
+          cta_text?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          impressions?: number
+          kind: string
+          sort_order?: number
+          starts_at?: string
+          subtitle?: string | null
+          target_id: string
+          target_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          clicks?: number
+          created_at?: string
+          created_by?: string | null
+          cta_text?: string | null
+          ends_at?: string | null
+          id?: string
+          image_url?: string | null
+          impressions?: number
+          kind?: string
+          sort_order?: number
+          starts_at?: string
+          subtitle?: string | null
+          target_id?: string
+          target_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       push_delivery_logs: {
         Row: {
           body: string | null
