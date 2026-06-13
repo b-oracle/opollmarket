@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { getErrorMessage } from "../_shared/errors.ts";
 
 const ALLOWED_HOSTS = [
