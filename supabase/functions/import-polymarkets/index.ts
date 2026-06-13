@@ -133,6 +133,9 @@ Deno.serve(async (req) => {
             if (presetImported >= maxImports) break;
             if (!event.markets || !Array.isArray(event.markets)) continue;
 
+            const eventSlug = event.slug || null;
+            const isGroup = event.markets.length > 1;
+
             for (const market of event.markets) {
               if (presetImported >= maxImports) break;
               // Skip if no condition_id
@@ -157,7 +160,6 @@ Deno.serve(async (req) => {
               const title = market.question || event.title || "Untitled Market";
               const description = market.description || event.description || title;
               const imageUrl = event.image || market.image || null;
-              const eventSlug = event.slug || null;
 
               // Create the market
               const { error: insertErr } = await adminClient.from("markets").insert({
@@ -189,12 +191,93 @@ Deno.serve(async (req) => {
                 presetImported++;
               }
             }
+
+            // Group multi-market events under market_events
+            if (isGroup && eventSlug) {
+              try {
+                // Find all our markets for this polymarket event
+                const { data: groupMarkets } = await adminClient
+                  .from("markets")
+                  .select("id, title, polymarket_id")
+                  .eq("polymarket_event_slug", eventSlug);
+
+                if (groupMarkets && groupMarkets.length >= 2) {
+                  // Upsert event group by slug
+                  const eventEndDate = event.endDate
+                    ? new Date(event.endDate).toISOString().split("T")[0]
+                    : null;
+
+                  const { data: existingGroup } = await adminClient
+                    .from("market_events")
+                    .select("id")
+                    .eq("slug", eventSlug)
+                    .maybeSingle();
+
+                  let groupId = existingGroup?.id;
+                  if (!groupId) {
+                    const { data: inserted, error: groupErr } = await adminClient
+                      .from("market_events")
+                      .insert({
+                        slug: eventSlug,
+                        title: (event.title || eventSlug).slice(0, 500),
+                        description: (event.description || "").slice(0, 2000) || null,
+                        image_url: event.image || null,
+                        category: preset.category,
+                        end_date: eventEndDate,
+                        status: "active",
+                      })
+                      .select("id")
+                      .single();
+                    if (groupErr) {
+                      errors.push(`Event group insert error for ${eventSlug}: ${groupErr.message}`);
+                    } else {
+                      groupId = inserted?.id;
+                    }
+                  }
+
+                  if (groupId) {
+                    // Build a stable color palette indexed by Polymarket market order
+                    const PALETTE = [
+                      "#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6",
+                      "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16",
+                    ];
+                    const polyOrder = new Map<string, number>();
+                    event.markets.forEach((m: any, i: number) => {
+                      const pid = m.conditionId || m.id;
+                      if (pid) polyOrder.set(String(pid), i);
+                    });
+
+                    const rows = groupMarkets.map((m: any) => {
+                      const idx = polyOrder.get(String(m.polymarket_id)) ?? 0;
+                      return {
+                        event_id: groupId,
+                        market_id: m.id,
+                        display_label: m.title.slice(0, 100),
+                        sort_order: idx,
+                        color: PALETTE[idx % PALETTE.length],
+                      };
+                    });
+
+                    // Upsert members (market_id is unique)
+                    const { error: memberErr } = await adminClient
+                      .from("market_event_members")
+                      .upsert(rows, { onConflict: "market_id" });
+                    if (memberErr) {
+                      errors.push(`Member upsert error for ${eventSlug}: ${memberErr.message}`);
+                    }
+                  }
+                }
+              } catch (e) {
+                errors.push(`Grouping error for ${eventSlug}: ${getErrorMessage(e)}`);
+              }
+            }
           }
         } catch (err) {
           errors.push(`Fetch error for tag ${tag}: ${(getErrorMessage(err))}`);
         }
       }
     }
+
 
     return new Response(
       JSON.stringify({
