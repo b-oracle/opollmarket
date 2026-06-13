@@ -236,17 +236,28 @@ const EventDetail = () => {
                   className="flex items-center justify-between gap-3 mb-2"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    {m.icon_url ? (
-                      <img src={m.icon_url} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                    {m.market?.image_url || m.icon_url ? (
+                      <img
+                        src={m.market?.image_url || m.icon_url}
+                        alt=""
+                        className="w-9 h-9 rounded-lg object-cover shrink-0"
+                      />
                     ) : (
                       <span
-                        className="w-9 h-9 rounded-lg shrink-0"
-                        style={{ background: color }}
-                      />
+                        className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center bg-muted text-[10px] font-bold text-muted-foreground"
+                      >
+                        {(m.display_label || m.market?.title || "?").slice(0, 2).toUpperCase()}
+                      </span>
                     )}
                     <div className="min-w-0">
-                      <div className="font-bold text-sm truncate">
-                        {m.display_label || m.market?.title}
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: color }}
+                        />
+                        <div className="font-bold text-sm truncate">
+                          {m.display_label || m.market?.title}
+                        </div>
                       </div>
                       <div className="text-[11px] text-muted-foreground">
                         {formatUsd(Number(m.market?.volume || 0))} Vol.
