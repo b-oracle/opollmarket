@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Validated public quick round creation" ON public.quick_rounds;
