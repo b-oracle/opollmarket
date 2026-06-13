@@ -441,6 +441,12 @@ const Index = () => {
 
         {/* Category filter */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar mb-4">
+          <button
+            onClick={() => navigate("/events")}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 flex items-center gap-1"
+          >
+            <Crown className="w-3 h-3" /> Events
+          </button>
           {categories.map((cat) => (
             <button
               key={cat}
