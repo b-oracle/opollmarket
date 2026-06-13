@@ -121,7 +121,9 @@ const AdminEscrows = lazy(() => import("./pages/admin/AdminEscrows"));
 const AdminCallEvents = lazy(() => import("./pages/admin/AdminCallEvents"));
 const AdminSpaceBans = lazy(() => import("./pages/admin/AdminSpaceBans"));
 const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
+const AdminPromoBanners = lazy(() => import("./pages/admin/AdminPromoBanners"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
+const Events = lazy(() => import("./pages/Events"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -561,6 +563,7 @@ const App = () => {
                         <Route path="/index" element={<Navigate to="/" replace />} />
                        <Route path="/market/:id" element={<MarketDetail />} />
                        <Route path="/event/:slug" element={<EventDetail />} />
+                       <Route path="/events" element={<Events />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
@@ -634,7 +637,8 @@ const App = () => {
                           <Route path="escrows" element={<AdminEscrows />} />
                           <Route path="call-events" element={<AdminCallEvents />} />
                           <Route path="space-bans" element={<AdminSpaceBans />} />
-                          <Route path="events" element={<AdminEvents />} />
+                         <Route path="events" element={<AdminEvents />} />
+                         <Route path="promo-banners" element={<AdminPromoBanners />} />
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />
