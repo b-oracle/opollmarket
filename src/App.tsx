@@ -559,7 +559,8 @@ const App = () => {
                         <Route path="/welcome" element={<Welcome />} />
                         <Route path="/push-debug" element={<PushDebug />} />
                         <Route path="/index" element={<Navigate to="/" replace />} />
-                        <Route path="/market/:id" element={<MarketDetail />} />
+                       <Route path="/market/:id" element={<MarketDetail />} />
+                       <Route path="/event/:slug" element={<EventDetail />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />
