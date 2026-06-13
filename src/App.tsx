@@ -120,6 +120,8 @@ const AdminSupport = lazy(() => import("./pages/admin/AdminSupport"));
 const AdminEscrows = lazy(() => import("./pages/admin/AdminEscrows"));
 const AdminCallEvents = lazy(() => import("./pages/admin/AdminCallEvents"));
 const AdminSpaceBans = lazy(() => import("./pages/admin/AdminSpaceBans"));
+const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
+const EventDetail = lazy(() => import("./pages/EventDetail"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
