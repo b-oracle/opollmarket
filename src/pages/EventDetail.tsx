@@ -105,7 +105,7 @@ const EventDetail = () => {
       <SEOHead
         title={`${event.title} — OPollmarket`}
         description={event.description || `Predict outcomes for ${event.title}`}
-        image={event.image_url}
+        image={event.image_url || undefined}
       />
 
       {/* Header */}
