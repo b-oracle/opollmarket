@@ -1,9 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Search, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Search, Link as LinkIcon, Upload, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { compressImage } from "@/lib/imageCompression";
+
 
 const slugify = (s: string) =>
   s
@@ -18,10 +20,35 @@ const AdminEvents = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newSlug, setNewSlug] = useState("");
   const [newImage, setNewImage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newCategory, setNewCategory] = useState("");
   const [newEndDate, setNewEndDate] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [marketSearch, setMarketSearch] = useState("");
+
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("Not authenticated");
+      const compressed = await compressImage(file, "market-banner");
+      const ext = compressed.type === "image/webp" ? "webp" : compressed.type === "image/jpeg" ? "jpg" : "webp";
+      const fileName = `${currentUser.id}/event-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("market-images")
+        .upload(fileName, compressed, { contentType: compressed.type, upsert: true });
+      if (upErr) throw upErr;
+      const { data: pubData } = supabase.storage.from("market-images").getPublicUrl(fileName);
+      setNewImage(pubData.publicUrl);
+      toast.success("Image uploaded");
+    } catch (e: any) {
+      toast.error("Upload failed: " + (e.message || "Unknown error"));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
 
   const { data: events = [] } = useQuery({
     queryKey: ["admin-events"],
@@ -167,46 +194,103 @@ const AdminEvents = () => {
         <div className="space-y-4">
           <div className="border border-border rounded-lg p-4 space-y-3 bg-card">
             <h2 className="font-bold text-sm">Create event</h2>
-            <input
-              value={newTitle}
-              onChange={(e) => {
-                setNewTitle(e.target.value);
-                if (!newSlug) setNewSlug(slugify(e.target.value));
-              }}
-              placeholder="Title (e.g. World Cup Winner)"
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-            />
-            <input
-              value={newSlug}
-              onChange={(e) => setNewSlug(slugify(e.target.value))}
-              placeholder="slug"
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-            />
-            <input
-              value={newImage}
-              onChange={(e) => setNewImage(e.target.value)}
-              placeholder="Image URL"
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-            />
-            <input
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="Category"
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-            />
-            <input
-              type="date"
-              value={newEndDate}
-              onChange={(e) => setNewEndDate(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-            />
-            <textarea
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value)}
-              placeholder="Description"
-              rows={2}
-              className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
-            />
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Title</span>
+              <input
+                value={newTitle}
+                onChange={(e) => {
+                  setNewTitle(e.target.value);
+                  if (!newSlug) setNewSlug(slugify(e.target.value));
+                }}
+                placeholder="e.g. World Cup Winner"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Slug (URL)</span>
+              <input
+                value={newSlug}
+                onChange={(e) => setNewSlug(slugify(e.target.value))}
+                placeholder="world-cup-winner"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+              />
+            </label>
+
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Cover image</span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleImageUpload(f);
+                  e.target.value = "";
+                }}
+              />
+              <div className="flex items-center gap-2">
+                {newImage && (
+                  <img src={newImage} alt="" className="w-12 h-12 rounded object-cover border border-border" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex-1 px-3 py-2 rounded-md border border-dashed border-border bg-background text-sm flex items-center justify-center gap-2 hover:bg-muted disabled:opacity-50"
+                >
+                  {uploadingImage ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                  ) : (
+                    <><Upload className="w-4 h-4" /> {newImage ? "Replace image" : "Upload image"}</>
+                  )}
+                </button>
+                {newImage && (
+                  <button
+                    type="button"
+                    onClick={() => setNewImage("")}
+                    className="p-2 rounded-md border border-border text-destructive"
+                    title="Remove"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Category</span>
+              <input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="e.g. Politics, Sports"
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">End date</span>
+              <input
+                type="date"
+                value={newEndDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-muted-foreground">Description</span>
+              <textarea
+                value={newDesc}
+                onChange={(e) => setNewDesc(e.target.value)}
+                placeholder="Short summary shown on the event page"
+                rows={2}
+                className="w-full px-3 py-2 rounded-md border border-border bg-background text-sm"
+              />
+            </label>
+
             <button
               onClick={() => createEvent.mutate()}
               disabled={createEvent.isPending || !newTitle.trim()}
@@ -216,6 +300,7 @@ const AdminEvents = () => {
               Create
             </button>
           </div>
+
 
           <div className="border border-border rounded-lg overflow-hidden">
             {events.length === 0 ? (
