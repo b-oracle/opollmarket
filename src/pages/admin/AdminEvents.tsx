@@ -1,9 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Search, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Search, Link as LinkIcon, Upload, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { compressImage } from "@/lib/imageCompression";
+
 
 const slugify = (s: string) =>
   s
