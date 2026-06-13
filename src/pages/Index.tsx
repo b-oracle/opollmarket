@@ -606,6 +606,19 @@ const Index = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1.5 py-0.5 rounded bg-muted/80 border border-border">{market.category}</span>
+                    {(() => {
+                      const ev = (eventMemberMap as Map<string, { slug: string; title: string }>).get(market.id);
+                      if (!ev) return null;
+                      return (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate(`/event/${ev.slug}`); }}
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 border border-primary/30 text-primary truncate max-w-[140px] flex items-center gap-0.5 hover:bg-primary/20"
+                          title={`Part of: ${ev.title}`}
+                        >
+                          <Crown className="w-2.5 h-2.5 shrink-0" /> <span className="truncate">{ev.title}</span>
+                        </button>
+                      );
+                    })()}
                     {isBoosted && boost && user?.id === market.creatorAddress && <BoostCountdown endsAt={boost.ends_at} tier={boost.tier} compact />}
                     {!isBoosted && market.trending && (
                       <span className="text-[10px] font-bold text-primary flex items-center gap-0.5"><Zap className="w-3 h-3" /> Trending</span>
