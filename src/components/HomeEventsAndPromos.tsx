@@ -174,7 +174,7 @@ const HomeEventsAndPromos = () => {
 
   const hasHero = heroBanners.length > 0;
   const hasFeatured = featuredBanners.length > 0;
-  const hasEvents = events.length > 0;
+  const hasEvents = false; // events row disabled on home for cleaner layout
 
   if (!hasHero && !hasFeatured && !hasEvents) return null;
 
