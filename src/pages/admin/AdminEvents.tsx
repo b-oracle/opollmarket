@@ -26,6 +26,7 @@ const AdminEvents = () => {
   const [newEndDate, setNewEndDate] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [marketSearch, setMarketSearch] = useState("");
+  const [selectedMarketIds, setSelectedMarketIds] = useState<Set<string>>(new Set());
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true);
@@ -148,6 +149,26 @@ const AdminEvents = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-event-members", selectedEventId] });
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to add"),
+  });
+
+  const bulkAddMembers = useMutation({
+    mutationFn: async (marketIds: string[]) => {
+      if (!selectedEventId || marketIds.length === 0) return;
+      const base = members.length;
+      const rows = marketIds.map((mid, i) => ({
+        event_id: selectedEventId,
+        market_id: mid,
+        sort_order: base + i,
+      }));
+      const { error } = await supabase.from("market_event_members" as any).insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: (_d, marketIds) => {
+      toast.success(`Added ${marketIds.length} market${marketIds.length === 1 ? "" : "s"}`);
+      setSelectedMarketIds(new Set());
       qc.invalidateQueries({ queryKey: ["admin-event-members", selectedEventId] });
     },
     onError: (e: any) => toast.error(e.message || "Failed to add"),
@@ -448,31 +469,94 @@ const AdminEvents = () => {
                       className="w-full pl-9 pr-3 py-2 rounded-md border border-border bg-background text-sm"
                     />
                   </div>
-                  <div className="max-h-72 overflow-y-auto space-y-1">
-                    {searchResults
-                      .filter((mk: any) => !memberMarketIds.has(mk.id))
-                      .map((mk: any) => (
-                        <button
-                          key={mk.id}
-                          onClick={() => addMember.mutate(mk.id)}
-                          className="w-full text-left px-3 py-2 rounded hover:bg-muted flex items-center gap-2.5"
-                        >
-                          {mk.image_url && (
-                            <img src={mk.image_url} className="w-7 h-7 rounded object-cover" alt="" />
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <div className="text-sm font-medium truncate">{mk.title}</div>
-                            <div className="text-[10px] text-muted-foreground">
-                              {Math.round(Number(mk.yes_price || 0) * 100)}% · {mk.status}
-                            </div>
+
+                  {(() => {
+                    const available = searchResults.filter((mk: any) => !memberMarketIds.has(mk.id));
+                    const allChecked = available.length > 0 && available.every((mk: any) => selectedMarketIds.has(mk.id));
+                    const toggleAll = () => {
+                      setSelectedMarketIds((prev) => {
+                        const next = new Set(prev);
+                        if (allChecked) available.forEach((mk: any) => next.delete(mk.id));
+                        else available.forEach((mk: any) => next.add(mk.id));
+                        return next;
+                      });
+                    };
+                    return (
+                      <>
+                        {available.length > 0 && (
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={allChecked}
+                                onChange={toggleAll}
+                                className="w-4 h-4 accent-primary"
+                              />
+                              Select all ({available.length})
+                            </label>
+                            <button
+                              onClick={() => bulkAddMembers.mutate(Array.from(selectedMarketIds))}
+                              disabled={selectedMarketIds.size === 0 || bulkAddMembers.isPending}
+                              className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {bulkAddMembers.isPending ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Plus className="w-3.5 h-3.5" />
+                              )}
+                              Add {selectedMarketIds.size > 0 ? `${selectedMarketIds.size} ` : ""}selected
+                            </button>
                           </div>
-                          <Plus className="w-4 h-4 text-primary" />
-                        </button>
-                      ))}
-                    {marketSearch.length >= 2 && searchResults.length === 0 && (
-                      <p className="text-xs text-muted-foreground p-2">No matches</p>
-                    )}
-                  </div>
+                        )}
+                        <div className="max-h-72 overflow-y-auto space-y-1">
+                          {available.map((mk: any) => {
+                            const checked = selectedMarketIds.has(mk.id);
+                            return (
+                              <div
+                                key={mk.id}
+                                className={`w-full px-3 py-2 rounded flex items-center gap-2.5 transition ${
+                                  checked ? "bg-primary/10" : "hover:bg-muted"
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => {
+                                    setSelectedMarketIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(mk.id)) next.delete(mk.id);
+                                      else next.add(mk.id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="w-4 h-4 accent-primary shrink-0"
+                                />
+                                {mk.image_url && (
+                                  <img src={mk.image_url} className="w-7 h-7 rounded object-cover" alt="" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-sm font-medium truncate">{mk.title}</div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {Math.round(Number(mk.yes_price || 0) * 100)}% · {mk.status}
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() => addMember.mutate(mk.id)}
+                                  className="p-1 rounded hover:bg-background"
+                                  title="Add now"
+                                >
+                                  <Plus className="w-4 h-4 text-primary" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                          {marketSearch.length >= 2 && available.length === 0 && (
+                            <p className="text-xs text-muted-foreground p-2">No matches</p>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
