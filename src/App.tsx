@@ -634,6 +634,7 @@ const App = () => {
                           <Route path="escrows" element={<AdminEscrows />} />
                           <Route path="call-events" element={<AdminCallEvents />} />
                           <Route path="space-bans" element={<AdminSpaceBans />} />
+                          <Route path="events" element={<AdminEvents />} />
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />
