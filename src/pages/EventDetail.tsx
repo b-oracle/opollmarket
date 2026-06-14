@@ -192,7 +192,7 @@ const EventDetail = () => {
                   }}
                   formatter={(v: any) => `${v}%`}
                 />
-                {series.map((s) => (
+                {topSeries.map((s) => (
                   <Line
                     key={s.marketId}
                     type="monotone"
@@ -200,7 +200,16 @@ const EventDetail = () => {
                     name={s.label}
                     stroke={s.color}
                     strokeWidth={2}
-                    dot={false}
+                    dot={(props: any) => {
+                      if (props.index !== lastIndex) return <g key={`d-${props.index}`} />;
+                      return (
+                        <g key={`d-${props.index}`}>
+                          <circle cx={props.cx} cy={props.cy} r={8} fill={s.color} opacity={0.2} />
+                          <circle cx={props.cx} cy={props.cy} r={4} fill={s.color} stroke="hsl(var(--background))" strokeWidth={1.5} />
+                        </g>
+                      );
+                    }}
+                    activeDot={{ r: 5, fill: s.color, stroke: "hsl(var(--background))", strokeWidth: 2 }}
                     isAnimationActive={false}
                   />
                 ))}
