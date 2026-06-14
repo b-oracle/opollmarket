@@ -77,6 +77,12 @@ const EventDetail = () => {
     [members]
   );
 
+  const topSeries = useMemo(
+    () => [...series].sort((a, b) => b.currentYes - a.currentYes).slice(0, 4),
+    [series]
+  );
+  const lastIndex = chartData.length - 1;
+
   if (eventLoading || membersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
