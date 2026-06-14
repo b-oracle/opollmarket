@@ -77,6 +77,12 @@ const EventDetail = () => {
     [members]
   );
 
+  const topSeries = useMemo(
+    () => [...series].sort((a, b) => b.currentYes - a.currentYes).slice(0, 4),
+    [series]
+  );
+  const lastIndex = chartData.length - 1;
+
   if (eventLoading || membersLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -139,7 +145,7 @@ const EventDetail = () => {
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-5">
         {/* Legend */}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-          {series.map((s) => (
+          {topSeries.map((s) => (
             <div key={s.marketId} className="flex items-center gap-1.5 text-sm">
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
               <span className="text-muted-foreground">{s.label}</span>
@@ -186,7 +192,7 @@ const EventDetail = () => {
                   }}
                   formatter={(v: any) => `${v}%`}
                 />
-                {series.map((s) => (
+                {topSeries.map((s) => (
                   <Line
                     key={s.marketId}
                     type="monotone"
@@ -194,7 +200,16 @@ const EventDetail = () => {
                     name={s.label}
                     stroke={s.color}
                     strokeWidth={2}
-                    dot={false}
+                    dot={(props: any) => {
+                      if (props.index !== lastIndex) return <g key={`d-${props.index}`} />;
+                      return (
+                        <g key={`d-${props.index}`}>
+                          <circle cx={props.cx} cy={props.cy} r={8} fill={s.color} opacity={0.2} />
+                          <circle cx={props.cx} cy={props.cy} r={4} fill={s.color} stroke="hsl(var(--background))" strokeWidth={1.5} />
+                        </g>
+                      );
+                    }}
+                    activeDot={{ r: 5, fill: s.color, stroke: "hsl(var(--background))", strokeWidth: 2 }}
                     isAnimationActive={false}
                   />
                 ))}
