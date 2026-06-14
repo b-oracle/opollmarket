@@ -145,7 +145,7 @@ const EventDetail = () => {
       <div className="max-w-3xl mx-auto px-4 pt-4 space-y-5">
         {/* Legend */}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-          {series.map((s) => (
+          {topSeries.map((s) => (
             <div key={s.marketId} className="flex items-center gap-1.5 text-sm">
               <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
               <span className="text-muted-foreground">{s.label}</span>
