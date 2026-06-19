@@ -33,7 +33,10 @@ function getBscRpcUrlCandidates(method: string): string[] {
       "https://bnb.api.onfinality.io/public",
     ]
     : [];
-  return [logRpc, primary, fallback, ...publicLogFallbacks]
+  const ordered = method === "eth_getLogs"
+    ? [logRpc, ...publicLogFallbacks, primary, fallback]
+    : [primary, fallback];
+  return ordered
     .filter((url): url is string => !!url)
     .filter((url, idx, arr) => arr.indexOf(url) === idx);
 }
