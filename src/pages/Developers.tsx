@@ -251,10 +251,17 @@ const Developers = () => {
               },
               {
                 method: "POST", action: "deposit",
-                desc: "Initiate a crypto deposit. Requires user Bearer token.",
-                params: "Body: { amount, currency? }",
-                response: `{ "pay_address": "...", "payment_id": "..." }`,
+                desc: "Get the user's permanent USDT-BEP20 deposit address on BNB Smart Chain. Funds sent to this address are auto-credited after 12 confirmations. Requires user Bearer token.",
+                params: "Body: { pay_currency?: \"usdtbsc\" }  // only usdtbsc supported",
+                response: `{ "address": "0x...", "network": "bsc", "chain_id": 56, "pay_currency": "usdtbsc", "token_contract": "0x55d398326f99059ff775485246999027b3197955", "confirmations_required": 12 }`,
               },
+              {
+                method: "POST", action: "deposit-status",
+                desc: "List recent BSC deposits for the authenticated user (optionally filtered by tx_hash). Use this to poll until status becomes \"credited\".",
+                params: "Body: { tx_hash?: string }",
+                response: `{ "network": "bsc", "deposits": [{ "tx_hash": "0x...", "amount_usd": 5.35, "status": "credited", "confirmations": 12, "confirmations_required": 12, "transaction_id": "..." }] }`,
+              },
+
               {
                 method: "GET", action: "comments",
                 desc: "Read comments for a market. Supports pagination.",
@@ -320,7 +327,7 @@ const Developers = () => {
                 { method: "setUserToken(jwt)", desc: "Set the user's auth token for authenticated actions." },
                 { method: "placeBet({ marketId, side, amount, optionId? })", desc: "Place a prediction (requires user token)." },
                 { method: "createUser({ email, password })", desc: "Create a new user account." },
-                { method: "deposit({ amount, currency? })", desc: "Initiate a deposit (requires user token)." },
+                { method: "deposit()", desc: "Get the user's BSC (USDT BEP20) deposit address. Returns { address } — funds sent here auto-credit after 12 confirmations." },
                 { method: "embedMarket(marketId, targetEl)", desc: "Render an embedded market widget into a DOM element." },
               ].map((m) => (
               <div key={m.method} className="flex flex-col sm:flex-row gap-1 sm:gap-3 items-start">

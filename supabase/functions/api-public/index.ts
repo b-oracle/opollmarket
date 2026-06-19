@@ -376,38 +376,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ==================== DEPOSIT ====================
+    // ==================== DEPOSIT (Crypto / BSC native) ====================
+    // NEW: Returns the caller's permanent BEP20 (BSC) deposit address. Any
+    // USDT (BEP20) sent to that address is auto-credited by the on-chain
+    // poller after 12 confirmations. Replaces the legacy NOWPayments flow.
     if (action === "deposit" && req.method === "POST") {
       if (!hasPermission("deposit")) return err("Permission denied: deposit not allowed", 403);
 
       const userId = await getAuthUser();
       if (!userId) return err("User authentication required", 401);
 
-      const body = await req.json();
-      const { amount, pay_currency, currency } = body;
-      if (!amount || typeof amount !== "number" || amount <= 0) return err("Invalid amount");
-
-      // Supported crypto networks for deposits
-      const supportedCurrencies = ["usdtbsc", "usdttrc20", "usdterc20", "usdtsol", "usdtmatic"];
-      const selectedCurrency = pay_currency || currency || "usdtbsc";
-      if (!supportedCurrencies.includes(selectedCurrency)) {
-        return err(`Invalid pay_currency. Supported: ${supportedCurrencies.join(", ")}`);
+      // pay_currency is accepted for backward compatibility but only USDT-BSC
+      // is supported on the native rail. Any other value is rejected so partner
+      // apps don't silently expect a different asset to be credited.
+      let body: any = {};
+      try { body = await req.json(); } catch { /* body optional */ }
+      const requested = String(body?.pay_currency || body?.currency || "usdtbsc").toLowerCase();
+      if (requested !== "usdtbsc" && requested !== "usdt" && requested !== "usdt-bsc" && requested !== "usdt_bsc") {
+        return err("Only usdtbsc (USDT on BNB Smart Chain) is supported. Send USDT (BEP20) to the returned address.", 400);
       }
 
-      // Invoke existing create-deposit edge function
-      const depositUrl = `${supabaseUrl}/functions/v1/create-deposit`;
-      const resp = await fetch(depositUrl, {
+      const resp = await fetch(`${supabaseUrl}/functions/v1/get-bsc-deposit-address`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: req.headers.get("authorization") || "",
           apikey: anonKey,
         },
-        body: JSON.stringify({ amount, pay_currency: selectedCurrency }),
       });
-
       const result = await resp.json();
-      return json(result, resp.status);
+      if (!resp.ok || !result?.address) {
+        return err(result?.error || "Failed to allocate deposit address", resp.status || 500);
+      }
+
+      return json({
+        address: result.address,
+        network: "bsc",
+        chain_id: 56,
+        pay_currency: "usdtbsc",
+        token_contract: "0x55d398326f99059ff775485246999027b3197955",
+        confirmations_required: 12,
+        note: "Send USDT (BEP20) on BNB Smart Chain to this address. Funds are credited automatically after 12 confirmations. Do not send other assets or other networks — they will not be credited automatically.",
+      });
     }
 
     // ==================== DEPOSIT (Flutterwave / NGN) ====================
@@ -463,30 +473,46 @@ Deno.serve(async (req) => {
     }
 
     // ==================== DEPOSIT STATUS ====================
+    // NEW: Reports the most recent BSC-native deposits for the caller. The
+    // legacy `payment_id` lookup (NOWPayments) is no longer supported. Partners
+    // should poll this endpoint and watch for `status: "credited"`.
     if (action === "deposit-status" && req.method === "POST") {
       if (!hasPermission("read")) return err("Permission denied", 403);
 
       const userId = await getAuthUser();
       if (!userId) return err("User authentication required", 401);
 
-      const body = await req.json();
-      const { payment_id } = body;
-      if (!payment_id) return err("payment_id is required");
+      let body: any = {};
+      try { body = await req.json(); } catch { /* body optional */ }
+      const txHash = typeof body?.tx_hash === "string" ? body.tx_hash.toLowerCase() : null;
 
-      const depositUrl = `${supabaseUrl}/functions/v1/get-deposit-status`;
-      const resp = await fetch(depositUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: req.headers.get("authorization") || "",
-          apikey: anonKey,
-        },
-        body: JSON.stringify({ payment_id }),
+      let query = admin
+        .from("bsc_deposit_events")
+        .select("id, tx_hash, amount_usd, status, confirmations, detected_at, credited_at, credited_tx_id")
+        .eq("user_id", userId)
+        .order("detected_at", { ascending: false })
+        .limit(20);
+      if (txHash) query = query.eq("tx_hash", txHash);
+
+      const { data, error: depErr } = await query;
+      if (depErr) return err(safeError(depErr, "Failed to load deposit status"), 500);
+
+      return json({
+        network: "bsc",
+        deposits: (data ?? []).map((d) => ({
+          tx_hash: d.tx_hash,
+          amount_usd: Number(d.amount_usd),
+          status: d.status, // "detected" | "credited" | "manual_review"
+          confirmations: d.confirmations,
+          confirmations_required: 12,
+          detected_at: d.detected_at,
+          credited_at: d.credited_at,
+          transaction_id: d.credited_tx_id,
+        })),
       });
-
-      const result = await resp.json();
-      return json(result, resp.status);
     }
+
+
 
     // ==================== CREATE MARKET ====================
     if (action === "create-market" && req.method === "POST") {
