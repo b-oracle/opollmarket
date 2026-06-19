@@ -327,7 +327,7 @@ const Developers = () => {
                 { method: "setUserToken(jwt)", desc: "Set the user's auth token for authenticated actions." },
                 { method: "placeBet({ marketId, side, amount, optionId? })", desc: "Place a prediction (requires user token)." },
                 { method: "createUser({ email, password })", desc: "Create a new user account." },
-                { method: "deposit({ amount, currency? })", desc: "Initiate a deposit (requires user token)." },
+                { method: "deposit()", desc: "Get the user's BSC (USDT BEP20) deposit address. Returns { address } — funds sent here auto-credit after 12 confirmations." },
                 { method: "embedMarket(marketId, targetEl)", desc: "Render an embedded market widget into a DOM element." },
               ].map((m) => (
               <div key={m.method} className="flex flex-col sm:flex-row gap-1 sm:gap-3 items-start">
