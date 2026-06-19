@@ -181,28 +181,23 @@ const BusinessApiKeys = () => {
 
             {/* Deposit lifecycle & top-up flow */}
             <div className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 space-y-2">
-              <p className="text-xs font-semibold text-amber-500">Deposit Lifecycle (updated)</p>
+              <p className="text-xs font-semibold text-amber-500">Crypto Deposit Flow (BSC native)</p>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Crypto deposits returned by <code className="text-foreground">deposit-status</code> can resolve to one of these statuses:
+                <code className="text-foreground">deposit</code> returns the user's permanent BEP20 address. Send <strong>USDT (BEP20)</strong> on BNB Smart Chain to that address — any amount, any time. Deposits are auto-credited after 12 block confirmations (~40 seconds). Do not send other tokens or other networks; they will not be auto-credited.
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Poll <code className="text-foreground">deposit-status</code> (optionally filtered by <code className="text-foreground">tx_hash</code>) to watch each transfer. Statuses returned per deposit:
               </p>
               <ul className="text-[11px] text-muted-foreground space-y-1 list-disc pl-4">
-                <li><code className="text-foreground">pending</code> — invoice created, awaiting customer payment.</li>
-                <li><code className="text-foreground">confirmed</code> — full amount received (within 0.2% tolerance) and credited.</li>
-                <li>
-                  <code className="text-foreground">awaiting_topup</code> — customer underpaid by more than 0.2%. Response includes
-                  <code className="text-foreground"> received_amount_usd</code>, <code className="text-foreground">shortfall_usd</code>, and
-                  <code className="text-foreground"> topup_deadline</code> (1 hour). The customer may send the remaining amount to the same payment address;
-                  once received, the deposit auto-credits.
-                </li>
-                <li><code className="text-foreground">admin_review</code> — top-up window expired without resolution. Held for manual review by Opoll staff.</li>
-                <li><code className="text-foreground">wrong_asset</code> / <code className="text-foreground">expired</code> — flagged for review.</li>
+                <li><code className="text-foreground">detected</code> — on-chain transfer seen; waiting for 12 confirmations.</li>
+                <li><code className="text-foreground">credited</code> — confirmed and added to the user's balance (<code className="text-foreground">transaction_id</code> populated).</li>
+                <li><code className="text-foreground">manual_review</code> — flagged for staff review (amount thresholds / reorg / verification mismatch).</li>
               </ul>
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                If a webhook URL is configured, your endpoint receives a <code className="text-foreground">deposit.awaiting_topup</code> event
-                with <code className="text-foreground">{`{ payment_id, user_id, requested_amount, received_amount, shortfall, topup_deadline }`}</code>
-                as soon as a partial payment is detected, followed by <code className="text-foreground">deposit.confirmed</code> if the customer tops up in time.
+                The legacy NOWPayments invoice flow (with <code className="text-foreground">payment_id</code>, <code className="text-foreground">awaiting_topup</code>, partial-payment top-ups) has been retired. Existing partners should drop <code className="text-foreground">payment_id</code> from their integration and switch to address-based polling.
               </p>
             </div>
+
           </div>
         )}
       </div>
