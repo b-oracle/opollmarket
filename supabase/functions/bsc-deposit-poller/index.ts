@@ -135,8 +135,11 @@ Deno.serve(async (req) => {
       const recipientTopics = Array.from(addrMap.keys()).map(
         (a) => "0x" + a.slice(2).toLowerCase().padStart(64, "0"),
       );
-      // Chunk recipients (some RPCs cap topic array length) and block ranges
-      const RECIP_CHUNK = 100;
+      // Chunk recipients very tightly: public BSC RPCs reject large OR-topic
+      // filters even for tiny block spans, which can stall the scanner behind
+      // uncredited deposits. Smaller recipient batches keep each eth_getLogs
+      // query under provider limits while preserving deterministic coverage.
+      const RECIP_CHUNK = 10;
       for (let start = from; start <= to; start += CHUNK_BLOCKS) {
         const end = Math.min(to, start + CHUNK_BLOCKS - 1);
         for (let ri = 0; ri < recipientTopics.length; ri += RECIP_CHUNK) {
