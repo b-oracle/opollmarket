@@ -161,16 +161,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Non-blocking banned-user check (prevents sign-in promise stalls)
           void (async () => {
             const blockResult = await Promise.race([
-              supabase
-                .from("profiles")
-                .select("is_blocked")
-                .eq("id", signedInUserId)
-                .maybeSingle(),
+              supabase.rpc("am_i_blocked"),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
             ]);
 
             if (!mounted.current || !blockResult || !("data" in blockResult)) return;
-            if (blockResult.data?.is_blocked) {
+            if (blockResult.data === true) {
               await supabase.auth.signOut();
             }
           })().catch(() => {});

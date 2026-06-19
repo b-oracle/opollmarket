@@ -157,7 +157,7 @@ const Auth = () => {
             Promise.resolve(
               statelessRead
                 .from("profiles")
-                .select("display_name, is_blocked")
+                .select("display_name")
                 .eq("id", userId)
                 .single()
             ),
@@ -165,7 +165,13 @@ const Auth = () => {
           );
 
           const profile = profileResult?.data;
-          if (profile?.is_blocked) {
+
+          // Block check via SECURITY DEFINER RPC (is_blocked is no longer client-readable)
+          const blockedRes = await withTimeout(
+            Promise.resolve(supabase.rpc("am_i_blocked")),
+            5000
+          );
+          if (blockedRes?.data === true) {
             await supabase.auth.signOut();
             toast.error("Your account has been banned. Please contact support.");
             return;
