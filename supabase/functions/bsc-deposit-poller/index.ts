@@ -16,8 +16,8 @@ const TOKENS: Record<string, { symbol: string; decimals: number }> = {
 };
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 const CONFIRMATIONS_REQUIRED = 12;
-const MAX_BLOCKS_PER_RUN = 500;   // ~25 min of BSC per tick
-const CHUNK_BLOCKS = 25;          // safer default — public BSC RPCs cap eth_getLogs aggressively
+const MAX_BLOCKS_PER_RUN = 5000;  // ~4h of BSC per tick; lets the scanner catch up after RPC outages
+const CHUNK_BLOCKS = 500;         // working log-capable fallbacks handle this while bad RPCs fail over
 const MIN_CHUNK_BLOCKS = 1;       // floor when halving on "limit exceeded"
 const MIN_USD = 1;                // ignore dust
 const MAX_AUTO_CREDIT_USD_FALLBACK = Number(Deno.env.get("BSC_MAX_AUTO_CREDIT_USD") ?? "5000");
