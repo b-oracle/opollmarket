@@ -1,10 +1,21 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { mnemonicToAccount } from "https://esm.sh/viem@2.21.0/accounts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const USDT_BSC_CONTRACT = "0x55d398326f99059ff775485246999027b3197955";
+
+function deriveAddress(seed: string, index: number): string {
+  const trimmed = seed.trim();
+  if (/^(0x)?[0-9a-fA-F]{64}$/.test(trimmed)) {
+    throw new Error("BSC_DEPOSIT_MASTER_SEED must be a BIP39 mnemonic for multi-user derivation");
+  }
+  return mnemonicToAccount(trimmed, { addressIndex: index }).address.toLowerCase();
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -87,62 +98,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    const apiKey = Deno.env.get("NOWPAYMENTS_API_KEY");
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Payment service not configured" }),
-        { status: 500, headers: corsHeaders }
-      );
+    if (pay_currency && String(pay_currency).toLowerCase() !== "usdtbsc") {
+      return new Response(JSON.stringify({ error: "Only USDT on BSC is supported for crypto deposits" }), {
+        status: 400, headers: corsHeaders,
+      });
     }
 
-    const orderId = `deposit_${userId}_${Date.now()}`;
-
-    // Use Create Payment API (returns pay_address for in-app display)
-    const npResponse = await fetch("https://api.nowpayments.io/v1/payment", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        price_amount: amount,
-        price_currency: "usd",
-        pay_currency: pay_currency || "usdtbsc",
-        order_id: orderId,
-        order_description: `Deposit $${amount} to OPollmarket`,
-        ipn_callback_url: `${Deno.env.get("SUPABASE_URL")}/functions/v1/nowpayments-webhook`,
-      }),
-    });
-
-    if (!npResponse.ok) {
-      const errText = await npResponse.text();
-      console.error("NOWPayments error:", errText);
-      return new Response(
-        JSON.stringify({ error: "Failed to create payment" }),
-        { status: 500, headers: corsHeaders }
-      );
+    const seed = Deno.env.get("BSC_DEPOSIT_MASTER_SEED");
+    if (!seed) {
+      return new Response(JSON.stringify({ error: "BSC deposit service not configured" }), {
+        status: 500, headers: corsHeaders,
+      });
     }
 
-    const payment = await npResponse.json();
+    const { data: reserved, error: resErr } = await adminClient
+      .rpc("reserve_bsc_deposit_slot", { _user_id: userId });
+    if (resErr) throw resErr;
+    const row = Array.isArray(reserved) ? reserved[0] : reserved;
+    if (!row) throw new Error("reserve_bsc_deposit_slot returned no row");
 
-    // Insert pending deposit transaction (adminClient already created above)
-
-    await adminClient.from("transactions").insert({
-      user_id: userId,
-      type: "deposit",
-      amount: amount,
-      status: "pending",
-      nowpayments_payment_id: String(payment.payment_id),
-    });
+    let payAddress = row.address as string | undefined;
+    if (!payAddress || String(payAddress).startsWith("pending:")) {
+      const derived = deriveAddress(seed, Number(row.hd_index));
+      const { data: finalized, error: finErr } = await adminClient.rpc("finalize_bsc_deposit_address", {
+        _user_id: userId,
+        _hd_index: Number(row.hd_index),
+        _address: derived,
+      });
+      if (finErr) throw finErr;
+      payAddress = (Array.isArray(finalized) ? finalized[0]?.address : (finalized as any)?.address) ?? derived;
+    }
 
     return new Response(
       JSON.stringify({
-        payment_id: payment.payment_id,
-        pay_address: payment.pay_address,
-        pay_amount: payment.pay_amount,
-        pay_currency: payment.pay_currency,
-        expiration_estimate_date: payment.expiration_estimate_date,
-        payment_status: payment.payment_status,
+        payment_id: null,
+        deposit_address: payAddress,
+        pay_address: payAddress,
+        pay_amount: amount,
+        pay_currency: "usdtbsc",
+        network: "BSC",
+        token_contract: USDT_BSC_CONTRACT,
+        payment_status: "address_assigned",
+        instructions: "Send USDT on BSC (BEP20) to this permanent deposit address. It will auto-credit after 12 confirmations.",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
