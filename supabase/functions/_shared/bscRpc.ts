@@ -22,6 +22,25 @@ export function getBscRpcUrls(): { primary: string; fallback: string | null } {
   return { primary, fallback };
 }
 
+function getBscRpcUrlCandidates(method: string): string[] {
+  const { primary, fallback } = getBscRpcUrls();
+  const logRpc = Deno.env.get("BSC_LOG_RPC_URL") || null;
+  const publicLogFallbacks = method === "eth_getLogs"
+    ? [
+      "https://bsc-rpc.publicnode.com",
+      "https://bsc.drpc.org",
+      "https://bsc.rpc.blxrbdn.com",
+      "https://bnb.api.onfinality.io/public",
+    ]
+    : [];
+  const ordered = method === "eth_getLogs"
+    ? [logRpc, ...publicLogFallbacks, primary, fallback]
+    : [primary, fallback];
+  return ordered
+    .filter((url): url is string => !!url)
+    .filter((url, idx, arr) => arr.indexOf(url) === idx);
+}
+
 async function callOne(url: string, method: string, params: unknown[]): Promise<unknown> {
   const r = await fetch(url, {
     method: "POST",
@@ -48,51 +67,49 @@ export async function bscRpc(
   params: unknown[],
   opts: BscRpcOptions = {},
 ): Promise<unknown> {
-  const { primary, fallback } = getBscRpcUrls();
-  try {
-    return await callOne(primary, method, params);
-  } catch (primaryErr) {
-    if (!fallback) throw primaryErr;
+  const urls = getBscRpcUrlCandidates(method);
+  const errors: Error[] = [];
+
+  for (let i = 0; i < urls.length; i++) {
     try {
-      const result = await callOne(fallback, method, params);
-      // Warn-level alert: primary degraded but we recovered via fallback.
-      if (opts.admin && opts.alertSource) {
+      const result = await callOne(urls[i], method, params);
+      if (i > 0 && opts.admin && opts.alertSource) {
         try {
           await opts.admin.rpc("record_system_alert", {
             _severity: "warning",
             _source: opts.alertSource,
             _code: "bsc_rpc_primary_failover",
-            _message: `Primary BSC RPC failed, served via fallback: ${(primaryErr as Error).message}`,
-            _details: { method, primary_error: (primaryErr as Error).message },
+            _message: `Primary BSC RPC failed, served via fallback: ${errors[0]?.message ?? "unknown error"}`,
+            _details: { method, primary_error: errors[0]?.message ?? null, fallback_index: i },
             _dedupe_minutes: 10,
           });
         } catch (_) { /* swallow */ }
       }
       return result;
-    } catch (fallbackErr) {
-      if (opts.admin && opts.alertSource) {
-        try {
-          await opts.admin.rpc("record_system_alert", {
-            _severity: "critical",
-            _source: opts.alertSource,
-            _code: "bsc_rpc_total_failure",
-            _message: `Both BSC RPCs failed for ${method}.`,
-            _details: {
-              method,
-              primary_error: (primaryErr as Error).message,
-              fallback_error: (fallbackErr as Error).message,
-            },
-            _dedupe_minutes: 5,
-          });
-        } catch (_) { /* swallow */ }
-      }
-      // deno-lint-ignore no-explicit-any
-      const wrapped: any = new Error(
-        `bscRpc both endpoints failed (${method}): primary=${(primaryErr as Error).message}; fallback=${(fallbackErr as Error).message}`,
-      );
-      wrapped.primaryError = primaryErr;
-      wrapped.fallbackError = fallbackErr;
-      throw wrapped;
+    } catch (err) {
+      errors.push(err as Error);
     }
   }
+
+  if (opts.admin && opts.alertSource) {
+    try {
+      await opts.admin.rpc("record_system_alert", {
+        _severity: "critical",
+        _source: opts.alertSource,
+        _code: "bsc_rpc_total_failure",
+        _message: `All BSC RPCs failed for ${method}.`,
+        _details: { method, errors: errors.map((e) => e.message) },
+        _dedupe_minutes: 5,
+      });
+    } catch (_) { /* swallow */ }
+  }
+
+  // deno-lint-ignore no-explicit-any
+  const wrapped: any = new Error(
+    `bscRpc all endpoints failed (${method}): ${errors.map((e) => e.message).join("; ")}`,
+  );
+  wrapped.errors = errors;
+  wrapped.primaryError = errors[0];
+  wrapped.fallbackError = errors[1];
+  throw wrapped;
 }
