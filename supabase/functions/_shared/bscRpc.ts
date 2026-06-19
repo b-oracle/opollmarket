@@ -22,6 +22,22 @@ export function getBscRpcUrls(): { primary: string; fallback: string | null } {
   return { primary, fallback };
 }
 
+function getBscRpcUrlCandidates(method: string): string[] {
+  const { primary, fallback } = getBscRpcUrls();
+  const logRpc = Deno.env.get("BSC_LOG_RPC_URL") || null;
+  const publicLogFallbacks = method === "eth_getLogs"
+    ? [
+      "https://bsc-rpc.publicnode.com",
+      "https://bsc.drpc.org",
+      "https://bsc.rpc.blxrbdn.com",
+      "https://bnb.api.onfinality.io/public",
+    ]
+    : [];
+  return [logRpc, primary, fallback, ...publicLogFallbacks]
+    .filter((url): url is string => !!url)
+    .filter((url, idx, arr) => arr.indexOf(url) === idx);
+}
+
 async function callOne(url: string, method: string, params: unknown[]): Promise<unknown> {
   const r = await fetch(url, {
     method: "POST",
