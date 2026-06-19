@@ -5894,6 +5894,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: number
       }
+      am_i_blocked: { Args: never; Returns: boolean }
       bsc_user_24h_total_usd: { Args: { _user_id: string }; Returns: number }
       buy_update_market_prices: {
         Args: {
