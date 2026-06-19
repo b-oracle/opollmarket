@@ -43,10 +43,11 @@ const API_ENDPOINTS = [
   { method: "POST", action: "boost-market", perm: "trade", desc: "Boost market visibility" },
   { method: "POST", action: "create-market", perm: "trade", desc: "Create a market" },
   { method: "POST", action: "create-user", perm: "trade", desc: "Create a user account" },
-  { method: "POST", action: "deposit", perm: "deposit", desc: "Initiate crypto deposit" },
+  { method: "POST", action: "deposit", perm: "deposit", desc: "Get user's BSC deposit address (USDT BEP20)" },
   { method: "POST", action: "deposit-flutterwave", perm: "deposit", desc: "Initiate NGN deposit (Flutterwave)" },
   { method: "POST", action: "deposit-payaza", perm: "deposit", desc: "Initiate NGN deposit (Payaza)" },
-  { method: "POST", action: "deposit-status", perm: "read", desc: "Poll deposit status" },
+  { method: "POST", action: "deposit-status", perm: "read", desc: "List recent BSC deposits & confirmations" },
+
   { method: "GET/POST", action: "webhooks", perm: "any", desc: "Manage webhook config" },
   { method: "GET", action: "comments", perm: "read", desc: "Read market comments" },
   { method: "POST", action: "comments", perm: "trade", desc: "Post a comment" },
