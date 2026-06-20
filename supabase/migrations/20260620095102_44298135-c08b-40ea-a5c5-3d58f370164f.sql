@@ -1,0 +1,3 @@
+UPDATE public.bsc_deposit_events SET status='detected', review_reason='Manual override: tx verified on-chain (reverify precision bug false-negative)', reviewed_at=now() WHERE id IN ('64db6ff0-5ddc-4d92-bc63-9ac3955b011b','d5da4b3e-c437-4775-8273-c518ce1ca2eb');
+SELECT public.credit_bsc_deposit('64db6ff0-5ddc-4d92-bc63-9ac3955b011b'::uuid);
+SELECT public.credit_bsc_deposit('d5da4b3e-c437-4775-8273-c518ce1ca2eb'::uuid);
