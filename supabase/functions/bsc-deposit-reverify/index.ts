@@ -108,12 +108,25 @@ Deno.serve(async (req) => {
           if (receipt.status !== "0x1") {
             outcome = "tx_failed";
           } else {
-            const log = (receipt.logs || []).find((l: any) =>
-              Number(BigInt(l.logIndex)) === Number(ev.log_index)
-              && String(l.address).toLowerCase() === String(ev.token_contract).toLowerCase()
-              && ("0x" + String(l.topics?.[2] ?? "").slice(-40)).toLowerCase() === String(ev.address).toLowerCase()
-              && BigInt(l.data) === BigInt(ev.amount_wei),
-            );
+            // NOTE: ev.amount_wei comes back from PostgREST as a JS number for
+            // `numeric` columns, which loses precision above 2^53 (USDT/BNB wei
+            // amounts are routinely 18 digits ≈ 2^60). Comparing BigInt(ev.amount_wei)
+            // directly against the on-chain log data caused legitimate deposits
+            // to be flagged as `mismatch` and auto-rejected.
+            //
+            // We now identify the log by (logIndex + contract + recipient) — a
+            // tuple that is already unique per receipt — and treat the amount
+            // check as a tolerance comparison (≤ 2^14 wei drift, i.e. dust).
+            const PRECISION_TOLERANCE_WEI = 16384n;
+            const expectedWei = BigInt(String(ev.amount_wei).split(".")[0]);
+            const log = (receipt.logs || []).find((l: any) => {
+              if (Number(BigInt(l.logIndex)) !== Number(ev.log_index)) return false;
+              if (String(l.address).toLowerCase() !== String(ev.token_contract).toLowerCase()) return false;
+              if (("0x" + String(l.topics?.[2] ?? "").slice(-40)).toLowerCase() !== String(ev.address).toLowerCase()) return false;
+              const observedWei = BigInt(l.data);
+              const diff = observedWei > expectedWei ? observedWei - expectedWei : expectedWei - observedWei;
+              return diff <= PRECISION_TOLERANCE_WEI;
+            });
             if (log) {
               outcome = "match";
               observed = {
@@ -125,6 +138,7 @@ Deno.serve(async (req) => {
             } else {
               outcome = "mismatch";
             }
+
           }
         }
       } catch (e) {
