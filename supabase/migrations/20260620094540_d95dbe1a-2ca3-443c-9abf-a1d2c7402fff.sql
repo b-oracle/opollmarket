@@ -1,0 +1,2 @@
+UPDATE public.bsc_deposit_events SET status='detected', review_reason='Manual override: tx verified on-chain (auto-reverify false-negative)', reviewed_at=now() WHERE id='0885981f-081d-4247-bb60-6492e2d34d79';
+SELECT public.credit_bsc_deposit('0885981f-081d-4247-bb60-6492e2d34d79'::uuid);
