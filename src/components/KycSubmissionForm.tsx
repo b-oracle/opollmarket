@@ -70,10 +70,7 @@ const KycSubmissionForm = ({ onSkip }: { onSkip?: () => void }) => {
     queryKey: ["kyc_status", user?.id],
     queryFn: async () => {
       if (!user) return "none";
-      const { data } = await supabase
-        .from("my_profile" as any)
-        .select("kyc_status")
-        .maybeSingle();
+      const { data } = await supabase.rpc("get_my_profile");
       return (data as any)?.kyc_status || "none";
     },
     enabled: !!user,
