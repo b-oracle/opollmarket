@@ -205,7 +205,7 @@ export default function AdminSpoofStats() {
             <div className="space-y-2">
               {(markets ?? []).map((m) => {
                 const e = edits[m.id];
-                const dirty = !!e && (e.v !== "" || e.p !== "");
+                const dirty = !!e && (e.v !== "" || e.p !== "" || e.l !== "");
                 return (
                   <div key={m.id} className="flex flex-col md:flex-row md:items-center gap-3 p-3 rounded-lg border bg-card">
                     {m.image_url && (
@@ -214,10 +214,10 @@ export default function AdminSpoofStats() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{m.title}</div>
                       <div className="text-[11px] text-muted-foreground">
-                        Real vol {fmt(Number(m.volume) || 0)} · Real participants {m.participants || 0} · {m.status}
+                        Real vol {fmt(Number(m.volume) || 0)} · Real liq {fmt(Number(m.liquidity) || 0)} · Real users {m.participants || 0} · {m.status}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="space-y-1">
                         <Label className="text-[10px] text-muted-foreground">Sim. vol ($)</Label>
                         <Input
@@ -226,6 +226,16 @@ export default function AdminSpoofStats() {
                           className="h-8 w-28"
                           defaultValue={Number(m.simulated_volume) || 0}
                           onChange={(ev) => setEdit(m.id, { v: ev.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">Sim. liq ($)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          className="h-8 w-28"
+                          defaultValue={Number(m.simulated_liquidity) || 0}
+                          onChange={(ev) => setEdit(m.id, { l: ev.target.value })}
                         />
                       </div>
                       <div className="space-y-1">
