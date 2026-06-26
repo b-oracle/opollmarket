@@ -122,6 +122,7 @@ const AdminCallEvents = lazy(() => import("./pages/admin/AdminCallEvents"));
 const AdminSpaceBans = lazy(() => import("./pages/admin/AdminSpaceBans"));
 const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
 const AdminPromoBanners = lazy(() => import("./pages/admin/AdminPromoBanners"));
+const AdminSpoofStats = lazy(() => import("./pages/admin/AdminSpoofStats"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const Events = lazy(() => import("./pages/Events"));
 const Referrals = lazy(() => import("./pages/Referrals"));
@@ -639,6 +640,7 @@ const App = () => {
                           <Route path="space-bans" element={<AdminSpaceBans />} />
                          <Route path="events" element={<AdminEvents />} />
                          <Route path="promo-banners" element={<AdminPromoBanners />} />
+                         <Route path="spoof-stats" element={<AdminSpoofStats />} />
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />

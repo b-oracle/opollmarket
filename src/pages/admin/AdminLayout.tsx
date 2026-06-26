@@ -23,6 +23,7 @@ const navItems: NavItem[] = [
   { to: "/admin/markets", label: "Markets", icon: ShoppingBag, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/events", label: "Event Groups", icon: ShoppingBag, roles: ["super_admin", "admin", "moderator"] },
   { to: "/admin/promo-banners", label: "Promo Banners", icon: Megaphone, roles: ["super_admin", "admin", "moderator"] },
+  { to: "/admin/spoof-stats", label: "Spoof Stats", icon: TrendingUp, roles: ["super_admin"] },
   { to: "/admin/blocked-resolutions", label: "Blocked Resolutions", icon: ShieldAlert, roles: ["super_admin"] },
   { to: "/admin/create-market", label: "Create Market", icon: PlusCircle, roles: ["super_admin"] },
   { to: "/admin/predictions", label: "Predictions", icon: TrendingUp, roles: ["super_admin", "admin"] },
