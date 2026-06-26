@@ -455,15 +455,13 @@ const PendingReferrals = ({ range }: { range: number }) => {
         ? new Date(Date.now() - TIME_RANGES[range].days * 86400000).toISOString()
         : null;
 
-      let q = supabase
-        .from("profiles")
-        .select("id, display_name, referred_by, created_at")
-        .not("referred_by", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(500);
-      if (sinceISO) q = q.gte("created_at", sinceISO);
+      let q = supabase.rpc("admin_list_recent_referred" as any, {
+        _since: sinceISO,
+        _limit: 500,
+      });
 
-      const { data: referred } = await q;
+      const { data: referred } = await q as any;
+
       if (!referred || referred.length === 0) { setLoading(false); setPending([]); return; }
 
       const referredIds = referred.map(r => r.id);
