@@ -2835,6 +2835,36 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_stats_overrides: {
+        Row: {
+          enabled: boolean
+          id: boolean
+          spoof_markets: number
+          spoof_users: number
+          spoof_volume: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          id?: boolean
+          spoof_markets?: number
+          spoof_users?: number
+          spoof_volume?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          id?: boolean
+          spoof_markets?: number
+          spoof_users?: number
+          spoof_volume?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       polymarket_presets: {
         Row: {
           auto_approve: boolean
@@ -5879,6 +5909,23 @@ export type Database = {
               total_count: number
             }[]
           }
+      admin_set_market_spoof: {
+        Args: {
+          _market_id: string
+          _spoof_participants: number
+          _spoof_volume: number
+        }
+        Returns: undefined
+      }
+      admin_set_platform_overrides: {
+        Args: {
+          _enabled: boolean
+          _markets: number
+          _users: number
+          _volume: number
+        }
+        Returns: undefined
+      }
       admin_update_profile: {
         Args: {
           _block_reason?: string
@@ -6230,6 +6277,7 @@ export type Database = {
         }
       }
       get_page_view_count: { Args: { _path?: string }; Returns: number }
+      get_platform_market_count: { Args: never; Returns: number }
       get_platform_user_count: { Args: never; Returns: number }
       get_platform_volume: {
         Args: never
