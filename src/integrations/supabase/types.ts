@@ -5879,6 +5879,15 @@ export type Database = {
           id: string
         }[]
       }
+      admin_list_recent_referred: {
+        Args: { _limit?: number; _since: string }
+        Returns: {
+          created_at: string
+          display_name: string
+          id: string
+          referred_by: string
+        }[]
+      }
       admin_record_transaction: {
         Args: {
           _amount: number
@@ -6325,6 +6334,13 @@ export type Database = {
               wins: number
             }[]
           }
+      get_referrer_counts: {
+        Args: never
+        Returns: {
+          referred_count: number
+          referrer_id: string
+        }[]
+      }
       get_space_analytics: {
         Args: { _space_id: string }
         Returns: {
