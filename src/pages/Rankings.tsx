@@ -191,8 +191,8 @@ const useReferralLeaderboard = (period: TimePeriod) => {
       let commissionsQuery = supabase.from("pending_commissions").select("user_id, amount, created_at").eq("type", "referral").eq("status", "released");
       if (cutoff) commissionsQuery = commissionsQuery.gte("created_at", cutoff);
 
-      // 3. Fetch actual referral signup counts from profiles.referred_by
-      const referralCountsQuery = supabase.from("profiles").select("referred_by").not("referred_by", "is", null);
+      // 3. Fetch actual referral signup counts via SECURITY DEFINER RPC
+      const referralCountsQuery = supabase.rpc("get_referrer_counts" as any);
 
       const [{ data: rewards }, { data: commissions }, { data: referralProfiles }] = await Promise.all([
         rewardsQuery,
@@ -218,10 +218,11 @@ const useReferralLeaderboard = (period: TimePeriod) => {
         ensureEntry(c.user_id).earned += Number(c.amount);
       }
 
-      // Count actual signups from profiles.referred_by
-      for (const p of referralProfiles || []) {
-        if (p.referred_by) ensureEntry(p.referred_by).referralCount += 1;
+      // Count actual signups via RPC result
+      for (const row of (referralProfiles as any[] | null) || []) {
+        if (row?.referrer_id) ensureEntry(row.referrer_id).referralCount += Number(row.referred_count || 0);
       }
+
 
       if (map.size === 0) {
         setReferrers([]);
