@@ -6222,6 +6222,33 @@ export type Database = {
         }[]
       }
       get_live_space_user_ids: { Args: never; Returns: string[] }
+      get_my_api_keys: {
+        Args: never
+        Returns: {
+          affiliate_commission_percent: number
+          api_key: string
+          brand_dark_bg: string | null
+          brand_logo_url: string | null
+          brand_name: string | null
+          brand_primary_color: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          owner_id: string | null
+          partner_name: string
+          permissions: Json
+          rate_limit_per_min: number
+          updated_at: string
+          webhook_secret: string | null
+          webhook_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "api_keys"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_my_full_profile: {
         Args: never
         Returns: {

@@ -109,11 +109,8 @@ const AdminApiKeys = () => {
     const _24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
     const _7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Fetch keys
-    const { data: keysData } = await supabase
-      .from("api_keys" as any)
-      .select("*")
-      .order("created_at", { ascending: false });
+    // Fetch keys (via SECURITY DEFINER RPC — required to read masked api_key/webhook_secret columns)
+    const { data: keysData } = await supabase.rpc("get_my_api_keys" as any);
     const allKeys = (keysData as any[] || []) as ApiKey[];
     setKeys(allKeys);
 

@@ -70,13 +70,9 @@ const BusinessApiKeys = () => {
 
   const fetchKeys = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("api_keys" as any)
-      .select("*")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.rpc("get_my_api_keys" as any);
     if (error) toast.error("Failed to load API keys");
-    else setKeys((data as any[]) || []);
+    else setKeys(((data as any[]) || []).filter((k: any) => k.owner_id === userId));
     setLoading(false);
   };
 
