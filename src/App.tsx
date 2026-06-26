@@ -122,6 +122,7 @@ const AdminCallEvents = lazy(() => import("./pages/admin/AdminCallEvents"));
 const AdminSpaceBans = lazy(() => import("./pages/admin/AdminSpaceBans"));
 const AdminEvents = lazy(() => import("./pages/admin/AdminEvents"));
 const AdminPromoBanners = lazy(() => import("./pages/admin/AdminPromoBanners"));
+const AdminSpoofStats = lazy(() => import("./pages/admin/AdminSpoofStats"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const Events = lazy(() => import("./pages/Events"));
 const Referrals = lazy(() => import("./pages/Referrals"));
