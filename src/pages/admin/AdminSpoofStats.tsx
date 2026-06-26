@@ -68,7 +68,7 @@ export default function AdminSpoofStats() {
     queryFn: async () => {
       let q = supabase
         .from("markets")
-        .select("id,title,volume,participants,simulated_volume,simulated_participants,status,image_url")
+        .select("id,title,volume,liquidity,participants,simulated_volume,simulated_participants,simulated_liquidity,status,image_url")
         .order("created_at", { ascending: false })
         .limit(50);
       if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
@@ -78,18 +78,27 @@ export default function AdminSpoofStats() {
     },
   });
 
-  const [edits, setEdits] = useState<Record<string, { v: string; p: string }>>({});
-  const setEdit = (id: string, patch: Partial<{ v: string; p: string }>) =>
-    setEdits((e) => ({ ...e, [id]: { v: patch.v ?? e[id]?.v ?? "", p: patch.p ?? e[id]?.p ?? "" } }));
+  const [edits, setEdits] = useState<Record<string, { v: string; p: string; l: string }>>({});
+  const setEdit = (id: string, patch: Partial<{ v: string; p: string; l: string }>) =>
+    setEdits((e) => ({
+      ...e,
+      [id]: {
+        v: patch.v ?? e[id]?.v ?? "",
+        p: patch.p ?? e[id]?.p ?? "",
+        l: patch.l ?? e[id]?.l ?? "",
+      },
+    }));
 
   const saveMarket = async (m: any) => {
     const cur = edits[m.id];
     const v = cur?.v !== undefined && cur.v !== "" ? parseFloat(cur.v) : Number(m.simulated_volume) || 0;
     const p = cur?.p !== undefined && cur.p !== "" ? parseInt(cur.p) : Number(m.simulated_participants) || 0;
+    const l = cur?.l !== undefined && cur.l !== "" ? parseFloat(cur.l) : Number(m.simulated_liquidity) || 0;
     const { error } = await supabase.rpc("admin_set_market_spoof" as any, {
       _market_id: m.id,
       _spoof_volume: v,
       _spoof_participants: p,
+      _spoof_liquidity: l,
     });
     if (error) {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
