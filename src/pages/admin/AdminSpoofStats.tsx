@@ -68,7 +68,7 @@ export default function AdminSpoofStats() {
     queryFn: async () => {
       let q = supabase
         .from("markets")
-        .select("id,title,volume,participants,simulated_volume,simulated_participants,status,image_url")
+        .select("id,title,volume,liquidity,participants,simulated_volume,simulated_participants,simulated_liquidity,status,image_url")
         .order("created_at", { ascending: false })
         .limit(50);
       if (search.trim()) q = q.ilike("title", `%${search.trim()}%`);
@@ -78,18 +78,27 @@ export default function AdminSpoofStats() {
     },
   });
 
-  const [edits, setEdits] = useState<Record<string, { v: string; p: string }>>({});
-  const setEdit = (id: string, patch: Partial<{ v: string; p: string }>) =>
-    setEdits((e) => ({ ...e, [id]: { v: patch.v ?? e[id]?.v ?? "", p: patch.p ?? e[id]?.p ?? "" } }));
+  const [edits, setEdits] = useState<Record<string, { v: string; p: string; l: string }>>({});
+  const setEdit = (id: string, patch: Partial<{ v: string; p: string; l: string }>) =>
+    setEdits((e) => ({
+      ...e,
+      [id]: {
+        v: patch.v ?? e[id]?.v ?? "",
+        p: patch.p ?? e[id]?.p ?? "",
+        l: patch.l ?? e[id]?.l ?? "",
+      },
+    }));
 
   const saveMarket = async (m: any) => {
     const cur = edits[m.id];
     const v = cur?.v !== undefined && cur.v !== "" ? parseFloat(cur.v) : Number(m.simulated_volume) || 0;
     const p = cur?.p !== undefined && cur.p !== "" ? parseInt(cur.p) : Number(m.simulated_participants) || 0;
+    const l = cur?.l !== undefined && cur.l !== "" ? parseFloat(cur.l) : Number(m.simulated_liquidity) || 0;
     const { error } = await supabase.rpc("admin_set_market_spoof" as any, {
       _market_id: m.id,
       _spoof_volume: v,
       _spoof_participants: p,
+      _spoof_liquidity: l,
     });
     if (error) {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
@@ -196,7 +205,7 @@ export default function AdminSpoofStats() {
             <div className="space-y-2">
               {(markets ?? []).map((m) => {
                 const e = edits[m.id];
-                const dirty = !!e && (e.v !== "" || e.p !== "");
+                const dirty = !!e && (e.v !== "" || e.p !== "" || e.l !== "");
                 return (
                   <div key={m.id} className="flex flex-col md:flex-row md:items-center gap-3 p-3 rounded-lg border bg-card">
                     {m.image_url && (
@@ -205,10 +214,10 @@ export default function AdminSpoofStats() {
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{m.title}</div>
                       <div className="text-[11px] text-muted-foreground">
-                        Real vol {fmt(Number(m.volume) || 0)} · Real participants {m.participants || 0} · {m.status}
+                        Real vol {fmt(Number(m.volume) || 0)} · Real liq {fmt(Number(m.liquidity) || 0)} · Real users {m.participants || 0} · {m.status}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="space-y-1">
                         <Label className="text-[10px] text-muted-foreground">Sim. vol ($)</Label>
                         <Input
@@ -217,6 +226,16 @@ export default function AdminSpoofStats() {
                           className="h-8 w-28"
                           defaultValue={Number(m.simulated_volume) || 0}
                           onChange={(ev) => setEdit(m.id, { v: ev.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] text-muted-foreground">Sim. liq ($)</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          className="h-8 w-28"
+                          defaultValue={Number(m.simulated_liquidity) || 0}
+                          onChange={(ev) => setEdit(m.id, { l: ev.target.value })}
                         />
                       </div>
                       <div className="space-y-1">

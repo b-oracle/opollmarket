@@ -69,7 +69,7 @@ export const mapDbToMarket = (db: DbMarket): Market => ({
   yesPrice: Number(db.yes_price),
   noPrice: Number(db.no_price),
   volume: Number(db.volume) + Number((db as any).simulated_volume || 0),
-  liquidity: Number(db.liquidity),
+  liquidity: Number(db.liquidity) + Number((db as any).simulated_liquidity || 0),
   participants: db.participants + ((db as any).simulated_participants || 0),
   endDate: db.end_date,
   creatorAddress: db.creator_wallet,
@@ -140,7 +140,7 @@ export const fetchMarketDetail = async (client: typeof supabase, id: string) => 
   );
 };
 
-const SELECT_COLS = "id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants,is_hidden,resolved_side,winning_option_id,stream_url,is_streaming,is_crypto_round, market_options!market_options_market_id_fkey(id,label,price,sort_order)";
+const SELECT_COLS = "id,title,description,category,market_type,yes_price,no_price,volume,liquidity,participants,end_date,creator_wallet,creator_name,image_url,video_url,details,trending,status,created_at,auto_resolve,auto_resolve_asset,auto_resolve_target_price,auto_resolve_operator,auto_resolve_deadline,sport_type,sport_match_id,sport_predicted_outcome,sport_league,polymarket_event_slug,twitter_metric_type,twitter_resource_id,twitter_current_count,simulated_volume,simulated_participants,simulated_liquidity,is_hidden,resolved_side,winning_option_id,stream_url,is_streaming,is_crypto_round, market_options!market_options_market_id_fkey(id,label,price,sort_order)";
 
 const fetchCreatorMarkets = async (client: typeof supabase, userId: string) => {
   return withTimeout(
