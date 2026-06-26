@@ -2338,6 +2338,7 @@ export type Database = {
           resolution_blocked_at: string | null
           resolution_source: string
           resolved_side: string | null
+          simulated_liquidity: number
           simulated_participants: number
           simulated_volume: number
           sport_league: string | null
@@ -2397,6 +2398,7 @@ export type Database = {
           resolution_blocked_at?: string | null
           resolution_source: string
           resolved_side?: string | null
+          simulated_liquidity?: number
           simulated_participants?: number
           simulated_volume?: number
           sport_league?: string | null
@@ -2456,6 +2458,7 @@ export type Database = {
           resolution_blocked_at?: string | null
           resolution_source?: string
           resolved_side?: string | null
+          simulated_liquidity?: number
           simulated_participants?: number
           simulated_volume?: number
           sport_league?: string | null
@@ -5918,14 +5921,24 @@ export type Database = {
               total_count: number
             }[]
           }
-      admin_set_market_spoof: {
-        Args: {
-          _market_id: string
-          _spoof_participants: number
-          _spoof_volume: number
-        }
-        Returns: undefined
-      }
+      admin_set_market_spoof:
+        | {
+            Args: {
+              _market_id: string
+              _spoof_participants: number
+              _spoof_volume: number
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              _market_id: string
+              _spoof_liquidity?: number
+              _spoof_participants: number
+              _spoof_volume: number
+            }
+            Returns: undefined
+          }
       admin_set_platform_overrides: {
         Args: {
           _enabled: boolean
