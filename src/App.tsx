@@ -640,6 +640,7 @@ const App = () => {
                           <Route path="space-bans" element={<AdminSpaceBans />} />
                          <Route path="events" element={<AdminEvents />} />
                          <Route path="promo-banners" element={<AdminPromoBanners />} />
+                         <Route path="spoof-stats" element={<AdminSpoofStats />} />
                         </Route>
                         <Route path="/business" element={<BusinessLayout />}>
                           <Route index element={<BusinessDashboard />} />
