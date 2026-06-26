@@ -69,7 +69,7 @@ export const mapDbToMarket = (db: DbMarket): Market => ({
   yesPrice: Number(db.yes_price),
   noPrice: Number(db.no_price),
   volume: Number(db.volume) + Number((db as any).simulated_volume || 0),
-  liquidity: Number(db.liquidity),
+  liquidity: Number(db.liquidity) + Number((db as any).simulated_liquidity || 0),
   participants: db.participants + ((db as any).simulated_participants || 0),
   endDate: db.end_date,
   creatorAddress: db.creator_wallet,
