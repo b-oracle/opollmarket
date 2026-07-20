@@ -486,7 +486,20 @@ const AdminMarkets = () => {
       const { data, error } = await supabase.functions.invoke("cancel-market", {
         body: { market_id: id },
       });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError has response body with details; try to extract it.
+        const ctx: any = (error as any)?.context;
+        let serverMsg: string | null = null;
+        try {
+          if (ctx && typeof ctx.json === "function") {
+            const j = await ctx.json();
+            serverMsg = j?.error || j?.message || null;
+          } else if (ctx && typeof ctx.text === "function") {
+            serverMsg = await ctx.text();
+          }
+        } catch {}
+        throw new Error(serverMsg || error.message || "Edge function error");
+      }
       if (data?.error) throw new Error(data.error);
       setRefundSummary({
         title: "Market Cancelled — Refunded",

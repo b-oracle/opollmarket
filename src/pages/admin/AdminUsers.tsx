@@ -39,6 +39,7 @@ const AdminUsers = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"created_desc" | "balance_desc" | "balance_asc">("created_desc");
 
   // Debounce search input
   useEffect(() => {
@@ -58,7 +59,8 @@ const AdminUsers = () => {
       _term: debouncedSearch.trim() || null,
       _limit: PAGE_SIZE,
       _offset: from,
-    });
+      _sort: sortBy,
+    } as any);
 
     if (error || !rpcData || rpcData.length === 0) {
       setLoading(false);
@@ -108,7 +110,7 @@ const AdminUsers = () => {
       }))
     );
     setLoading(false);
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, sortBy]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -273,7 +275,24 @@ const AdminUsers = () => {
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="p-3">User</th>
                 <th className="p-3">Email</th>
-                <th className="p-3">Balance</th>
+                <th className="p-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy((prev) =>
+                        prev === "balance_desc" ? "balance_asc" : prev === "balance_asc" ? "created_desc" : "balance_desc"
+                      );
+                      setPage(1);
+                    }}
+                    className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                    title="Sort by balance"
+                  >
+                    Balance
+                    <span className="text-[10px]">
+                      {sortBy === "balance_desc" ? "▼" : sortBy === "balance_asc" ? "▲" : "↕"}
+                    </span>
+                  </button>
+                </th>
                 <th className="p-3">Roles</th>
                 <th className="p-3">Joined</th>
                 <th className="p-3">Actions</th>
