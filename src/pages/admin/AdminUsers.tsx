@@ -39,6 +39,7 @@ const AdminUsers = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"created_desc" | "balance_desc" | "balance_asc">("created_desc");
 
   // Debounce search input
   useEffect(() => {
