@@ -110,7 +110,7 @@ const AdminUsers = () => {
       }))
     );
     setLoading(false);
-  }, [page, debouncedSearch]);
+  }, [page, debouncedSearch, sortBy]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
