@@ -59,7 +59,8 @@ const AdminUsers = () => {
       _term: debouncedSearch.trim() || null,
       _limit: PAGE_SIZE,
       _offset: from,
-    });
+      _sort: sortBy,
+    } as any);
 
     if (error || !rpcData || rpcData.length === 0) {
       setLoading(false);
