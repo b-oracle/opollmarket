@@ -5921,6 +5921,18 @@ export type Database = {
               total_count: number
             }[]
           }
+        | {
+            Args: {
+              _limit?: number
+              _offset?: number
+              _sort?: string
+              _term?: string
+            }
+            Returns: {
+              rows: Json
+              total_count: number
+            }[]
+          }
       admin_set_market_spoof:
         | {
             Args: {
