@@ -309,6 +309,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("cancel-market error:", err, (err as any)?.stack);
     return new Response(JSON.stringify({ error: (getErrorMessage(err)) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
