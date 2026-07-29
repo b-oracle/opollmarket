@@ -6,6 +6,38 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const RPCS = [
+  "https://bsc-dataseed.binance.org",
+  "https://bsc-dataseed1.defibit.io",
+  "https://bsc-dataseed1.ninicoin.io",
+];
+const BALANCE_OF = "0x70a08231";
+
+/** Direct on-chain balanceOf. Returns null when every RPC endpoint fails. */
+async function balanceOf(contract: string, wallet: string): Promise<bigint | null> {
+  const data = BALANCE_OF + wallet.slice(2).toLowerCase().padStart(64, "0");
+  for (const rpc of RPCS) {
+    try {
+      const res = await fetch(rpc, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "eth_call",
+          params: [{ to: contract, data }, "latest"],
+        }),
+      });
+      const json = await res.json();
+      if (json?.result && json.result !== "0x") return BigInt(json.result);
+    } catch (_err) {
+      // try next endpoint
+    }
+  }
+  return null;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
