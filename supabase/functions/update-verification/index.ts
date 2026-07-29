@@ -89,51 +89,42 @@ Deno.serve(async (req) => {
       .limit(1)
       .single();
 
-    const minTokenBalance = Number(settings?.min_token_balance) || 10_000_000;
-    const minGoldTokenBalance = Number(settings?.min_gold_token_balance) || 100_000_000;
+    const minTokenBalance = BigInt(Math.trunc(Number(settings?.min_token_balance) || 10_000_000));
+    const minGoldTokenBalance = BigInt(Math.trunc(Number(settings?.min_gold_token_balance) || 100_000_000));
     const tokenContractAddress = settings?.token_contract_address || "";
     const tokenDecimals = Number(settings?.token_decimals) || 18;
-    const nftContractAddress = (settings?.nft_contract_address || "").toLowerCase();
-    const minNftBalance = Number(settings?.min_nft_balance) || 1;
+    const nftContractAddress = settings?.nft_contract_address || "";
+    const minNftBalance = BigInt(Math.trunc(Number(settings?.min_nft_balance) || 1));
+    const unit = 10n ** BigInt(tokenDecimals);
 
     let hasNft = false;
     let hasTokens = false;
     let hasGoldTokens = false;
+    let rpcFailed = false;
 
-    if (profile.wallet_address) {
-      // Check NFT ownership in wallet
-      if (nftContractAddress) {
-        try {
-          const { data: nftData } = await adminClient.functions.invoke("fetch-wallet-nfts", {
-            body: { wallet_address: profile.wallet_address, nft_contract_address: nftContractAddress },
-          });
-          const nfts = nftData?.nfts || [];
-          const matchingNfts = nfts.filter(
-            (n: any) => n.token_address?.toLowerCase() === nftContractAddress
-          );
-          hasNft = matchingNfts.length >= minNftBalance;
-        } catch (err) {
-          console.error("NFT ownership check failed:", err);
-        }
-      }
+    const wallet = (profile.wallet_address || "").trim();
+    if (/^0x[a-fA-F0-9]{40}$/.test(wallet)) {
+      const [nftRaw, tokenRaw] = await Promise.all([
+        nftContractAddress ? balanceOf(nftContractAddress, wallet) : Promise.resolve(0n),
+        tokenContractAddress ? balanceOf(tokenContractAddress, wallet) : Promise.resolve(0n),
+      ]);
 
-      // Check token balance
-      if (tokenContractAddress) {
-        try {
-          const { data: tokenData } = await adminClient.functions.invoke("check-token-balance", {
-            body: {
-              wallet_address: profile.wallet_address,
-              token_contract_address: tokenContractAddress,
-              token_decimals: tokenDecimals,
-            },
-          });
-          const balance = Number(tokenData?.balance) || 0;
-          hasTokens = balance >= minTokenBalance;
-          hasGoldTokens = balance >= minGoldTokenBalance;
-        } catch (err) {
-          console.error("Token balance check failed:", err);
-        }
+      if (nftRaw === null || tokenRaw === null) {
+        rpcFailed = true;
+      } else {
+        const tokenWhole = tokenRaw / unit;
+        hasNft = nftRaw >= minNftBalance;
+        hasTokens = tokenWhole >= minTokenBalance;
+        hasGoldTokens = tokenWhole >= minGoldTokenBalance;
       }
+    }
+
+    // Never demote on RPC failure
+    if (rpcFailed) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Chain lookup unavailable, try again shortly" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Determine verification level
@@ -144,6 +135,7 @@ Deno.serve(async (req) => {
     } else if (hasNft || hasTokens) {
       level = "blue";
     }
+
 
     // Update profile
     await adminClient
