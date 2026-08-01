@@ -246,33 +246,73 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── CRYPTO HANDLING (via Twelve Data) ──
+    // ── CRYPTO HANDLING (Binance → CoinGecko → Twelve Data) ──
     if (body?.type === "crypto") {
-      const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
-      if (!twelveDataKey) {
-        return new Response(JSON.stringify({ error: "Twelve Data not configured" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const tdSymbol = `${normalizedAsset}/USD`;
+      // 1. Binance spot (free, no key)
       try {
         const resp = await fetch(
-          `https://api.twelvedata.com/price?symbol=${tdSymbol}&apikey=${twelveDataKey}`
+          `https://api.binance.com/api/v3/ticker/price?symbol=${normalizedAsset}USDT`
         );
         if (resp.ok) {
           const data = await resp.json();
           const price = parseFloat(data?.price);
           if (Number.isFinite(price)) {
-            return new Response(JSON.stringify({ price, source: "twelve_data_crypto" }), {
+            return new Response(JSON.stringify({ price, source: "binance" }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
           }
         }
       } catch {}
+
+      // 2. CoinGecko fallback (free, no key)
+      const CG_IDS: Record<string, string> = {
+        BTC: "bitcoin", ETH: "ethereum", SOL: "solana", BNB: "binancecoin",
+        XRP: "ripple", DOGE: "dogecoin", ADA: "cardano", AVAX: "avalanche-2",
+        MATIC: "matic-network", LTC: "litecoin", DOT: "polkadot", LINK: "chainlink",
+        TRX: "tron", TON: "the-open-network", SHIB: "shiba-inu", PEPE: "pepe",
+      };
+      const cgId = CG_IDS[normalizedAsset];
+      if (cgId) {
+        try {
+          const resp = await fetch(
+            `https://api.coingecko.com/api/v3/simple/price?ids=${cgId}&vs_currencies=usd`
+          );
+          if (resp.ok) {
+            const data = await resp.json();
+            const price = parseFloat(data?.[cgId]?.usd);
+            if (Number.isFinite(price)) {
+              return new Response(JSON.stringify({ price, source: "coingecko" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+        } catch {}
+      }
+
+      // 3. Twelve Data (optional key)
+      const twelveDataKey = Deno.env.get("TWELVE_DATA_API_KEY");
+      if (twelveDataKey) {
+        try {
+          const resp = await fetch(
+            `https://api.twelvedata.com/price?symbol=${normalizedAsset}/USD&apikey=${twelveDataKey}`
+          );
+          if (resp.ok) {
+            const data = await resp.json();
+            const price = parseFloat(data?.price);
+            if (Number.isFinite(price)) {
+              return new Response(JSON.stringify({ price, source: "twelve_data_crypto" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+          }
+        } catch {}
+      }
+
       return new Response(JSON.stringify({ error: "Crypto price unavailable" }), {
         status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     // ── COMMODITY HANDLING ──
     if (!TWELVE_DATA_MAP[normalizedAsset] && !METAL_MAP[normalizedAsset]) {
