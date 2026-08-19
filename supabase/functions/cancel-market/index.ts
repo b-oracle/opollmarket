@@ -89,40 +89,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Refund buy transactions (atomic) ---
-    const { data: transactions } = await adminClient
-      .from("transactions")
-      .select("*")
+    // --- Refund open positions (idempotent: sold/closed positions are skipped) ---
+    const { data: openPositions } = await adminClient
+      .from("positions")
+      .select("id, user_id, option_id, side, shares, avg_price")
       .eq("market_id", market_id)
-      .eq("type", "buy")
-      .eq("status", "confirmed");
+      .gt("shares", 0);
 
     let totalRefunded = 0;
     let usersRefunded = 0;
     const refundedUsers = new Set<string>();
 
-    for (const tx of transactions || []) {
-      const refundAmount = tx.amount;
-      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount, _bonus_delta: 0, _insurance_delta: 0 });
+    for (const pos of openPositions || []) {
+      const refundAmount = Math.round(Number(pos.shares) * Number(pos.avg_price) * 100) / 100;
+      if (refundAmount <= 0) continue;
+
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: refundAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
-        user_id: tx.user_id,
+        user_id: pos.user_id,
         market_id: market_id,
-        option_id: tx.option_id,
+        option_id: pos.option_id,
         type: "refund",
         amount: refundAmount,
-        side: tx.side,
-        shares: tx.shares,
-        price: tx.price,
+        side: pos.side,
+        shares: pos.shares,
+        price: pos.avg_price,
         status: "confirmed",
       });
 
+      // Close the position so a re-run cannot refund it twice
+      await adminClient
+        .from("positions")
+        .update({ shares: 0, updated_at: new Date().toISOString() })
+        .eq("id", pos.id);
+
       totalRefunded += refundAmount;
-      if (!refundedUsers.has(tx.user_id)) {
-        refundedUsers.add(tx.user_id);
+      if (!refundedUsers.has(pos.user_id)) {
+        refundedUsers.add(pos.user_id);
         usersRefunded++;
       }
     }
+
 
     // --- Void pending commissions (no clawback needed) ---
     const { data: pendingComms } = await adminClient
