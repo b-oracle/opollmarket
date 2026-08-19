@@ -211,6 +211,7 @@ Deno.serve(async (req) => {
 
     if (isModerationReject) {
       for (const feeTx of feeTxns || []) {
+        if (alreadyHandled.has("creation_fee_forfeited")) break;
         creationFeeForfeited += feeTx.amount;
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
@@ -223,7 +224,9 @@ Deno.serve(async (req) => {
       }
     } else {
       for (const feeTx of feeTxns || []) {
+        if (alreadyHandled.has("creation_fee_refund")) break;
         await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount, _bonus_delta: 0, _insurance_delta: 0 });
+
 
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
