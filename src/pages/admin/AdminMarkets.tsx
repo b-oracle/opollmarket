@@ -502,7 +502,7 @@ const AdminMarkets = () => {
       }
       if (data?.error) throw new Error(data.error);
       setRefundSummary({
-        title: "Market Cancelled — Refunded",
+        title: Number(data?.total_refunded ?? 0) > 0 ? "Market Cancelled — Refunded" : "Market Cancelled — No Open Positions to Refund",
         marketTitle: market?.title,
         variant: "cancelled",
         usersRefunded: data?.users_refunded,

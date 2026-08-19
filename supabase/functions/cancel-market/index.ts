@@ -89,40 +89,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- Refund buy transactions (atomic) ---
-    const { data: transactions } = await adminClient
-      .from("transactions")
-      .select("*")
+    // --- Refund open positions (idempotent: sold/closed positions are skipped) ---
+    const { data: openPositions } = await adminClient
+      .from("positions")
+      .select("id, user_id, option_id, side, shares, avg_price")
       .eq("market_id", market_id)
-      .eq("type", "buy")
-      .eq("status", "confirmed");
+      .gt("shares", 0);
 
     let totalRefunded = 0;
     let usersRefunded = 0;
     const refundedUsers = new Set<string>();
 
-    for (const tx of transactions || []) {
-      const refundAmount = tx.amount;
-      await adminClient.rpc("adjust_balance", { _user_id: tx.user_id, _delta: refundAmount, _bonus_delta: 0, _insurance_delta: 0 });
+    for (const pos of openPositions || []) {
+      const refundAmount = Math.round(Number(pos.shares) * Number(pos.avg_price) * 100) / 100;
+      if (refundAmount <= 0) continue;
+
+      await adminClient.rpc("adjust_balance", { _user_id: pos.user_id, _delta: refundAmount, _bonus_delta: 0, _insurance_delta: 0 });
 
       await adminClient.from("transactions").insert({
-        user_id: tx.user_id,
+        user_id: pos.user_id,
         market_id: market_id,
-        option_id: tx.option_id,
+        option_id: pos.option_id,
         type: "refund",
         amount: refundAmount,
-        side: tx.side,
-        shares: tx.shares,
-        price: tx.price,
+        side: pos.side,
+        shares: pos.shares,
+        price: pos.avg_price,
         status: "confirmed",
       });
 
+      // Close the position so a re-run cannot refund it twice
+      await adminClient
+        .from("positions")
+        .update({ shares: 0, updated_at: new Date().toISOString() })
+        .eq("id", pos.id);
+
       totalRefunded += refundAmount;
-      if (!refundedUsers.has(tx.user_id)) {
-        refundedUsers.add(tx.user_id);
+      if (!refundedUsers.has(pos.user_id)) {
+        refundedUsers.add(pos.user_id);
         usersRefunded++;
       }
     }
+
 
     // --- Void pending commissions (no clawback needed) ---
     const { data: pendingComms } = await adminClient
@@ -167,10 +175,9 @@ Deno.serve(async (req) => {
 
       const feePercent = Number(commSettings?.prediction_fee_percent ?? 10) / 100;
 
-      // Calculate total fees collected for this market based on buy transaction amounts
-      const totalFeesCollected = (transactions || []).reduce((sum: number, tx: any) => {
-        return sum + (Number(tx.amount) * feePercent);
-      }, 0);
+      // Reverse only the fee proportional to what we actually refunded
+      const totalFeesCollected = Math.round(totalRefunded * feePercent * 100) / 100;
+
 
       if (totalFeesCollected > 0) {
         await adminClient.rpc("adjust_platform_pool", { _delta: -totalFeesCollected });
@@ -192,8 +199,19 @@ Deno.serve(async (req) => {
       .eq("side", "market_creation_fee")
       .eq("status", "confirmed");
 
+    // Guard against a re-run double-paying the creator
+    const { data: priorCreatorTxns } = await adminClient
+      .from("transactions")
+      .select("side")
+      .eq("market_id", market_id)
+      .in("side", ["creation_fee_refund", "creation_fee_forfeited", "liquidity_return"]);
+    const alreadyHandled = new Set((priorCreatorTxns || []).map((t: any) => t.side));
+
+
+
     if (isModerationReject) {
       for (const feeTx of feeTxns || []) {
+        if (alreadyHandled.has("creation_fee_forfeited")) break;
         creationFeeForfeited += feeTx.amount;
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
@@ -206,7 +224,9 @@ Deno.serve(async (req) => {
       }
     } else {
       for (const feeTx of feeTxns || []) {
+        if (alreadyHandled.has("creation_fee_refund")) break;
         await adminClient.rpc("adjust_balance", { _user_id: feeTx.user_id, _delta: feeTx.amount, _bonus_delta: 0, _insurance_delta: 0 });
+
 
         await adminClient.from("transactions").insert({
           user_id: feeTx.user_id,
@@ -238,7 +258,8 @@ Deno.serve(async (req) => {
           .limit(1)
       : { data: null };
     const liquidityWasPaid = market.initial_liquidity > 0 && (market.liquidity_verified || (liqTx && liqTx.length > 0));
-    if (liquidityWasPaid) {
+    if (liquidityWasPaid && !alreadyHandled.has("liquidity_return")) {
+
       const creatorUserId = market.creator_wallet;
       await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity, _bonus_delta: 0, _insurance_delta: 0 });
 
