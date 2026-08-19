@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Users can insert own messages" ON public.space_messages;
