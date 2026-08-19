@@ -1,46 +1,34 @@
+# Fix: "Market already has refund/payout transactions" blocks cancellation
 
-## Goal
-Let super-admins inflate the public-facing Volume / Users / Markets numbers on the landing page, and add per-market spoofed volume that bubbles up into the landing-page total. Real balances, real trades, real PnL, and all financial logic stay untouched — spoofing is display-only.
+## What's actually going on
 
-## What gets built
+For "Which continent will claim the 2026 world cup" (status `ended`), the transaction history shows:
 
-### 1. Database (one migration)
-- New table `public.platform_stats_overrides` (single-row, enforced via unique constant key):
-  - `spoof_volume numeric` (added to total volume on landing)
-  - `spoof_users integer` (added to user count)
-  - `spoof_markets integer` (added to market count)
-  - `enabled boolean default true`
-  - `updated_by uuid`, `updated_at`
-  - RLS: only `super_admin` can read/write; everyone can read via the RPCs below.
-- Add `spoof_volume numeric default 0` to `public.markets`. Editable only by `super_admin` (RLS check via `has_role`).
-- Update `public.get_platform_volume()` (SECURITY DEFINER) to return:
-  `prediction_volume + qt_volume + COALESCE(overrides.spoof_volume, 0) + COALESCE(sum(markets.spoof_volume), 0)` when enabled.
-- Update `public.get_platform_user_count()` to add `COALESCE(overrides.spoof_users, 0)`.
-- New RPC `public.get_platform_market_count()` that returns `count(markets) + COALESCE(overrides.spoof_markets, 0)` — landing page switches to this instead of the raw `markets` count query.
-- New RPC `public.admin_set_platform_overrides(_volume, _users, _markets, _enabled)` — `super_admin` only.
-- New RPC `public.admin_set_market_spoof_volume(_market_id, _spoof)` — `super_admin` only.
+- 28 Apr — one $5.00 BUY (side NO) by a single user
+- 06 May — a $5.00 REFUND to that same user (a cancellation was run then)
+- 29 Jun — a $4.62 SELL by that same user
 
-### 2. Display surfaces
-- `src/pages/Index.tsx` (landing): swap raw `markets` count for `get_platform_market_count`; other two RPCs already return spoofed totals. No UI change.
-- `src/pages/MarketDetail.tsx`: change `Volume` chip to show `market.volume + (market.spoof_volume || 0)` so per-market spoof shows publicly. Real `volume` field used by AMM / settlement is untouched.
-- `src/hooks/useMarkets.ts` (and any market list selectors): include `spoof_volume` in the SELECT and expose it on the mapped market object as `displayVolume`. Cards/feeds that show "$X Vol" use `displayVolume`.
+So the market was cancelled once (refund issued), then re-opened/reactivated, and the same user then sold their position. Their position row now has `shares = 0`, i.e. there is **no open exposure left in this market at all**.
 
-### 3. Admin UI
-- New page `src/pages/admin/AdminSpoofStats.tsx` mounted at `/admin/spoof-stats`, listed in `AdminLayout` nav, gated to `super_admin`:
-  - Form for the three global overrides + enable toggle, saved via `admin_set_platform_overrides`.
-  - Searchable table of markets showing real volume, current spoof, with inline editor calling `admin_set_market_spoof_volume`.
-  - Live preview card: "Landing will show: $X.XK Volume · N Users · M Markets".
-- In `AdminUsers` / role list — no change; existing `super_admin` role is reused.
+The cancel flow refuses to run because `cancel_market_atomic` blocks unconditionally when *any* `refund` or `payout` transaction exists for the market. That guard exists to prevent double refunds, but here it permanently locks a market that already carries a stale refund from the earlier cancellation — the market can never be cancelled or cleared, and it sits in the "ended" tab forever.
 
-### 4. Safety / audit
-- Every override mutation writes to `audit_logs` (`action = 'spoof_stats_update'` or `'market_spoof_update'`) with actor + before/after values.
-- Spoof fields are excluded from any internal financial reads (treasury, reconciliation, payouts, leaderboards, PnL) — those continue to use raw `volume` / real counts. Only the public landing + market-detail volume chip read the inflated values.
+Secondary issue exposed by the same data: the refund logic iterates over BUY transactions rather than over open positions, so a user who was refunded and later sold got paid twice from the same $5 stake. Refunding by buy-transaction is unsafe once selling exists.
 
-## Files touched
-- New: `supabase/migrations/<ts>_spoof_stats.sql`, `src/pages/admin/AdminSpoofStats.tsx`
-- Edited: `src/pages/Index.tsx`, `src/pages/MarketDetail.tsx`, `src/hooks/useMarkets.ts`, `src/pages/admin/AdminLayout.tsx`, `src/App.tsx` (route)
+## The fix
 
-## Out of scope
-- Faking per-user activity (avatars, fake trades in the feed) — only aggregate numbers.
-- Spoofing leaderboards / Rankings page.
-- Auto-growth schedules (linear ramp over time). Can be added later if wanted.
+1. **Replace the blanket guard in `cancel_market_atomic`.** Instead of "any refund exists → abort", block only when the market still has open exposure that was already refunded (an actual double-refund risk). Concretely: allow cancellation whenever no position in the market has `shares > 0`, or when no refund exists for the remaining open positions' owners. Markets with zero open exposure cancel cleanly with $0 refunded.
+
+2. **Refund from open positions, not from buy transactions,** in `supabase/functions/cancel-market/index.ts`. For each position with `shares > 0`, refund `shares * avg_price` to that user and log one `refund` transaction referencing the position. Positions already sold or already refunded (shares = 0) are skipped. This makes the flow idempotent and removes the double-payout path.
+
+3. **Keep fee/commission/liquidity reversal proportional to what was actually refunded** — reverse platform-pool fees based on the refunded amount rather than on all historic buys, so a partially-traded market doesn't over-debit the pool.
+
+4. **Clearer admin feedback.** When a cancellation results in $0 refunded (nothing open), the toast should say so ("Market cancelled — no open positions to refund") instead of failing silently or looking like an error.
+
+After this change, cancelling this specific market will succeed: status → `cancelled`, $0 refunded, and it leaves the "ended" tab.
+
+## Technical notes
+
+- Migration: `CREATE OR REPLACE FUNCTION public.cancel_market_atomic(uuid)` with the revised guard (still `SECURITY DEFINER`, `SET search_path = public`, still `FOR UPDATE` locking the market row).
+- Edge function `cancel-market`: swap the `transactions … type = 'buy'` loop for a `positions … shares > 0` loop; compute `refundAmount = shares * avg_price` rounded to cents; recompute `totalFeesCollected` from the refunded amounts.
+- Creation-fee and initial-liquidity handling stays as-is, but each insert is guarded against an existing matching refund row so a re-run cannot double-pay the creator.
+- No schema changes; no changes to resolution/AMM math.
