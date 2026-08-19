@@ -175,10 +175,9 @@ Deno.serve(async (req) => {
 
       const feePercent = Number(commSettings?.prediction_fee_percent ?? 10) / 100;
 
-      // Calculate total fees collected for this market based on buy transaction amounts
-      const totalFeesCollected = (transactions || []).reduce((sum: number, tx: any) => {
-        return sum + (Number(tx.amount) * feePercent);
-      }, 0);
+      // Reverse only the fee proportional to what we actually refunded
+      const totalFeesCollected = Math.round(totalRefunded * feePercent * 100) / 100;
+
 
       if (totalFeesCollected > 0) {
         await adminClient.rpc("adjust_platform_pool", { _delta: -totalFeesCollected });
