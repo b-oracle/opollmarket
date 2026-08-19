@@ -258,7 +258,8 @@ Deno.serve(async (req) => {
           .limit(1)
       : { data: null };
     const liquidityWasPaid = market.initial_liquidity > 0 && (market.liquidity_verified || (liqTx && liqTx.length > 0));
-    if (liquidityWasPaid) {
+    if (liquidityWasPaid && !alreadyHandled.has("liquidity_return")) {
+
       const creatorUserId = market.creator_wallet;
       await adminClient.rpc("adjust_balance", { _user_id: creatorUserId, _delta: market.initial_liquidity, _bonus_delta: 0, _insurance_delta: 0 });
 
