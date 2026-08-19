@@ -199,6 +199,16 @@ Deno.serve(async (req) => {
       .eq("side", "market_creation_fee")
       .eq("status", "confirmed");
 
+    // Guard against a re-run double-paying the creator
+    const { data: priorCreatorTxns } = await adminClient
+      .from("transactions")
+      .select("side")
+      .eq("market_id", market_id)
+      .in("side", ["creation_fee_refund", "creation_fee_forfeited", "liquidity_return"]);
+    const alreadyHandled = new Set((priorCreatorTxns || []).map((t: any) => t.side));
+
+
+
     if (isModerationReject) {
       for (const feeTx of feeTxns || []) {
         creationFeeForfeited += feeTx.amount;
