@@ -63,6 +63,7 @@ export function optimizedImageUrlCustom(
   quality = 75
 ): string {
   if (!url) return "";
+  url = resolveAvatarUrl(url);
   if (!SUPABASE_URL || !url.includes(SUPABASE_URL)) return url;
   
   const transformedUrl = url.replace(
