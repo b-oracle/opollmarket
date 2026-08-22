@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Wallet, ArrowDownToLine, ArrowUpFromLine, Gem, Shield } from "lucide-react";
@@ -17,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending" | "gift_sent" | "gift_received" | "bonus" | "osure";
 

@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import ChatDoodleBackground from "./ChatDoodleBackground";
@@ -19,7 +20,6 @@ import { logCallEvent } from "@/lib/callEvents";
 import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
 import { ensureMicrophonePermission } from "@/lib/mediaPermissions";
 import {
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
   getCachedCallConversation,
   dedupeCallConversationLookup,
 } from "@/lib/dmCallLookupCache";

@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useQuery } from "@tanstack/react-query";
 import { getAvatarInitials } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -5,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, PhoneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface CallRecord {
   id: string;

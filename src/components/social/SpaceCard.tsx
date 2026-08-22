@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { getAvatarInitials } from "@/lib/utils";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +14,6 @@ import { useSpaceReplay } from "@/hooks/useSpaceReplay";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface SpaceCardProps {
   space: {

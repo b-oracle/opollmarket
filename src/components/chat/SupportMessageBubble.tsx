@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +11,6 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { toast } from "sonner";
 import { cn, getAvatarInitials } from "@/lib/utils";
 import {
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";

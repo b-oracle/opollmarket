@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -13,7 +14,6 @@ import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAvatarInitials } from "@/lib/utils";
 import {
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
   Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X, FileText, Radio,
 } from "lucide-react";
 

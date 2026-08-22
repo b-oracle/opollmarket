@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
@@ -32,7 +33,6 @@ import { format, parseISO } from "date-fns";
 import CopyTradeStats from "@/components/CopyTradeStats";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import LocationAutocomplete from "@/components/LocationAutocomplete";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 
 type TxType = "buy" | "sell" | "deposit" | "withdraw" | "withdrawal" | "commission" | "payout" | "refund" | "initial_liquidity" | "qt_one_sided_bonus";

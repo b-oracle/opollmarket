@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,7 +10,6 @@ import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface StatusCommentsProps {
   statusId: string;

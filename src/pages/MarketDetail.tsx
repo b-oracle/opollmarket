@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import SEOHead from "@/components/SEOHead";
 import { getAvatarInitials } from "@/lib/utils";
 import YouTubeEmbed, { isYouTubeUrl } from "@/components/YouTubeEmbed";
@@ -111,7 +112,6 @@ const getTimeRemaining = (endDate: string) => {
 };
 
 import { optionColors } from "@/lib/optionColors";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const colorAlpha = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);

@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -12,7 +13,6 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSpaceReplay } from "@/hooks/useSpaceReplay";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const formatTime = (s: number) => {
   const h = Math.floor(s / 3600);

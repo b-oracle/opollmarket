@@ -1,10 +1,10 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Users } from "lucide-react";
 import { getAvatarInitials } from "@/lib/utils";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface MutualFollowersProps {
   targetUserId: string;

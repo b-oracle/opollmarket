@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import TopBar from "@/components/TopBar";
@@ -14,7 +15,6 @@ import RankShareModal from "@/components/RankShareModal";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import FollowButton from "@/components/FollowButton";
 import { Button } from "@/components/ui/button";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 
 interface Referrer {

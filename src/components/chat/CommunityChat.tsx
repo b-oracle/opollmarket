@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useRef, useCallback } from "react";
 import ChatDoodleBackground from "./ChatDoodleBackground";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -23,7 +24,6 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { cn, getAvatarInitials } from "@/lib/utils";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 

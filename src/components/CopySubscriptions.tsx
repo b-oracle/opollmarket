@@ -1,10 +1,10 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Zap, ShieldCheck, ToggleLeft, ToggleRight, Loader2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface CopySubscription {
   id: string;

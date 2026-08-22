@@ -1,9 +1,9 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useSpaceReplay } from "@/hooks/useSpaceReplay";
 import { getAvatarInitials } from "@/lib/utils";
 import { Play, Pause, X, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);

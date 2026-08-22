@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useMemo, useCallback } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +16,6 @@ import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
   Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search, FileText, Radio,
 } from "lucide-react";

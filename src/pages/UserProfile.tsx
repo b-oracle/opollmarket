@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
@@ -38,7 +39,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getCanonicalOrigin } from "@/lib/canonical";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const formatDollar = (v: number) => {
   const abs = Math.abs(v);

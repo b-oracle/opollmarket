@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +43,6 @@ const SupportTab = lazy(() => import("./SupportTab"));
 const SettingsTab = lazy(() => import("./SettingsTab"));
 import CommunityChat from "./CommunityChat";
 import SupportChat from "./SupportChat";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface ConversationRow {
   id: string;

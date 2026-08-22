@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -14,7 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { getAvatarInitials } from "@/lib/utils";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const AdminBadgeButton = ({ isAdminRoute, onClick, userId, label }: { isAdminRoute: boolean; onClick: () => void; userId: string; label?: string }) => {
   const { data: pendingCount = 0 } = useQuery({

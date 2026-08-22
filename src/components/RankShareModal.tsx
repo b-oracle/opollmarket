@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award, PenSquare, BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -8,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import StoryCreator from "@/components/social/StoryCreator";
-import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface RankShareModalProps {
   open: boolean;
