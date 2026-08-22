@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSpaceReplay } from "@/hooks/useSpaceReplay";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const formatTime = (s: number) => {
   const h = Math.floor(s / 3600);
@@ -314,7 +315,7 @@ const SpaceReplayModal = () => {
                         }`}
                       >
                         <Avatar className="w-6 h-6 shrink-0">
-                          {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : null}
+                          {profile?.avatar_url ? <AvatarImage src={resolveAvatarUrl(profile.avatar_url)} /> : null}
                           <AvatarFallback className="text-[9px] bg-primary/20 text-primary font-bold">{getAvatarInitials(name, { maxChars: 2 })}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
@@ -350,7 +351,7 @@ const SpaceReplayModal = () => {
                   return (
                     <div key={p.user_id} className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-accent/30 transition-colors">
                       <Avatar className="w-7 h-7">
-                        {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} /> : null}
+                        {profile?.avatar_url ? <AvatarImage src={resolveAvatarUrl(profile.avatar_url)} /> : null}
                         <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{getAvatarInitials(name, { maxChars: 2 })}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">

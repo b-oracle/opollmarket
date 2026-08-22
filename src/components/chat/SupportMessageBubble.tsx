@@ -10,6 +10,7 @@ import EmojiPicker, { Theme } from "emoji-picker-react";
 import { toast } from "sonner";
 import { cn, getAvatarInitials } from "@/lib/utils";
 import {
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
@@ -255,7 +256,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
           {m.is_ai ? (
             <Sparkles className="w-3.5 h-3.5 text-violet-500" />
           ) : m.profile?.avatar_url ? (
-            <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
+            <img src={resolveAvatarUrl(m.profile.avatar_url)} className="w-full h-full object-cover" alt="" />
           ) : (
             <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
               {m.is_staff ? "S" : getAvatarInitials(m.profile?.display_name)}

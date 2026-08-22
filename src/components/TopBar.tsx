@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { getAvatarInitials } from "@/lib/utils";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const AdminBadgeButton = ({ isAdminRoute, onClick, userId, label }: { isAdminRoute: boolean; onClick: () => void; userId: string; label?: string }) => {
   const { data: pendingCount = 0 } = useQuery({
@@ -144,7 +145,7 @@ const TopBar = () => {
                 className="w-9 h-9 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary transition-all active:scale-95 overflow-hidden"
               >
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                  <img src={resolveAvatarUrl(avatarUrl)} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
                   initial
                 )}

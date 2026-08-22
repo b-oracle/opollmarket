@@ -12,6 +12,7 @@ import FollowButton from "@/components/FollowButton";
 import { ArrowLeft, Users, UserCheck, Loader2, Search, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const LAST_SEEN_KEY = "followers_last_seen";
 const ITEMS_PER_PAGE = 10;
@@ -215,7 +216,7 @@ const Followers = () => {
                     <div className="relative shrink-0">
                       <div className="w-11 h-11 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
                         {profile?.avatar_url ? (
-                          <img src={profile.avatar_url} alt={name} className="w-full h-full object-cover" />
+                          <img src={resolveAvatarUrl(profile.avatar_url)} alt={name} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
                         )}

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, PhoneOff } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface CallRecord {
   id: string;
@@ -113,7 +114,7 @@ const CallHistoryTab = () => {
         >
           <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
             {call.other_user?.avatar_url ? (
-              <img src={call.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
+              <img src={resolveAvatarUrl(call.other_user.avatar_url)} className="w-full h-full object-cover" alt="" />
             ) : (
               <span className="text-sm font-bold text-primary">
                 {getAvatarInitials(call.other_user?.display_name)}

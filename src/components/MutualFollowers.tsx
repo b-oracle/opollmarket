@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Users } from "lucide-react";
 import { getAvatarInitials } from "@/lib/utils";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface MutualFollowersProps {
   targetUserId: string;
@@ -71,7 +72,7 @@ const MutualFollowers = ({ targetUserId }: MutualFollowersProps) => {
             aria-label={`View ${p.display_name || "user"}'s profile`}
           >
             {p.avatar_url ? (
-              <img src={p.avatar_url} alt={p.display_name || ""} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(p.avatar_url)} alt={p.display_name || ""} className="w-full h-full object-cover" />
             ) : (
               <span className="text-[8px] font-bold text-primary">
                 {getAvatarInitials(p.display_name)}

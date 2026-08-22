@@ -15,6 +15,7 @@ import NftBadge, { isNftAvatar } from "@/components/NftBadge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
   ArrowLeft, Users, UserCheck, Heart, Gift, Trophy,
   Sparkles, ChevronRight, ChevronLeft, Loader2, X, Search, FileText, Radio,
 } from "lucide-react";
@@ -199,7 +200,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
         <div className="relative shrink-0">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
             {prof?.avatar_url ? (
-              <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(prof.avatar_url)} alt={name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
             )}
@@ -271,7 +272,7 @@ const SocialPage = ({ open, onClose }: SocialPageProps) => {
                 <div className="relative shrink-0">
                   <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/30 overflow-hidden flex items-center justify-center">
                     {profile?.avatar_url ? (
-                      <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                      <img src={resolveAvatarUrl(profile.avatar_url)} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-xl font-bold text-primary">{getAvatarInitials(displayName, { maxChars: 2 })}</span>
                     )}

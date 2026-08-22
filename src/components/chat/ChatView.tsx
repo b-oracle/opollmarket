@@ -19,6 +19,7 @@ import { logCallEvent } from "@/lib/callEvents";
 import { stripCallDeepLinkParams } from "@/lib/callDeepLinkUrl";
 import { ensureMicrophonePermission } from "@/lib/mediaPermissions";
 import {
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
   getCachedCallConversation,
   dedupeCallConversationLookup,
 } from "@/lib/dmCallLookupCache";
@@ -984,7 +985,7 @@ const ChatView = () => {
         >
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
             {(convo as any)?.other_user?.avatar_url ? (
-              <img src={(convo as any).other_user.avatar_url} className="w-full h-full object-cover" alt="" />
+              <img src={resolveAvatarUrl((convo as any).other_user.avatar_url)} className="w-full h-full object-cover" alt="" />
             ) : (
               <span className="text-xs font-bold text-primary">{getAvatarInitials(otherName)}</span>
             )}

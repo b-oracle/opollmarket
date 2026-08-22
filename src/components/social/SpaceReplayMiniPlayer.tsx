@@ -3,6 +3,7 @@ import { getAvatarInitials } from "@/lib/utils";
 import { Play, Pause, X, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -29,7 +30,7 @@ const SpaceReplayMiniPlayer = () => {
         <div className="bg-card border border-border rounded-xl shadow-lg flex items-center gap-2 px-3 py-2">
           {/* Avatar */}
           <Avatar className="w-8 h-8 shrink-0 border border-primary/30">
-            {hostProfile?.avatar_url ? <AvatarImage src={hostProfile.avatar_url} /> : null}
+            {hostProfile?.avatar_url ? <AvatarImage src={resolveAvatarUrl(hostProfile.avatar_url)} /> : null}
             <AvatarFallback className="text-[9px] bg-primary/20 text-primary font-bold">
               {getAvatarInitials(hostName, { maxChars: 2 })}
             </AvatarFallback>

@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface StatusCommentsProps {
   statusId: string;
@@ -153,7 +154,7 @@ const StatusComments = ({ statusId }: StatusCommentsProps) => {
             onClick={() => navigate(`/user/${c.user_id}`)}
           >
             {prof?.avatar_url ? (
-              <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(prof.avatar_url)} alt={name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-[10px] font-bold text-primary">{getAvatarInitials(name)}</span>
             )}

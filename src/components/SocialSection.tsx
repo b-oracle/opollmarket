@@ -13,6 +13,7 @@ import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAvatarInitials } from "@/lib/utils";
 import {
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
   Users, UserCheck, Heart, Sparkles, Loader2, ChevronDown, Search, X, FileText, Radio,
 } from "lucide-react";
 
@@ -143,7 +144,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
         <div className="relative shrink-0">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
             {prof?.avatar_url ? (
-              <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(prof.avatar_url)} alt={name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
             )}

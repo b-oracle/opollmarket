@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Zap, ShieldCheck, ToggleLeft, ToggleRight, Loader2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface CopySubscription {
   id: string;
@@ -149,7 +150,7 @@ const CopySubscriptions = () => {
           >
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
               {sub.target_avatar ? (
-                <img src={sub.target_avatar} alt="" className="w-full h-full object-cover" />
+                <img src={resolveAvatarUrl(sub.target_avatar)} alt="" className="w-full h-full object-cover" />
               ) : (
                 <Users className="w-4 h-4 text-primary" />
               )}

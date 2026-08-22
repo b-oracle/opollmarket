@@ -12,6 +12,7 @@ import { useSpaceReplay } from "@/hooks/useSpaceReplay";
 import { formatDistanceToNow, format } from "date-fns";
 import { useState, useRef, useEffect } from "react";
 import SpaceShareSheet from "./SpaceShareSheet";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface SpaceCardProps {
   space: {
@@ -337,7 +338,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center shrink-0">
           {hostProfile?.avatar_url ? (
-            <img src={hostProfile.avatar_url} alt={hostName} className="w-full h-full object-cover" />
+            <img src={resolveAvatarUrl(hostProfile.avatar_url)} alt={hostName} className="w-full h-full object-cover" />
           ) : (
             <span className="text-sm font-bold text-primary">{getAvatarInitials(hostName)}</span>
           )}

@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useUserBalance } from "@/hooks/useUserBalance";
 import { useCommissionSettings } from "@/hooks/useCommissionSettings";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 type TabKey = "all" | "creator" | "referral" | "copy_trade" | "signup_bonus" | "pending" | "gift_sent" | "gift_received" | "bonus" | "osure";
 
@@ -610,7 +611,7 @@ const Commissions = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 {referredProfile?.avatar_url && (
-                  <img src={referredProfile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                  <img src={resolveAvatarUrl(referredProfile.avatar_url)} alt="" className="w-4 h-4 rounded-full object-cover" />
                 )}
                 <span>{referredProfile?.display_name || "User"}</span>
                 <ExternalLink className="w-3 h-3 shrink-0" />
@@ -628,7 +629,7 @@ const Commissions = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 {copierProfile?.avatar_url && (
-                  <img src={copierProfile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                  <img src={resolveAvatarUrl(copierProfile.avatar_url)} alt="" className="w-4 h-4 rounded-full object-cover" />
                 )}
                 <span>{copierProfile?.display_name || "User"}</span>
                 <ExternalLink className="w-3 h-3 shrink-0" />

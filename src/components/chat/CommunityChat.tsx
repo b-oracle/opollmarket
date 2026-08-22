@@ -23,6 +23,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { cn, getAvatarInitials } from "@/lib/utils";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const REACTION_EMOJIS = ["❤️", "😂", "👍", "😮", "😢", "🔥"];
 
@@ -301,7 +302,7 @@ const CommunityChat = ({ slug, label, onBack }: CommunityChatProps) => {
                   className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0 mt-0.5"
                 >
                   {m.profile?.avatar_url ? (
-                    <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
+                    <img src={resolveAvatarUrl(m.profile.avatar_url)} className="w-full h-full object-cover" alt="" />
                   ) : (
                     <span className="text-[10px] font-bold text-primary">
                       {getAvatarInitials(m.profile?.display_name)}

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { getCanonicalOrigin } from "@/lib/canonical";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const formatDollar = (v: number) => {
   const abs = Math.abs(v);
@@ -399,7 +400,7 @@ const UserProfile = () => {
             <div className="relative shrink-0">
               <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                  <img src={resolveAvatarUrl(profile.avatar_url)} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-2xl font-bold text-primary">{getAvatarInitials(displayName, { maxChars: 2 })}</span>
                 )}

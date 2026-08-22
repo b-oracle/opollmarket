@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useRateLimit } from "@/hooks/useRateLimit";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 interface Comment {
   id: string;
@@ -157,7 +158,7 @@ const CommentItem = ({
         <div className="relative shrink-0">
           <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center overflow-hidden">
             {comment.avatar_url ? (
-              <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(comment.avatar_url)} alt={comment.author_name} className="w-full h-full object-cover" />
             ) : (
                 <span className="text-xs font-bold text-primary">
                   {getAvatarInitials(comment.author_name)}

@@ -74,7 +74,7 @@ const CreatorCard = ({ creatorName, creatorUserId }: { creatorName: string; crea
     >
       <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center overflow-hidden">
         {profile?.avatar_url ? (
-          <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+          <img src={resolveAvatarUrl(profile.avatar_url)} alt={displayName} className="w-full h-full object-cover" />
         ) : (
           <span className="font-bold text-primary">{getAvatarInitials(displayName)}</span>
         )}
@@ -111,6 +111,7 @@ const getTimeRemaining = (endDate: string) => {
 };
 
 import { optionColors } from "@/lib/optionColors";
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 
 const colorAlpha = (hex: string, alpha: number) => {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -165,7 +166,7 @@ const InlineCommentItem = ({
       <div className="flex gap-2.5 py-2.5">
         <div className="w-7 h-7 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
           {comment.avatar_url ? (
-            <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
+            <img src={resolveAvatarUrl(comment.avatar_url)} alt={comment.author_name} className="w-full h-full object-cover" />
           ) : (
             <span className="text-[10px] font-bold text-primary">{getAvatarInitials(comment.author_name)}</span>
           )}
