@@ -28,7 +28,7 @@ interface SpaceCardProps {
     recording_url?: string | null;
     is_private?: boolean;
   };
-  hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
+  hostProfile?: { display_name?: string | null; avatar_url?: string | null; verification_level?: string | null } | null;
   index?: number;
   onJoinRoom?: (spaceId: string) => void;
 }
