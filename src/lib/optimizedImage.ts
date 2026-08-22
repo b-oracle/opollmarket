@@ -4,6 +4,8 @@
  * For external URLs, returns them unchanged.
  */
 
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 
 type ImageSize = "avatar-sm" | "avatar-md" | "avatar-lg" | "card" | "banner" | "thumb" | "story" | "feed";
