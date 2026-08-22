@@ -402,7 +402,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
               )}
             </h4>
           )}
-          <p className="text-[10px] text-muted-foreground mt-0.5">Hosted by {hostName}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+            <span>Hosted by {hostName}</span>
+            {hostVerification !== "none" && <NftBadge level={hostVerification} size={11} />}
+          </p>
         </div>
       </div>
 
