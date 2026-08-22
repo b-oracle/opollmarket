@@ -1,4 +1,5 @@
 import { getAvatarInitials } from "@/lib/utils";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
