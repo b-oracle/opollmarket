@@ -311,6 +311,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   };
 
   const hostName = hostProfile?.display_name || "Anonymous";
+  const hostVerification = ((hostProfile?.verification_level as VerificationLevel) || "none") as VerificationLevel;
 
   const { data: analytics } = useQuery({
     queryKey: ["space-analytics", space.id],
