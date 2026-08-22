@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getAvatarInitials } from "@/lib/utils";
@@ -157,7 +158,7 @@ const CommentItem = ({
         <div className="relative shrink-0">
           <div className="w-8 h-8 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center overflow-hidden">
             {comment.avatar_url ? (
-              <img src={comment.avatar_url} alt={comment.author_name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(comment.avatar_url)} alt={comment.author_name} className="w-full h-full object-cover" />
             ) : (
                 <span className="text-xs font-bold text-primary">
                   {getAvatarInitials(comment.author_name)}

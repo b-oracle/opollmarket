@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
             }
 
             if (imageUrl?.startsWith("ipfs://")) {
-              imageUrl = imageUrl.replace("ipfs://", "https://ipfs.io/ipfs/");
+              imageUrl = imageUrl.replace("ipfs://", "https://gateway.pinata.cloud/ipfs/");
             }
 
             return {

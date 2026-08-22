@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import useAnalytics from "@/hooks/useAnalytics";
@@ -906,7 +907,7 @@ const Profile = () => {
                 <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl scale-150" />
                 <div className="relative w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/40 flex items-center justify-center overflow-hidden ring-4 ring-primary/10">
                   {profile?.avatar_url ? (
-                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                    <img src={resolveAvatarUrl(profile.avatar_url)} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-2xl font-bold text-primary">{getAvatarInitials(displayName, { maxChars: 2 })}</span>
                   )}
@@ -952,7 +953,7 @@ const Profile = () => {
           <div className="relative mb-3">
             <div className="w-20 h-20 rounded-full bg-primary/20 border-2 border-primary/30 flex items-center justify-center overflow-hidden">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={resolveAvatarUrl(profile.avatar_url)} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-2xl font-bold text-primary">{getAvatarInitials(displayName, { maxChars: 2 })}</span>
               )}
@@ -1007,7 +1008,7 @@ const Profile = () => {
                         {avatarPreview ? (
                           <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
                         ) : profile?.avatar_url ? (
-                          <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                          <img src={resolveAvatarUrl(profile.avatar_url)} alt="Avatar" className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-xl font-bold text-primary">{getAvatarInitials(displayName, { maxChars: 2 })}</span>
                         )}

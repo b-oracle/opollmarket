@@ -40,7 +40,7 @@ const SpacesFeed = () => {
       if (hostIds.length === 0) return new Map();
       const { data } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, verification_level")
         .in("id", hostIds.slice(0, 50));
       return new Map((data || []).map((p: any) => [p.id, p]));
     },

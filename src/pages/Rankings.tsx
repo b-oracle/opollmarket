@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import TopBar from "@/components/TopBar";
@@ -73,7 +74,7 @@ const AvatarCircle = ({ avatar, name, size = "w-10 h-10", verificationLevel }: {
   <div className="relative shrink-0">
     <div className={`${size} rounded-full bg-secondary flex items-center justify-center text-lg overflow-hidden`}>
       {avatar ? (
-        <img src={avatar} alt={name} className="w-full h-full object-cover" />
+        <img src={resolveAvatarUrl(avatar)} alt={name} className="w-full h-full object-cover" />
       ) : (
         <span>👤</span>
       )}

@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, DollarSign, Users, Gift, Copy, Clock, Sparkles, PieChart as PieChartIcon, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Wallet, ArrowDownToLine, ArrowUpFromLine, Gem, Shield } from "lucide-react";
@@ -610,7 +611,7 @@ const Commissions = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 {referredProfile?.avatar_url && (
-                  <img src={referredProfile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                  <img src={resolveAvatarUrl(referredProfile.avatar_url)} alt="" className="w-4 h-4 rounded-full object-cover" />
                 )}
                 <span>{referredProfile?.display_name || "User"}</span>
                 <ExternalLink className="w-3 h-3 shrink-0" />
@@ -628,7 +629,7 @@ const Commissions = () => {
                 onClick={(e) => e.stopPropagation()}
               >
                 {copierProfile?.avatar_url && (
-                  <img src={copierProfile.avatar_url} alt="" className="w-4 h-4 rounded-full object-cover" />
+                  <img src={resolveAvatarUrl(copierProfile.avatar_url)} alt="" className="w-4 h-4 rounded-full object-cover" />
                 )}
                 <span>{copierProfile?.display_name || "User"}</span>
                 <ExternalLink className="w-3 h-3 shrink-0" />

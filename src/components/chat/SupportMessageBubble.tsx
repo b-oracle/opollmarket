@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -255,7 +256,7 @@ const SupportMessageBubble = ({ message: m, onReply, onScrollToMessage }: Suppor
           {m.is_ai ? (
             <Sparkles className="w-3.5 h-3.5 text-violet-500" />
           ) : m.profile?.avatar_url ? (
-            <img src={m.profile.avatar_url} className="w-full h-full object-cover" alt="" />
+            <img src={resolveAvatarUrl(m.profile.avatar_url)} className="w-full h-full object-cover" alt="" />
           ) : (
             <span className={`text-[10px] font-bold ${m.is_staff ? "text-emerald-500" : "text-primary"}`}>
               {m.is_staff ? "S" : getAvatarInitials(m.profile?.display_name)}

@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -153,7 +154,7 @@ const StatusComments = ({ statusId }: StatusCommentsProps) => {
             onClick={() => navigate(`/user/${c.user_id}`)}
           >
             {prof?.avatar_url ? (
-              <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(prof.avatar_url)} alt={name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-[10px] font-bold text-primary">{getAvatarInitials(name)}</span>
             )}

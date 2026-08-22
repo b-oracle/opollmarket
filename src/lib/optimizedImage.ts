@@ -4,6 +4,8 @@
  * For external URLs, returns them unchanged.
  */
 
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 
 type ImageSize = "avatar-sm" | "avatar-md" | "avatar-lg" | "card" | "banner" | "thumb" | "story" | "feed";
@@ -27,9 +29,13 @@ const SIZE_PRESETS: Record<ImageSize, { width: number; height?: number; quality?
  */
 export function optimizedImageUrl(url: string | null | undefined, size: ImageSize): string {
   if (!url) return "";
-  
+
+  // Fix NFT / IPFS URLs pointing at unreachable gateways
+  url = resolveAvatarUrl(url);
+
   // Only transform our own Supabase storage URLs
   if (!SUPABASE_URL || !url.includes(SUPABASE_URL)) return url;
+
   
   // Replace /object/public/ with /render/image/public/ for transforms
   const preset = SIZE_PRESETS[size];
@@ -57,6 +63,7 @@ export function optimizedImageUrlCustom(
   quality = 75
 ): string {
   if (!url) return "";
+  url = resolveAvatarUrl(url);
   if (!SUPABASE_URL || !url.includes(SUPABASE_URL)) return url;
   
   const transformedUrl = url.replace(

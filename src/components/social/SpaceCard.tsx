@@ -1,4 +1,6 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { getAvatarInitials } from "@/lib/utils";
+import NftBadge, { type VerificationLevel } from "@/components/NftBadge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,7 +29,7 @@ interface SpaceCardProps {
     recording_url?: string | null;
     is_private?: boolean;
   };
-  hostProfile?: { display_name?: string | null; avatar_url?: string | null } | null;
+  hostProfile?: { display_name?: string | null; avatar_url?: string | null; verification_level?: string | null } | null;
   index?: number;
   onJoinRoom?: (spaceId: string) => void;
 }
@@ -310,6 +312,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
   };
 
   const hostName = hostProfile?.display_name || "Anonymous";
+  const hostVerification = ((hostProfile?.verification_level as VerificationLevel) || "none") as VerificationLevel;
 
   const { data: analytics } = useQuery({
     queryKey: ["space-analytics", space.id],
@@ -337,7 +340,7 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center shrink-0">
           {hostProfile?.avatar_url ? (
-            <img src={hostProfile.avatar_url} alt={hostName} className="w-full h-full object-cover" />
+            <img src={resolveAvatarUrl(hostProfile.avatar_url)} alt={hostName} className="w-full h-full object-cover" />
           ) : (
             <span className="text-sm font-bold text-primary">{getAvatarInitials(hostName)}</span>
           )}
@@ -401,7 +404,10 @@ const SpaceCard = ({ space, hostProfile, index = 0, onJoinRoom }: SpaceCardProps
               )}
             </h4>
           )}
-          <p className="text-[10px] text-muted-foreground mt-0.5">Hosted by {hostName}</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
+            <span>Hosted by {hostName}</span>
+            {hostVerification !== "none" && <NftBadge level={hostVerification} size={11} />}
+          </p>
         </div>
       </div>
 

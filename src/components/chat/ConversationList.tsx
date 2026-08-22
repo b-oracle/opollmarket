@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { getAvatarInitials } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
@@ -361,7 +362,7 @@ const ConversationList = () => {
                     >
                       <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden">
                         {m.avatar_url ? (
-                          <img src={m.avatar_url} className="w-full h-full object-cover" alt="" />
+                          <img src={resolveAvatarUrl(m.avatar_url)} className="w-full h-full object-cover" alt="" />
                         ) : (
                           <span className="text-xs font-bold text-primary">
                             {getAvatarInitials(m.display_name)}
@@ -547,7 +548,7 @@ function ConversationItem({
     >
       <div className="relative w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
         {c.other_user?.avatar_url ? (
-          <img src={c.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
+          <img src={resolveAvatarUrl(c.other_user.avatar_url)} className="w-full h-full object-cover" alt="" />
         ) : (
             <span className="text-sm font-bold text-primary">
               {getAvatarInitials(c.other_user?.display_name)}

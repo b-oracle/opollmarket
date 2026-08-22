@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,7 +72,7 @@ const MutualFollowers = ({ targetUserId }: MutualFollowersProps) => {
             aria-label={`View ${p.display_name || "user"}'s profile`}
           >
             {p.avatar_url ? (
-              <img src={p.avatar_url} alt={p.display_name || ""} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(p.avatar_url)} alt={p.display_name || ""} className="w-full h-full object-cover" />
             ) : (
               <span className="text-[8px] font-bold text-primary">
                 {getAvatarInitials(p.display_name)}

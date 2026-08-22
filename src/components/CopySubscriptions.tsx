@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -149,7 +150,7 @@ const CopySubscriptions = () => {
           >
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
               {sub.target_avatar ? (
-                <img src={sub.target_avatar} alt="" className="w-full h-full object-cover" />
+                <img src={resolveAvatarUrl(sub.target_avatar)} alt="" className="w-full h-full object-cover" />
               ) : (
                 <Users className="w-4 h-4 text-primary" />
               )}

@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useQuery } from "@tanstack/react-query";
 import { getAvatarInitials } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +114,7 @@ const CallHistoryTab = () => {
         >
           <div className="w-11 h-11 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
             {call.other_user?.avatar_url ? (
-              <img src={call.other_user.avatar_url} className="w-full h-full object-cover" alt="" />
+              <img src={resolveAvatarUrl(call.other_user.avatar_url)} className="w-full h-full object-cover" alt="" />
             ) : (
               <span className="text-sm font-bold text-primary">
                 {getAvatarInitials(call.other_user?.display_name)}

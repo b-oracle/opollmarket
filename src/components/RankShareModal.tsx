@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { X, Download, Copy, Share2, Loader2, Twitter, MessageCircle, Send, Trophy, TrendingUp, Crown, Medal, Award, PenSquare, BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -270,7 +271,7 @@ const RankShareModal = ({ open, onOpenChange, rank, name, avatar, valueLine, val
                     <div className="flex items-center gap-4 mb-4">
                       <div className={`w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl shrink-0 overflow-hidden border-2 ${rankTheme.ring}`} style={{ borderColor: rankTheme.accent }}>
                         {avatar ? (
-                          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+                          <img src={resolveAvatarUrl(avatar)} alt={name} className="w-full h-full object-cover" />
                         ) : (
                           <span>👤</span>
                         )}

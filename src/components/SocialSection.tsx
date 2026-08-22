@@ -1,3 +1,4 @@
+import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -143,7 +144,7 @@ const SocialSection = ({ userId, isOwnProfile, isPublic, initialTab }: SocialSec
         <div className="relative shrink-0">
           <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 overflow-hidden flex items-center justify-center">
             {prof?.avatar_url ? (
-              <img src={prof.avatar_url} alt={name} className="w-full h-full object-cover" />
+              <img src={resolveAvatarUrl(prof.avatar_url)} alt={name} className="w-full h-full object-cover" />
             ) : (
               <span className="text-sm font-bold text-primary">{getAvatarInitials(name)}</span>
             )}
