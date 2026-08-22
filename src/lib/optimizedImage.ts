@@ -29,9 +29,13 @@ const SIZE_PRESETS: Record<ImageSize, { width: number; height?: number; quality?
  */
 export function optimizedImageUrl(url: string | null | undefined, size: ImageSize): string {
   if (!url) return "";
-  
+
+  // Fix NFT / IPFS URLs pointing at unreachable gateways
+  url = resolveAvatarUrl(url);
+
   // Only transform our own Supabase storage URLs
   if (!SUPABASE_URL || !url.includes(SUPABASE_URL)) return url;
+
   
   // Replace /object/public/ with /render/image/public/ for transforms
   const preset = SIZE_PRESETS[size];
