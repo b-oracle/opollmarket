@@ -284,6 +284,7 @@ Deno.serve(async (req) => {
         identity: user.id,
         name: callerProfile?.display_name || "Anonymous",
         ttl: "2h",
+        jwtId: `${user.id}-${Date.now()}-${crypto.randomUUID()}`,
       });
       at.addGrant({
         room: roomName,
@@ -338,6 +339,7 @@ Deno.serve(async (req) => {
         identity: user.id,
         name: profile?.display_name || "Anonymous",
         ttl: "2h",
+        jwtId: `${user.id}-${Date.now()}-${crypto.randomUUID()}`,
       });
       at.addGrant({
         room: call.room_name,
@@ -637,6 +639,7 @@ Deno.serve(async (req) => {
         identity: user.id,
         name: profile?.display_name || "Anonymous",
         ttl: "2h",
+        jwtId: `${user.id}-${Date.now()}-${crypto.randomUUID()}`,
       });
       at.addGrant({
         room: call.room_name,

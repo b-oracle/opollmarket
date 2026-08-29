@@ -96,6 +96,7 @@ Deno.serve(async (req) => {
         identity: user.id,
         name: profile?.display_name || "Host",
         ttl: "4h",
+        jwtId: `${user.id}-${Date.now()}-${crypto.randomUUID()}`,
       });
       at.addGrant({ room: roomName, roomJoin: true, canPublish: true, canSubscribe: true, canPublishData: true });
       const token = await at.toJwt();
@@ -132,6 +133,7 @@ Deno.serve(async (req) => {
         identity: user.id,
         name: profile?.display_name || "Viewer",
         ttl: "4h",
+        jwtId: `${user.id}-${Date.now()}-${crypto.randomUUID()}`,
       });
       at.addGrant({ room: roomName, roomJoin: true, canPublish: false, canSubscribe: true, canPublishData: false });
       const token = await at.toJwt();
