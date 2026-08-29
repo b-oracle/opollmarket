@@ -1207,7 +1207,24 @@ const SpaceRoom = ({ spaceId, spaceTitle, hostId, onClose }: SpaceRoomProps) => 
           }
         });
 
-        await room.connect(normUrl(data.url), data.token);
+        try {
+          await room.connect(normUrl(data.url), data.token);
+        } catch (connErr: any) {
+          // A stale/revoked token (e.g. left over from an earlier kicked session)
+          // makes the signal connection fail — mint a fresh one and retry once.
+          const m = String(connErr?.message || "").toLowerCase();
+          if (m.includes("revoked") || m.includes("invalid token")) {
+            const { data: retry } = await supabase.functions.invoke("livekit-token", {
+              body: { space_id: spaceId },
+            });
+            if (cancelled) return;
+            if (!retry?.token || !retry?.url) throw connErr;
+            await room.connect(normUrl(retry.url), retry.token);
+          } else {
+            throw connErr;
+          }
+        }
+
         // Pre-warm AudioContext during this user-gesture-initiated flow
         // so that ambient music from data channel events won't be blocked
         warmAudioContext();
