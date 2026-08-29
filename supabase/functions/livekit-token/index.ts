@@ -538,10 +538,16 @@ Deno.serve(async (req) => {
     const displayName = profile?.display_name || "Anonymous";
     const canPublish = isHost || isCoHost;
 
+    // IMPORTANT: livekit-server-sdk defaults the JWT id (jti) to the identity.
+    // When a host removes a participant, LiveKit revokes that jti until the
+    // token expires — which would reject EVERY future token for the same user
+    // ("invalid token: revoked") and lock them out of rejoining. A unique jti
+    // per issued token keeps revocations scoped to the single kicked session.
     const at = new AccessToken(apiKey, apiSecret, {
       identity: userId,
       name: displayName,
       ttl: "2h",
+      jwtId: `${userId}-${Date.now()}-${crypto.randomUUID()}`,
     });
 
     at.addGrant({

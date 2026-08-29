@@ -116,6 +116,19 @@ if (!rootElement) {
 
 createRoot(rootElement).render(<App />);
 
+// If the app stays alive and healthy for a while, clear the chunk-reload guard
+// so a future genuine stale-chunk error can still self-heal — but never sooner,
+// otherwise the counter resets instantly and the app can reload forever.
+window.setTimeout(() => {
+  try {
+    window.localStorage?.removeItem("chunk_reload_at");
+    window.localStorage?.removeItem("boot_recovery_at");
+  } catch {
+    // ignore storage access errors
+  }
+}, 60_000);
+
+
 // One-time blank-screen recovery: if app failed to mount any UI, clear stale SW/cache and reload.
 // Uses localStorage with a timestamp window so the counter survives across reloads
 // in PWA/standalone contexts where sessionStorage can be wiped between page loads,

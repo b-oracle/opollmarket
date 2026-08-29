@@ -76,9 +76,12 @@ class ErrorBoundary extends Component<Props, State> {
       inPreviewIframe = true;
     }
 
-    if (isChunkError && reloadCount < 2 && !inPreviewIframe) {
+    // Only ONE auto-reload per window: repeated reloads were producing an
+    // endless "Updating app…" refresh loop when the chunk was genuinely gone.
+    if (isChunkError && reloadCount < 1 && !inPreviewIframe) {
       return { hasError: true, error, isAutoReloading: true };
     }
+
     return { hasError: true, error, isAutoReloading: false };
   }
 
