@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       expected: {
         token_contract: ev.token_contract,
         recipient: ev.address,
-        amount_wei: String(ev.amount_wei),
+        amount_wei: amountWei.toString(),
         amount_usd: Number(ev.amount_usd),
       },
       threshold_usd: threshold,
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
           Number(BigInt(l.logIndex)) === Number(ev.log_index)
           && String(l.address).toLowerCase() === String(ev.token_contract).toLowerCase()
           && ("0x" + String(l.topics?.[2] ?? "").slice(-40)).toLowerCase() === String(ev.address).toLowerCase()
-          && BigInt(l.data) === BigInt(ev.amount_wei),
+          && BigInt(l.data) === amountWei,
         );
         verification.receipt_match = !!log;
         if (log) {
