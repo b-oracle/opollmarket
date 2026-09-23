@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Authenticated users can update reactions only" ON public.community_messages;
