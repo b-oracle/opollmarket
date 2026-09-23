@@ -63,12 +63,16 @@ Deno.serve(async (req) => {
     }
 
     // Load event
+    // NOTE: amount_wei is numeric(78,0); PostgREST serialises numeric as a JSON
+    // number, which loses precision past 2^53 and made the on-chain comparison
+    // below always fail. Pull an exact text copy alongside it.
     const { data: ev, error: evErr } = await admin
       .from("bsc_deposit_events")
-      .select("*")
+      .select("*, amount_wei_text:amount_wei::text")
       .eq("id", event_id)
       .maybeSingle();
     if (evErr || !ev) return json({ error: "Event not found" }, 404);
+    const amountWei = BigInt(String((ev as any).amount_wei_text ?? ev.amount_wei));
     if (ev.status === "credited") return json({ error: "Already credited" }, 409);
 
     // Load threshold for context
