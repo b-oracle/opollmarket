@@ -54,12 +54,9 @@ const CommunitiesTab = ({ onOpenChat }: { onOpenChat?: (slug: string, label: str
     queryKey: ["community-member-counts"],
     queryFn: async () => {
       const counts: Record<string, number> = {};
-      for (const c of COMMUNITIES) {
-        const { count } = await supabase
-          .from("community_memberships" as any)
-          .select("id", { count: "exact", head: true })
-          .eq("community_slug", c.slug) as any;
-        counts[c.slug] = count || 0;
+      const { data } = await (supabase.rpc as any)("get_community_member_counts");
+      for (const row of (data || []) as any[]) {
+        counts[row.community_slug] = Number(row.member_count) || 0;
       }
       return counts;
     },
