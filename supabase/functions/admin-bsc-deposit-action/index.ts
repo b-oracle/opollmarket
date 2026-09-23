@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
           verification,
         }, 422);
       }
-      const { data: newTxId, error: rpcErr } = await admin
+      const { data: newTxId, error: rpcErr } = await userClient
         .rpc("admin_approve_bsc_deposit", { _event_id: event_id });
       if (rpcErr) return json({ error: rpcErr.message, verification }, 500);
 
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
     }
 
     // Reject
-    const { error: rejErr } = await admin
+    const { error: rejErr } = await userClient
       .rpc("admin_reject_bsc_deposit", { _event_id: event_id, _reason: reason!.trim() });
     if (rejErr) return json({ error: rejErr.message, verification }, 500);
 
