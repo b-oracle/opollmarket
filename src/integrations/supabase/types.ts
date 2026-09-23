@@ -6210,6 +6210,13 @@ export type Database = {
         Returns: string
       }
       get_admin_user_stats: { Args: never; Returns: Json }
+      get_community_member_counts: {
+        Args: never
+        Returns: {
+          community_slug: string
+          member_count: number
+        }[]
+      }
       get_copy_trade_stats: {
         Args: { _trader_id: string }
         Returns: {
