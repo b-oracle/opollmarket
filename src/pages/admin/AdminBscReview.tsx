@@ -98,7 +98,19 @@ const AdminBscReview = () => {
       const { data, error } = await supabase.functions.invoke("admin-bsc-deposit-action", {
         body: { event_id: vars.eventId, action: vars.action, reason: vars.reason },
       });
-      if (error) throw new Error(error.message || "Action failed");
+      if (error) {
+        // functions.invoke hides the response body on non-2xx — read it so the
+        // admin sees the real reason instead of "non-2xx status code".
+        let detail = "";
+        try {
+          const res = (error as any)?.context;
+          if (res && typeof res.json === "function") {
+            const body = await res.clone().json();
+            detail = body?.error || "";
+          }
+        } catch { /* body not JSON */ }
+        throw new Error(detail || error.message || "Action failed");
+      }
       if ((data as any)?.error) throw new Error((data as any).error);
       return data as any;
     },
