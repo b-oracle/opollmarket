@@ -325,6 +325,8 @@ Deno.serve(async (req) => {
         creation_fee_refunded: creationFeeRefunded,
         creation_fee_forfeited: creationFeeForfeited,
         liquidity_refunded: liquidityRefunded,
+        // Legacy markets may have charged liquidity without a record — flag for admin review.
+        liquidity_unconfirmed: market.initial_liquidity > 0 && !liquidityWasPaid && !alreadyHandled.has("liquidity_return"),
         moderation_reject: isModerationReject,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
