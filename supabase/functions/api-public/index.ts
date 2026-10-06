@@ -542,9 +542,11 @@ Deno.serve(async (req) => {
       // FIX: Apply market creation fee just like the frontend flow
       const { data: feeSettings } = await admin
         .from("commission_settings")
-        .select("market_creation_fee")
+        .select("market_creation_fee, min_liquidity, min_first_prediction")
         .limit(1)
         .single();
+      const minLiq = Number((feeSettings as any)?.min_liquidity ?? 10);
+      if (liquidity < minLiq) return err(`initialLiquidity must be at least ${minLiq}`);
       const creationFee = feeSettings?.market_creation_fee || 0;
       const totalCost = liquidity + creationFee;
 
