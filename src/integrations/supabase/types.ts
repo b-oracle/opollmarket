@@ -1826,6 +1826,36 @@ export type Database = {
         }
         Relationships: []
       }
+      howto_videos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          sort_order: number
+          title: string
+          youtube_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          sort_order?: number
+          title: string
+          youtube_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+          youtube_id?: string
+        }
+        Relationships: []
+      }
       insurance_claims: {
         Row: {
           claim_amount: number
