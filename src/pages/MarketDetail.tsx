@@ -880,7 +880,7 @@ const MarketDetail = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">Your market is almost live!</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Place your first prediction (min $5) to make this market publicly visible on the feed.
+                Place your first prediction (min ${commissionForMin?.min_first_prediction ?? 5}) to make this market publicly visible on the feed.
               </p>
             </div>
           </motion.div>

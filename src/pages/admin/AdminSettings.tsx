@@ -1167,6 +1167,11 @@ const AdminSettings = () => {
                   <Label htmlFor="minLiquidity" className="text-xs">Minimum Liquidity (USDT)</Label>
                   <Input id="minLiquidity" type="number" min={1} step={1} value={minLiquidity} onChange={(e) => setMinLiquidity(e.target.value)} placeholder="10" />
                 </div>
+                <div className="space-y-1.5 mt-3">
+                  <Label htmlFor="minFirstPrediction" className="text-xs">Minimum First Prediction (USDT)</Label>
+                  <Input id="minFirstPrediction" type="number" min={0} step={1} value={minFirstPrediction} onChange={(e) => setMinFirstPrediction(e.target.value)} placeholder="5" />
+                  <p className="text-[10px] text-muted-foreground">Creators must place at least this amount on their own market to make it public.</p>
+                </div>
               </CardContent>
             </Card>
 

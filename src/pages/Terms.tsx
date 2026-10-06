@@ -168,7 +168,7 @@ const Terms = () => {
           <ul className="list-disc pl-5 space-y-1">
             <li><strong>Verified Creators:</strong> Users who hold a minimum balance of BC400 tokens (as configured by the System-Mod Engine) or own a qualifying BC400 NFT may create markets without additional fees.</li>
             <li><strong>Fee-Based Creators:</strong> Users who do not meet token-gating requirements may create markets by paying a market creation fee. Fee-based markets require System-Mod Engine approval before going live.</li>
-            <li><strong>First Prediction Requirement:</strong> Market creators must place a minimum $5 prediction on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
+            <li><strong>First Prediction Requirement:</strong> Market creators must place a minimum prediction (set by the platform, currently ${commissionForMin?.min_first_prediction ?? 5}) on their own market after creation to make it officially public. This records initial volume and trading activity.</li>
           </ul>
           <p>All market creators must provide clear, unambiguous resolution criteria and a resolution source. The Platform reserves the right to approve, reject, modify, or cancel any market at its sole discretion.</p>
         </section>
