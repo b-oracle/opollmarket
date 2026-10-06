@@ -1,3 +1,4 @@
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import SEOHead from "@/components/SEOHead";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -40,6 +41,7 @@ const tocItems = [
 ];
 
 const Terms = () => {
+  const { data: commissionForMin } = useCommissionSettings();
   const navigate = useNavigate();
 
   return (

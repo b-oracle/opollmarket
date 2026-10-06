@@ -1,3 +1,4 @@
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import SEOHead from "@/components/SEOHead";
 import { getAvatarInitials } from "@/lib/utils";
@@ -465,6 +466,7 @@ const MarketDetailsCollapsible = ({ details }: { details: string }) => {
 };
 
 const MarketDetail = () => {
+  const { data: commissionForMin } = useCommissionSettings();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
