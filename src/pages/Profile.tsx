@@ -1700,12 +1700,12 @@ const Profile = () => {
           <div className="space-y-2">
             {[
               { icon: Sparkles, label: "Replay Social Tour", href: "__social_tour__" },
-              { icon: Video, label: "How-to Video Tutorials", href: "#", comingSoon: true },
+              { icon: Video, label: "How-to Video Tutorials", href: "/how-to" },
               { icon: HelpCircle, label: "Frequently Asked Questions", href: "/faq" },
               { icon: Download, label: "Download App", href: "__install__" },
               ...(isFeatureEnabled("sales_deck") ? [{ icon: Users, label: "Sales Deck (Share & Recruit)", href: "/sales-deck" }] : []),
             ].map((item) => (
-              item.comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
+              (item as { comingSoon?: boolean }).comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
                 <button
                   key={item.label}
                   onClick={() => {

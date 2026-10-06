@@ -125,6 +125,7 @@ const AdminPromoBanners = lazy(() => import("./pages/admin/AdminPromoBanners"));
 const AdminSpoofStats = lazy(() => import("./pages/admin/AdminSpoofStats"));
 const EventDetail = lazy(() => import("./pages/EventDetail"));
 const Events = lazy(() => import("./pages/Events"));
+const HowTo = lazy(() => import("./pages/HowTo"));
 const Referrals = lazy(() => import("./pages/Referrals"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const FAQ = lazy(() => import("./pages/FAQ"));
@@ -565,6 +566,7 @@ const App = () => {
                        <Route path="/market/:id" element={<MarketDetail />} />
                        <Route path="/event/:slug" element={<EventDetail />} />
                        <Route path="/events" element={<Events />} />
+                      <Route path="/how-to" element={<HowTo />} />
                         <Route path="/feed" element={<FeatureGate featureKey="feed"><Feed /></FeatureGate>} />
                         <Route path="/create" element={<FeatureGate featureKey="create_market"><Create /></FeatureGate>} />
                         <Route path="/rankings" element={<FeatureGate featureKey="rankings"><Rankings /></FeatureGate>} />

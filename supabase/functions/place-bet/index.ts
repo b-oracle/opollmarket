@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     // Validate market is active and not expired
     const { data: marketCheck, error: marketCheckErr } = await supabase
       .from("markets")
-      .select("status, end_date, creator_wallet, market_type, api_key_id")
+      .select("status, end_date, creator_wallet, market_type, api_key_id, participants")
       .eq("id", marketId)
       .single();
 
@@ -158,9 +158,15 @@ Deno.serve(async (req) => {
     // Fetch commission settings
     const { data: commData } = await supabase
       .from("commission_settings")
-      .select("prediction_fee_percent, admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium")
+      .select("prediction_fee_percent, admin_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, referral_reward_amount, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium, min_first_prediction")
       .limit(1)
       .single();
+
+    // Creator's first prediction must meet the admin-set minimum
+    const minFirstPrediction = Number((commData as any)?.min_first_prediction ?? 5);
+    if (marketCheck.creator_wallet === userId && Number((marketCheck as any).participants || 0) === 0 && amount < minFirstPrediction) {
+      return new Response(JSON.stringify({ error: `Minimum first prediction is $${minFirstPrediction}` }), { status: 400, headers: corsHeaders });
+    }
 
     // Single flat prediction fee
     const predictionFeePercent = Number(commData?.prediction_fee_percent ?? 10) / 100;
