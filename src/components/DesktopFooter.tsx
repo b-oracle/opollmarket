@@ -6,7 +6,7 @@ import { useSocialLinks } from "@/hooks/useSocialLinks";
 import SocialIcon from "@/components/SocialIcon";
 
 const footerLinks = [
-  { icon: Video, label: "How-to", href: "#", comingSoon: true },
+  { icon: Video, label: "How-to", href: "/how-to" },
   { icon: HelpCircle, label: "FAQ", href: "/faq" },
   { icon: Eye, label: "How We Use Your Data", href: "/data-use" },
   { icon: Scale, label: "Disclaimer", href: "/disclaimer" },
