@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { EmailAPIError, sendLovableEmail } from "npm:@lovable.dev/email-js@0.3.1";
+import { logEmailSend } from "../_shared/emailSendLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,44 +114,38 @@ Deno.serve(async (req) => {
 </body></html>`;
         const text = `${heading}\n\n${message}\n\nOpen ${SITE_NAME}: ${SITE_URL}/profile`;
 
-        const messageId = crypto.randomUUID();
         const templateName = "kyc_rejected";
-
-        await admin.from("email_send_log").insert({
-          message_id: messageId,
-          template_name: templateName,
-          recipient_email: recipientEmail,
-          status: "pending",
-        });
-
-        const { error: enqueueError } = await admin.rpc("enqueue_email", {
-          queue_name: "transactional_emails",
-          payload: {
-            message_id: messageId,
-            to: recipientEmail,
-            from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-            sender_domain: SENDER_DOMAIN,
-            subject: `Your ${SITE_NAME} identity verification was rejected`,
-            html,
-            text,
-            purpose: "transactional",
-            label: templateName,
-            queued_at: new Date().toISOString(),
-          },
-        });
-        if (enqueueError) {
-          errors.push(
-            `email ${submission.user_id}: ${enqueueError.message}`
+        const apiKey = Deno.env.get("LOVABLE_API_KEY");
+        try {
+          if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+          await sendLovableEmail(
+            {
+              to: recipientEmail,
+              from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+              sender_domain: SENDER_DOMAIN,
+              subject: `Your ${SITE_NAME} identity verification was rejected`,
+              html,
+              text,
+              purpose: "transactional",
+              label: templateName,
+              idempotency_key: `kyc-rejected-backfill-${submission.user_id}`,
+            },
+            { apiKey, sendUrl: Deno.env.get("LOVABLE_SEND_URL") },
           );
-          await admin.from("email_send_log").insert({
-            message_id: messageId,
-            template_name: templateName,
-            recipient_email: recipientEmail,
-            status: "failed",
-            error_message: "Failed to enqueue email",
-          });
-        } else {
+          await logEmailSend(admin, { template_name: templateName, recipient_email: recipientEmail, status: "sent" });
           emailQueued++;
+        } catch (sendErr) {
+          if (sendErr instanceof EmailAPIError && sendErr.code === "recipient_suppressed") {
+            await logEmailSend(admin, { template_name: templateName, recipient_email: recipientEmail, status: "suppressed" });
+          } else {
+            await logEmailSend(admin, {
+              template_name: templateName,
+              recipient_email: recipientEmail,
+              status: "failed",
+              error_message: (sendErr as Error).message,
+            });
+            errors.push(`email ${submission.user_id}: ${(sendErr as Error).message}`);
+          }
         }
       } catch (e) {
         errors.push(`email ${submission.user_id}: ${(e as Error).message}`);
