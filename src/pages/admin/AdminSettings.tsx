@@ -69,6 +69,7 @@ const AdminSettings = () => {
   const [exitFee, setExitFee] = useState("");
   const [liquidityReturnFee, setLiquidityReturnFee] = useState("");
   const [minLiquidity, setMinLiquidity] = useState("");
+  const [minFirstPrediction, setMinFirstPrediction] = useState("");
   const [withdrawalFee, setWithdrawalFee] = useState("");
   const [copyTradeCommission, setCopyTradeCommission] = useState("");
   const [quickTradeFee, setQuickTradeFee] = useState("");
@@ -339,6 +340,7 @@ const AdminSettings = () => {
         setExitFee(String(d.exit_fee_percent ?? 5));
         setLiquidityReturnFee(String((d as any).liquidity_return_fee_percent ?? 5));
         setMinLiquidity(String((d as any).min_liquidity ?? 10));
+        setMinFirstPrediction(String((d as any).min_first_prediction ?? 5));
         setWithdrawalFee(String(d.withdrawal_fee_percent ?? 0));
         setCopyTradeCommission(String(d.copy_trade_commission_percent ?? 10));
         setQuickTradeFee(String(d.quick_trade_fee_percent ?? 5));
@@ -418,6 +420,7 @@ const AdminSettings = () => {
   const exitFeeNum = parseFloat(exitFee) || 0;
   const liquidityReturnFeeNum = parseFloat(liquidityReturnFee) || 5;
   const minLiquidityNum = parseFloat(minLiquidity) || 10;
+  const minFirstPredictionNum = Math.max(0, parseFloat(minFirstPrediction) || 5);
   const withdrawalFeeNum = parseFloat(withdrawalFee) || 0;
   const copyTradeCommissionNum = parseFloat(copyTradeCommission) || 0;
   const quickTradeFeeNum = parseFloat(quickTradeFee) || 0;
@@ -531,6 +534,7 @@ const AdminSettings = () => {
             exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
            min_liquidity: minLiquidityNum,
+           min_first_prediction: minFirstPredictionNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           quick_trade_fee_percent: quickTradeFeeNum,
@@ -602,6 +606,7 @@ const AdminSettings = () => {
            exit_fee_percent: exitFeeNum,
            liquidity_return_fee_percent: liquidityReturnFeeNum,
            min_liquidity: minLiquidityNum,
+           min_first_prediction: minFirstPredictionNum,
            withdrawal_fee_percent: withdrawalFeeNum,
           copy_trade_commission_percent: copyTradeCommissionNum,
           min_withdrawal_amount: minWithdrawNum,
@@ -1161,6 +1166,11 @@ const AdminSettings = () => {
                 <div className="space-y-1.5">
                   <Label htmlFor="minLiquidity" className="text-xs">Minimum Liquidity (USDT)</Label>
                   <Input id="minLiquidity" type="number" min={1} step={1} value={minLiquidity} onChange={(e) => setMinLiquidity(e.target.value)} placeholder="10" />
+                </div>
+                <div className="space-y-1.5 mt-3">
+                  <Label htmlFor="minFirstPrediction" className="text-xs">Minimum First Prediction (USDT)</Label>
+                  <Input id="minFirstPrediction" type="number" min={0} step={1} value={minFirstPrediction} onChange={(e) => setMinFirstPrediction(e.target.value)} placeholder="5" />
+                  <p className="text-[10px] text-muted-foreground">Creators must place at least this amount on their own market to make it public.</p>
                 </div>
               </CardContent>
             </Card>

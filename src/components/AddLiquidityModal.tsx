@@ -28,7 +28,7 @@ const AddLiquidityModal = ({ open, onClose, marketId, marketTitle, currentLiquid
 
   useEffect(() => {
     supabase.from("commission_settings").select("min_liquidity").limit(1).single().then(({ data }) => {
-      if (data) setMinLiquidity(Number((data as any).min_liquidity) || 1);
+      if (data) setMinLiquidity(Number((data as any).min_liquidity) || 10);
     });
   }, []);
 

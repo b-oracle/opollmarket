@@ -60,7 +60,7 @@ OPollMarket is a prediction market platform where users create and trade on real
 - The order book shows AMM-derived depth levels, not traditional limit orders.
 - Real trade volume indicators overlay the order book depth levels.
 - Price history charts and live trade feeds are available on each market detail page.
-- Minimum prediction amount is $5 when creating a market (first prediction requirement).
+- A minimum first prediction (set by admins, typically $5) is required when creating a market (first prediction requirement).
 - **Exit positions**: Users can sell their positions before market resolution. An exit fee applies to early sales.
 
 ## Quick Trade
@@ -88,7 +88,7 @@ OPollMarket is a prediction market platform where users create and trade on real
 - Token-gated access: Users holding BC400 tokens (10M+) or qualifying NFTs can create markets for free.
 - Fee-based access: Users without tokens/NFTs can pay a Market Creation Fee (displayed in-app) to create markets.
 - Fee-based markets go to "pending" status and require System-Mod Engine approval before going live.
-- Once approved, creators receive a notification and must place their first prediction (min $5) before the market becomes publicly visible.
+- Once approved, creators receive a notification and must place their first prediction (minimum set by admins) before the market becomes publicly visible.
 - All market content (titles, descriptions, images) is screened by AI moderation.
 - If a market is rejected for content violations, the creation fee is forfeited (non-refundable), but initial liquidity is refunded.
 - If a market is cancelled by the System-Mod Engine (non-violation reason), both fee and liquidity are refunded.

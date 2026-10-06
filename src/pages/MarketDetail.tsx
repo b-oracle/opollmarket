@@ -1,3 +1,4 @@
+import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 import { resolveAvatarUrl } from "@/lib/avatarUrl";
 import SEOHead from "@/components/SEOHead";
 import { getAvatarInitials } from "@/lib/utils";
@@ -465,6 +466,7 @@ const MarketDetailsCollapsible = ({ details }: { details: string }) => {
 };
 
 const MarketDetail = () => {
+  const { data: commissionForMin } = useCommissionSettings();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -880,7 +882,7 @@ const MarketDetail = () => {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">Your market is almost live!</p>
               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                Place your first prediction (min $5) to make this market publicly visible on the feed.
+                Place your first prediction (min ${commissionForMin?.min_first_prediction ?? 5}) to make this market publicly visible on the feed.
               </p>
             </div>
           </motion.div>

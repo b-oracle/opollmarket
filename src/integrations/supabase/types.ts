@@ -939,6 +939,7 @@ export type Database = {
           max_drafts_blue: number
           max_drafts_gold: number
           max_drafts_none: number
+          min_first_prediction: number
           min_gold_token_balance: number
           min_liquidity: number
           min_nft_balance: number
@@ -1027,6 +1028,7 @@ export type Database = {
           max_drafts_blue?: number
           max_drafts_gold?: number
           max_drafts_none?: number
+          min_first_prediction?: number
           min_gold_token_balance?: number
           min_liquidity?: number
           min_nft_balance?: number
@@ -1115,6 +1117,7 @@ export type Database = {
           max_drafts_blue?: number
           max_drafts_gold?: number
           max_drafts_none?: number
+          min_first_prediction?: number
           min_gold_token_balance?: number
           min_liquidity?: number
           min_nft_balance?: number
@@ -5445,6 +5448,7 @@ export type Database = {
           max_drafts_blue: number | null
           max_drafts_gold: number | null
           max_drafts_none: number | null
+          min_first_prediction: number | null
           min_gold_token_balance: number | null
           min_liquidity: number | null
           min_nft_balance: number | null
@@ -5533,6 +5537,7 @@ export type Database = {
           max_drafts_blue?: number | null
           max_drafts_gold?: number | null
           max_drafts_none?: number | null
+          min_first_prediction?: number | null
           min_gold_token_balance?: number | null
           min_liquidity?: number | null
           min_nft_balance?: number | null
@@ -5621,6 +5626,7 @@ export type Database = {
           max_drafts_blue?: number | null
           max_drafts_gold?: number | null
           max_drafts_none?: number | null
+          min_first_prediction?: number | null
           min_gold_token_balance?: number | null
           min_liquidity?: number | null
           min_nft_balance?: number | null

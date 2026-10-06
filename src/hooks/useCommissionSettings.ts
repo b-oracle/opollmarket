@@ -42,6 +42,7 @@ export interface CommissionSettings {
   max_drafts_none: number;
   max_drafts_blue: number;
   max_drafts_gold: number;
+  min_first_prediction: number;
 }
 
 export const useCommissionSettings = () => {
@@ -50,7 +51,7 @@ export const useCommissionSettings = () => {
     queryFn: async (): Promise<CommissionSettings> => {
       const { data, error } = await supabase
         .from("public_commission_settings" as any)
-        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium, social_ad_price, ai_generation_cost, welcome_bonus_percent, welcome_bonus_cap, gift_fee_percent, prediction_min_bet, prediction_max_bet, deposit_min_amount, deposit_max_amount, push_prompt_cooldown_days, deposit_expiry_minutes, max_drafts_none, max_drafts_blue, max_drafts_gold")
+        .select("prediction_fee_percent, creator_fee_percent, creator_fee_blue_percent, creator_fee_gold_percent, referrer_commission_percent, exit_fee_percent, quick_trade_fee_percent, qt_min_bet, qt_max_bet, qt_streak_2x, qt_streak_3x, qt_streak_4x, qt_streak_5x, qt_enabled_assets, qt_enabled_timeframes, qt_disabled_assets, auto_resolve_fee, boost_flash_price, boost_standard_price, boost_whale_price, broadcast_price, bc400_pool_percent, osure_enabled, osure_25_premium, osure_50_premium, osure_100_premium, social_ad_price, ai_generation_cost, welcome_bonus_percent, welcome_bonus_cap, gift_fee_percent, prediction_min_bet, prediction_max_bet, deposit_min_amount, deposit_max_amount, push_prompt_cooldown_days, deposit_expiry_minutes, max_drafts_none, max_drafts_blue, max_drafts_gold, min_first_prediction")
         .limit(1)
         .maybeSingle();
       if (error || !data) {
@@ -95,6 +96,7 @@ export const useCommissionSettings = () => {
            max_drafts_none: 2,
            max_drafts_blue: 5,
            max_drafts_gold: 10,
+           min_first_prediction: 5,
          };
       }
       const d = data as any;
@@ -139,6 +141,7 @@ export const useCommissionSettings = () => {
         max_drafts_none: Number(d.max_drafts_none ?? 2),
         max_drafts_blue: Number(d.max_drafts_blue ?? 5),
         max_drafts_gold: Number(d.max_drafts_gold ?? 10),
+        min_first_prediction: Number(d.min_first_prediction ?? 5),
       };
     },
     staleTime: 60_000,
