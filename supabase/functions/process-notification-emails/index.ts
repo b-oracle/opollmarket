@@ -123,7 +123,8 @@ Deno.serve(async (req) => {
 });
 
 async function scheduleRetry(
-  admin: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  admin: any,
   job: OutboxRow,
   reason: string,
 ) {
@@ -145,7 +146,8 @@ async function scheduleRetry(
 }
 
 async function markFinal(
-  admin: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  admin: any,
   id: string,
   status: "sent" | "dlq" | "skipped",
   reason: string | null,
