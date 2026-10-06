@@ -278,6 +278,7 @@ const Create = () => {
   const BOOST_TIER_HOURS: Record<string, number> = { flash: 12, standard: 24, whale: 168 };
   const [broadcastPriceVal, setBroadcastPriceVal] = useState(5);
   const [minLiquidity, setMinLiquidity] = useState(10);
+  const [minFirstPrediction, setMinFirstPrediction] = useState(5);
 
   useEffect(() => {
     (async () => {
@@ -310,6 +311,7 @@ const Create = () => {
         });
         setBroadcastPriceVal(Number((data as any).broadcast_price ?? 5));
         setMinLiquidity(Number((data as any).min_liquidity ?? 10));
+        setMinFirstPrediction(Number((data as any).min_first_prediction ?? 5));
       }
       setSettingsLoaded(true);
     })();
@@ -3091,7 +3093,7 @@ const Create = () => {
                   </motion.div>
                   <h3 className="text-base font-bold mb-1">Place Your First Prediction</h3>
                   <p className="text-xs text-muted-foreground text-center mb-5">
-                    To make your market official, place a minimum $5 prediction. This records the first volume and shows other traders you believe in your market.
+                    To make your market official, place a minimum ${minFirstPrediction} prediction. This records the first volume and shows other traders you believe in your market.
                   </p>
 
                    {/* Side/Option selection */}
@@ -3157,20 +3159,20 @@ const Create = () => {
 
                   {/* Amount input */}
                   <div className="w-full mb-4">
-                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Prediction Amount (min $5)</label>
+                    <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">Prediction Amount (min ${minFirstPrediction})</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">$</span>
                       <input
                         type="number"
                         value={firstPredAmount}
                         onChange={(e) => setFirstPredAmount(e.target.value)}
-                        min={5}
-                        placeholder="5"
+                        min={minFirstPrediction}
+                        placeholder={String(minFirstPrediction)}
                         className="w-full bg-muted/50 border border-border rounded-xl pl-7 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </div>
                     <div className="flex gap-2 mt-2">
-                      {[5, 10, 25, 50].map((amt) => (
+                      {[minFirstPrediction, 10, 25, 50].filter((v, i, a) => v >= minFirstPrediction && a.indexOf(v) === i).map((amt) => (
                         <button
                           key={amt}
                           onClick={() => setFirstPredAmount(amt.toString())}
@@ -3184,16 +3186,16 @@ const Create = () => {
                         </button>
                       ))}
                     </div>
-                    {parseFloat(firstPredAmount) < 5 && firstPredAmount !== "" && (
-                      <p className="text-[10px] text-destructive mt-1.5">Minimum prediction is $5</p>
+                    {parseFloat(firstPredAmount) < minFirstPrediction && firstPredAmount !== "" && (
+                      <p className="text-[10px] text-destructive mt-1.5">Minimum prediction is ${minFirstPrediction}</p>
                     )}
                   </div>
 
                   <button
                     onClick={async () => {
                       const amount = parseFloat(firstPredAmount);
-                      if (!user || !newMarketId || amount < 5) {
-                        toast.error("Minimum prediction is $5");
+                      if (!user || !newMarketId || amount < minFirstPrediction) {
+                        toast.error(`Minimum prediction is $${minFirstPrediction}`);
                         return;
                       }
                       setSubmitStep("placing_prediction");
@@ -3228,7 +3230,7 @@ const Create = () => {
                         setSubmitStep("first_prediction");
                       }
                     }}
-                    disabled={parseFloat(firstPredAmount) < 5 || !firstPredAmount || (marketType !== "binary" && !firstPredOptionId)}
+                    disabled={parseFloat(firstPredAmount) < minFirstPrediction || !firstPredAmount || (marketType !== "binary" && !firstPredOptionId)}
                     className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm transition-all active:scale-95 disabled:opacity-40 flex items-center justify-center gap-2"
                   >
                     <Sparkles className="w-4 h-4" />
