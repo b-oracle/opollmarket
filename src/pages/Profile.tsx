@@ -1705,7 +1705,7 @@ const Profile = () => {
               { icon: Download, label: "Download App", href: "__install__" },
               ...(isFeatureEnabled("sales_deck") ? [{ icon: Users, label: "Sales Deck (Share & Recruit)", href: "/sales-deck" }] : []),
             ].map((item) => (
-              item.comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
+              (item as { comingSoon?: boolean }).comingSoon || item.href === "__install__" || item.href === "__social_tour__" ? (
                 <button
                   key={item.label}
                   onClick={() => {
