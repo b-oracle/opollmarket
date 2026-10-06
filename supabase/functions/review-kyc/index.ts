@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { EmailAPIError, sendLovableEmail } from "npm:@lovable.dev/email-js@0.3.1";
+import { logEmailSend } from "../_shared/emailSendLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -201,44 +203,40 @@ Deno.serve(async (req) => {
 
         const text = `${heading}\n\n${notifMessage}\n\nOpen ${SITE_NAME}: ${SITE_URL}/profile`;
 
-        const messageId = crypto.randomUUID();
         const templateName = action === "approved" ? "kyc_approved" : "kyc_rejected";
-
-        await adminClient.from("email_send_log").insert({
-          message_id: messageId,
-          template_name: templateName,
-          recipient_email: recipientEmail,
-          status: "pending",
-        });
-
-        const { error: enqueueError } = await adminClient.rpc("enqueue_email", {
-          queue_name: "transactional_emails",
-          payload: {
-            message_id: messageId,
-            to: recipientEmail,
-            from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-            sender_domain: SENDER_DOMAIN,
-            subject:
-              action === "approved"
+        const apiKey = Deno.env.get("LOVABLE_API_KEY");
+        try {
+          if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+          await sendLovableEmail(
+            {
+              to: recipientEmail,
+              from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+              sender_domain: SENDER_DOMAIN,
+              subject: action === "approved"
                 ? `Your ${SITE_NAME} identity verification was approved`
                 : `Your ${SITE_NAME} identity verification was rejected`,
-            html,
-            text,
-            purpose: "transactional",
-            label: templateName,
-            queued_at: new Date().toISOString(),
-          },
-        });
-
-        if (enqueueError) {
-          console.error("KYC email enqueue failed:", enqueueError);
-          await adminClient.from("email_send_log").insert({
-            message_id: messageId,
-            template_name: templateName,
-            recipient_email: recipientEmail,
-            status: "failed",
-            error_message: "Failed to enqueue email",
-          });
+              html,
+              text,
+              purpose: "transactional",
+              label: templateName,
+              idempotency_key: `kyc-${action}-${submission_id}`,
+            },
+            { apiKey, sendUrl: Deno.env.get("LOVABLE_SEND_URL") },
+          );
+          await logEmailSend(adminClient, { template_name: templateName, recipient_email: recipientEmail, status: "sent" });
+          
+        } catch (sendErr) {
+          if (sendErr instanceof EmailAPIError && sendErr.code === "recipient_suppressed") {
+            await logEmailSend(adminClient, { template_name: templateName, recipient_email: recipientEmail, status: "suppressed" });
+          } else {
+            await logEmailSend(adminClient, {
+              template_name: templateName,
+              recipient_email: recipientEmail,
+              status: "failed",
+              error_message: (sendErr as Error).message,
+            });
+            console.error("KYC email send failed:", (sendErr as Error).message);
+          }
         }
       }
     } catch (emailErr) {

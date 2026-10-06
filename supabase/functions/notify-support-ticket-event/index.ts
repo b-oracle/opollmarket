@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifyInternalOrAdmin } from "../_shared/internalAuth.ts";
+import { sendTemplateEmail } from "../_shared/transactional-email-templates/send-email.ts";
+import { logEmailSend } from "../_shared/emailSendLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -80,7 +82,7 @@ Deno.serve(async (req) => {
       console.error("notification insert failed", e);
     }
 
-    // 2. Email via send-transactional-email
+    // 2. Email via managed email helper
     try {
       const { data: authUser } = await admin.auth.admin.getUserById(ticket.user_id);
       const recipientEmail = authUser?.user?.email;
@@ -92,14 +94,26 @@ Deno.serve(async (req) => {
         if (event === "created") templateData.category = ticket.category;
         if (event === "reply") templateData.preview = message_preview ?? "";
 
-        await admin.functions.invoke("send-transactional-email", {
-          body: {
-            templateName,
-            recipientEmail,
-            idempotencyKey: `support-${event}-${ticket_id}-${Date.now()}`,
+        const idempotencyKey = `support-${event}-${ticket_id}-${Date.now()}`;
+        try {
+          const result = await sendTemplateEmail(templateName, recipientEmail, {
             templateData,
-          },
-        });
+            idempotencyKey,
+          });
+          await logEmailSend(admin, {
+            template_name: templateName,
+            recipient_email: recipientEmail,
+            status: result.sent ? "sent" : "suppressed",
+          });
+        } catch (sendErr) {
+          await logEmailSend(admin, {
+            template_name: templateName,
+            recipient_email: recipientEmail,
+            status: "failed",
+            error_message: (sendErr as Error).message,
+          });
+          throw sendErr;
+        }
       }
     } catch (e) {
       console.error("email send failed", e);

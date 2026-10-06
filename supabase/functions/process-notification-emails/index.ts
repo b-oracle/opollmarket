@@ -1,11 +1,14 @@
 // Drains the notification_email_outbox table:
 //   - Atomically claims due jobs (FOR UPDATE SKIP LOCKED via RPC)
-//   - Calls send-transactional-email for each
+//   - Sends each through the managed email helper
 //   - On success: status=sent
 //   - On failure: exponential backoff, requeue until max_attempts, then DLQ
 // Designed to be invoked frequently by pg_cron. Safe to run concurrently.
 
 import { createClient } from "@supabase/supabase-js";
+import { EmailAPIError } from "npm:@lovable.dev/email-js@0.3.1";
+import { sendTemplateEmail } from "../_shared/transactional-email-templates/send-email.ts";
+import { logEmailSend } from "../_shared/emailSendLog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,48 +64,54 @@ Deno.serve(async (req) => {
           return;
         }
 
-        const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/send-transactional-email`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${SERVICE_ROLE}`,
-              apikey: SERVICE_ROLE,
-            },
-            body: JSON.stringify({
-              templateName: job.template_name,
-              recipientEmail: job.recipient_email,
-              idempotencyKey: job.idempotency_key,
-              templateData: job.template_data ?? {},
-            }),
-          },
-        );
-
-        if (res.ok) {
-          await admin
-            .from("notification_email_outbox")
-            .update({
-              status: "sent",
-              sent_at: new Date().toISOString(),
-              last_error: null,
-            })
-            .eq("id", job.id);
-          sent++;
+        try {
+          const result = await sendTemplateEmail(job.template_name, job.recipient_email, {
+            templateData: job.template_data ?? {},
+            idempotencyKey: job.idempotency_key,
+          });
+          if (!result.sent) {
+            await logEmailSend(admin, {
+              template_name: job.template_name,
+              recipient_email: job.recipient_email,
+              status: "suppressed",
+            });
+            await markFinal(admin, job.id, "skipped", "recipient_suppressed");
+            return;
+          }
+        } catch (sendErr) {
+          const msg = (sendErr as Error).message ?? String(sendErr);
+          await logEmailSend(admin, {
+            template_name: job.template_name,
+            recipient_email: job.recipient_email,
+            status: "failed",
+            error_message: msg.slice(0, 1000),
+          });
+          const status = sendErr instanceof EmailAPIError ? sendErr.status : 500;
+          const transient = !status || status >= 500 || status === 408 || status === 425 || status === 429;
+          if (!transient) {
+            await markFinal(admin, job.id, "dlq", `HTTP ${status}: ${msg.slice(0, 500)}`);
+            dlq++;
+            return;
+          }
+          await scheduleRetry(admin, job, `HTTP ${status}: ${msg.slice(0, 500)}`);
+          retried++;
           return;
         }
 
-        const body = await res.text().catch(() => "");
-        // 4xx (except 408/425/429) = permanent — straight to DLQ.
-        const transient =
-          res.status >= 500 || res.status === 408 || res.status === 425 || res.status === 429;
-        if (!transient) {
-          await markFinal(admin, job.id, "dlq", `HTTP ${res.status}: ${body.slice(0, 500)}`);
-          dlq++;
-          return;
-        }
-        await scheduleRetry(admin, job, `HTTP ${res.status}: ${body.slice(0, 500)}`);
-        retried++;
+        await logEmailSend(admin, {
+          template_name: job.template_name,
+          recipient_email: job.recipient_email,
+          status: "sent",
+        });
+        await admin
+          .from("notification_email_outbox")
+          .update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            last_error: null,
+          })
+          .eq("id", job.id);
+        sent++;
       } catch (err) {
         await scheduleRetry(admin, job, (err as Error).message ?? String(err));
         retried++;
@@ -114,7 +123,8 @@ Deno.serve(async (req) => {
 });
 
 async function scheduleRetry(
-  admin: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  admin: any,
   job: OutboxRow,
   reason: string,
 ) {
@@ -136,7 +146,8 @@ async function scheduleRetry(
 }
 
 async function markFinal(
-  admin: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  admin: any,
   id: string,
   status: "sent" | "dlq" | "skipped",
   reason: string | null,
