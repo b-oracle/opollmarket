@@ -70,8 +70,14 @@ export const usePlaceBet = () => {
       });
 
       if (error) {
-        // Try to parse error message from response
-        const msg = typeof data === "object" && data?.error ? data.error : error.message || "Failed to place bet";
+        let msg = (typeof data === "object" && data?.error) || error.message || "Failed to place bet";
+        try {
+          const ctx = (error as any)?.context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.clone().json();
+            if (body?.error) msg = body.error;
+          }
+        } catch { /* keep fallback */ }
         throw new Error(msg);
       }
 

@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
         // Allow up to 2% tolerance for AMM movement between client fetch and server execution
         const tolerance = Math.max(2, serverPrice * 0.02);
         if (Math.abs(price - serverPrice) > tolerance) {
+          console.warn("place-bet rejected: price moved", { marketId, optionId, side, price });
           return new Response(JSON.stringify({ error: "Price has moved. Please refresh and try again." }), {
             status: 400, headers: corsHeaders,
           });
@@ -119,6 +120,7 @@ Deno.serve(async (req) => {
         const serverPrice = Math.round(Number(serverOption.price) * 100);
         const tolerance = Math.max(2, serverPrice * 0.02);
         if (Math.abs(price - serverPrice) > tolerance) {
+          console.warn("place-bet rejected: price moved", { marketId, optionId, side, price });
           return new Response(JSON.stringify({ error: "Price has moved. Please refresh and try again." }), {
             status: 400, headers: corsHeaders,
           });
@@ -257,6 +259,7 @@ Deno.serve(async (req) => {
 
     // Pre-check: main balance must cover bet + remaining fees + insurance
     if (mainDeduct > currentBalance) {
+      console.warn("place-bet rejected: insufficient balance", { userId, amount });
       return new Response(JSON.stringify({ error: "Insufficient balance" }), {
         status: 400, headers: corsHeaders,
       });
