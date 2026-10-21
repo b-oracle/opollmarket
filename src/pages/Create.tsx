@@ -1433,6 +1433,16 @@ const Create = () => {
     })();
   }, [user]);
 
+  // Draft opened explicitly from Portfolio: use the held fee without asking
+  useEffect(() => {
+    if (heldEscrow && draftId && !chooserDone) {
+      setEscrowId(heldEscrow.id);
+      setFeeBypass(true);
+      setGatePassed(true);
+      setChooserDone(true);
+    }
+  }, [heldEscrow, draftId, chooserDone]);
+
   const pancakeSwapUrl = tokenContractAddress
     ? `https://pancakeswap.finance/swap?outputCurrency=${tokenContractAddress}&chain=bsc`
     : "https://pancakeswap.finance/swap";
