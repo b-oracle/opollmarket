@@ -357,6 +357,8 @@ const Create = () => {
   const [draftLoading, setDraftLoading] = useState(true);
   const [draftBannerDraft, setDraftBannerDraft] = useState<{ id: string; title: string } | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
+  const [heldEscrow, setHeldEscrow] = useState<{ id: string; amount: number } | null>(null);
+  const [chooserDone, setChooserDone] = useState(false);
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
 
   // Form state — restore from localStorage on mount (persists across tab close / browser crash)
@@ -1426,12 +1428,20 @@ const Create = () => {
         .limit(1)
         .maybeSingle();
       if (data) {
-        setEscrowId(data.id);
-        setFeeBypass(true);
-        setGatePassed(true);
+        setHeldEscrow({ id: data.id, amount: Number(data.amount) || 0 });
       }
     })();
   }, [user]);
+
+  // Draft opened explicitly from Portfolio: use the held fee without asking
+  useEffect(() => {
+    if (heldEscrow && draftId && !chooserDone) {
+      setEscrowId(heldEscrow.id);
+      setFeeBypass(true);
+      setGatePassed(true);
+      setChooserDone(true);
+    }
+  }, [heldEscrow, draftId, chooserDone]);
 
   const pancakeSwapUrl = tokenContractAddress
     ? `https://pancakeswap.finance/swap?outputCurrency=${tokenContractAddress}&chain=bsc`
@@ -1527,6 +1537,36 @@ const Create = () => {
               Sign In to Create
             </button>
           </motion.div>
+        </div>
+        <BottomNav />
+      </div>
+    );
+  }
+
+  // --- Resume chooser: user has a held creation fee; let them decide ---
+  if (heldEscrow && !chooserDone && !draftLoading) {
+    const useFee = () => { setEscrowId(heldEscrow.id); setFeeBypass(true); setGatePassed(true); setChooserDone(true); };
+    return (
+      <div className="min-h-dvh bg-background" style={{ paddingBottom: 'calc(1rem + var(--content-bottom))' }}>
+        <TopBar />
+        <div className="max-w-lg mx-auto px-4" style={{ paddingTop: 'calc(var(--content-top) + 1.5rem)' }}>
+          <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+            <h1 className="text-xl font-bold">Welcome back</h1>
+            <p className="text-sm text-muted-foreground">
+              You already paid a <strong className="text-foreground">${Number(heldEscrow.amount).toFixed(2)}</strong> creation fee. It stays reserved until you publish a market.
+            </p>
+            {draftBannerDraft && (
+              <p className="text-sm text-muted-foreground">Saved draft: <strong className="text-foreground">{draftBannerDraft.title}</strong></p>
+            )}
+            <div className="flex flex-col gap-2">
+              {draftBannerDraft && (
+                <button onClick={() => { useFee(); handleResumeDraft(); }} className="w-full py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground active:scale-95">Continue draft</button>
+              )}
+              <button onClick={() => { useFee(); setDraftBannerDraft(null); setDraftId(null); }} className="w-full py-2.5 rounded-xl text-sm font-semibold bg-secondary text-secondary-foreground active:scale-95">Start a new market (use paid fee)</button>
+              <button onClick={() => { setChooserDone(true); setDraftBannerDraft(null); }} className="w-full py-2.5 rounded-xl text-sm font-medium border border-border active:scale-95">Create as Verified Creator</button>
+              <button onClick={() => navigate(-1)} className="w-full py-2 text-sm text-muted-foreground">Go back</button>
+            </div>
+          </div>
         </div>
         <BottomNav />
       </div>
