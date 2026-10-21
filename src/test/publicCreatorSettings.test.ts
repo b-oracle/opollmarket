@@ -1,9 +1,7 @@
-// @vitest-environment node
 // Integration regression: public creator requirements must load without admin access.
 import { describe, expect, it } from "vitest";
-import { loadEnv } from "vite";
 
-const env = loadEnv("test", process.cwd(), "VITE_");
+const env = import.meta.env;
 const headers = { apikey: env.VITE_SUPABASE_PUBLISHABLE_KEY };
 
 describe("public creator settings access", () => {
