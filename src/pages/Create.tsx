@@ -59,6 +59,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureToggles } from "@/hooks/useFeatureToggles";
 
 import { supabase } from "@/integrations/supabase/client";
+import { placeFirstPrediction } from "@/lib/firstPrediction";
 import { toast } from "sonner";
 
 import CategoryIcon from "@/components/CategoryIcon";
@@ -3246,25 +3247,12 @@ const Create = () => {
                       setSubmitStep("placing_prediction");
 
                       try {
-                        const price = firstPredSide === "yes" ? 50 : 50;
-                        const shares = amount / (price / 100);
-
-                        const { data, error } = await supabase.functions.invoke("place-bet", {
-                          body: {
-                            marketId: newMarketId,
-                            side: firstPredSide,
-                            amount,
-                            price,
-                            shares,
-                            ...(firstPredOptionId ? { optionId: firstPredOptionId } : {}),
-                          },
+                        await placeFirstPrediction({
+                          marketId: newMarketId,
+                          side: firstPredSide,
+                          amount,
+                          ...(firstPredOptionId ? { optionId: firstPredOptionId } : {}),
                         });
-
-                        if (error || data?.error) {
-                          toast.error(data?.error || error?.message || "Failed to place prediction");
-                          setSubmitStep("first_prediction");
-                          return;
-                        }
 
                         toast.success("First prediction placed! Your market is now live.");
                         clearFormStorage();
