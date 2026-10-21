@@ -282,11 +282,16 @@ const Create = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("public_commission_settings" as any)
         .select("*")
         .limit(1)
         .single();
+      if (error || !data) {
+        console.error("[Create] Eligibility settings could not be loaded", error);
+        toast.error("Could not load creator requirements. Please refresh and try again.");
+        return;
+      }
       if (data) {
         const d = data as any;
         setMinTokenBalance(Number(d.min_token_balance) || 10_000_000);
