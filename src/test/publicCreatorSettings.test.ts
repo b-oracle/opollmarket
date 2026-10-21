@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Integration regression: public creator requirements must load without admin access.
 import { describe, expect, it } from "vitest";
 import { loadEnv } from "vite";
